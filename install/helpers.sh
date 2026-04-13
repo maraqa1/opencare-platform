@@ -102,6 +102,46 @@ wait_for_job_completion() {
   kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$job_name" --timeout="${TIMEOUT_SECONDS}s"
 }
 
+delete_pod_if_exists() {
+  local pod_name="$1"
+  kubectl -n "$NAMESPACE" delete pod "$pod_name" --ignore-not-found >/dev/null 2>&1 || true
+}
+
+wait_for_pod_completion() {
+  local pod_name="$1"
+  local deadline
+  local phase
+  local now
+
+  deadline=$((SECONDS + TIMEOUT_SECONDS))
+
+  while true; do
+    phase="$(kubectl -n "$NAMESPACE" get pod "$pod_name" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+
+    case "$phase" in
+      Succeeded)
+        return 0
+        ;;
+      Failed)
+        kubectl -n "$NAMESPACE" logs "$pod_name" || true
+        fail "Pod failed: $pod_name"
+        ;;
+      "")
+        ;;
+      *)
+        ;;
+    esac
+
+    now=$SECONDS
+    if (( now >= deadline )); then
+      kubectl -n "$NAMESPACE" logs "$pod_name" || true
+      fail "Timed out waiting for pod: $pod_name"
+    fi
+
+    sleep 2
+  done
+}
+
 cronjob_exists() {
   local name="$1"
   kubectl -n "$NAMESPACE" get cronjob "$name" >/dev/null 2>&1
@@ -124,18 +164,30 @@ create_job_from_cronjob() {
 run_cluster_http_check() {
   local name="$1"
   local url="$2"
+  local pod_name="check-${name}"
+
   log "HTTP check: $name -> $url"
-  kubectl -n "$NAMESPACE" run "check-${name}" \
-    --rm --restart=Never --image=curlimages/curl:8.12.1 \
+  delete_pod_if_exists "$pod_name"
+  kubectl -n "$NAMESPACE" run "$pod_name" \
+    --restart=Never \
+    --image=curlimages/curl:8.12.1 \
     --command -- curl -fsS --max-time 10 "$url" >/dev/null
+  wait_for_pod_completion "$pod_name"
+  delete_pod_if_exists "$pod_name"
 }
 
 run_cluster_command() {
   local name="$1"
+  local pod_name="check-${name}"
   shift
+
   log "Command check: $name"
-  kubectl -n "$NAMESPACE" run "check-${name}" \
-    --rm --restart=Never --image="$1" -- "${@:2}" >/dev/null
+  delete_pod_if_exists "$pod_name"
+  kubectl -n "$NAMESPACE" run "$pod_name" \
+    --restart=Never \
+    --image="$1" -- "${@:2}" >/dev/null
+  wait_for_pod_completion "$pod_name"
+  delete_pod_if_exists "$pod_name"
 }
 
 require_namespace() {
