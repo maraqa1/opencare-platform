@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: bed-forecast
-          image: ghcr.io/maraqa1/opencare-runtime-bed-forecast:0.1.1
+          image: ghcr.io/maraqa1/opencare-runtime-bed-forecast:dev
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

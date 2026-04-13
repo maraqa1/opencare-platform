@@ -102,19 +102,21 @@ jobs:
           - name: backend
             context: ./apps/backend
             dockerfile: ./apps/backend/Dockerfile
-            image: ghcr.io/maraqa1/opencare-backend
+            image_repo: ghcr.io/maraqa1/opencare-backend
           - name: portal
             context: ./apps/portal
             dockerfile: ./apps/portal/Dockerfile
-            image: ghcr.io/maraqa1/opencare-portal
+            image_repo: ghcr.io/maraqa1/opencare-portal
           - name: runtime-bed-forecast
             context: ./r-runtime/bed-forecast
             dockerfile: ./r-runtime/bed-forecast/Dockerfile
-            image: ghcr.io/maraqa1/opencare-runtime-bed-forecast:0.1.1
+            image_repo: ghcr.io/maraqa1/opencare-runtime-bed-forecast
+            runtime_image: true
           - name: runtime-anomaly
             context: ./r-runtime/anomaly
             dockerfile: ./r-runtime/anomaly/Dockerfile
-            image: ghcr.io/maraqa1/opencare-runtime-anomaly:0.1.1
+            image_repo: ghcr.io/maraqa1/opencare-runtime-anomaly
+            runtime_image: true
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -130,6 +132,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare image tags
+        id: image_tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          tags="${{ matrix.image_repo }}:latest"
+
+          if [[ "${{ matrix.runtime_image || false }}" == "true" ]]; then
+            tags="${{ matrix.image_repo }}:${GITHUB_SHA}"
+            if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
+              tags="${tags}"$'\n'"${{ matrix.image_repo }}:dev"
+            fi
+          fi
+
+          {
+            echo "tags<<EOF"
+            echo "${tags}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build ${{ matrix.name }}
         uses: docker/build-push-action@v6
         with:
@@ -137,4 +159,4 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name == 'push' }}
           load: false
-          tags: ${{ matrix.image }}
+          tags: ${{ steps.image_tags.outputs.tags }}
