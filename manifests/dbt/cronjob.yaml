@@ -23,7 +23,8 @@ spec:
                 - /bin/sh
                 - -c
                 - |
-                  mkdir -p /root/.dbt && \
+                  mkdir -p /root/.dbt /workspace && \
+                  cp -R /workspace-src/. /workspace/ && \
                   cp /config/profiles.yml /root/.dbt/profiles.yml && \
                   dbt deps --project-dir /workspace || true && \
                   dbt run --project-dir /workspace && \
@@ -41,12 +42,15 @@ spec:
                   cpu: 300m
                   memory: 256Mi
               volumeMounts:
-                - name: dbt-project
+                - name: dbt-project-src
+                  mountPath: /workspace-src
+                  readOnly: true
+                - name: dbt-workspace
                   mountPath: /workspace
                 - name: dbt-profile
                   mountPath: /config
           volumes:
-            - name: dbt-project
+            - name: dbt-project-src
               configMap:
                 name: dbt-project-files
                 items:
@@ -68,6 +72,8 @@ spec:
                     path: models/marts/dim_department.sql
                   - key: dim_time.sql
                     path: models/marts/dim_time.sql
+            - name: dbt-workspace
+              emptyDir: {}
             - name: dbt-profile
               configMap:
                 name: dbt-profile-template
