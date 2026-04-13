@@ -122,6 +122,30 @@ print_job_logs() {
   done <<< "$pods"
 }
 
+print_job_diagnostics() {
+  local job_name="$1"
+  local pods
+  local pod
+
+  log "Describe job/$job_name"
+  kubectl -n "$NAMESPACE" describe job "$job_name" || true
+
+  pods="$(kubectl -n "$NAMESPACE" get pods -l "job-name=$job_name" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
+
+  if [[ -z "$pods" ]]; then
+    log "No pods found for job/$job_name"
+    return 0
+  fi
+
+  while IFS= read -r pod; do
+    [[ -n "$pod" ]] || continue
+    log "Describe pod/$pod"
+    kubectl -n "$NAMESPACE" describe pod "$pod" || true
+    log "Logs for pod/$pod"
+    kubectl -n "$NAMESPACE" logs "$pod" || true
+  done <<< "$pods"
+}
+
 delete_pod_if_exists() {
   local pod_name="$1"
   kubectl -n "$NAMESPACE" delete pod "$pod_name" --ignore-not-found >/dev/null 2>&1 || true
@@ -180,6 +204,48 @@ create_job_from_cronjob() {
   kubectl -n "$NAMESPACE" create job --from="cronjob/$cronjob_name" "$job_name" --dry-run=client -o yaml | kubectl apply -f -
   if ! wait_for_job_completion "$job_name"; then
     print_job_logs "$job_name"
+    fail "Job failed: $job_name"
+  fi
+}
+
+create_standalone_job_from_cronjob() {
+  local cronjob_name="$1"
+  local job_name="$2"
+  local ttl_seconds="${3:-600}"
+
+  if ! cronjob_exists "$cronjob_name"; then
+    log_skip "CronJob not found: $cronjob_name"
+    return 1
+  fi
+
+  wait_for_job_cleanup "$job_name"
+  kubectl -n "$NAMESPACE" create job --from="cronjob/$cronjob_name" "$job_name" --dry-run=client -o yaml \
+    | awk -v ttl="$ttl_seconds" '
+        BEGIN { skip_owner = 0 }
+        /^  ownerReferences:/ { skip_owner = 1; next }
+        skip_owner {
+          if ($0 ~ /^  [^ ]/ || $0 ~ /^spec:/ || $0 ~ /^status:/) {
+            skip_owner = 0
+          } else {
+            next
+          }
+        }
+        /cronjob\.kubernetes\.io\/instantiate: manual/ { next }
+        /^  backoffLimit:/ {
+          print "  backoffLimit: 0"
+          print "  ttlSecondsAfterFinished: " ttl
+          next
+        }
+        /^[[:space:]]+restartPolicy:/ {
+          print "          restartPolicy: Never"
+          next
+        }
+        { print }
+      ' \
+    | kubectl apply -f -
+
+  if ! wait_for_job_completion "$job_name"; then
+    print_job_diagnostics "$job_name"
     fail "Job failed: $job_name"
   fi
 }
