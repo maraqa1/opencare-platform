@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: anomaly
-          image: ghcr.io/maraqa1/opencare-runtime-anomaly:latest
+          image: ghcr.io/maraqa1/opencare-runtime-anomaly:0.1.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

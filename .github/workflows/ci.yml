@@ -110,11 +110,11 @@ jobs:
           - name: runtime-bed-forecast
             context: ./r-runtime/bed-forecast
             dockerfile: ./r-runtime/bed-forecast/Dockerfile
-            image: ghcr.io/maraqa1/opencare-runtime-bed-forecast
+            image: ghcr.io/maraqa1/opencare-runtime-bed-forecast:0.1.1
           - name: runtime-anomaly
             context: ./r-runtime/anomaly
             dockerfile: ./r-runtime/anomaly/Dockerfile
-            image: ghcr.io/maraqa1/opencare-runtime-anomaly
+            image: ghcr.io/maraqa1/opencare-runtime-anomaly:0.1.1
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -137,4 +137,4 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name == 'push' }}
           load: false
-          tags: ${{ matrix.image }}:latest
+          tags: ${{ matrix.image }}
