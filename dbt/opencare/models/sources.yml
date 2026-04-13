@@ -1,0 +1,33 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Operational landing schema populated from external MySQL ingestion.
+    schema: raw
+    tables:
+      - name: bed_events
+        description: Raw inpatient bed event records received from ingestion.
+        columns:
+          - name: event_id
+            description: Unique identifier for a bed event in the source system.
+          - name: event_timestamp
+            description: Timestamp when the bed event was recorded.
+          - name: department_id
+            description: Department reference associated with the event.
+          - name: occupied_beds
+            description: Occupied bed count captured at event time.
+          - name: licensed_beds
+            description: Licensed capacity captured at event time.
+          - name: staffed_beds
+            description: Staffed capacity captured at event time.
+      - name: departments
+        description: Raw department reference data for analytics dimensions.
+        columns:
+          - name: department_id
+            description: Unique identifier for the department.
+          - name: department_code
+            description: Business-facing code for the department.
+          - name: department_name
+            description: Display name for the department.
+          - name: service_line
+            description: Higher-level service grouping for the department.

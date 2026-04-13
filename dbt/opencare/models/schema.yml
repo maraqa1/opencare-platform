@@ -1,0 +1,136 @@
+version: 2
+
+models:
+  - name: stg_bed_events
+    description: Standardized bed event records shaped for occupancy marts.
+    columns:
+      - name: bed_event_key
+        description: Surrogate event key derived from the raw event identifier.
+        tests:
+          - not_null
+          - unique
+      - name: event_date
+        description: Calendar date extracted from the source event timestamp.
+        tests:
+          - not_null
+      - name: department_id
+        description: Department identifier attached to the event.
+        tests:
+          - not_null
+      - name: occupied_beds
+        description: Occupied bed count observed for the department and event date.
+        tests:
+          - not_null
+      - name: licensed_beds
+        description: Licensed bed capacity observed for the department and event date.
+      - name: staffed_beds
+        description: Staffed bed capacity observed for the department and event date.
+      - name: occupancy_rate
+        description: Occupied beds divided by staffed beds when staffed beds are available.
+
+  - name: stg_departments
+    description: Standardized department dimension inputs.
+    columns:
+      - name: department_id
+        description: Stable department identifier from the source system.
+        tests:
+          - not_null
+          - unique
+      - name: department_code
+        description: Short business code for the department.
+        tests:
+          - not_null
+          - unique
+      - name: department_name
+        description: Human-readable department display name.
+        tests:
+          - not_null
+      - name: service_line
+        description: Service line grouping used for rollups and filtering.
+
+  - name: fact_bed_occupancy
+    description: Daily bed occupancy fact table by department in the analytics schema.
+    columns:
+      - name: occupancy_fact_key
+        description: Grain key for department-day occupancy records.
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Calendar day represented by the occupancy record.
+        tests:
+          - not_null
+      - name: department_id
+        description: Department identifier for the occupancy record.
+        tests:
+          - not_null
+      - name: occupied_beds
+        description: Daily occupied bed count.
+        tests:
+          - not_null
+      - name: staffed_beds
+        description: Daily staffed bed capacity.
+      - name: occupancy_rate
+        description: Ratio of occupied beds to staffed beds.
+
+  - name: fact_capacity
+    description: Daily department capacity fact table in the analytics schema.
+    columns:
+      - name: capacity_fact_key
+        description: Grain key for department-day capacity records.
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Calendar day represented by the capacity record.
+        tests:
+          - not_null
+      - name: department_id
+        description: Department identifier for the capacity record.
+        tests:
+          - not_null
+      - name: licensed_beds
+        description: Daily licensed bed capacity.
+      - name: staffed_beds
+        description: Daily staffed bed capacity.
+        tests:
+          - not_null
+
+  - name: dim_department
+    description: Department dimension used for analytics joins and reporting labels.
+    columns:
+      - name: department_id
+        description: Stable department identifier.
+        tests:
+          - not_null
+          - unique
+      - name: department_code
+        description: Business code used in portal and analytics surfaces.
+        tests:
+          - not_null
+          - unique
+      - name: department_name
+        description: Department display name.
+        tests:
+          - not_null
+      - name: service_line
+        description: Service line classification for grouping.
+
+  - name: dim_time
+    description: Date dimension derived from available bed event records.
+    columns:
+      - name: date_day
+        description: Calendar day serving as the dimension primary key.
+        tests:
+          - not_null
+          - unique
+      - name: day_of_week
+        description: Numeric day of week derived from the date.
+      - name: week_of_year
+        description: ISO week number for the date.
+      - name: month_of_year
+        description: Calendar month number for the date.
+      - name: quarter_of_year
+        description: Calendar quarter number for the date.
+      - name: year_number
+        description: Calendar year for the date.

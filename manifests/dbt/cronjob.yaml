@@ -1,0 +1,391 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dbt-runner
+  namespace: opencare
+spec:
+  schedule: "*/30 * * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: dbt
+              image: ghcr.io/dbt-labs/dbt-postgres:1.9.0
+              imagePullPolicy: IfNotPresent
+              workingDir: /workspace
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  mkdir -p /root/.dbt && \
+                  cp /config/profiles.yml /root/.dbt/profiles.yml && \
+                  dbt deps --project-dir /workspace || true && \
+                  dbt run --project-dir /workspace && \
+                  dbt test --project-dir /workspace
+              envFrom:
+                - configMapRef:
+                    name: opencare-config
+                - secretRef:
+                    name: opencare-secrets
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 300m
+                  memory: 256Mi
+              volumeMounts:
+                - name: dbt-project
+                  mountPath: /workspace
+                - name: dbt-profile
+                  mountPath: /config
+          volumes:
+            - name: dbt-project
+              configMap:
+                name: dbt-project-files
+                items:
+                  - key: dbt_project.yml
+                    path: dbt_project.yml
+                  - key: sources.yml
+                    path: models/sources.yml
+                  - key: schema.yml
+                    path: models/schema.yml
+                  - key: stg_bed_events.sql
+                    path: models/staging/stg_bed_events.sql
+                  - key: stg_departments.sql
+                    path: models/staging/stg_departments.sql
+                  - key: fact_bed_occupancy.sql
+                    path: models/marts/fact_bed_occupancy.sql
+                  - key: fact_capacity.sql
+                    path: models/marts/fact_capacity.sql
+                  - key: dim_department.sql
+                    path: models/marts/dim_department.sql
+                  - key: dim_time.sql
+                    path: models/marts/dim_time.sql
+            - name: dbt-profile
+              configMap:
+                name: dbt-profile-template
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dbt-project-files
+  namespace: opencare
+data:
+  dbt_project.yml: |
+    name: opencare
+    version: 0.1.0
+    config-version: 2
+
+    profile: opencare
+
+    model-paths:
+      - models
+
+    target-path: target
+    clean-targets:
+      - target
+      - dbt_packages
+
+    models:
+      opencare:
+        +materialized: view
+        +schema: analytics
+        staging:
+          +materialized: view
+        marts:
+          +materialized: table
+  sources.yml: |
+    version: 2
+
+    sources:
+      - name: raw
+        description: Operational landing schema populated from external MySQL ingestion.
+        schema: raw
+        tables:
+          - name: bed_events
+            description: Raw inpatient bed event records received from ingestion.
+            columns:
+              - name: event_id
+                description: Unique identifier for a bed event in the source system.
+              - name: event_timestamp
+                description: Timestamp when the bed event was recorded.
+              - name: department_id
+                description: Department reference associated with the event.
+              - name: occupied_beds
+                description: Occupied bed count captured at event time.
+              - name: licensed_beds
+                description: Licensed capacity captured at event time.
+              - name: staffed_beds
+                description: Staffed capacity captured at event time.
+          - name: departments
+            description: Raw department reference data for analytics dimensions.
+            columns:
+              - name: department_id
+                description: Unique identifier for the department.
+              - name: department_code
+                description: Business-facing code for the department.
+              - name: department_name
+                description: Display name for the department.
+              - name: service_line
+                description: Higher-level service grouping for the department.
+  schema.yml: |
+    version: 2
+
+    models:
+      - name: stg_bed_events
+        description: Standardized bed event records shaped for occupancy marts.
+        columns:
+          - name: bed_event_key
+            description: Surrogate event key derived from the raw event identifier.
+            tests:
+              - not_null
+              - unique
+          - name: event_date
+            description: Calendar date extracted from the source event timestamp.
+            tests:
+              - not_null
+          - name: department_id
+            description: Department identifier attached to the event.
+            tests:
+              - not_null
+          - name: occupied_beds
+            description: Occupied bed count observed for the department and event date.
+            tests:
+              - not_null
+          - name: licensed_beds
+            description: Licensed bed capacity observed for the department and event date.
+          - name: staffed_beds
+            description: Staffed bed capacity observed for the department and event date.
+          - name: occupancy_rate
+            description: Occupied beds divided by staffed beds when staffed beds are available.
+
+      - name: stg_departments
+        description: Standardized department dimension inputs.
+        columns:
+          - name: department_id
+            description: Stable department identifier from the source system.
+            tests:
+              - not_null
+              - unique
+          - name: department_code
+            description: Short business code for the department.
+            tests:
+              - not_null
+              - unique
+          - name: department_name
+            description: Human-readable department display name.
+            tests:
+              - not_null
+          - name: service_line
+            description: Service line grouping used for rollups and filtering.
+
+      - name: fact_bed_occupancy
+        description: Daily bed occupancy fact table by department in the analytics schema.
+        columns:
+          - name: occupancy_fact_key
+            description: Grain key for department-day occupancy records.
+            tests:
+              - not_null
+              - unique
+          - name: date_day
+            description: Calendar day represented by the occupancy record.
+            tests:
+              - not_null
+          - name: department_id
+            description: Department identifier for the occupancy record.
+            tests:
+              - not_null
+          - name: occupied_beds
+            description: Daily occupied bed count.
+            tests:
+              - not_null
+          - name: staffed_beds
+            description: Daily staffed bed capacity.
+          - name: occupancy_rate
+            description: Ratio of occupied beds to staffed beds.
+
+      - name: fact_capacity
+        description: Daily department capacity fact table in the analytics schema.
+        columns:
+          - name: capacity_fact_key
+            description: Grain key for department-day capacity records.
+            tests:
+              - not_null
+              - unique
+          - name: date_day
+            description: Calendar day represented by the capacity record.
+            tests:
+              - not_null
+          - name: department_id
+            description: Department identifier for the capacity record.
+            tests:
+              - not_null
+          - name: licensed_beds
+            description: Daily licensed bed capacity.
+          - name: staffed_beds
+            description: Daily staffed bed capacity.
+            tests:
+              - not_null
+
+      - name: dim_department
+        description: Department dimension used for analytics joins and reporting labels.
+        columns:
+          - name: department_id
+            description: Stable department identifier.
+            tests:
+              - not_null
+              - unique
+          - name: department_code
+            description: Business code used in portal and analytics surfaces.
+            tests:
+              - not_null
+              - unique
+          - name: department_name
+            description: Department display name.
+            tests:
+              - not_null
+          - name: service_line
+            description: Service line classification for grouping.
+
+      - name: dim_time
+        description: Date dimension derived from available bed event records.
+        columns:
+          - name: date_day
+            description: Calendar day serving as the dimension primary key.
+            tests:
+              - not_null
+              - unique
+          - name: day_of_week
+            description: Numeric day of week derived from the date.
+          - name: week_of_year
+            description: ISO week number for the date.
+          - name: month_of_year
+            description: Calendar month number for the date.
+          - name: quarter_of_year
+            description: Calendar quarter number for the date.
+          - name: year_number
+            description: Calendar year for the date.
+  stg_bed_events.sql: |
+    with source_data as (
+        select
+            cast(event_id as text) as bed_event_key,
+            cast(event_timestamp as timestamp) as event_timestamp,
+            cast(event_timestamp as date) as event_date,
+            cast(department_id as text) as department_id,
+            cast(occupied_beds as integer) as occupied_beds,
+            cast(licensed_beds as integer) as licensed_beds,
+            cast(staffed_beds as integer) as staffed_beds
+        from {{ source('raw', 'bed_events') }}
+    )
+
+    select
+        bed_event_key,
+        event_timestamp,
+        event_date,
+        department_id,
+        occupied_beds,
+        licensed_beds,
+        staffed_beds,
+        case
+            when staffed_beds is null or staffed_beds = 0 then null
+            else round(occupied_beds::numeric / staffed_beds::numeric, 4)
+        end as occupancy_rate
+    from source_data
+  stg_departments.sql: |
+    select
+        cast(department_id as text) as department_id,
+        trim(cast(department_code as text)) as department_code,
+        trim(cast(department_name as text)) as department_name,
+        trim(cast(service_line as text)) as service_line
+    from {{ source('raw', 'departments') }}
+  fact_bed_occupancy.sql: |
+    with daily_occupancy as (
+        select
+            event_date as date_day,
+            department_id,
+            max(occupied_beds) as occupied_beds,
+            max(staffed_beds) as staffed_beds,
+            max(occupancy_rate) as occupancy_rate
+        from {{ ref('stg_bed_events') }}
+        group by 1, 2
+    )
+
+    select
+        md5(concat(date_day::text, '||', department_id)) as occupancy_fact_key,
+        date_day,
+        department_id,
+        occupied_beds,
+        staffed_beds,
+        occupancy_rate
+    from daily_occupancy
+  fact_capacity.sql: |
+    with daily_capacity as (
+        select
+            event_date as date_day,
+            department_id,
+            max(licensed_beds) as licensed_beds,
+            max(staffed_beds) as staffed_beds
+        from {{ ref('stg_bed_events') }}
+        group by 1, 2
+    )
+
+    select
+        md5(concat(date_day::text, '||', department_id)) as capacity_fact_key,
+        date_day,
+        department_id,
+        licensed_beds,
+        staffed_beds
+    from daily_capacity
+  dim_department.sql: |
+    select
+        department_id,
+        department_code,
+        department_name,
+        service_line
+    from {{ ref('stg_departments') }}
+  dim_time.sql: |
+    with distinct_dates as (
+        select distinct
+            event_date as date_day
+        from {{ ref('stg_bed_events') }}
+        where event_date is not null
+    )
+
+    select
+        date_day,
+        extract(isodow from date_day) as day_of_week,
+        extract(week from date_day) as week_of_year,
+        extract(month from date_day) as month_of_year,
+        extract(quarter from date_day) as quarter_of_year,
+        extract(year from date_day) as year_number
+    from distinct_dates
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dbt-profile-template
+  namespace: opencare
+data:
+  profiles.yml: |
+    opencare:
+      target: dev
+      outputs:
+        dev:
+          type: postgres
+          host: "{{ env_var('POSTGRES_HOST', 'postgres') }}"
+          port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+          user: "{{ env_var('POSTGRES_USER', 'opencare') }}"
+          password: "{{ env_var('POSTGRES_PASSWORD', '') }}"
+          dbname: "{{ env_var('POSTGRES_DB', 'opencare') }}"
+          schema: analytics
+          threads: 4
+          keepalives_idle: 0
+          connect_timeout: 10
+          search_path: analytics,public
+          sslmode: prefer

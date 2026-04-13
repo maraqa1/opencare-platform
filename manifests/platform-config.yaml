@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencare-config
+  namespace: opencare
+data:
+  APP_ENV: production
+  APP_NAME: opencare-backend
+  APP_HOST: 0.0.0.0
+  APP_PORT: "8000"
+  ANALYTICS_SCHEMA: analytics
+  RAW_SCHEMA: raw
+  STAGING_SCHEMA: staging
+  DICTIONARY_SCHEMA: dictionary
+  OUTPUT_SCHEMA: output
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: opencare
+  POSTGRES_USER: opencare
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  MINIO_ENDPOINT: minio:9000
+  MINIO_BUCKET: reports
+  KEYCLOAK_URL: http://keycloak:8080
+  KEYCLOAK_REALM: opencare
+  FORECAST_RUNTIME_URL: http://bed-forecast:8000
+  ANOMALY_RUNTIME_URL: http://anomaly:8000
+  SUPERSET_EMBED_URL: http://superset:8088
+  REPORTS_PREFIX: reports
+  DICTIONARY_VERSION: "2026.04"
+  RUNTIME_WRITES_ENABLED: "true"
+  NEXT_PUBLIC_API_BASE_URL: http://backend:8000
+  BACKEND_URL: http://backend:8000
+  PORTAL_URL: http://portal:3000
+  FORECAST_OUTPUT_TABLE: forecast_bed_occupancy
+  ANOMALY_OUTPUT_TABLE: anomaly_bed_occupancy
+  KEYCLOAK_ADMIN: admin
+  KC_DB: postgres
+  KC_DB_URL_HOST: postgres
+  KC_DB_URL_PORT: "5432"
+  KC_DB_URL_DATABASE: opencare
+  KC_DB_USERNAME: opencare
+  SUPERSET_SECRET_KEY: change-me-superset
+  SUPERSET_LOAD_EXAMPLES: "no"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opencare-secrets
+  namespace: opencare
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: opencare
+  MINIO_ROOT_USER: opencare
+  MINIO_ROOT_PASSWORD: opencare123
+  KEYCLOAK_ADMIN_PASSWORD: opencare123
