@@ -103,6 +103,25 @@ wait_for_job_completion() {
   kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$job_name" --timeout="${TIMEOUT_SECONDS}s"
 }
 
+print_job_logs() {
+  local job_name="$1"
+  local pods
+  local pod
+
+  pods="$(kubectl -n "$NAMESPACE" get pods -l "job-name=$job_name" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
+
+  if [[ -z "$pods" ]]; then
+    log "No pods found for job/$job_name"
+    return 0
+  fi
+
+  while IFS= read -r pod; do
+    [[ -n "$pod" ]] || continue
+    log "Logs for pod/$pod"
+    kubectl -n "$NAMESPACE" logs "$pod" || true
+  done <<< "$pods"
+}
+
 delete_pod_if_exists() {
   local pod_name="$1"
   kubectl -n "$NAMESPACE" delete pod "$pod_name" --ignore-not-found >/dev/null 2>&1 || true
@@ -159,7 +178,10 @@ create_job_from_cronjob() {
 
   wait_for_job_cleanup "$job_name"
   kubectl -n "$NAMESPACE" create job --from="cronjob/$cronjob_name" "$job_name" --dry-run=client -o yaml | kubectl apply -f -
-  wait_for_job_completion "$job_name"
+  if ! wait_for_job_completion "$job_name"; then
+    print_job_logs "$job_name"
+    fail "Job failed: $job_name"
+  fi
 }
 
 run_cluster_http_check() {
