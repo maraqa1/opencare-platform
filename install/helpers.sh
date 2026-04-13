@@ -125,7 +125,7 @@ wait_for_pod_completion() {
         ;;
       Failed)
         kubectl -n "$NAMESPACE" logs "$pod_name" || true
-        fail "Pod failed: $pod_name"
+        return 1
         ;;
       "")
         ;;
@@ -136,7 +136,7 @@ wait_for_pod_completion() {
     now=$SECONDS
     if (( now >= deadline )); then
       kubectl -n "$NAMESPACE" logs "$pod_name" || true
-      fail "Timed out waiting for pod: $pod_name"
+      return 1
     fi
 
     sleep 2
@@ -166,15 +166,31 @@ run_cluster_http_check() {
   local name="$1"
   local url="$2"
   local pod_name="check-${name}"
+  local max_attempts="${3:-1}"
+  local retry_interval="${4:-2}"
+  local attempt=1
 
-  log "HTTP check: $name -> $url"
-  delete_pod_if_exists "$pod_name"
-  kubectl -n "$NAMESPACE" run "$pod_name" \
-    --restart=Never \
-    --image=curlimages/curl:8.12.1 \
-    --command -- curl -fsS --max-time 10 "$url" >/dev/null
-  wait_for_pod_completion "$pod_name"
-  delete_pod_if_exists "$pod_name"
+  while (( attempt <= max_attempts )); do
+    log "HTTP check: $name -> $url"
+    delete_pod_if_exists "$pod_name"
+    kubectl -n "$NAMESPACE" run "$pod_name" \
+      --restart=Never \
+      --image=curlimages/curl:8.12.1 \
+      --command -- curl -fsS --max-time 10 "$url" >/dev/null
+
+    if wait_for_pod_completion "$pod_name"; then
+      delete_pod_if_exists "$pod_name"
+      return 0
+    fi
+
+    delete_pod_if_exists "$pod_name"
+    if (( attempt == max_attempts )); then
+      fail "Pod failed: $pod_name"
+    fi
+
+    sleep "$retry_interval"
+    attempt=$((attempt + 1))
+  done
 }
 
 run_cluster_command() {

@@ -9,6 +9,6 @@ source "$ROOT_DIR/install/helpers.sh"
 apply_file "$ROOT_DIR/manifests/keycloak/deployment.yaml"
 wait_for_deployment keycloak
 
-run_cluster_http_check keycloak-ready "${KEYCLOAK_HEALTH_URL}/health/ready"
+run_cluster_http_check keycloak-ready "${KEYCLOAK_HEALTH_URL}/health/ready" 15 2
 log_skip "No Keycloak bootstrap action implemented"
 log_success "Keycloak deployment ready"
