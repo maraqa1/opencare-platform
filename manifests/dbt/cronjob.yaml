@@ -102,7 +102,6 @@ data:
     models:
       opencare:
         +materialized: view
-        +schema: analytics
         staging:
           +materialized: view
         marts:
