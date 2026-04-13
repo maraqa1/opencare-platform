@@ -40,6 +40,8 @@ spec:
             - secretRef:
                 name: opencare-secrets
           env:
+            - name: SUPERSET_PORT
+              value: "8088"
             - name: SUPERSET_DATABASE_URI
               value: >-
                 postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?options=-csearch_path%3Danalytics,public
