@@ -16,7 +16,7 @@ log "Checking MinIO availability"
 run_cluster_http_check minio "http://${MINIO_ENDPOINT}/minio/health/live"
 
 log "Checking Keycloak availability"
-run_cluster_http_check keycloak "${KEYCLOAK_URL}/health/ready"
+run_cluster_http_check keycloak "${KEYCLOAK_HEALTH_URL}/health/ready"
 
 log "Checking backend health"
 run_cluster_http_check backend "${BACKEND_URL}/healthz"
