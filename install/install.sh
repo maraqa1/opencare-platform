@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# shellcheck source=helpers.sh
+# shellcheck source=install/helpers.sh
 source "$SCRIPT_DIR/helpers.sh"
 
 require_cmd kubectl

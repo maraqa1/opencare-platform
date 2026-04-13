@@ -64,7 +64,7 @@ manifest_exists() {
 apply_file() {
   local file="$1"
   manifest_exists "$file" || fail "Manifest not found: $file"
-  log "Applying ${file#$ROOT_DIR/}"
+  log "Applying ${file#"$ROOT_DIR"/}"
   kubectl apply -f "$file"
 }
 
@@ -75,7 +75,7 @@ apply_if_exists() {
     return 0
   fi
 
-  log_skip "Manifest missing: ${file#$ROOT_DIR/}"
+  log_skip "Manifest missing: ${file#"$ROOT_DIR"/}"
   return 1
 }
 
@@ -153,7 +153,7 @@ run_script_module() {
   local script_path="$2"
 
   if [[ ! -f "$script_path" ]]; then
-    log_skip "$label module not implemented: ${script_path#$ROOT_DIR/}"
+    log_skip "$label module not implemented: ${script_path#"$ROOT_DIR"/}"
     return 0
   fi
 
