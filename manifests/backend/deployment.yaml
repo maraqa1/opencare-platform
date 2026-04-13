@@ -29,8 +29,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: opencare/backend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/maraqa1/opencare-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
               name: http
