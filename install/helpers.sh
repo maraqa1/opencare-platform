@@ -179,13 +179,16 @@ run_cluster_http_check() {
 run_cluster_command() {
   local name="$1"
   local pod_name="check-${name}"
+  local image="$2"
+  shift
   shift
 
   log "Command check: $name"
   delete_pod_if_exists "$pod_name"
   kubectl -n "$NAMESPACE" run "$pod_name" \
     --restart=Never \
-    --image="$1" -- "${@:2}" >/dev/null
+    --image="$image" \
+    --command -- "$@" >/dev/null
   wait_for_pod_completion "$pod_name"
   delete_pod_if_exists "$pod_name"
 }
