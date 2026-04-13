@@ -39,6 +39,37 @@ spec:
                 name: opencare-config
             - secretRef:
                 name: opencare-secrets
+          env:
+            - name: KC_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: KC_DB
+            - name: KC_DB_URL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: KC_DB_URL_HOST
+            - name: KC_DB_URL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: KC_DB_URL_PORT
+            - name: KC_DB_URL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: KC_DB_URL_DATABASE
+            - name: KC_DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: KC_DB_USERNAME
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencare-secrets
+                  key: KC_DB_PASSWORD
           resources:
             requests:
               cpu: 100m

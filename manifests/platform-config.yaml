@@ -52,6 +52,7 @@ metadata:
 type: Opaque
 stringData:
   POSTGRES_PASSWORD: opencare
+  KC_DB_PASSWORD: opencare
   MINIO_ROOT_USER: opencare
   MINIO_ROOT_PASSWORD: opencare123
   KEYCLOAK_ADMIN_PASSWORD: opencare123
