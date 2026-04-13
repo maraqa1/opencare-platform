@@ -219,29 +219,14 @@ create_standalone_job_from_cronjob() {
   fi
 
   wait_for_job_cleanup "$job_name"
-  kubectl -n "$NAMESPACE" create job --from="cronjob/$cronjob_name" "$job_name" --dry-run=client -o yaml \
-    | awk -v ttl="$ttl_seconds" '
-        BEGIN { skip_owner = 0 }
-        /^  ownerReferences:/ { skip_owner = 1; next }
-        skip_owner {
-          if ($0 ~ /^  [^ ]/ || $0 ~ /^spec:/ || $0 ~ /^status:/) {
-            skip_owner = 0
-          } else {
-            next
-          }
-        }
-        /cronjob\.kubernetes\.io\/instantiate: manual/ { next }
-        /^  backoffLimit:/ {
-          print "  backoffLimit: 0"
-          print "  ttlSecondsAfterFinished: " ttl
-          next
-        }
-        /^[[:space:]]+restartPolicy:/ {
-          print "          restartPolicy: Never"
-          next
-        }
-        { print }
-      ' \
+  kubectl -n "$NAMESPACE" create job --from="cronjob/$cronjob_name" "$job_name" --dry-run=client -o json \
+    | kubectl patch --local -f - --type=json -p="[
+        {\"op\":\"remove\",\"path\":\"/metadata/ownerReferences\"},
+        {\"op\":\"remove\",\"path\":\"/metadata/annotations/cronjob.kubernetes.io~1instantiate\"},
+        {\"op\":\"replace\",\"path\":\"/spec/backoffLimit\",\"value\":0},
+        {\"op\":\"add\",\"path\":\"/spec/ttlSecondsAfterFinished\",\"value\":${ttl_seconds}},
+        {\"op\":\"replace\",\"path\":\"/spec/template/spec/restartPolicy\",\"value\":\"Never\"}
+      ]" -o yaml \
     | kubectl apply -f -
 
   if ! wait_for_job_completion "$job_name"; then
