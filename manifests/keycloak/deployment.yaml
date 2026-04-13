@@ -9,8 +9,13 @@ spec:
     app: keycloak
   ports:
     - name: http
+      protocol: TCP
       port: 8080
       targetPort: 8080
+    - name: management
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
 ---
 apiVersion: apps/v1
 kind: Deployment
