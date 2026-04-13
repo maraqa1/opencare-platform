@@ -34,6 +34,8 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+            - containerPort: 9000
+              name: management
           envFrom:
             - configMapRef:
                 name: opencare-config
@@ -82,20 +84,20 @@ spec:
           startupProbe:
             httpGet:
               path: /health/ready
-              port: 8080
+              port: 9000
             periodSeconds: 10
             failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /health/ready
-              port: 8080
+              port: 9000
             initialDelaySeconds: 60
             periodSeconds: 20
             failureThreshold: 6
           livenessProbe:
             httpGet:
               path: /health/live
-              port: 8080
+              port: 9000
             initialDelaySeconds: 120
             periodSeconds: 30
             failureThreshold: 5
