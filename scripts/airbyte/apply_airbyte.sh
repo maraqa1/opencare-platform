@@ -11,7 +11,7 @@ source "$ROOT_DIR/install/helpers.sh"
 mkdir -p "$STATE_DIR"
 
 require_airbyte_prereqs() {
-  require_cmd helm
+  ensure_helm
   require_cmd kubectl
   require_cmd mktemp
   require_cmd sed

@@ -54,6 +54,8 @@ AIRBYTE_CHART_REPO_NAME="${AIRBYTE_CHART_REPO_NAME:-airbyte-v2}"
 AIRBYTE_CHART_REPO_URL="${AIRBYTE_CHART_REPO_URL:-https://airbytehq.github.io/charts}"
 AIRBYTE_CHART_NAME="${AIRBYTE_CHART_NAME:-airbyte-v2/airbyte}"
 AIRBYTE_CHART_VERSION="${AIRBYTE_CHART_VERSION:-2.0.19}"
+HELM_VERSION="${HELM_VERSION:-v3.16.3}"
+HELM_INSTALL_DIR="${HELM_INSTALL_DIR:-/usr/local/bin}"
 AIRBYTE_MC_IMAGE="${AIRBYTE_MC_IMAGE:-minio/mc:RELEASE.2025-07-21T05-28-08Z}"
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-opencare}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-opencare123}"
@@ -104,6 +106,63 @@ fail() {
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"
+}
+
+ensure_helm() {
+  local os
+  local arch
+  local tmp_dir
+  local archive_path
+  local download_url
+  local extracted_binary
+
+  if command -v helm >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log "Helm not found; installing ${HELM_VERSION}"
+
+  if ! command -v curl >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      apt-get update >/dev/null
+      apt-get install -y curl >/dev/null
+    else
+      fail "curl is required to install helm automatically"
+    fi
+  fi
+
+  require_cmd tar
+  require_cmd install
+
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  case "$(uname -m)" in
+    x86_64|amd64)
+      arch="amd64"
+      ;;
+    aarch64|arm64)
+      arch="arm64"
+      ;;
+    *)
+      fail "Unsupported architecture for automatic helm install: $(uname -m)"
+      ;;
+  esac
+
+  tmp_dir="$(mktemp -d)"
+  archive_path="$tmp_dir/helm.tar.gz"
+  download_url="https://get.helm.sh/helm-${HELM_VERSION}-${os}-${arch}.tar.gz"
+
+  curl -fsSL "$download_url" -o "$archive_path"
+  tar -xzf "$archive_path" -C "$tmp_dir"
+
+  extracted_binary="$tmp_dir/${os}-${arch}/helm"
+  [[ -f "$extracted_binary" ]] || fail "Downloaded helm archive did not contain helm binary"
+
+  install -d "$HELM_INSTALL_DIR"
+  install -m 0755 "$extracted_binary" "$HELM_INSTALL_DIR/helm"
+  rm -rf "$tmp_dir"
+
+  command -v helm >/dev/null 2>&1 || fail "Helm installation completed but helm is still not on PATH"
+  log_success "Helm installed to ${HELM_INSTALL_DIR}/helm"
 }
 
 log_success() {
