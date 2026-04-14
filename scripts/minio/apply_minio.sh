@@ -9,8 +9,22 @@ source "$ROOT_DIR/install/helpers.sh"
 apply_file "$ROOT_DIR/manifests/minio/deployment.yaml"
 wait_for_deployment minio
 
-effective_minio_user="$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ROOT_USER")"
-effective_minio_password="$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_ROOT_PASSWORD")"
+resolve_running_minio_credential() {
+  local env_name="$1"
+  local fallback="$2"
+  local value
+
+  value="$(kubectl -n "$NAMESPACE" exec deploy/minio -- printenv "$env_name" 2>/dev/null || true)"
+  if [[ -n "$value" ]]; then
+    printf '%s' "$value"
+    return 0
+  fi
+
+  printf '%s' "$fallback"
+}
+
+effective_minio_user="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ROOT_USER")")"
+effective_minio_password="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_ROOT_PASSWORD")")"
 
 delete_pod_if_exists check-minio-bucket
 kubectl -n "$NAMESPACE" run check-minio-bucket \
