@@ -150,6 +150,36 @@ spec:
               value: server
             - name: AIRBYTE_WORKSPACE_ROOT
               value: /data/workspace
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_LOG
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_STATE
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_STATE
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_WORKLOAD_OUTPUT
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_WORKLOAD_OUTPUT
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_ACTIVITY_PAYLOAD
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_ACTIVITY_PAYLOAD
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_AUDIT_LOGGING
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_AUDIT_LOGGING
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_PROFILER_OUTPUT
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_PROFILER_OUTPUT
             - name: TEMPORAL_HOST
               value: airbyte-temporal:7233
             - name: STORAGE_TYPE
