@@ -9,8 +9,8 @@ source "$ROOT_DIR/install/helpers.sh"
 apply_file "$ROOT_DIR/manifests/runtimes/bed-forecast.yaml"
 apply_file "$ROOT_DIR/manifests/runtimes/anomaly.yaml"
 
-kubectl -n "$NAMESPACE" rollout restart deployment/bed-forecast >/dev/null
-kubectl -n "$NAMESPACE" rollout restart deployment/anomaly >/dev/null
+kubectl -n "$NAMESPACE" delete pod -l app=bed-forecast --ignore-not-found >/dev/null 2>&1 || true
+kubectl -n "$NAMESPACE" delete pod -l app=anomaly --ignore-not-found >/dev/null 2>&1 || true
 
 wait_for_deployment bed-forecast
 wait_for_deployment anomaly
