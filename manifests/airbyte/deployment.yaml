@@ -64,7 +64,7 @@ spec:
                   name: opencare-config
                   key: POSTGRES_DB
             - name: DYNAMIC_CONFIG_FILE_PATH
-              value: config/dynamicconfig/development.yaml
+              value: config/dynamicconfig/development-sql.yaml
           readinessProbe:
             tcpSocket:
               port: 7233
