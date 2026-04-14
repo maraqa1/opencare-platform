@@ -9,6 +9,9 @@ source "$ROOT_DIR/install/helpers.sh"
 apply_file "$ROOT_DIR/manifests/runtimes/bed-forecast.yaml"
 apply_file "$ROOT_DIR/manifests/runtimes/anomaly.yaml"
 
+kubectl -n "$NAMESPACE" rollout restart deployment/bed-forecast >/dev/null
+kubectl -n "$NAMESPACE" rollout restart deployment/anomaly >/dev/null
+
 wait_for_deployment bed-forecast
 wait_for_deployment anomaly
 
