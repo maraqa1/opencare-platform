@@ -448,3 +448,17 @@ secret_value_or_default() {
 
   printf '%s' "$default_value"
 }
+
+resolve_running_minio_credential() {
+  local env_name="$1"
+  local fallback="$2"
+  local value
+
+  value="$(kubectl -n "$NAMESPACE" exec deploy/minio -- printenv "$env_name" 2>/dev/null || true)"
+  if [[ -n "$value" ]]; then
+    printf '%s' "$value"
+    return 0
+  fi
+
+  printf '%s' "$fallback"
+}
