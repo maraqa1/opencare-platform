@@ -41,7 +41,12 @@ for file in "${manifest_files[@]}"; do
 done
 
 wait_for_deployment airbyte-temporal
+previous_timeout="$TIMEOUT_SECONDS"
+TIMEOUT_SECONDS="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS:-420}"
 wait_for_deployment airbyte-server
+TIMEOUT_SECONDS="$previous_timeout"
+
+run_cluster_command airbyte-migrations postgres:16-alpine sh -c "psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} -Atc \"select coalesce(to_regclass('public.airbyte_configs_migrations')::text, '') = 'airbyte_configs_migrations' and coalesce(to_regclass('public.airbyte_jobs_migrations')::text, '') = 'airbyte_jobs_migrations';\" | grep -qx t"
 
 run_cluster_command airbyte-service curlimages/curl:8.12.1 sh -c "status=\$(curl -sS -o /dev/null -w '%{http_code}' ${AIRBYTE_URL}/ || true); [ \"\$status\" != '000' ]"
 run_cluster_command airbyte-minio-auth minio/mc:RELEASE.2025-07-21T05-28-08Z sh -c "mc alias set airbyte http://${MINIO_ENDPOINT} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} >/dev/null && mc ls airbyte/${MINIO_BUCKET_RAW} >/dev/null && mc ls airbyte/${MINIO_BUCKET_STATE} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_LOG} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_WORKLOAD_OUTPUT} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_ACTIVITY_PAYLOAD} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_AUDIT_LOGGING} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_PROFILER_OUTPUT} >/dev/null"
@@ -57,6 +62,7 @@ log "Airbyte facts: workload_output_bucket=${AIRBYTE_BUCKET_WORKLOAD_OUTPUT}"
 log "Airbyte facts: activity_payload_bucket=${AIRBYTE_BUCKET_ACTIVITY_PAYLOAD}"
 log "Airbyte facts: audit_logging_bucket=${AIRBYTE_BUCKET_AUDIT_LOGGING}"
 log "Airbyte facts: profiler_output_bucket=${AIRBYTE_BUCKET_PROFILER_OUTPUT}"
+log "Airbyte facts: migrations=configs+jobs bootstrap complete"
 log "Airbyte facts: path_style=${AIRBYTE_S3_PATH_STYLE}"
 log "Airbyte facts: validation=passed"
 log_success "Airbyte ingestion contract validated"

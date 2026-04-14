@@ -21,6 +21,8 @@ grant usage on schema ${STAGING_SCHEMA} to ${POSTGRES_USER};
 grant usage on schema ${ANALYTICS_SCHEMA} to ${POSTGRES_USER};
 grant usage on schema ${DICTIONARY_SCHEMA} to ${POSTGRES_USER};
 grant usage on schema ${OUTPUT_SCHEMA} to ${POSTGRES_USER};
+grant usage on schema public to ${POSTGRES_USER};
+grant create on schema public to ${POSTGRES_USER};
 
 create table if not exists ${RAW_SCHEMA}.departments (
   department_id text primary key,

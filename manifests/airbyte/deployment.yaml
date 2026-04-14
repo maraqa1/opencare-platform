@@ -133,6 +133,117 @@ spec:
       labels:
         app: airbyte-server
     spec:
+      initContainers:
+        - name: airbyte-bootloader
+          image: airbyte/bootloader:build-8301b7db38-22827-master
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: opencare-config
+            - secretRef:
+                name: opencare-secrets
+          env:
+            - name: AIRBYTE_ROLE
+              value: bootloader
+            - name: AIRBYTE_WORKSPACE_ROOT
+              value: /data/workspace
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_LOG
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_LOG
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_STATE
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_STATE
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_WORKLOAD_OUTPUT
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_WORKLOAD_OUTPUT
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_ACTIVITY_PAYLOAD
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_ACTIVITY_PAYLOAD
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_AUDIT_LOGGING
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_AUDIT_LOGGING
+            - name: AIRBYTE_CLOUD_STORAGE_BUCKET_PROFILER_OUTPUT
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_BUCKET_PROFILER_OUTPUT
+            - name: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_SOURCE_STUBS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_ENTERPRISE_SOURCE_STUBS_URL
+            - name: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_DESTINATION_STUBS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_ENTERPRISE_DESTINATION_STUBS_URL
+            - name: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED
+            - name: TEMPORAL_HOST
+              value: airbyte-temporal:7233
+            - name: STORAGE_TYPE
+              value: MINIO
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: opencare-secrets
+                  key: MINIO_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: opencare-secrets
+                  key: MINIO_SECRET_KEY
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: MINIO_REGION
+            - name: S3_PATH_STYLE_ACCESS
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_S3_PATH_STYLE
+            - name: S3_MINIO_ENDPOINT
+              value: http://minio.opencare.svc.cluster.local:9000
+            - name: AIRBYTE_MINIO_ENDPOINT
+              value: http://minio.opencare.svc.cluster.local:9000
+            - name: MINIO_SSL
+              value: "false"
+            - name: DATABASE_URL
+              value: jdbc:postgresql://postgres:5432/opencare
+            - name: DATABASE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: POSTGRES_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencare-secrets
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          volumeMounts:
+            - name: airbyte-data
+              mountPath: /data
       containers:
         - name: airbyte-server
           image: airbyte/server:build-8301b7db38-22827-master
