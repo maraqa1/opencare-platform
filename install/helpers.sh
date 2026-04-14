@@ -33,7 +33,7 @@ KEYCLOAK_HEALTH_URL="${KEYCLOAK_HEALTH_URL:-http://keycloak:9000}"
 BACKEND_URL="${BACKEND_URL:-http://backend:8000}"
 PORTAL_URL="${PORTAL_URL:-http://portal:3000}"
 SUPERSET_EMBED_URL="${SUPERSET_EMBED_URL:-http://superset:8088}"
-AIRBYTE_URL="${AIRBYTE_URL:-http://airbyte-server:8001}"
+AIRBYTE_URL="${AIRBYTE_URL:-http://airbyte-server:8000}"
 FORECAST_RUNTIME_URL="${FORECAST_RUNTIME_URL:-http://bed-forecast:8000}"
 ANOMALY_RUNTIME_URL="${ANOMALY_RUNTIME_URL:-http://anomaly:8000}"
 RAW_SCHEMA="${RAW_SCHEMA:-raw}"
@@ -318,7 +318,7 @@ OpenCare endpoints:
 - Portal: http://portal.${NAMESPACE}.svc.cluster.local:3000
 - Backend: http://backend.${NAMESPACE}.svc.cluster.local:8000
 - Superset: http://superset.${NAMESPACE}.svc.cluster.local:8088
-- Airbyte: http://airbyte-server.${NAMESPACE}.svc.cluster.local:8001
+- Airbyte: http://airbyte-server.${NAMESPACE}.svc.cluster.local:8000
 - Keycloak: http://keycloak.${NAMESPACE}.svc.cluster.local:8080
 - MinIO API: http://minio.${NAMESPACE}.svc.cluster.local:9000
 - MinIO Console: http://minio.${NAMESPACE}.svc.cluster.local:9001
