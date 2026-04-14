@@ -37,7 +37,7 @@ spec:
               name: grpc
           env:
             - name: DB
-              value: postgres12_pgx
+              value: postgres12
             - name: DB_PORT
               valueFrom:
                 configMapKeyRef:
