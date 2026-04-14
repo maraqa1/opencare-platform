@@ -27,12 +27,12 @@ run_cluster_http_check portal "$PORTAL_URL"
 log "Checking Superset service"
 run_cluster_http_check superset "$SUPERSET_EMBED_URL"
 
-if [[ -d "$SCRIPT_DIR/../manifests/airbyte" ]]; then
+if [[ -f "$SCRIPT_DIR/../manifests/airbyte/values.template.yaml" ]]; then
   log "Checking Airbyte migration tables"
-  run_cluster_command airbyte-migrations postgres:16-alpine sh -c "psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} -Atc \"select coalesce(to_regclass('public.airbyte_configs_migrations')::text, '') = 'airbyte_configs_migrations' and coalesce(to_regclass('public.airbyte_jobs_migrations')::text, '') = 'airbyte_jobs_migrations';\" | grep -qx t"
+  run_cluster_command airbyte-migrations postgres:16-alpine sh -c "psql postgresql://${AIRBYTE_DB_USER}:${AIRBYTE_DB_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${AIRBYTE_DB_NAME} -Atc \"select coalesce(to_regclass('public.airbyte_configs_migrations')::text, '') = 'airbyte_configs_migrations' and coalesce(to_regclass('public.airbyte_jobs_migrations')::text, '') = 'airbyte_jobs_migrations';\" | grep -qx t"
 
   log "Checking Airbyte service"
-  run_cluster_command airbyte-service curlimages/curl:8.12.1 sh -c "status=\$(curl -sS -o /dev/null -w '%{http_code}' ${AIRBYTE_URL}/ || true); [ \"\$status\" != '000' ]"
+  run_cluster_command airbyte-service curlimages/curl:8.12.1 sh -c "status=\$(curl -sS -o /dev/null -w '%{http_code}' ${AIRBYTE_URL}/api/v1/health || true); [ \"\$status\" != '000' ]"
 
   log "Checking Airbyte MinIO buckets"
   run_cluster_command airbyte-minio-auth "${AIRBYTE_MC_IMAGE}" sh -c "mc alias set airbyte http://${MINIO_ENDPOINT} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} >/dev/null && mc ls airbyte/${MINIO_BUCKET_RAW} >/dev/null && mc ls airbyte/${MINIO_BUCKET_STATE} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_LOG} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_WORKLOAD_OUTPUT} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_ACTIVITY_PAYLOAD} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_AUDIT_LOGGING} >/dev/null && mc ls airbyte/${AIRBYTE_BUCKET_PROFILER_OUTPUT} >/dev/null"
