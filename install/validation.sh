@@ -27,5 +27,16 @@ run_cluster_http_check portal "$PORTAL_URL"
 log "Checking Superset service"
 run_cluster_http_check superset "$SUPERSET_EMBED_URL"
 
+if [[ -d "$SCRIPT_DIR/../manifests/airbyte" ]]; then
+  log "Checking Airbyte service"
+  run_cluster_command airbyte-service curlimages/curl:8.12.1 sh -c "status=\$(curl -sS -o /dev/null -w '%{http_code}' ${AIRBYTE_URL}/ || true); [ \"\$status\" != '000' ]"
+
+  log "Checking Airbyte MinIO buckets"
+  run_cluster_command airbyte-minio-auth minio/mc:RELEASE.2025-07-21T05-28-08Z sh -c "mc alias set airbyte http://${MINIO_ENDPOINT} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} >/dev/null && mc ls airbyte/${MINIO_BUCKET_RAW} >/dev/null && mc ls airbyte/${MINIO_BUCKET_STATE} >/dev/null"
+
+  log "Checking Airbyte test object round-trip"
+  run_cluster_command airbyte-minio-roundtrip minio/mc:RELEASE.2025-07-21T05-28-08Z sh -c "mc alias set airbyte http://${MINIO_ENDPOINT} ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} >/dev/null && printf 'airbyte-validation' > /tmp/validation.txt && mc cp /tmp/validation.txt airbyte/${MINIO_BUCKET_RAW}/airbyte/raw/validation.txt >/dev/null && mc ls airbyte/${MINIO_BUCKET_RAW}/airbyte/raw/ >/dev/null && mc cat airbyte/${MINIO_BUCKET_RAW}/airbyte/raw/validation.txt >/dev/null"
+fi
+
 log_success "Validation completed successfully"
 print_endpoints

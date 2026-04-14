@@ -18,15 +18,22 @@ POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_DB="${POSTGRES_DB:-opencare}"
 POSTGRES_USER="${POSTGRES_USER:-opencare}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-opencare}"
-MINIO_ENDPOINT="${MINIO_ENDPOINT:-minio:9000}"
+MINIO_ENDPOINT="${MINIO_ENDPOINT:-minio.opencare.svc.cluster.local:9000}"
+MINIO_REGION="${MINIO_REGION:-us-east-1}"
 MINIO_BUCKET="${MINIO_BUCKET:-reports}"
+MINIO_BUCKET_RAW="${MINIO_BUCKET_RAW:-opencare-raw}"
+MINIO_BUCKET_STATE="${MINIO_BUCKET_STATE:-opencare-state}"
 MINIO_ROOT_USER="${MINIO_ROOT_USER:-opencare}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-opencare123}"
+MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY:-$MINIO_ROOT_USER}"
+MINIO_SECRET_KEY="${MINIO_SECRET_KEY:-$MINIO_ROOT_PASSWORD}"
+AIRBYTE_S3_PATH_STYLE="${AIRBYTE_S3_PATH_STYLE:-true}"
 KEYCLOAK_URL="${KEYCLOAK_URL:-http://keycloak:8080}"
 KEYCLOAK_HEALTH_URL="${KEYCLOAK_HEALTH_URL:-http://keycloak:9000}"
 BACKEND_URL="${BACKEND_URL:-http://backend:8000}"
 PORTAL_URL="${PORTAL_URL:-http://portal:3000}"
 SUPERSET_EMBED_URL="${SUPERSET_EMBED_URL:-http://superset:8088}"
+AIRBYTE_URL="${AIRBYTE_URL:-http://airbyte-server:8001}"
 FORECAST_RUNTIME_URL="${FORECAST_RUNTIME_URL:-http://bed-forecast:8000}"
 ANOMALY_RUNTIME_URL="${ANOMALY_RUNTIME_URL:-http://anomaly:8000}"
 RAW_SCHEMA="${RAW_SCHEMA:-raw}"
@@ -311,6 +318,7 @@ OpenCare endpoints:
 - Portal: http://portal.${NAMESPACE}.svc.cluster.local:3000
 - Backend: http://backend.${NAMESPACE}.svc.cluster.local:8000
 - Superset: http://superset.${NAMESPACE}.svc.cluster.local:8088
+- Airbyte: http://airbyte-server.${NAMESPACE}.svc.cluster.local:8001
 - Keycloak: http://keycloak.${NAMESPACE}.svc.cluster.local:8080
 - MinIO API: http://minio.${NAMESPACE}.svc.cluster.local:9000
 - MinIO Console: http://minio.${NAMESPACE}.svc.cluster.local:9001
