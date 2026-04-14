@@ -27,13 +27,9 @@ run_cluster_http_check portal "$PORTAL_URL"
 log "Checking Superset service"
 run_cluster_http_check superset "$SUPERSET_EMBED_URL"
 
-if [[ -f "$SCRIPT_DIR/../scripts/airbyte/apply_airbyte.sh" ]]; then
-  require_cmd helm
-  log "Checking Airbyte Helm release"
-  helm -n "$NAMESPACE" status "$AIRBYTE_RELEASE_NAME" >/dev/null
-
+if [[ -d "$SCRIPT_DIR/../manifests/airbyte" ]]; then
   log "Checking Airbyte migration tables"
-  run_cluster_command airbyte-migrations postgres:16-alpine sh -c "psql postgresql://${AIRBYTE_DB_USER}:${AIRBYTE_DB_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${AIRBYTE_DB_NAME} -Atc \"select coalesce(to_regclass('public.airbyte_configs_migrations')::text, '') = 'airbyte_configs_migrations' and coalesce(to_regclass('public.airbyte_jobs_migrations')::text, '') = 'airbyte_jobs_migrations';\" | grep -qx t"
+  run_cluster_command airbyte-migrations postgres:16-alpine sh -c "psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} -Atc \"select coalesce(to_regclass('public.airbyte_configs_migrations')::text, '') = 'airbyte_configs_migrations' and coalesce(to_regclass('public.airbyte_jobs_migrations')::text, '') = 'airbyte_jobs_migrations';\" | grep -qx t"
 
   log "Checking Airbyte service"
   run_cluster_command airbyte-service curlimages/curl:8.12.1 sh -c "status=\$(curl -sS -o /dev/null -w '%{http_code}' ${AIRBYTE_URL}/ || true); [ \"\$status\" != '000' ]"
