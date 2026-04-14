@@ -22,9 +22,11 @@ if [[ "${#manifest_files[@]}" -eq 0 ]]; then
 fi
 
 print_airbyte_diagnostics() {
+  kubectl -n "$NAMESPACE" describe deployment airbyte-temporal || true
+  kubectl -n "$NAMESPACE" describe service airbyte-temporal || true
   kubectl -n "$NAMESPACE" describe deployment airbyte-server || true
   kubectl -n "$NAMESPACE" describe service airbyte-server || true
-  pods="$(kubectl -n "$NAMESPACE" get pods -l app=airbyte-server -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
+  pods="$(kubectl -n "$NAMESPACE" get pods -l 'app in (airbyte-temporal,airbyte-server)' -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
   while IFS= read -r pod; do
     [[ -n "$pod" ]] || continue
     kubectl -n "$NAMESPACE" describe pod "$pod" || true
@@ -38,6 +40,7 @@ for file in "${manifest_files[@]}"; do
   apply_file "$file"
 done
 
+wait_for_deployment airbyte-temporal
 wait_for_deployment airbyte-server
 
 run_cluster_command airbyte-service curlimages/curl:8.12.1 sh -c "status=\$(curl -sS -o /dev/null -w '%{http_code}' ${AIRBYTE_URL}/ || true); [ \"\$status\" != '000' ]"
