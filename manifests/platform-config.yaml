@@ -31,6 +31,9 @@ data:
   AIRBYTE_BUCKET_ACTIVITY_PAYLOAD: opencare-airbyte-activity-payload
   AIRBYTE_BUCKET_AUDIT_LOGGING: opencare-airbyte-audit-logging
   AIRBYTE_BUCKET_PROFILER_OUTPUT: opencare-airbyte-profiler-output
+  AIRBYTE_ENTERPRISE_SOURCE_STUBS_URL: https://connectors.airbyte.com/files/registries/v0/oss_registry.json
+  AIRBYTE_ENTERPRISE_DESTINATION_STUBS_URL: https://connectors.airbyte.com/files/registries/v0/oss_registry.json
+  AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED: "false"
   AIRBYTE_S3_PATH_STYLE: "true"
   KEYCLOAK_URL: http://keycloak:8080
   KEYCLOAK_REALM: opencare

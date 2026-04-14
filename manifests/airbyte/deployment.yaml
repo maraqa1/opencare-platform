@@ -180,6 +180,21 @@ spec:
                 configMapKeyRef:
                   name: opencare-config
                   key: AIRBYTE_BUCKET_PROFILER_OUTPUT
+            - name: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_SOURCE_STUBS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_ENTERPRISE_SOURCE_STUBS_URL
+            - name: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_DESTINATION_STUBS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_ENTERPRISE_DESTINATION_STUBS_URL
+            - name: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED
             - name: TEMPORAL_HOST
               value: airbyte-temporal:7233
             - name: STORAGE_TYPE
