@@ -10,6 +10,8 @@ apply_file "$ROOT_DIR/manifests/postgres/statefulset.yaml"
 wait_for_statefulset postgres
 
 kubectl -n "$NAMESPACE" exec -i postgres-0 -- sh -c "psql -v ON_ERROR_STOP=1 -U '${POSTGRES_USER}' -d '${POSTGRES_DB}' <<'SQL'
+alter role ${POSTGRES_USER} with login password '${POSTGRES_PASSWORD}';
+
 create schema if not exists ${RAW_SCHEMA};
 create schema if not exists ${STAGING_SCHEMA};
 create schema if not exists ${ANALYTICS_SCHEMA};
