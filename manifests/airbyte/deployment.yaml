@@ -113,8 +113,8 @@ spec:
   ports:
     - name: http
       protocol: TCP
-      port: 8001
-      targetPort: 8001
+      port: 8000
+      targetPort: 8000
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -136,7 +136,7 @@ spec:
           image: airbyte/server:build-8301b7db38-22827-master
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8001
+            - containerPort: 8000
               name: http
           envFrom:
             - configMapRef:
@@ -190,15 +190,21 @@ spec:
                 secretKeyRef:
                   name: opencare-secrets
                   key: POSTGRES_PASSWORD
+          startupProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 18
           readinessProbe:
             tcpSocket:
-              port: 8001
-            initialDelaySeconds: 20
+              port: 8000
+            initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             tcpSocket:
-              port: 8001
-            initialDelaySeconds: 40
+              port: 8000
+            initialDelaySeconds: 60
             periodSeconds: 20
           resources:
             requests:
