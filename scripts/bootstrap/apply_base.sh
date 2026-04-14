@@ -6,6 +6,26 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
 
+resolved_postgres_password="$POSTGRES_PASSWORD"
+resolved_kc_db_password="$KC_DB_PASSWORD"
+resolved_minio_root_user="$MINIO_ROOT_USER"
+resolved_minio_root_password="$MINIO_ROOT_PASSWORD"
+resolved_minio_access_key="$MINIO_ACCESS_KEY"
+resolved_minio_secret_key="$MINIO_SECRET_KEY"
+resolved_internal_api_token="$INTERNAL_API_TOKEN"
+resolved_keycloak_admin_password="$KEYCLOAK_ADMIN_PASSWORD"
+
+if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
+  resolved_postgres_password="$(secret_value_or_default opencare-secrets POSTGRES_PASSWORD "$resolved_postgres_password")"
+  resolved_kc_db_password="$(secret_value_or_default opencare-secrets KC_DB_PASSWORD "$resolved_kc_db_password")"
+  resolved_minio_root_user="$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$resolved_minio_root_user")"
+  resolved_minio_root_password="$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$resolved_minio_root_password")"
+  resolved_minio_access_key="$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$resolved_minio_access_key")"
+  resolved_minio_secret_key="$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$resolved_minio_secret_key")"
+  resolved_internal_api_token="$(secret_value_or_default opencare-secrets INTERNAL_API_TOKEN "$resolved_internal_api_token")"
+  resolved_keycloak_admin_password="$(secret_value_or_default opencare-secrets KEYCLOAK_ADMIN_PASSWORD "$resolved_keycloak_admin_password")"
+fi
+
 render_platform_config() {
   local output_file="$1"
 
@@ -83,14 +103,14 @@ metadata:
   namespace: ${NAMESPACE}
 type: Opaque
 stringData:
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-  MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-  MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-  INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN}
-  KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+  POSTGRES_PASSWORD: ${resolved_postgres_password}
+  KC_DB_PASSWORD: ${resolved_kc_db_password}
+  MINIO_ROOT_USER: ${resolved_minio_root_user}
+  MINIO_ROOT_PASSWORD: ${resolved_minio_root_password}
+  MINIO_ACCESS_KEY: ${resolved_minio_access_key}
+  MINIO_SECRET_KEY: ${resolved_minio_secret_key}
+  INTERNAL_API_TOKEN: ${resolved_internal_api_token}
+  KEYCLOAK_ADMIN_PASSWORD: ${resolved_keycloak_admin_password}
 EOF
 }
 

@@ -374,3 +374,18 @@ OpenCare endpoints:
 - MinIO Console: http://minio.${NAMESPACE}.svc.cluster.local:9001
 EOF
 }
+
+secret_value_or_default() {
+  local secret_name="$1"
+  local key="$2"
+  local default_value="$3"
+  local encoded_value
+
+  encoded_value="$(kubectl -n "$NAMESPACE" get secret "$secret_name" -o "jsonpath={.data.$key}" 2>/dev/null || true)"
+  if [[ -n "$encoded_value" ]]; then
+    printf '%s' "$encoded_value" | base64 --decode
+    return 0
+  fi
+
+  printf '%s' "$default_value"
+}
