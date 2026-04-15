@@ -170,11 +170,15 @@ configure_helm_repo() {
 render_values_file() {
   local values_file
   local minio_url
+  local effective_minio_access_key
+  local effective_minio_secret_key
 
   [[ -f "$VALUES_TEMPLATE" ]] || fail "Airbyte values template not found: manifests/airbyte/values.template.yaml"
 
   values_file="$(mktemp "${STATE_DIR}/airbyte-values.XXXXXX.yaml")"
   minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
   sed \
     -e "s|__NAMESPACE__|${NAMESPACE}|g" \
@@ -201,6 +205,8 @@ render_values_file() {
     -e "s|__AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION__|${AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION}|g" \
     -e "s|__AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION__|${AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION}|g" \
     -e "s|__INTERNAL_API_TOKEN__|${INTERNAL_API_TOKEN}|g" \
+    -e "s|__MINIO_ACCESS_KEY__|${effective_minio_access_key}|g" \
+    -e "s|__MINIO_SECRET_KEY__|${effective_minio_secret_key}|g" \
     -e "s|__AIRBYTE_SERVER_SERVICE_NAME__|${AIRBYTE_SERVER_SERVICE_NAME}|g" \
     -e "s|__AIRBYTE_WEBAPP_SERVICE_NAME__|${AIRBYTE_WEBAPP_SERVICE_NAME}|g" \
     "$VALUES_TEMPLATE" >"$values_file"
