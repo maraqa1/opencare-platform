@@ -13,12 +13,18 @@ run_with_demo_log() {
   shift
   local log_dir="$DEMO_LOG_DIR"
   local log_file
+  local verbose_demo_logs="${OPENCARE_VERBOSE_DEMO_LOGS:-false}"
 
   mkdir -p "$log_dir"
   log_file="$log_dir/$(date '+%Y%m%d-%H%M%S')-${label}.log"
   log "Capturing ${label} logs to ${log_file#"$ROOT_DIR"/}"
 
-  if "$@" 2>&1 | tee "$log_file"; then
+  if [[ "$verbose_demo_logs" == "true" ]]; then
+    "$@" 2>&1 | tee "$log_file"
+  else
+    "$@" >"$log_file" 2>&1
+  fi
+  if [[ "$?" -eq 0 ]]; then
     return 0
   fi
 
