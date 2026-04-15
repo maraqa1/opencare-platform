@@ -8,6 +8,23 @@ source "$ROOT_DIR/install/helpers.sh"
 
 DEMO_MYSQL_CLIENT_IMAGE="${DEMO_MYSQL_CLIENT_IMAGE:-mysql:8.0}"
 
+run_with_demo_log() {
+  local label="$1"
+  shift
+  local log_dir="$DEMO_LOG_DIR"
+  local log_file
+
+  mkdir -p "$log_dir"
+  log_file="$log_dir/$(date '+%Y%m%d-%H%M%S')-${label}.log"
+  log "Capturing ${label} logs to ${log_file#"$ROOT_DIR"/}"
+
+  if "$@" 2>&1 | tee "$log_file"; then
+    return 0
+  fi
+
+  fail "${label} failed. Full log preserved at ${log_file}"
+}
+
 require_demo_proof_prereqs() {
   require_cmd python3
   require_cmd kubectl
@@ -147,10 +164,10 @@ main() {
   apply_mysql_script "$validation_sql"
 
   log "Running Airbyte synthetic demo sync"
-  bash "$ROOT_DIR/scripts/airbyte/setup_mysql_demo.sh"
+  run_with_demo_log airbyte-demo-sync bash "$ROOT_DIR/scripts/airbyte/setup_mysql_demo.sh"
 
   log "Re-running dbt for the synthetic demo dataset"
-  bash "$ROOT_DIR/scripts/dbt/apply_dbt.sh"
+  run_with_demo_log demo-dbt bash "$ROOT_DIR/scripts/dbt/apply_dbt.sh"
 
   validate_phase1_counts
   log_success "Phase 1 synthetic-data proof flow completed"
