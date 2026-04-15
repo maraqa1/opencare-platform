@@ -6,6 +6,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
 
+AIRBYTE_PORT_FORWARD_PID=""
+AIRBYTE_API_BASE_URL=""
+
 require_demo_prereqs() {
   if ! command -v curl >/dev/null 2>&1; then
     if command -v apt-get >/dev/null 2>&1; then
@@ -32,13 +35,43 @@ require_demo_prereqs() {
   require_cmd kubectl
 }
 
+cleanup_airbyte_port_forward() {
+  if [[ -n "$AIRBYTE_PORT_FORWARD_PID" ]] && kill -0 "$AIRBYTE_PORT_FORWARD_PID" >/dev/null 2>&1; then
+    kill "$AIRBYTE_PORT_FORWARD_PID" >/dev/null 2>&1 || true
+    wait "$AIRBYTE_PORT_FORWARD_PID" >/dev/null 2>&1 || true
+  fi
+}
+
+start_airbyte_port_forward() {
+  local port_forward_port="${AIRBYTE_API_PORT_FORWARD_PORT:-18001}"
+  local log_file
+
+  log "Opening local port-forward to Airbyte API on 127.0.0.1:${port_forward_port}"
+  log_file="$(mktemp)"
+  kubectl -n "$NAMESPACE" port-forward "svc/${AIRBYTE_SERVER_SERVICE_NAME}" "${port_forward_port}:8001" >"$log_file" 2>&1 &
+  AIRBYTE_PORT_FORWARD_PID=$!
+  AIRBYTE_API_BASE_URL="http://127.0.0.1:${port_forward_port}"
+
+  for _ in $(seq 1 30); do
+    if curl -fsS -H "Content-Type: application/json" -X POST "${AIRBYTE_API_BASE_URL}/api/v1/workspaces/list" -d "{}" >/dev/null 2>&1; then
+      rm -f "$log_file"
+      return 0
+    fi
+    sleep 2
+  done
+
+  cat "$log_file" >&2 || true
+  rm -f "$log_file"
+  fail "Unable to establish local connectivity to the Airbyte API"
+}
+
 api_post() {
   local path="$1"
   local payload="$2"
   curl -fsS \
     -H "Content-Type: application/json" \
     -X POST \
-    "${AIRBYTE_API_URL}${path}" \
+    "${AIRBYTE_API_BASE_URL}${path}" \
     -d "$payload"
 }
 
@@ -254,6 +287,8 @@ main() {
 
   require_demo_prereqs
   ensure_cluster_access
+  trap cleanup_airbyte_port_forward EXIT
+  start_airbyte_port_forward
 
   workspace="$(workspace_id)"
   [[ -n "$workspace" && "$workspace" != "null" ]] || fail "Unable to resolve Airbyte workspaceId"
