@@ -2,6 +2,17 @@
 
 ## 1. Generate the synthetic MySQL source dataset
 
+### Install-integrated option
+
+Set the following env values before `bash install/install.sh` to run the full Phase 1 proof flow automatically during installation:
+
+```bash
+export DEMO_PROOF_FLOW_ENABLED=true
+export DEMO_MYSQL_PASSWORD='your-mysql-password'
+```
+
+The install then executes `scripts/demo/apply_demo_proof.sh` after the Airbyte deployment phase.
+
 ### Command
 
 ```bash

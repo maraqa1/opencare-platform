@@ -47,6 +47,22 @@ Phase 1 establishes the Hospital Bed Occupancy Intelligence demo data path end t
 4. Run dbt and dbt tests against the ingested raw data.
 5. Validate row counts in `raw`, `analytics`, and `dictionary`.
 
+### Install-integrated execution
+
+The same Phase 1 proof flow can now run as part of `bash install/install.sh` by setting:
+
+- `DEMO_PROOF_FLOW_ENABLED=true`
+- `DEMO_MYSQL_PASSWORD=...`
+
+When enabled, the install pipeline adds a `demo` phase that:
+
+1. generates the synthetic MySQL dataset
+2. loads it into the configured MySQL source
+3. validates the MySQL source tables
+4. runs the Airbyte demo sync
+5. reruns dbt
+6. verifies the expected raw and analytics counts
+
 ### Next product step after Phase 1
 
 Once the synthetic source path is proven, the next repo milestone is Phase 2: expose the occupancy outputs through the backend, portal, and Superset using the same `analytics` and `dictionary` contract.
