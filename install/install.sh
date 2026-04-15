@@ -38,5 +38,3 @@ done
 
 log "Running validation"
 run_script_module "validation" "$SCRIPT_DIR/validation.sh"
-
-print_endpoints
