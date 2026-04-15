@@ -10,6 +10,7 @@ AIRBYTE_PORT_FORWARD_PID=""
 AIRBYTE_API_BASE_URL=""
 AIRBYTE_API_USERNAME="${AIRBYTE_API_USERNAME:-airbyte}"
 AIRBYTE_API_PASSWORD="${AIRBYTE_API_PASSWORD:-password}"
+AIRBYTE_API_MODE=""
 
 require_demo_prereqs() {
   if ! command -v curl >/dev/null 2>&1; then
@@ -67,19 +68,67 @@ start_airbyte_port_forward() {
   fail "Unable to establish local connectivity to the Airbyte API"
 }
 
+detect_airbyte_api_mode() {
+  local status
+
+  status="$(curl -sS -o /dev/null -w '%{http_code}' -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" "${AIRBYTE_API_BASE_URL}/v1/workspaces" || true)"
+  if [[ "$status" != "000" && "$status" != "404" ]]; then
+    AIRBYTE_API_MODE="public"
+    return 0
+  fi
+
+  status="$(curl -sS -o /dev/null -w '%{http_code}' -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" -H "Content-Type: application/json" -X POST "${AIRBYTE_API_BASE_URL}/api/v1/workspaces/list" -d "{}" || true)"
+  if [[ "$status" != "000" && "$status" != "404" ]]; then
+    AIRBYTE_API_MODE="legacy"
+    return 0
+  fi
+
+  fail "Unable to determine the Airbyte API mode exposed by the deployed chart"
+}
+
+api_request() {
+  local method="$1"
+  local path="$2"
+  local payload="${3:-}"
+
+  if [[ -n "$payload" ]]; then
+    curl -fsS \
+      -H "Content-Type: application/json" \
+      -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" \
+      -X "$method" \
+      "${AIRBYTE_API_BASE_URL}${path}" \
+      -d "$payload"
+  else
+    curl -fsS \
+      -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" \
+      -X "$method" \
+      "${AIRBYTE_API_BASE_URL}${path}"
+  fi
+}
+
 api_post() {
   local path="$1"
   local payload="$2"
-  curl -fsS \
-    -H "Content-Type: application/json" \
-    -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" \
-    -X POST \
-    "${AIRBYTE_API_BASE_URL}${path}" \
-    -d "$payload"
+  api_request POST "$path" "$payload"
+}
+
+api_get() {
+  local path="$1"
+  api_request GET "$path"
+}
+
+api_patch() {
+  local path="$1"
+  local payload="$2"
+  api_request PATCH "$path" "$payload"
 }
 
 workspace_id() {
-  api_post "/api/v1/workspaces/list" "{}" | jq -r '.workspaces[0].workspaceId'
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    api_get "/v1/workspaces" | jq -r '.data[0].workspaceId // .workspaces[0].workspaceId // .workspaceId'
+  else
+    api_post "/api/v1/workspaces/list" "{}" | jq -r '.workspaces[0].workspaceId'
+  fi
 }
 
 definition_id() {
@@ -87,7 +136,11 @@ definition_id() {
   local field="$2"
   local name="$3"
 
-  api_post "$endpoint" "{}" | jq -r --arg name "$name" ".${field}[] | select(.name == \$name) | .${field%?}Id" | head -n 1
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    api_get "$endpoint" | jq -r --arg name "$name" '.data[]? | select(.name == $name) | .definitionId // .sourceDefinitionId // .destinationDefinitionId' | head -n 1
+  else
+    api_post "$endpoint" "{}" | jq -r --arg name "$name" ".${field}[] | select(.name == \$name) | .${field%?}Id" | head -n 1
+  fi
 }
 
 upsert_source() {
@@ -96,37 +149,76 @@ upsert_source() {
   local existing_id
   local payload
 
-  existing_id="$(api_post "/api/v1/sources/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_MYSQL_SOURCE_NAME" '.sources[]? | select(.name == $name) | .sourceId' | head -n 1)"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    existing_id="$(api_get "/v1/sources?workspaceIds=${workspace_id}" | jq -r --arg name "$DEMO_MYSQL_SOURCE_NAME" '.data[]? | select(.name == $name) | .sourceId' | head -n 1)"
+  else
+    existing_id="$(api_post "/api/v1/sources/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_MYSQL_SOURCE_NAME" '.sources[]? | select(.name == $name) | .sourceId' | head -n 1)"
+  fi
 
-  payload="$(jq -n \
-    --arg workspaceId "$workspace_id" \
-    --arg sourceDefinitionId "$definition_id" \
-    --arg name "$DEMO_MYSQL_SOURCE_NAME" \
-    --arg host "$DEMO_MYSQL_HOST" \
-    --argjson port "$DEMO_MYSQL_PORT" \
-    --arg database "$DEMO_MYSQL_DATABASE" \
-    --arg username "$DEMO_MYSQL_USER" \
-    --arg password "$DEMO_MYSQL_PASSWORD" \
-    '{
-      workspaceId: $workspaceId,
-      sourceDefinitionId: $sourceDefinitionId,
-      name: $name,
-      connectionConfiguration: {
-        host: $host,
-        port: $port,
-        database: $database,
-        username: $username,
-        password: $password,
-        ssl_mode: { mode: "preferred" },
-        replication_method: { method: "Standard" }
-      }
-    }'
-  )"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    payload="$(jq -n \
+      --arg workspaceId "$workspace_id" \
+      --arg definitionId "$definition_id" \
+      --arg name "$DEMO_MYSQL_SOURCE_NAME" \
+      --arg host "$DEMO_MYSQL_HOST" \
+      --argjson port "$DEMO_MYSQL_PORT" \
+      --arg database "$DEMO_MYSQL_DATABASE" \
+      --arg username "$DEMO_MYSQL_USER" \
+      --arg password "$DEMO_MYSQL_PASSWORD" \
+      '{
+        workspaceId: $workspaceId,
+        definitionId: $definitionId,
+        name: $name,
+        configuration: {
+          host: $host,
+          port: $port,
+          database: $database,
+          username: $username,
+          password: $password,
+          ssl_mode: { mode: "preferred" },
+          replication_method: { method: "Standard" }
+        }
+      }'
+    )"
+  else
+    payload="$(jq -n \
+      --arg workspaceId "$workspace_id" \
+      --arg sourceDefinitionId "$definition_id" \
+      --arg name "$DEMO_MYSQL_SOURCE_NAME" \
+      --arg host "$DEMO_MYSQL_HOST" \
+      --argjson port "$DEMO_MYSQL_PORT" \
+      --arg database "$DEMO_MYSQL_DATABASE" \
+      --arg username "$DEMO_MYSQL_USER" \
+      --arg password "$DEMO_MYSQL_PASSWORD" \
+      '{
+        workspaceId: $workspaceId,
+        sourceDefinitionId: $sourceDefinitionId,
+        name: $name,
+        connectionConfiguration: {
+          host: $host,
+          port: $port,
+          database: $database,
+          username: $username,
+          password: $password,
+          ssl_mode: { mode: "preferred" },
+          replication_method: { method: "Standard" }
+        }
+      }'
+    )"
+  fi
 
   if [[ -n "$existing_id" ]]; then
-    api_post "/api/v1/sources/update" "$(jq -n --arg sourceId "$existing_id" --argjson payload "$payload" '$payload + {sourceId: $sourceId}')" | jq -r '.sourceId'
+    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+      api_patch "/v1/sources/${existing_id}" "$payload" | jq -r '.sourceId // .sourceId'
+    else
+      api_post "/api/v1/sources/update" "$(jq -n --arg sourceId "$existing_id" --argjson payload "$payload" '$payload + {sourceId: $sourceId}')" | jq -r '.sourceId'
+    fi
   else
-    api_post "/api/v1/sources/create" "$payload" | jq -r '.sourceId'
+    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+      api_post "/v1/sources" "$payload" | jq -r '.sourceId // .sourceId'
+    else
+      api_post "/api/v1/sources/create" "$payload" | jq -r '.sourceId'
+    fi
   fi
 }
 
@@ -136,44 +228,90 @@ upsert_destination() {
   local existing_id
   local payload
 
-  existing_id="$(api_post "/api/v1/destinations/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" '.destinations[]? | select(.name == $name) | .destinationId' | head -n 1)"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    existing_id="$(api_get "/v1/destinations?workspaceIds=${workspace_id}" | jq -r --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" '.data[]? | select(.name == $name) | .destinationId' | head -n 1)"
+  else
+    existing_id="$(api_post "/api/v1/destinations/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" '.destinations[]? | select(.name == $name) | .destinationId' | head -n 1)"
+  fi
 
-  payload="$(jq -n \
-    --arg workspaceId "$workspace_id" \
-    --arg destinationDefinitionId "$definition_id" \
-    --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" \
-    --arg host "$POSTGRES_HOST" \
-    --argjson port "$POSTGRES_PORT" \
-    --arg database "$POSTGRES_DB" \
-    --arg schema "$RAW_SCHEMA" \
-    --arg username "$POSTGRES_USER" \
-    --arg password "$POSTGRES_PASSWORD" \
-    '{
-      workspaceId: $workspaceId,
-      destinationDefinitionId: $destinationDefinitionId,
-      name: $name,
-      connectionConfiguration: {
-        host: $host,
-        port: $port,
-        database: $database,
-        schema: $schema,
-        username: $username,
-        password: $password,
-        ssl_mode: { mode: "disable" },
-        tunnel_method: { tunnel_method: "NO_TUNNEL" }
-      }
-    }'
-  )"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    payload="$(jq -n \
+      --arg workspaceId "$workspace_id" \
+      --arg definitionId "$definition_id" \
+      --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" \
+      --arg host "$POSTGRES_HOST" \
+      --argjson port "$POSTGRES_PORT" \
+      --arg database "$POSTGRES_DB" \
+      --arg schema "$RAW_SCHEMA" \
+      --arg username "$POSTGRES_USER" \
+      --arg password "$POSTGRES_PASSWORD" \
+      '{
+        workspaceId: $workspaceId,
+        definitionId: $definitionId,
+        name: $name,
+        configuration: {
+          host: $host,
+          port: $port,
+          database: $database,
+          schema: $schema,
+          username: $username,
+          password: $password,
+          ssl_mode: { mode: "disable" },
+          tunnel_method: { tunnel_method: "NO_TUNNEL" }
+        }
+      }'
+    )"
+  else
+    payload="$(jq -n \
+      --arg workspaceId "$workspace_id" \
+      --arg destinationDefinitionId "$definition_id" \
+      --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" \
+      --arg host "$POSTGRES_HOST" \
+      --argjson port "$POSTGRES_PORT" \
+      --arg database "$POSTGRES_DB" \
+      --arg schema "$RAW_SCHEMA" \
+      --arg username "$POSTGRES_USER" \
+      --arg password "$POSTGRES_PASSWORD" \
+      '{
+        workspaceId: $workspaceId,
+        destinationDefinitionId: $destinationDefinitionId,
+        name: $name,
+        connectionConfiguration: {
+          host: $host,
+          port: $port,
+          database: $database,
+          schema: $schema,
+          username: $username,
+          password: $password,
+          ssl_mode: { mode: "disable" },
+          tunnel_method: { tunnel_method: "NO_TUNNEL" }
+        }
+      }'
+    )"
+  fi
 
   if [[ -n "$existing_id" ]]; then
-    api_post "/api/v1/destinations/update" "$(jq -n --arg destinationId "$existing_id" --argjson payload "$payload" '$payload + {destinationId: $destinationId}')" | jq -r '.destinationId'
+    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+      api_patch "/v1/destinations/${existing_id}" "$payload" | jq -r '.destinationId // .destinationId'
+    else
+      api_post "/api/v1/destinations/update" "$(jq -n --arg destinationId "$existing_id" --argjson payload "$payload" '$payload + {destinationId: $destinationId}')" | jq -r '.destinationId'
+    fi
   else
-    api_post "/api/v1/destinations/create" "$payload" | jq -r '.destinationId'
+    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+      api_post "/v1/destinations" "$payload" | jq -r '.destinationId // .destinationId'
+    else
+      api_post "/api/v1/destinations/create" "$payload" | jq -r '.destinationId'
+    fi
   fi
 }
 
 build_catalog() {
   local source_id="$1"
+
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    echo '{}'
+    return 0
+  fi
 
   api_post "/api/v1/sources/discover_schema" "{\"sourceId\":\"${source_id}\"}" \
     | jq '
@@ -204,30 +342,60 @@ upsert_connection() {
   local existing_id
   local payload
 
-  existing_id="$(api_post "/api/v1/connections/list" "{\"workspaceId\":\"$(workspace_id)\"}" | jq -r --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" '.connections[]? | select(.name == $name) | .connectionId' | head -n 1)"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    existing_id="$(api_get "/v1/connections?workspaceIds=$(workspace_id)" | jq -r --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" '.data[]? | select(.name == $name) | .connectionId' | head -n 1)"
+  else
+    existing_id="$(api_post "/api/v1/connections/list" "{\"workspaceId\":\"$(workspace_id)\"}" | jq -r --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" '.connections[]? | select(.name == $name) | .connectionId' | head -n 1)"
+  fi
 
-  payload="$(jq -n \
-    --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" \
-    --arg sourceId "$source_id" \
-    --arg destinationId "$destination_id" \
-    --argjson syncCatalog "$catalog" \
-    '{
-      name: $name,
-      sourceId: $sourceId,
-      destinationId: $destinationId,
-      namespaceDefinition: "customformat",
-      namespaceFormat: "raw",
-      prefix: "",
-      scheduleType: "manual",
-      status: "active",
-      syncCatalog: $syncCatalog
-    }'
-  )"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    payload="$(jq -n \
+      --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" \
+      --arg sourceId "$source_id" \
+      --arg destinationId "$destination_id" \
+      '{
+        name: $name,
+        sourceId: $sourceId,
+        destinationId: $destinationId,
+        namespaceDefinition: "custom_format",
+        namespaceFormat: "raw",
+        prefix: "",
+        status: "active",
+        configurations: {}
+      }'
+    )"
+  else
+    payload="$(jq -n \
+      --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" \
+      --arg sourceId "$source_id" \
+      --arg destinationId "$destination_id" \
+      --argjson syncCatalog "$catalog" \
+      '{
+        name: $name,
+        sourceId: $sourceId,
+        destinationId: $destinationId,
+        namespaceDefinition: "customformat",
+        namespaceFormat: "raw",
+        prefix: "",
+        scheduleType: "manual",
+        status: "active",
+        syncCatalog: $syncCatalog
+      }'
+    )"
+  fi
 
   if [[ -n "$existing_id" ]]; then
-    api_post "/api/v1/connections/update" "$(jq -n --arg connectionId "$existing_id" --argjson payload "$payload" '$payload + {connectionId: $connectionId}')" | jq -r '.connectionId'
+    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+      api_patch "/v1/connections/${existing_id}" "$payload" | jq -r '.connectionId // .connectionId'
+    else
+      api_post "/api/v1/connections/update" "$(jq -n --arg connectionId "$existing_id" --argjson payload "$payload" '$payload + {connectionId: $connectionId}')" | jq -r '.connectionId'
+    fi
   else
-    api_post "/api/v1/connections/create" "$payload" | jq -r '.connectionId'
+    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+      api_post "/v1/connections" "$payload" | jq -r '.connectionId // .connectionId'
+    else
+      api_post "/api/v1/connections/create" "$payload" | jq -r '.connectionId'
+    fi
   fi
 }
 
@@ -236,7 +404,11 @@ wait_for_sync() {
   local status
 
   while true; do
-    status="$(api_post "/api/v1/jobs/get" "{\"id\":${job_id}}" | jq -r '.job.status')"
+    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+      status="$(api_get "/v1/jobs/${job_id}" | jq -r '.status // .job.status')"
+    else
+      status="$(api_post "/api/v1/jobs/get" "{\"id\":${job_id}}" | jq -r '.job.status')"
+    fi
     case "$status" in
       succeeded)
         return 0
@@ -292,14 +464,23 @@ main() {
   ensure_cluster_access
   trap cleanup_airbyte_port_forward EXIT
   start_airbyte_port_forward
+  detect_airbyte_api_mode
 
   workspace="$(workspace_id)"
   [[ -n "$workspace" && "$workspace" != "null" ]] || fail "Unable to resolve Airbyte workspaceId"
 
-  mysql_definition_id="$(definition_id "/api/v1/source_definitions/list_latest" "sourceDefinitions" "MySQL")"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    mysql_definition_id="$(definition_id "/v1/workspaces/${workspace}/definitions/sources" "sourceDefinitions" "MySQL")"
+  else
+    mysql_definition_id="$(definition_id "/api/v1/source_definitions/list_latest" "sourceDefinitions" "MySQL")"
+  fi
   [[ -n "$mysql_definition_id" ]] || fail "Unable to resolve Airbyte MySQL source definition"
 
-  postgres_definition_id="$(definition_id "/api/v1/destination_definitions/list_latest" "destinationDefinitions" "Postgres")"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    postgres_definition_id="$(definition_id "/v1/workspaces/${workspace}/definitions/destinations" "destinationDefinitions" "Postgres")"
+  else
+    postgres_definition_id="$(definition_id "/api/v1/destination_definitions/list_latest" "destinationDefinitions" "Postgres")"
+  fi
   [[ -n "$postgres_definition_id" ]] || fail "Unable to resolve Airbyte Postgres destination definition"
 
   log "Configuring Airbyte MySQL source"
@@ -315,7 +496,11 @@ main() {
   connection_id="$(upsert_connection "$source_id" "$destination_id" "$catalog")"
 
   log "Triggering first Airbyte sync"
-  sync_job_id="$(api_post "/api/v1/connections/sync" "{\"connectionId\":\"${connection_id}\"}" | jq -r '.job.id')"
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    sync_job_id="$(api_post "/v1/jobs" "{\"connectionId\":\"${connection_id}\",\"jobType\":\"sync\"}" | jq -r '.jobId // .job.id')"
+  else
+    sync_job_id="$(api_post "/api/v1/connections/sync" "{\"connectionId\":\"${connection_id}\"}" | jq -r '.job.id')"
+  fi
   [[ -n "$sync_job_id" && "$sync_job_id" != "null" ]] || fail "Unable to start Airbyte sync"
 
   wait_for_sync "$sync_job_id"
