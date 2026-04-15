@@ -16,6 +16,14 @@ temporal:
       value: "false"
     - name: POSTGRES_TLS_ENABLED
       value: "false"
+    - name: AWS_REGION
+      value: __MINIO_REGION__
+    - name: AWS_DEFAULT_REGION
+      value: __MINIO_REGION__
+    - name: AWS_ACCESS_KEY_ID
+      value: __MINIO_ACCESS_KEY__
+    - name: AWS_SECRET_ACCESS_KEY
+      value: __MINIO_SECRET_KEY__
 
 global:
   edition: community
@@ -67,11 +75,39 @@ global:
     AWS_SECRET_ACCESS_KEY: __MINIO_SECRET_KEY__
 
 server:
+  extraEnv:
+    - name: AWS_REGION
+      value: __MINIO_REGION__
+    - name: AWS_DEFAULT_REGION
+      value: __MINIO_REGION__
+    - name: AWS_ACCESS_KEY_ID
+      value: __MINIO_ACCESS_KEY__
+    - name: AWS_SECRET_ACCESS_KEY
+      value: __MINIO_SECRET_KEY__
   service:
     type: ClusterIP
 
-worker: {}
-cron: {}
+worker:
+  extraEnv:
+    - name: AWS_REGION
+      value: __MINIO_REGION__
+    - name: AWS_DEFAULT_REGION
+      value: __MINIO_REGION__
+    - name: AWS_ACCESS_KEY_ID
+      value: __MINIO_ACCESS_KEY__
+    - name: AWS_SECRET_ACCESS_KEY
+      value: __MINIO_SECRET_KEY__
+
+cron:
+  extraEnv:
+    - name: AWS_REGION
+      value: __MINIO_REGION__
+    - name: AWS_DEFAULT_REGION
+      value: __MINIO_REGION__
+    - name: AWS_ACCESS_KEY_ID
+      value: __MINIO_ACCESS_KEY__
+    - name: AWS_SECRET_ACCESS_KEY
+      value: __MINIO_SECRET_KEY__
 
 workloadLauncher:
   extraEnv:
@@ -79,3 +115,11 @@ workloadLauncher:
       value: "false"
     - name: POSTGRES_TLS_ENABLED
       value: "false"
+    - name: AWS_REGION
+      value: __MINIO_REGION__
+    - name: AWS_DEFAULT_REGION
+      value: __MINIO_REGION__
+    - name: AWS_ACCESS_KEY_ID
+      value: __MINIO_ACCESS_KEY__
+    - name: AWS_SECRET_ACCESS_KEY
+      value: __MINIO_SECRET_KEY__
