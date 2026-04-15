@@ -7,6 +7,26 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/install/helpers.sh"
 
 require_demo_prereqs() {
+  if ! command -v curl >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      log "curl not found; installing curl"
+      apt-get update >/dev/null
+      apt-get install -y curl >/dev/null
+    else
+      fail "curl is required for Airbyte demo setup"
+    fi
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      log "jq not found; installing jq"
+      apt-get update >/dev/null
+      apt-get install -y jq >/dev/null
+    else
+      fail "jq is required for Airbyte demo setup"
+    fi
+  fi
+
   require_cmd curl
   require_cmd jq
   require_cmd kubectl
