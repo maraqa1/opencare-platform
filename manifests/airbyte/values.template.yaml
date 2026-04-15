@@ -21,6 +21,8 @@ global:
   edition: community
   airbyteUrl: __AIRBYTE_WEBAPP_SERVICE_NAME__
   deploymentMode: oss
+  auth:
+    enabled: false
   database:
     type: external
     secretName: __AIRBYTE_SECRET_NAME__
