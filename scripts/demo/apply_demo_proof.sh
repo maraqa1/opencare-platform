@@ -13,6 +13,22 @@ require_demo_proof_prereqs() {
   require_cmd kubectl
 }
 
+ensure_mysql_client() {
+  if command -v mysql >/dev/null 2>&1; then
+    return 0
+  fi
+
+  log "mysql client not found; installing default-mysql-client"
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update >/dev/null
+    apt-get install -y default-mysql-client >/dev/null
+  else
+    fail "mysql client is required for the demo proof flow"
+  fi
+
+  require_cmd mysql
+}
+
 ensure_demo_seed_files() {
   local output_dir="$1"
 
@@ -21,19 +37,16 @@ ensure_demo_seed_files() {
   python3 "$ROOT_DIR/scripts/demo/generate_demo_data.py" --output-dir "$output_dir" >/dev/null
 }
 
-run_mysql_file_in_cluster() {
+run_mysql_file_locally() {
   local name="$1"
   local sql_file="$2"
-  local pod_name="check-${name}"
 
-  delete_pod_if_exists "$pod_name"
   log "Applying MySQL script: ${sql_file#"$ROOT_DIR"/}"
-  kubectl -n "$NAMESPACE" run "$pod_name" \
-    --rm -i \
-    --restart=Never \
-    --image="$DEMO_MYSQL_CLIENT_IMAGE" \
-    --command -- sh -c "exec mysql -h '${DEMO_MYSQL_HOST}' -P '${DEMO_MYSQL_PORT}' -u '${DEMO_MYSQL_USER}' -p'${DEMO_MYSQL_PASSWORD}' '${DEMO_MYSQL_DATABASE}'" < "$sql_file"
-  delete_pod_if_exists "$pod_name"
+  MYSQL_PWD="$DEMO_MYSQL_PASSWORD" mysql \
+    -h "$DEMO_MYSQL_HOST" \
+    -P "$DEMO_MYSQL_PORT" \
+    -u "$DEMO_MYSQL_USER" \
+    "$DEMO_MYSQL_DATABASE" < "$sql_file"
 }
 
 check_postgres_equals() {
@@ -81,6 +94,7 @@ main() {
 
   require_demo_proof_prereqs
   ensure_cluster_access
+  ensure_mysql_client
 
   [[ -n "$DEMO_MYSQL_PASSWORD" ]] || fail "DEMO_MYSQL_PASSWORD must be set when DEMO_PROOF_FLOW_ENABLED=true"
 
@@ -89,8 +103,8 @@ main() {
   validation_sql="$output_dir/opencare_demo_validation.sql"
 
   ensure_demo_seed_files "$output_dir"
-  run_mysql_file_in_cluster "mysql-demo-seed" "$sql_file"
-  run_mysql_file_in_cluster "mysql-demo-validate" "$validation_sql"
+  run_mysql_file_locally "mysql-demo-seed" "$sql_file"
+  run_mysql_file_locally "mysql-demo-validate" "$validation_sql"
 
   log "Running Airbyte synthetic demo sync"
   bash "$ROOT_DIR/scripts/airbyte/setup_mysql_demo.sh"
