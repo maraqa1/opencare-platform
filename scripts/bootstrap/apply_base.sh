@@ -14,6 +14,8 @@ resolved_minio_access_key="$MINIO_ACCESS_KEY"
 resolved_minio_secret_key="$MINIO_SECRET_KEY"
 resolved_internal_api_token="$INTERNAL_API_TOKEN"
 resolved_keycloak_admin_password="$KEYCLOAK_ADMIN_PASSWORD"
+resolved_demo_mysql_password="$DEMO_MYSQL_PASSWORD"
+resolved_demo_mysql_root_password="$DEMO_MYSQL_ROOT_PASSWORD"
 
 if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_postgres_password="$(secret_value_or_default opencare-secrets POSTGRES_PASSWORD "$resolved_postgres_password")"
@@ -24,6 +26,8 @@ if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_minio_secret_key="$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$resolved_minio_secret_key")"
   resolved_internal_api_token="$(secret_value_or_default opencare-secrets INTERNAL_API_TOKEN "$resolved_internal_api_token")"
   resolved_keycloak_admin_password="$(secret_value_or_default opencare-secrets KEYCLOAK_ADMIN_PASSWORD "$resolved_keycloak_admin_password")"
+  resolved_demo_mysql_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_PASSWORD "$resolved_demo_mysql_password")"
+  resolved_demo_mysql_root_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_ROOT_PASSWORD "$resolved_demo_mysql_root_password")"
 fi
 
 render_platform_config() {
@@ -93,6 +97,10 @@ data:
   KC_DB_URL_PORT: "${KC_DB_URL_PORT}"
   KC_DB_URL_DATABASE: ${KC_DB_URL_DATABASE}
   KC_DB_USERNAME: ${KC_DB_USERNAME}
+  DEMO_MYSQL_HOST: ${DEMO_MYSQL_HOST}
+  DEMO_MYSQL_PORT: "${DEMO_MYSQL_PORT}"
+  DEMO_MYSQL_DATABASE: ${DEMO_MYSQL_DATABASE}
+  DEMO_MYSQL_USER: ${DEMO_MYSQL_USER}
   SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
   SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES}"
 ---
@@ -111,6 +119,8 @@ stringData:
   MINIO_SECRET_KEY: ${resolved_minio_secret_key}
   INTERNAL_API_TOKEN: ${resolved_internal_api_token}
   KEYCLOAK_ADMIN_PASSWORD: ${resolved_keycloak_admin_password}
+  DEMO_MYSQL_PASSWORD: ${resolved_demo_mysql_password}
+  DEMO_MYSQL_ROOT_PASSWORD: ${resolved_demo_mysql_root_password}
 EOF
 }
 

@@ -13,7 +13,15 @@ require_demo_proof_prereqs() {
   require_cmd kubectl
 }
 
+is_in_cluster_demo_mysql() {
+  [[ "$DEMO_MYSQL_HOST" == "mysql-demo" || "$DEMO_MYSQL_HOST" == *.svc || "$DEMO_MYSQL_HOST" == *.svc.cluster.local ]]
+}
+
 ensure_mysql_client() {
+  if is_in_cluster_demo_mysql; then
+    return 0
+  fi
+
   if command -v mysql >/dev/null 2>&1; then
     return 0
   fi
@@ -29,6 +37,20 @@ ensure_mysql_client() {
   require_cmd mysql
 }
 
+ensure_demo_mysql_source() {
+  if ! is_in_cluster_demo_mysql; then
+    log_skip "Using external MySQL demo source host: ${DEMO_MYSQL_HOST}"
+    return 0
+  fi
+
+  apply_file "$ROOT_DIR/manifests/demo/mysql.yaml"
+  wait_for_deployment mysql-demo
+
+  log "Waiting for mysql-demo service readiness"
+  run_cluster_command demo-mysql-ready "$DEMO_MYSQL_CLIENT_IMAGE" sh -c \
+    "mysqladmin ping -h '${DEMO_MYSQL_HOST}' -P '${DEMO_MYSQL_PORT}' -uroot -p'${DEMO_MYSQL_ROOT_PASSWORD}' --silent"
+}
+
 ensure_demo_seed_files() {
   local output_dir="$1"
 
@@ -38,8 +60,7 @@ ensure_demo_seed_files() {
 }
 
 run_mysql_file_locally() {
-  local name="$1"
-  local sql_file="$2"
+  local sql_file="$1"
 
   log "Applying MySQL script: ${sql_file#"$ROOT_DIR"/}"
   MYSQL_PWD="$DEMO_MYSQL_PASSWORD" mysql \
@@ -47,6 +68,24 @@ run_mysql_file_locally() {
     -P "$DEMO_MYSQL_PORT" \
     -u "$DEMO_MYSQL_USER" \
     "$DEMO_MYSQL_DATABASE" < "$sql_file"
+}
+
+run_mysql_file_in_cluster() {
+  local sql_file="$1"
+
+  log "Applying MySQL script: ${sql_file#"$ROOT_DIR"/}"
+  kubectl -n "$NAMESPACE" exec -i deployment/mysql-demo -- sh -c \
+    "exec mysql -uroot -p'${DEMO_MYSQL_ROOT_PASSWORD}' '${DEMO_MYSQL_DATABASE}'" < "$sql_file"
+}
+
+apply_mysql_script() {
+  local sql_file="$1"
+
+  if is_in_cluster_demo_mysql; then
+    run_mysql_file_in_cluster "$sql_file"
+  else
+    run_mysql_file_locally "$sql_file"
+  fi
 }
 
 check_postgres_equals() {
@@ -102,9 +141,10 @@ main() {
   sql_file="$output_dir/opencare_demo_mysql.sql"
   validation_sql="$output_dir/opencare_demo_validation.sql"
 
+  ensure_demo_mysql_source
   ensure_demo_seed_files "$output_dir"
-  run_mysql_file_locally "mysql-demo-seed" "$sql_file"
-  run_mysql_file_locally "mysql-demo-validate" "$validation_sql"
+  apply_mysql_script "$sql_file"
+  apply_mysql_script "$validation_sql"
 
   log "Running Airbyte synthetic demo sync"
   bash "$ROOT_DIR/scripts/airbyte/setup_mysql_demo.sh"
