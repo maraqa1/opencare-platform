@@ -168,50 +168,50 @@ api_request() {
   local method="$1"
   local path="$2"
   local payload="${3:-}"
+  local response_file
+  local http_code
+  local auth_args=()
+  local curl_args=(
+    -sS
+    -o
+  )
 
-  if [[ -n "$payload" ]]; then
-    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
-      if [[ -n "$AIRBYTE_API_BEARER_TOKEN" ]]; then
-        curl -fsS \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" \
-          -X "$method" \
-          "${AIRBYTE_API_BASE_URL}${path}" \
-          -d "$payload"
-      else
-        curl -fsS \
-          -H "Content-Type: application/json" \
-          -X "$method" \
-          "${AIRBYTE_API_BASE_URL}${path}" \
-          -d "$payload"
-      fi
+  if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
+    if [[ -n "$AIRBYTE_API_BEARER_TOKEN" ]]; then
+      auth_args=(-H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}")
     else
-      curl -fsS \
+      auth_args=()
+    fi
+  else
+    auth_args=(-u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}")
+  fi
+
+  response_file="$(mktemp)"
+  http_code="$(
+    if [[ -n "$payload" ]]; then
+      curl "${curl_args[@]}" "$response_file" -w '%{http_code}' \
         -H "Content-Type: application/json" \
-        -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" \
+        "${auth_args[@]}" \
         -X "$method" \
         "${AIRBYTE_API_BASE_URL}${path}" \
         -d "$payload"
-    fi
-  else
-    if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
-      if [[ -n "$AIRBYTE_API_BEARER_TOKEN" ]]; then
-        curl -fsS \
-          -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" \
-          -X "$method" \
-          "${AIRBYTE_API_BASE_URL}${path}"
-      else
-        curl -fsS \
-          -X "$method" \
-          "${AIRBYTE_API_BASE_URL}${path}"
-      fi
     else
-      curl -fsS \
-        -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" \
+      curl "${curl_args[@]}" "$response_file" -w '%{http_code}' \
+        "${auth_args[@]}" \
         -X "$method" \
         "${AIRBYTE_API_BASE_URL}${path}"
     fi
+  )"
+
+  if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
+    log "Airbyte API ${method} ${path} returned HTTP ${http_code}"
+    cat "$response_file" >&2 || true
+    rm -f "$response_file"
+    fail "Airbyte API request failed"
   fi
+
+  cat "$response_file"
+  rm -f "$response_file"
 }
 
 api_post() {
@@ -245,7 +245,7 @@ definition_id() {
   local name="$3"
 
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
-    api_get "$endpoint" | jq -r --arg name "$name" '.data[]? | select(.name == $name) | .definitionId // .sourceDefinitionId // .destinationDefinitionId' | head -n 1
+    api_get "$endpoint" | jq -r --arg name "$name" '.data[]? | select(.name == $name) | .definitionId // .sourceDefinitionId // .destinationDefinitionId // .id' | head -n 1
   else
     api_post "$endpoint" "{}" | jq -r --arg name "$name" ".${field}[] | select(.name == \$name) | .${field%?}Id" | head -n 1
   fi
