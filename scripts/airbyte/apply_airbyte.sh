@@ -170,15 +170,11 @@ configure_helm_repo() {
 render_values_file() {
   local values_file
   local minio_url
-  local service_name
-  local webapp_service_name
 
   [[ -f "$VALUES_TEMPLATE" ]] || fail "Airbyte values template not found: manifests/airbyte/values.template.yaml"
 
   values_file="$(mktemp "${STATE_DIR}/airbyte-values.XXXXXX.yaml")"
   minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
-  service_name="${AIRBYTE_RELEASE_NAME}-airbyte-server-svc"
-  webapp_service_name="${AIRBYTE_RELEASE_NAME}-airbyte-webapp-svc"
 
   sed \
     -e "s|__NAMESPACE__|${NAMESPACE}|g" \
@@ -205,8 +201,8 @@ render_values_file() {
     -e "s|__AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION__|${AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION}|g" \
     -e "s|__AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION__|${AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION}|g" \
     -e "s|__INTERNAL_API_TOKEN__|${INTERNAL_API_TOKEN}|g" \
-    -e "s|__AIRBYTE_SERVER_SERVICE_NAME__|${service_name}|g" \
-    -e "s|__AIRBYTE_WEBAPP_SERVICE_NAME__|${webapp_service_name}|g" \
+    -e "s|__AIRBYTE_SERVER_SERVICE_NAME__|${AIRBYTE_SERVER_SERVICE_NAME}|g" \
+    -e "s|__AIRBYTE_WEBAPP_SERVICE_NAME__|${AIRBYTE_WEBAPP_SERVICE_NAME}|g" \
     "$VALUES_TEMPLATE" >"$values_file"
 
   printf '%s\n' "$values_file"
