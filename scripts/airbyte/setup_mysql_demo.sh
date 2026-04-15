@@ -8,6 +8,8 @@ source "$ROOT_DIR/install/helpers.sh"
 
 AIRBYTE_PORT_FORWARD_PID=""
 AIRBYTE_API_BASE_URL=""
+AIRBYTE_API_USERNAME="${AIRBYTE_API_USERNAME:-airbyte}"
+AIRBYTE_API_PASSWORD="${AIRBYTE_API_PASSWORD:-password}"
 
 require_demo_prereqs() {
   if ! command -v curl >/dev/null 2>&1; then
@@ -53,7 +55,7 @@ start_airbyte_port_forward() {
   AIRBYTE_API_BASE_URL="http://127.0.0.1:${port_forward_port}"
 
   for _ in $(seq 1 30); do
-    if curl -fsS -H "Content-Type: application/json" -X POST "${AIRBYTE_API_BASE_URL}/api/v1/workspaces/list" -d "{}" >/dev/null 2>&1; then
+    if [[ "$(curl -sS -o /dev/null -w '%{http_code}' "${AIRBYTE_API_BASE_URL}/api/v1/health" || true)" != "000" ]]; then
       rm -f "$log_file"
       return 0
     fi
@@ -70,6 +72,7 @@ api_post() {
   local payload="$2"
   curl -fsS \
     -H "Content-Type: application/json" \
+    -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" \
     -X POST \
     "${AIRBYTE_API_BASE_URL}${path}" \
     -d "$payload"
