@@ -14,6 +14,7 @@ AIRBYTE_API_MODE=""
 AIRBYTE_API_BEARER_TOKEN=""
 AIRBYTE_AUTH_SECRET_NAME="${AIRBYTE_AUTH_SECRET_NAME:-airbyte-auth-secrets}"
 AIRBYTE_PUBLIC_API_PREFIX="${AIRBYTE_PUBLIC_API_PREFIX:-/api/public/v1}"
+AIRBYTE_LEGACY_API_PREFIX="${AIRBYTE_LEGACY_API_PREFIX:-/api/v1}"
 
 require_demo_prereqs() {
   if ! command -v curl >/dev/null 2>&1; then
@@ -79,8 +80,7 @@ detect_airbyte_api_mode() {
     return 0
   fi
 
-  status="$(curl -sS -o /dev/null -w '%{http_code}' -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" -H "Content-Type: application/json" -X POST "${AIRBYTE_API_BASE_URL}/api/v1/workspaces/list" -d "{}" || true)"
-  if [[ "$status" != "000" && "$status" != "404" ]]; then
+  if detect_legacy_api_prefix; then
     AIRBYTE_API_MODE="legacy"
     return 0
   fi
@@ -96,6 +96,7 @@ resolve_airbyte_auth_secret_value() {
 request_airbyte_public_token() {
   local client_id
   local client_secret
+  local prefix
   local token_response
 
   client_id="$(resolve_airbyte_auth_secret_value client-id)"
@@ -105,11 +106,47 @@ request_airbyte_public_token() {
 
   [[ -n "$client_id" && -n "$client_secret" ]] || return 1
 
-  token_response="$(curl -fsS -H "Content-Type: application/json" -X POST "${AIRBYTE_API_BASE_URL}${AIRBYTE_PUBLIC_API_PREFIX}/applications/token" -d "{\"client_id\":\"${client_id}\",\"client_secret\":\"${client_secret}\",\"grant-type\":\"client_credentials\"}" 2>/dev/null || true)"
-  [[ -n "$token_response" ]] || return 1
+  for prefix in "/api/public/v1" "/v1"; do
+    token_response="$(curl -fsS -H "Content-Type: application/json" -X POST "${AIRBYTE_API_BASE_URL}${prefix}/applications/token" -d "{\"client_id\":\"${client_id}\",\"client_secret\":\"${client_secret}\",\"grant-type\":\"client_credentials\"}" 2>/dev/null || true)"
+    [[ -n "$token_response" ]] || continue
 
-  AIRBYTE_API_BEARER_TOKEN="$(printf '%s' "$token_response" | jq -r '.access_token // .token // empty' 2>/dev/null || true)"
-  [[ -n "$AIRBYTE_API_BEARER_TOKEN" ]]
+    AIRBYTE_API_BEARER_TOKEN="$(printf '%s' "$token_response" | jq -r '.access_token // .token // empty' 2>/dev/null || true)"
+    if [[ -n "$AIRBYTE_API_BEARER_TOKEN" ]]; then
+      AIRBYTE_PUBLIC_API_PREFIX="$prefix"
+      if probe_public_api_prefix "$prefix"; then
+        return 0
+      fi
+      AIRBYTE_API_BEARER_TOKEN=""
+    fi
+  done
+
+  return 1
+}
+
+probe_public_api_prefix() {
+  local prefix="$1"
+  local response
+
+  response="$(curl -fsS -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" "${AIRBYTE_API_BASE_URL}${prefix}/workspaces" 2>/dev/null || true)"
+  [[ -n "$response" ]] || return 1
+
+  printf '%s' "$response" | jq -e '.data // .workspaces // .workspaceId' >/dev/null 2>&1
+}
+
+detect_legacy_api_prefix() {
+  local prefix
+  local response
+
+  for prefix in "/api/v1" "/v1"; do
+    response="$(curl -fsS -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" -H "Content-Type: application/json" -X POST "${AIRBYTE_API_BASE_URL}${prefix}/workspaces/list" -d "{}" 2>/dev/null || true)"
+    [[ -n "$response" ]] || continue
+    if printf '%s' "$response" | jq -e '.workspaces[0].workspaceId' >/dev/null 2>&1; then
+      AIRBYTE_LEGACY_API_PREFIX="$prefix"
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 api_request() {
@@ -169,7 +206,7 @@ workspace_id() {
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
     api_get "${AIRBYTE_PUBLIC_API_PREFIX}/workspaces" | jq -r '.data[0].workspaceId // .workspaces[0].workspaceId // .workspaceId'
   else
-    api_post "/api/v1/workspaces/list" "{}" | jq -r '.workspaces[0].workspaceId'
+    api_post "${AIRBYTE_LEGACY_API_PREFIX}/workspaces/list" "{}" | jq -r '.workspaces[0].workspaceId'
   fi
 }
 
@@ -194,7 +231,7 @@ upsert_source() {
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
     existing_id="$(api_get "${AIRBYTE_PUBLIC_API_PREFIX}/sources?workspaceIds=${workspace_id}" | jq -r --arg name "$DEMO_MYSQL_SOURCE_NAME" '.data[]? | select(.name == $name) | .sourceId' | head -n 1)"
   else
-    existing_id="$(api_post "/api/v1/sources/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_MYSQL_SOURCE_NAME" '.sources[]? | select(.name == $name) | .sourceId' | head -n 1)"
+    existing_id="$(api_post "${AIRBYTE_LEGACY_API_PREFIX}/sources/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_MYSQL_SOURCE_NAME" '.sources[]? | select(.name == $name) | .sourceId' | head -n 1)"
   fi
 
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
@@ -253,13 +290,13 @@ upsert_source() {
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
       api_patch "${AIRBYTE_PUBLIC_API_PREFIX}/sources/${existing_id}" "$payload" | jq -r '.sourceId // .sourceId'
     else
-      api_post "/api/v1/sources/update" "$(jq -n --arg sourceId "$existing_id" --argjson payload "$payload" '$payload + {sourceId: $sourceId}')" | jq -r '.sourceId'
+      api_post "${AIRBYTE_LEGACY_API_PREFIX}/sources/update" "$(jq -n --arg sourceId "$existing_id" --argjson payload "$payload" '$payload + {sourceId: $sourceId}')" | jq -r '.sourceId'
     fi
   else
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
       api_post "${AIRBYTE_PUBLIC_API_PREFIX}/sources" "$payload" | jq -r '.sourceId // .sourceId'
     else
-      api_post "/api/v1/sources/create" "$payload" | jq -r '.sourceId'
+      api_post "${AIRBYTE_LEGACY_API_PREFIX}/sources/create" "$payload" | jq -r '.sourceId'
     fi
   fi
 }
@@ -273,7 +310,7 @@ upsert_destination() {
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
     existing_id="$(api_get "${AIRBYTE_PUBLIC_API_PREFIX}/destinations?workspaceIds=${workspace_id}" | jq -r --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" '.data[]? | select(.name == $name) | .destinationId' | head -n 1)"
   else
-    existing_id="$(api_post "/api/v1/destinations/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" '.destinations[]? | select(.name == $name) | .destinationId' | head -n 1)"
+    existing_id="$(api_post "${AIRBYTE_LEGACY_API_PREFIX}/destinations/list" "{\"workspaceId\":\"${workspace_id}\"}" | jq -r --arg name "$DEMO_AIRBYTE_DESTINATION_NAME" '.destinations[]? | select(.name == $name) | .destinationId' | head -n 1)"
   fi
 
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
@@ -336,13 +373,13 @@ upsert_destination() {
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
       api_patch "${AIRBYTE_PUBLIC_API_PREFIX}/destinations/${existing_id}" "$payload" | jq -r '.destinationId // .destinationId'
     else
-      api_post "/api/v1/destinations/update" "$(jq -n --arg destinationId "$existing_id" --argjson payload "$payload" '$payload + {destinationId: $destinationId}')" | jq -r '.destinationId'
+      api_post "${AIRBYTE_LEGACY_API_PREFIX}/destinations/update" "$(jq -n --arg destinationId "$existing_id" --argjson payload "$payload" '$payload + {destinationId: $destinationId}')" | jq -r '.destinationId'
     fi
   else
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
       api_post "${AIRBYTE_PUBLIC_API_PREFIX}/destinations" "$payload" | jq -r '.destinationId // .destinationId'
     else
-      api_post "/api/v1/destinations/create" "$payload" | jq -r '.destinationId'
+      api_post "${AIRBYTE_LEGACY_API_PREFIX}/destinations/create" "$payload" | jq -r '.destinationId'
     fi
   fi
 }
@@ -355,7 +392,7 @@ build_catalog() {
     return 0
   fi
 
-  api_post "/api/v1/sources/discover_schema" "{\"sourceId\":\"${source_id}\"}" \
+  api_post "${AIRBYTE_LEGACY_API_PREFIX}/sources/discover_schema" "{\"sourceId\":\"${source_id}\"}" \
     | jq '
       (.catalog.streams
       | map(select(.stream.name == "wards" or .stream.name == "patients" or .stream.name == "bed_events"))) as $streams
@@ -387,7 +424,7 @@ upsert_connection() {
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
     existing_id="$(api_get "${AIRBYTE_PUBLIC_API_PREFIX}/connections?workspaceIds=$(workspace_id)" | jq -r --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" '.data[]? | select(.name == $name) | .connectionId' | head -n 1)"
   else
-    existing_id="$(api_post "/api/v1/connections/list" "{\"workspaceId\":\"$(workspace_id)\"}" | jq -r --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" '.connections[]? | select(.name == $name) | .connectionId' | head -n 1)"
+    existing_id="$(api_post "${AIRBYTE_LEGACY_API_PREFIX}/connections/list" "{\"workspaceId\":\"$(workspace_id)\"}" | jq -r --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" '.connections[]? | select(.name == $name) | .connectionId' | head -n 1)"
   fi
 
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
@@ -430,13 +467,13 @@ upsert_connection() {
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
       api_patch "${AIRBYTE_PUBLIC_API_PREFIX}/connections/${existing_id}" "$payload" | jq -r '.connectionId // .connectionId'
     else
-      api_post "/api/v1/connections/update" "$(jq -n --arg connectionId "$existing_id" --argjson payload "$payload" '$payload + {connectionId: $connectionId}')" | jq -r '.connectionId'
+      api_post "${AIRBYTE_LEGACY_API_PREFIX}/connections/update" "$(jq -n --arg connectionId "$existing_id" --argjson payload "$payload" '$payload + {connectionId: $connectionId}')" | jq -r '.connectionId'
     fi
   else
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
       api_post "${AIRBYTE_PUBLIC_API_PREFIX}/connections" "$payload" | jq -r '.connectionId // .connectionId'
     else
-      api_post "/api/v1/connections/create" "$payload" | jq -r '.connectionId'
+      api_post "${AIRBYTE_LEGACY_API_PREFIX}/connections/create" "$payload" | jq -r '.connectionId'
     fi
   fi
 }
@@ -449,7 +486,7 @@ wait_for_sync() {
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
       status="$(api_get "${AIRBYTE_PUBLIC_API_PREFIX}/jobs/${job_id}" | jq -r '.status // .job.status')"
     else
-      status="$(api_post "/api/v1/jobs/get" "{\"id\":${job_id}}" | jq -r '.job.status')"
+      status="$(api_post "${AIRBYTE_LEGACY_API_PREFIX}/jobs/get" "{\"id\":${job_id}}" | jq -r '.job.status')"
     fi
     case "$status" in
       succeeded)
@@ -514,14 +551,14 @@ main() {
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
     mysql_definition_id="$(definition_id "${AIRBYTE_PUBLIC_API_PREFIX}/workspaces/${workspace}/definitions/sources" "sourceDefinitions" "MySQL")"
   else
-    mysql_definition_id="$(definition_id "/api/v1/source_definitions/list_latest" "sourceDefinitions" "MySQL")"
+    mysql_definition_id="$(definition_id "${AIRBYTE_LEGACY_API_PREFIX}/source_definitions/list_latest" "sourceDefinitions" "MySQL")"
   fi
   [[ -n "$mysql_definition_id" ]] || fail "Unable to resolve Airbyte MySQL source definition"
 
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
     postgres_definition_id="$(definition_id "${AIRBYTE_PUBLIC_API_PREFIX}/workspaces/${workspace}/definitions/destinations" "destinationDefinitions" "Postgres")"
   else
-    postgres_definition_id="$(definition_id "/api/v1/destination_definitions/list_latest" "destinationDefinitions" "Postgres")"
+    postgres_definition_id="$(definition_id "${AIRBYTE_LEGACY_API_PREFIX}/destination_definitions/list_latest" "destinationDefinitions" "Postgres")"
   fi
   [[ -n "$postgres_definition_id" ]] || fail "Unable to resolve Airbyte Postgres destination definition"
 
@@ -541,7 +578,7 @@ main() {
   if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
     sync_job_id="$(api_post "${AIRBYTE_PUBLIC_API_PREFIX}/jobs" "{\"connectionId\":\"${connection_id}\",\"jobType\":\"sync\"}" | jq -r '.jobId // .job.id')"
   else
-    sync_job_id="$(api_post "/api/v1/connections/sync" "{\"connectionId\":\"${connection_id}\"}" | jq -r '.job.id')"
+    sync_job_id="$(api_post "${AIRBYTE_LEGACY_API_PREFIX}/connections/sync" "{\"connectionId\":\"${connection_id}\"}" | jq -r '.job.id')"
   fi
   [[ -n "$sync_job_id" && "$sync_job_id" != "null" ]] || fail "Unable to start Airbyte sync"
 
