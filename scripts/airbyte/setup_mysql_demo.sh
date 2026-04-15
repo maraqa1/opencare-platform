@@ -73,9 +73,7 @@ start_airbyte_port_forward() {
 }
 
 detect_airbyte_api_mode() {
-  local status
-
-  if request_airbyte_public_token; then
+  if detect_public_api_prefix; then
     AIRBYTE_API_MODE="public"
     return 0
   fi
@@ -86,6 +84,23 @@ detect_airbyte_api_mode() {
   fi
 
   fail "Unable to determine the Airbyte API mode exposed by the deployed chart"
+}
+
+detect_public_api_prefix() {
+  local prefix
+  local response
+
+  for prefix in "/api/public/v1" "/v1"; do
+    response="$(curl -fsS "${AIRBYTE_API_BASE_URL}${prefix}/workspaces" 2>/dev/null || true)"
+    [[ -n "$response" ]] || continue
+    if printf '%s' "$response" | jq -e '.data[0].workspaceId // .workspaces[0].workspaceId // .workspaceId' >/dev/null 2>&1; then
+      AIRBYTE_PUBLIC_API_PREFIX="$prefix"
+      AIRBYTE_API_BEARER_TOKEN=""
+      return 0
+    fi
+  done
+
+  request_airbyte_public_token
 }
 
 resolve_airbyte_auth_secret_value() {
@@ -127,7 +142,7 @@ probe_public_api_prefix() {
   local prefix="$1"
   local response
 
-  response="$(curl -fsS -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" "${AIRBYTE_API_BASE_URL}${prefix}/workspaces" 2>/dev/null || true)"
+  response="$(curl -fsS ${AIRBYTE_API_BEARER_TOKEN:+-H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}"} "${AIRBYTE_API_BASE_URL}${prefix}/workspaces" 2>/dev/null || true)"
   [[ -n "$response" ]] || return 1
 
   printf '%s' "$response" | jq -e '.data // .workspaces // .workspaceId' >/dev/null 2>&1
@@ -156,12 +171,20 @@ api_request() {
 
   if [[ -n "$payload" ]]; then
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
-      curl -fsS \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" \
-        -X "$method" \
-        "${AIRBYTE_API_BASE_URL}${path}" \
-        -d "$payload"
+      if [[ -n "$AIRBYTE_API_BEARER_TOKEN" ]]; then
+        curl -fsS \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" \
+          -X "$method" \
+          "${AIRBYTE_API_BASE_URL}${path}" \
+          -d "$payload"
+      else
+        curl -fsS \
+          -H "Content-Type: application/json" \
+          -X "$method" \
+          "${AIRBYTE_API_BASE_URL}${path}" \
+          -d "$payload"
+      fi
     else
       curl -fsS \
         -H "Content-Type: application/json" \
@@ -172,10 +195,16 @@ api_request() {
     fi
   else
     if [[ "$AIRBYTE_API_MODE" == "public" ]]; then
-      curl -fsS \
-        -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" \
-        -X "$method" \
-        "${AIRBYTE_API_BASE_URL}${path}"
+      if [[ -n "$AIRBYTE_API_BEARER_TOKEN" ]]; then
+        curl -fsS \
+          -H "Authorization: Bearer ${AIRBYTE_API_BEARER_TOKEN}" \
+          -X "$method" \
+          "${AIRBYTE_API_BASE_URL}${path}"
+      else
+        curl -fsS \
+          -X "$method" \
+          "${AIRBYTE_API_BASE_URL}${path}"
+      fi
     else
       curl -fsS \
         -u "${AIRBYTE_API_USERNAME}:${AIRBYTE_API_PASSWORD}" \
