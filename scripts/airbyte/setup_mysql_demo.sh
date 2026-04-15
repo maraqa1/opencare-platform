@@ -10,6 +10,10 @@ AIRBYTE_PORT_FORWARD_PID=""
 AIRBYTE_API_BASE_URL=""
 AIRBYTE_PUBLIC_API_PREFIX="${AIRBYTE_PUBLIC_API_PREFIX:-/api/public/v1}"
 
+log_error() {
+  >&2 printf '[%s] ERROR: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+}
+
 require_demo_prereqs() {
   if ! command -v curl >/dev/null 2>&1; then
     if command -v apt-get >/dev/null 2>&1; then
@@ -101,7 +105,12 @@ api_request() {
   )"
 
   if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
-    log "Airbyte API ${method} ${path} returned HTTP ${http_code}"
+    log_error "Airbyte API ${method} ${path} returned HTTP ${http_code}"
+    if [[ -n "$payload" ]]; then
+      log_error "Airbyte request payload:"
+      >&2 printf '%s\n' "$payload"
+    fi
+    log_error "Airbyte response body:"
     cat "$response_file" >&2 || true
     rm -f "$response_file"
     fail "Airbyte API request failed"
@@ -240,7 +249,7 @@ upsert_connection() {
       name: $name,
       sourceId: $sourceId,
       destinationId: $destinationId,
-      namespaceDefinition: "customformat",
+      namespaceDefinition: "custom_format",
       namespaceFormat: "raw",
       prefix: "",
       status: "active"
