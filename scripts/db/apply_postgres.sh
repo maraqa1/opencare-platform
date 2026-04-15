@@ -26,36 +26,72 @@ grant usage on schema ${OUTPUT_SCHEMA} to ${POSTGRES_USER};
 grant usage on schema public to ${POSTGRES_USER};
 grant create on schema public to ${POSTGRES_USER};
 
-create table if not exists ${RAW_SCHEMA}.departments (
-  department_id text primary key,
-  department_code text not null,
-  department_name text not null,
-  service_line text
+create table if not exists ${RAW_SCHEMA}.wards (
+  ward_id text primary key,
+  ward_code text not null,
+  ward_name text not null,
+  service_line text,
+  licensed_beds integer,
+  staffed_beds_baseline integer
+);
+
+create table if not exists ${RAW_SCHEMA}.patients (
+  patient_id text primary key,
+  medical_record_number text not null,
+  date_of_birth date,
+  sex_at_birth text,
+  home_postcode text
 );
 
 create table if not exists ${RAW_SCHEMA}.bed_events (
   event_id text primary key,
   event_timestamp timestamp not null,
-  department_id text not null,
+  ward_id text not null,
+  patient_id text,
+  event_type text not null,
   occupied_beds integer not null,
   licensed_beds integer,
-  staffed_beds integer
+  staffed_beds integer,
+  scenario_tag text
 );
 
-insert into ${RAW_SCHEMA}.departments (department_id, department_code, department_name, service_line)
-values ('DEMO-ED', 'ED', 'Emergency Department', 'Emergency Care')
-on conflict (department_id) do update
-set department_code = excluded.department_code,
-    department_name = excluded.department_name,
-    service_line = excluded.service_line;
+insert into ${RAW_SCHEMA}.wards (ward_id, ward_code, ward_name, service_line, licensed_beds, staffed_beds_baseline)
+values ('WARD-DEMO-01', 'WARD01', 'Demo Emergency Ward', 'Emergency Care', 24, 20)
+on conflict (ward_id) do update
+set ward_code = excluded.ward_code,
+    ward_name = excluded.ward_name,
+    service_line = excluded.service_line,
+    licensed_beds = excluded.licensed_beds,
+    staffed_beds_baseline = excluded.staffed_beds_baseline;
 
-insert into ${RAW_SCHEMA}.bed_events (event_id, event_timestamp, department_id, occupied_beds, licensed_beds, staffed_beds)
-values ('DEMO-EVENT-001', current_timestamp, 'DEMO-ED', 12, 20, 18)
+insert into ${RAW_SCHEMA}.patients (patient_id, medical_record_number, date_of_birth, sex_at_birth, home_postcode)
+values ('PAT-DEMO-001', 'MRN-DEMO-001', date '1988-01-12', 'F', 'OC1 2DE')
+on conflict (patient_id) do update
+set medical_record_number = excluded.medical_record_number,
+    date_of_birth = excluded.date_of_birth,
+    sex_at_birth = excluded.sex_at_birth,
+    home_postcode = excluded.home_postcode;
+
+insert into ${RAW_SCHEMA}.bed_events (
+  event_id,
+  event_timestamp,
+  ward_id,
+  patient_id,
+  event_type,
+  occupied_beds,
+  licensed_beds,
+  staffed_beds,
+  scenario_tag
+)
+values ('DEMO-EVENT-001', current_timestamp, 'WARD-DEMO-01', 'PAT-DEMO-001', 'midnight_census', 12, 24, 20, 'bootstrap')
 on conflict (event_id) do update
 set event_timestamp = excluded.event_timestamp,
-    department_id = excluded.department_id,
+    ward_id = excluded.ward_id,
+    patient_id = excluded.patient_id,
+    event_type = excluded.event_type,
     occupied_beds = excluded.occupied_beds,
     licensed_beds = excluded.licensed_beds,
-    staffed_beds = excluded.staffed_beds;
+    staffed_beds = excluded.staffed_beds,
+    scenario_tag = excluded.scenario_tag;
 SQL"
 log_success "Postgres schemas and raw source tables ensured"

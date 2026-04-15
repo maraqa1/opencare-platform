@@ -1,136 +1,149 @@
 version: 2
 
 models:
+  - name: stg_wards
+    description: Standardized ward dimension inputs shaped from Airbyte-loaded raw ward records.
+    columns:
+      - name: ward_id
+        tests:
+          - not_null
+          - unique
+      - name: ward_code
+        tests:
+          - not_null
+          - unique
+      - name: ward_name
+        tests:
+          - not_null
+
+  - name: stg_patients
+    description: Standardized patient reference inputs for downstream healthcare analytics use cases.
+    columns:
+      - name: patient_id
+        tests:
+          - not_null
+          - unique
+      - name: medical_record_number
+        tests:
+          - not_null
+          - unique
+
   - name: stg_bed_events
-    description: Standardized bed event records shaped for occupancy marts.
+    description: Standardized bed occupancy and movement event records.
     columns:
       - name: bed_event_key
-        description: Surrogate event key derived from the raw event identifier.
         tests:
           - not_null
           - unique
-      - name: event_date
-        description: Calendar date extracted from the source event timestamp.
+      - name: ward_id
         tests:
           - not_null
-      - name: department_id
-        description: Department identifier attached to the event.
+          - relationships:
+              to: ref('stg_wards')
+              field: ward_id
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('stg_patients')
+              field: patient_id
+              where: "patient_id is not null"
+      - name: event_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['midnight_census', 'admission', 'discharge', 'transfer_in', 'transfer_out']
+      - name: event_date
         tests:
           - not_null
       - name: occupied_beds
-        description: Occupied bed count observed for the department and event date.
         tests:
           - not_null
-      - name: licensed_beds
-        description: Licensed bed capacity observed for the department and event date.
-      - name: staffed_beds
-        description: Staffed bed capacity observed for the department and event date.
-      - name: occupancy_rate
-        description: Occupied beds divided by staffed beds when staffed beds are available.
 
-  - name: stg_departments
-    description: Standardized department dimension inputs.
+  - name: dim_ward
+    description: Analytics ward dimension for operational reporting and runtime joins.
     columns:
-      - name: department_id
-        description: Stable department identifier from the source system.
+      - name: ward_id
         tests:
           - not_null
           - unique
-      - name: department_code
-        description: Short business code for the department.
+      - name: ward_code
         tests:
           - not_null
           - unique
-      - name: department_name
-        description: Human-readable department display name.
+      - name: ward_name
         tests:
           - not_null
-      - name: service_line
-        description: Service line grouping used for rollups and filtering.
 
-  - name: fact_bed_occupancy
-    description: Daily bed occupancy fact table by department in the analytics schema.
+  - name: dim_date
+    description: Analytics date dimension derived from the bed occupancy event calendar.
+    columns:
+      - name: date_day
+        tests:
+          - not_null
+          - unique
+
+  - name: fct_bed_occupancy
+    description: Daily ward-level occupancy fact used by forecasting and anomaly detection.
     columns:
       - name: occupancy_fact_key
-        description: Grain key for department-day occupancy records.
         tests:
           - not_null
           - unique
       - name: date_day
-        description: Calendar day represented by the occupancy record.
         tests:
           - not_null
-      - name: department_id
-        description: Department identifier for the occupancy record.
+      - name: ward_id
         tests:
           - not_null
-      - name: occupied_beds
-        description: Daily occupied bed count.
-        tests:
-          - not_null
-      - name: staffed_beds
-        description: Daily staffed bed capacity.
+          - relationships:
+              to: ref('dim_ward')
+              field: ward_id
       - name: occupancy_rate
-        description: Ratio of occupied beds to staffed beds.
+        tests:
+          - not_null
 
-  - name: fact_capacity
-    description: Daily department capacity fact table in the analytics schema.
+  - name: dict_metrics
+    description: Dictionary metrics reference for the Hospital Bed Occupancy Intelligence demo.
     columns:
-      - name: capacity_fact_key
-        description: Grain key for department-day capacity records.
+      - name: metric_id
         tests:
           - not_null
           - unique
-      - name: date_day
-        description: Calendar day represented by the capacity record.
+      - name: metric_name
         tests:
           - not_null
-      - name: department_id
-        description: Department identifier for the capacity record.
+      - name: metric_schema
         tests:
           - not_null
-      - name: licensed_beds
-        description: Daily licensed bed capacity.
-      - name: staffed_beds
-        description: Daily staffed bed capacity.
+
+  - name: fact_bed_occupancy
+    description: Compatibility alias for runtime consumers that still read analytics.fact_bed_occupancy.
+    columns:
+      - name: occupancy_fact_key
         tests:
           - not_null
+          - unique
 
   - name: dim_department
-    description: Department dimension used for analytics joins and reporting labels.
+    description: Compatibility alias for runtime consumers that still read analytics.dim_department.
     columns:
       - name: department_id
-        description: Stable department identifier.
         tests:
           - not_null
           - unique
-      - name: department_code
-        description: Business code used in portal and analytics surfaces.
-        tests:
-          - not_null
-          - unique
-      - name: department_name
-        description: Department display name.
-        tests:
-          - not_null
-      - name: service_line
-        description: Service line classification for grouping.
 
   - name: dim_time
-    description: Date dimension derived from available bed event records.
+    description: Compatibility alias for runtime consumers that still read analytics.dim_time.
     columns:
       - name: date_day
-        description: Calendar day serving as the dimension primary key.
         tests:
           - not_null
           - unique
-      - name: day_of_week
-        description: Numeric day of week derived from the date.
-      - name: week_of_year
-        description: ISO week number for the date.
-      - name: month_of_year
-        description: Calendar month number for the date.
-      - name: quarter_of_year
-        description: Calendar quarter number for the date.
-      - name: year_number
-        description: Calendar year for the date.
+
+  - name: fact_capacity
+    description: Daily ward capacity fact retained for runtime compatibility and capacity KPI calculations.
+    columns:
+      - name: capacity_fact_key
+        tests:
+          - not_null
+          - unique
