@@ -55,6 +55,36 @@ create table if not exists ${RAW_SCHEMA}.bed_events (
   scenario_tag text
 );
 
+do \$\$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = '${RAW_SCHEMA}'
+      and table_name = 'bed_events'
+      and column_name = 'department_id'
+  ) and not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = '${RAW_SCHEMA}'
+      and table_name = 'bed_events'
+      and column_name = 'ward_id'
+  ) then
+    execute 'alter table ${RAW_SCHEMA}.bed_events rename column department_id to ward_id';
+  end if;
+end
+\$\$;
+
+alter table ${RAW_SCHEMA}.bed_events
+  add column if not exists ward_id text,
+  add column if not exists patient_id text,
+  add column if not exists event_type text,
+  add column if not exists scenario_tag text;
+
+update ${RAW_SCHEMA}.bed_events
+set event_type = 'midnight_census'
+where event_type is null;
+
 insert into ${RAW_SCHEMA}.wards (ward_id, ward_code, ward_name, service_line, licensed_beds, staffed_beds_baseline)
 values ('WARD-DEMO-01', 'WARD01', 'Demo Emergency Ward', 'Emergency Care', 24, 20)
 on conflict (ward_id) do update
