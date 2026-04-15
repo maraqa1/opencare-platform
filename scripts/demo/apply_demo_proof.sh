@@ -20,11 +20,10 @@ run_with_demo_log() {
   log "Capturing ${label} logs to ${log_file#"$ROOT_DIR"/}"
 
   if [[ "$verbose_demo_logs" == "true" ]]; then
-    "$@" 2>&1 | tee "$log_file"
-  else
-    "$@" >"$log_file" 2>&1
-  fi
-  if [[ "$?" -eq 0 ]]; then
+    if "$@" 2>&1 | tee "$log_file"; then
+      return 0
+    fi
+  elif "$@" >"$log_file" 2>&1; then
     return 0
   fi
 
