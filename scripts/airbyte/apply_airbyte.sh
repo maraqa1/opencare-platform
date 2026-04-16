@@ -279,7 +279,13 @@ ensure_airbyte_runtime_envs() {
   effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
   effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
-  log "Ensuring Airbyte runtime AWS env vars are present on launcher and worker"
+  log "Ensuring Airbyte runtime AWS env vars are present on server, launcher, and worker"
+  kubectl -n "$NAMESPACE" set env deployment/airbyte-server \
+    AWS_REGION="$MINIO_REGION" \
+    AWS_DEFAULT_REGION="$MINIO_REGION" \
+    AWS_ACCESS_KEY_ID="$effective_minio_access_key" \
+    AWS_SECRET_ACCESS_KEY="$effective_minio_secret_key" >/dev/null
+
   kubectl -n "$NAMESPACE" set env deployment/airbyte-workload-launcher \
     AWS_REGION="$MINIO_REGION" \
     AWS_DEFAULT_REGION="$MINIO_REGION" \
@@ -292,6 +298,7 @@ ensure_airbyte_runtime_envs() {
     AWS_ACCESS_KEY_ID="$effective_minio_access_key" \
     AWS_SECRET_ACCESS_KEY="$effective_minio_secret_key" >/dev/null
 
+  kubectl -n "$NAMESPACE" rollout status deployment/airbyte-server --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
   kubectl -n "$NAMESPACE" rollout status deployment/airbyte-workload-launcher --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
   kubectl -n "$NAMESPACE" rollout status deployment/airbyte-worker --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
 }

@@ -16,14 +16,6 @@ temporal:
       value: "false"
     - name: POSTGRES_TLS_ENABLED
       value: "false"
-    - name: AWS_REGION
-      value: __MINIO_REGION__
-    - name: AWS_DEFAULT_REGION
-      value: __MINIO_REGION__
-    - name: AWS_ACCESS_KEY_ID
-      value: __MINIO_ACCESS_KEY__
-    - name: AWS_SECRET_ACCESS_KEY
-      value: __MINIO_SECRET_KEY__
 
 global:
   edition: community
@@ -69,45 +61,14 @@ global:
     AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION: __AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION__
     AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION: __AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION__
     INTERNAL_API_TOKEN: __INTERNAL_API_TOKEN__
-    AWS_REGION: __MINIO_REGION__
-    AWS_DEFAULT_REGION: __MINIO_REGION__
-    AWS_ACCESS_KEY_ID: __MINIO_ACCESS_KEY__
-    AWS_SECRET_ACCESS_KEY: __MINIO_SECRET_KEY__
 
 server:
-  extraEnv:
-    - name: AWS_REGION
-      value: __MINIO_REGION__
-    - name: AWS_DEFAULT_REGION
-      value: __MINIO_REGION__
-    - name: AWS_ACCESS_KEY_ID
-      value: __MINIO_ACCESS_KEY__
-    - name: AWS_SECRET_ACCESS_KEY
-      value: __MINIO_SECRET_KEY__
   service:
     type: ClusterIP
 
-worker:
-  extraEnv:
-    - name: AWS_REGION
-      value: __MINIO_REGION__
-    - name: AWS_DEFAULT_REGION
-      value: __MINIO_REGION__
-    - name: AWS_ACCESS_KEY_ID
-      value: __MINIO_ACCESS_KEY__
-    - name: AWS_SECRET_ACCESS_KEY
-      value: __MINIO_SECRET_KEY__
+worker: {}
 
-cron:
-  extraEnv:
-    - name: AWS_REGION
-      value: __MINIO_REGION__
-    - name: AWS_DEFAULT_REGION
-      value: __MINIO_REGION__
-    - name: AWS_ACCESS_KEY_ID
-      value: __MINIO_ACCESS_KEY__
-    - name: AWS_SECRET_ACCESS_KEY
-      value: __MINIO_SECRET_KEY__
+cron: {}
 
 workloadLauncher:
   extraEnv:
@@ -115,11 +76,3 @@ workloadLauncher:
       value: "false"
     - name: POSTGRES_TLS_ENABLED
       value: "false"
-    - name: AWS_REGION
-      value: __MINIO_REGION__
-    - name: AWS_DEFAULT_REGION
-      value: __MINIO_REGION__
-    - name: AWS_ACCESS_KEY_ID
-      value: __MINIO_ACCESS_KEY__
-    - name: AWS_SECRET_ACCESS_KEY
-      value: __MINIO_SECRET_KEY__
