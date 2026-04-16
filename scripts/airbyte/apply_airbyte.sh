@@ -387,10 +387,9 @@ for doc in docs:
     env_counts = defaultdict(int)
     env_presence = set()
 
-    def finish_env():
-        nonlocal current_env
+    def finish_env(current_env):
         if not current_env:
-            return
+            return None
         env_name = current_env["name"]
         if current_env["has_value"] and current_env["has_valueFrom"]:
             errors.append(
@@ -401,7 +400,7 @@ for doc in docs:
             env_presence.add(env_name)
             if env_name == "TEMPORAL_BROADCAST_ADDRESS":
                 broadcast_values.append((kind, resource_name, current_container, current_env["value_literal"]))
-        current_env = None
+        return None
 
     for line in doc:
         stripped = line.strip()
@@ -424,7 +423,7 @@ for doc in docs:
             continue
 
         if stripped == "containers:":
-            finish_env()
+            current_env = finish_env(current_env)
             in_containers = True
             containers_indent = indent
             current_container = ""
@@ -432,29 +431,29 @@ for doc in docs:
             continue
 
         if in_containers and indent <= containers_indent and stripped != "containers:":
-            finish_env()
+            current_env = finish_env(current_env)
             in_containers = False
             current_container = ""
             current_container_indent = None
 
         if in_containers and indent == containers_indent + 2 and stripped.startswith("- name: "):
-            finish_env()
+            current_env = finish_env(current_env)
             current_container = stripped.split(":", 1)[1].strip().strip('"')
             current_container_indent = indent
             continue
 
         if current_container and stripped == "env:" and indent > (current_container_indent or 0):
-            finish_env()
+            current_env = finish_env(current_env)
             in_env = True
             env_indent = indent
             continue
 
         if in_env and indent <= env_indent and stripped != "env:":
-            finish_env()
+            current_env = finish_env(current_env)
             in_env = False
 
         if in_env and indent == env_indent + 2 and stripped.startswith("- name: "):
-            finish_env()
+            current_env = finish_env(current_env)
             current_env = {
                 "name": stripped.split(":", 1)[1].strip().strip('"'),
                 "has_value": False,
@@ -470,7 +469,7 @@ for doc in docs:
             elif stripped.startswith("valueFrom:"):
                 current_env["has_valueFrom"] = True
 
-    finish_env()
+    current_env = finish_env(current_env)
 
     for (container_name, env_name), count in sorted(env_counts.items()):
         occurrences.append(
