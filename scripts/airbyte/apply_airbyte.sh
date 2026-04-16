@@ -439,6 +439,10 @@ for doc in docs:
             env_presence.add(env_name)
             if kind == "Deployment" and resource_name.startswith("airbyte-"):
                 critical_presence[resource_name].add(env_name)
+            source = "valueFrom" if current_env["has_valueFrom"] else "value"
+            occurrences.append(
+                f"{kind}/{resource_name} container={current_container or '<unknown>'} env={env_name} source={source}"
+            )
             if env_name == "TEMPORAL_BROADCAST_ADDRESS":
                 broadcast_values.append((kind, resource_name, current_container, current_env["value_literal"]))
         return None
@@ -491,10 +495,17 @@ for doc in docs:
             current_container = ""
             current_container_indent = None
 
-        if in_containers and indent == containers_indent + 2 and stripped.startswith("- name: "):
+        if in_containers and indent == containers_indent + 2 and stripped.startswith("- "):
             current_env = finish_env(current_env)
-            current_container = stripped.split(":", 1)[1].strip().strip('"')
             current_container_indent = indent
+            if stripped.startswith("- name: "):
+                current_container = stripped.split(":", 1)[1].strip().strip('"')
+            else:
+                current_container = ""
+            continue
+
+        if in_containers and current_container_indent is not None and indent == current_container_indent + 2 and stripped.startswith("name: ") and not current_container:
+            current_container = stripped.split(":", 1)[1].strip().strip('"')
             continue
 
         if current_container and stripped == "env:" and indent > (current_container_indent or 0):
