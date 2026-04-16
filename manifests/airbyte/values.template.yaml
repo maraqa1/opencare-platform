@@ -21,7 +21,7 @@ temporal:
     - name: TEMPORAL_BROADCAST_ADDRESS
       value: "$(POD_IP)"
     - name: PUBLIC_FRONTEND_ADDRESS
-      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
     - name: SQL_TLS_ENABLED
       value: "false"
     - name: POSTGRES_TLS_ENABLED
@@ -75,7 +75,7 @@ global:
 server:
   extraEnv:
     - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
     - name: INTERNAL_API_HOST
       value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
@@ -104,7 +104,7 @@ server:
 worker:
   extraEnv:
     - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
     - name: INTERNAL_API_HOST
       value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
@@ -131,7 +131,7 @@ worker:
 cron:
   extraEnv:
     - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
     - name: INTERNAL_API_HOST
       value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
@@ -158,7 +158,7 @@ cron:
 workloadApiServer:
   extraEnv:
     - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
     - name: INTERNAL_API_HOST
       value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
@@ -185,7 +185,7 @@ workloadApiServer:
 workloadLauncher:
   extraEnv:
     - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
     - name: INTERNAL_API_HOST
       value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: SQL_TLS_ENABLED

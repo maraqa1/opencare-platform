@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VALUES_TEMPLATE="$ROOT_DIR/manifests/airbyte/values.template.yaml"
 STATE_DIR="$ROOT_DIR/.state/airbyte"
 LAST_RENDERED_AIRBYTE_VALUES_FILE=""
+LAST_RENDERED_AIRBYTE_MANIFEST_FILE=""
 
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
@@ -210,11 +211,25 @@ render_values_file() {
     -e "s|__MINIO_SECRET_KEY__|${effective_minio_secret_key}|g" \
     -e "s|__AIRBYTE_SERVER_SERVICE_NAME__|${AIRBYTE_SERVER_SERVICE_NAME}|g" \
     -e "s|__AIRBYTE_WEBAPP_SERVICE_NAME__|${AIRBYTE_WEBAPP_SERVICE_NAME}|g" \
-    -e "s|__AIRBYTE_TEMPORAL_SERVICE_NAME__|${AIRBYTE_TEMPORAL_SERVICE_NAME}|g" \
+    -e "s|__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__|${AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME}|g" \
     "$VALUES_TEMPLATE" >"$values_file"
 
   LAST_RENDERED_AIRBYTE_VALUES_FILE="$values_file"
   printf '%s\n' "$values_file"
+}
+
+render_manifest_file() {
+  local values_file="$1"
+  local manifest_file
+
+  manifest_file="$(mktemp "${STATE_DIR}/airbyte-manifest.XXXXXX.yaml")"
+  helm template "$AIRBYTE_RELEASE_NAME" "$AIRBYTE_CHART_NAME" \
+    --namespace "$NAMESPACE" \
+    --version "$AIRBYTE_CHART_VERSION" \
+    -f "$values_file" >"$manifest_file"
+
+  LAST_RENDERED_AIRBYTE_MANIFEST_FILE="$manifest_file"
+  printf '%s\n' "$manifest_file"
 }
 
 remove_legacy_airbyte_resources() {
@@ -240,16 +255,27 @@ print_airbyte_diagnostics() {
     echo "=== Helm Status ==="
     helm -n "$NAMESPACE" status "$AIRBYTE_RELEASE_NAME" || true
     echo
+    echo "=== Helm Values ==="
+    helm -n "$NAMESPACE" get values "$AIRBYTE_RELEASE_NAME" -a || true
+    echo
+    echo "=== Helm Manifest Wiring Snippets ==="
+    helm -n "$NAMESPACE" get manifest "$AIRBYTE_RELEASE_NAME" | grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233' || true
+    echo
     echo "=== Airbyte Resources ==="
     kubectl -n "$NAMESPACE" get deploy,svc,pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o wide || true
     echo
     echo "=== Temporal Service And Endpoints ==="
-    kubectl -n "$NAMESPACE" get svc "$AIRBYTE_TEMPORAL_SERVICE_NAME" -o wide || true
-    kubectl -n "$NAMESPACE" get endpoints "$AIRBYTE_TEMPORAL_SERVICE_NAME" -o yaml || true
+    kubectl -n "$NAMESPACE" get svc "$AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME" -o wide || true
+    kubectl -n "$NAMESPACE" get endpoints "$AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME" -o yaml || true
     echo
-    echo "=== Rendered Airbyte Wiring ==="
+    echo "=== Rendered Airbyte Values Wiring ==="
     if [[ -n "$LAST_RENDERED_AIRBYTE_VALUES_FILE" && -f "$LAST_RENDERED_AIRBYTE_VALUES_FILE" ]]; then
       grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region' "$LAST_RENDERED_AIRBYTE_VALUES_FILE" || true
+    fi
+    echo
+    echo "=== Rendered Airbyte Manifest Wiring ==="
+    if [[ -n "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" && -f "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" ]]; then
+      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233' "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" || true
     fi
     echo
     echo "=== Recent Events ==="
@@ -300,6 +326,22 @@ validate_rendered_airbyte_values() {
   [[ "$missing" -eq 0 ]] || fail "Rendered Airbyte values are missing required Temporal/internal API wiring"
 }
 
+validate_rendered_airbyte_manifest() {
+  local manifest_file="$1"
+  local missing=0
+
+  log "Validating rendered Airbyte manifest wiring"
+  for pattern in 'TEMPORAL_HOST' 'INTERNAL_API_HOST' 'TEMPORAL_BROADCAST_ADDRESS' 'PUBLIC_FRONTEND_ADDRESS' '7233'; do
+    if ! grep -q "$pattern" "$manifest_file"; then
+      log "Missing rendered Airbyte manifest pattern: $pattern"
+      missing=1
+    fi
+  done
+
+  grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233' "$manifest_file" || true
+  [[ "$missing" -eq 0 ]] || fail "Rendered Airbyte manifest is missing required Temporal/internal API wiring"
+}
+
 validate_airbyte() {
   local minio_url
   local effective_minio_access_key
@@ -331,6 +373,7 @@ validate_airbyte() {
 
 main() {
   local values_file
+  local manifest_file
 
   require_airbyte_prereqs
   ensure_cluster_access
@@ -345,6 +388,8 @@ main() {
   remove_legacy_airbyte_resources
   values_file="$(render_values_file)"
   validate_rendered_airbyte_values "$values_file"
+  manifest_file="$(render_manifest_file "$values_file")"
+  validate_rendered_airbyte_manifest "$manifest_file"
 
   log "Deploying Airbyte via Helm"
   helm upgrade --install "$AIRBYTE_RELEASE_NAME" "$AIRBYTE_CHART_NAME" \
