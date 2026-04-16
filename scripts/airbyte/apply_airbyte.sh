@@ -222,16 +222,39 @@ remove_legacy_airbyte_resources() {
 }
 
 print_airbyte_diagnostics() {
+  local diagnostics_dir
+  local diagnostics_file
+  local pods
+
+  diagnostics_dir="${AIRBYTE_DIAGNOSTICS_DIR:-$STATE_DIR/airbyte-logs}"
+  mkdir -p "$diagnostics_dir"
+  diagnostics_file="$diagnostics_dir/$(date '+%Y%m%d-%H%M%S')-airbyte-diagnostics.log"
+
   log "Airbyte diagnostics"
-  helm -n "$NAMESPACE" status "$AIRBYTE_RELEASE_NAME" || true
-  kubectl -n "$NAMESPACE" get deploy,svc,pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o wide || true
-  kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp | tail -n 100 || true
-  pods="$(kubectl -n "$NAMESPACE" get pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
-  while IFS= read -r pod; do
-    [[ -n "$pod" ]] || continue
-    kubectl -n "$NAMESPACE" describe pod "$pod" || true
-    kubectl -n "$NAMESPACE" logs "$pod" --all-containers=true || true
-  done <<< "$pods"
+  log "Capturing full Airbyte diagnostics to ${diagnostics_file#"$ROOT_DIR"/}"
+
+  {
+    echo "=== Helm Status ==="
+    helm -n "$NAMESPACE" status "$AIRBYTE_RELEASE_NAME" || true
+    echo
+    echo "=== Airbyte Resources ==="
+    kubectl -n "$NAMESPACE" get deploy,svc,pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o wide || true
+    echo
+    echo "=== Recent Events ==="
+    kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp | tail -n 100 || true
+    echo
+    echo "=== Pod Details And Logs ==="
+    pods="$(kubectl -n "$NAMESPACE" get pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true)"
+    while IFS= read -r pod; do
+      [[ -n "$pod" ]] || continue
+      echo "--- describe ${pod} ---"
+      kubectl -n "$NAMESPACE" describe pod "$pod" || true
+      echo
+      echo "--- logs ${pod} ---"
+      kubectl -n "$NAMESPACE" logs "$pod" --all-containers=true || true
+      echo
+    done <<< "$pods"
+  } >"$diagnostics_file" 2>&1
 }
 
 wait_for_airbyte_deployments() {
@@ -247,6 +270,30 @@ wait_for_airbyte_deployments() {
     [[ -n "$(trim "$deployment")" ]] || continue
     kubectl -n "$NAMESPACE" rollout status "deployment/${deployment}" --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
   done <<< "$deployments"
+}
+
+ensure_airbyte_runtime_envs() {
+  local effective_minio_access_key
+  local effective_minio_secret_key
+
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
+
+  log "Ensuring Airbyte runtime AWS env vars are present on launcher and worker"
+  kubectl -n "$NAMESPACE" set env deployment/airbyte-workload-launcher \
+    AWS_REGION="$MINIO_REGION" \
+    AWS_DEFAULT_REGION="$MINIO_REGION" \
+    AWS_ACCESS_KEY_ID="$effective_minio_access_key" \
+    AWS_SECRET_ACCESS_KEY="$effective_minio_secret_key" >/dev/null
+
+  kubectl -n "$NAMESPACE" set env deployment/airbyte-worker \
+    AWS_REGION="$MINIO_REGION" \
+    AWS_DEFAULT_REGION="$MINIO_REGION" \
+    AWS_ACCESS_KEY_ID="$effective_minio_access_key" \
+    AWS_SECRET_ACCESS_KEY="$effective_minio_secret_key" >/dev/null
+
+  kubectl -n "$NAMESPACE" rollout status deployment/airbyte-workload-launcher --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
+  kubectl -n "$NAMESPACE" rollout status deployment/airbyte-worker --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
 }
 
 validate_airbyte() {
@@ -304,6 +351,7 @@ main() {
     --timeout "${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s" \
     -f "$values_file"
 
+  ensure_airbyte_runtime_envs
   wait_for_airbyte_deployments
   validate_airbyte
 
