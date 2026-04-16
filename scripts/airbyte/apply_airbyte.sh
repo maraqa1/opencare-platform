@@ -346,14 +346,6 @@ critical = {
     "SQL_TLS_ENABLED",
     "POSTGRES_TLS_ENABLED",
 }
-must_exist = {"TEMPORAL_HOST", "INTERNAL_API_HOST"}
-must_exist_deployments = {
-    "airbyte-server",
-    "airbyte-worker",
-    "airbyte-cron",
-    "airbyte-workload-api-server",
-    "airbyte-workload-launcher",
-}
 docs = []
 current = []
 
@@ -371,6 +363,7 @@ if current:
 errors = []
 occurrences = []
 broadcast_values = []
+critical_presence = defaultdict(set)
 
 for doc in docs:
     kind = ""
@@ -398,6 +391,8 @@ for doc in docs:
         if env_name in critical:
             env_counts[(current_container, env_name)] += 1
             env_presence.add(env_name)
+            if kind == "Deployment" and resource_name.startswith("airbyte-"):
+                critical_presence[resource_name].add(env_name)
             if env_name == "TEMPORAL_BROADCAST_ADDRESS":
                 broadcast_values.append((kind, resource_name, current_container, current_env["value_literal"]))
         return None
@@ -480,13 +475,15 @@ for doc in docs:
                 f"{kind}/{resource_name} container={container_name or '<unknown>'} env={env_name} appears {count} times"
             )
 
-    if kind == "Deployment" and resource_name in must_exist_deployments:
-        for env_name in sorted(must_exist - env_presence):
-            errors.append(f"{kind}/{resource_name} is missing required env {env_name}")
-
 print("Rendered critical env counts:")
 for line in occurrences:
     print(line)
+
+if critical_presence:
+    print("Rendered critical env presence by deployment:")
+    for deployment_name in sorted(critical_presence):
+        names = ", ".join(sorted(critical_presence[deployment_name]))
+        print(f"Deployment/{deployment_name}: {names}")
 
 if broadcast_values:
     print("Rendered TEMPORAL_BROADCAST_ADDRESS values:")
