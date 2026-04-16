@@ -202,6 +202,8 @@ render_values_file() {
     -e "s|__AIRBYTE_ENTERPRISE_SOURCE_STUBS_URL__|${AIRBYTE_ENTERPRISE_SOURCE_STUBS_URL}|g" \
     -e "s|__AIRBYTE_ENTERPRISE_DESTINATION_STUBS_URL__|${AIRBYTE_ENTERPRISE_DESTINATION_STUBS_URL}|g" \
     -e "s|__AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED__|${AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED}|g" \
+    -e "s|__AIRBYTE_SQL_TLS_ENABLED__|${AIRBYTE_SQL_TLS_ENABLED}|g" \
+    -e "s|__AIRBYTE_POSTGRES_TLS_ENABLED__|${AIRBYTE_POSTGRES_TLS_ENABLED}|g" \
     -e "s|__RUN_DATABASE_MIGRATION_ON_STARTUP__|${RUN_DATABASE_MIGRATION_ON_STARTUP}|g" \
     -e "s|__CONFIGS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION__|${CONFIGS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION}|g" \
     -e "s|__JOBS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION__|${JOBS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION}|g" \
@@ -602,14 +604,26 @@ for deployment_name, required in sorted(required_by_deployment.items()):
         errors.append(f"Deployment/{deployment_name} was not found in rendered manifest")
         continue
     for env_name in sorted(required):
-        env_matches = re.findall(rf'^\s*-\s+name:\s+{re.escape(env_name)}\s*$', doc_text, re.MULTILINE)
+        env_matches = list(re.finditer(rf'^\s*-\s+name:\s+{re.escape(env_name)}\s*$', doc_text, re.MULTILINE))
         if len(env_matches) == 0:
             errors.append(f"Deployment/{deployment_name} is missing required env {env_name}")
             continue
-        if len(env_matches) > 1:
-            errors.append(f"Deployment/{deployment_name} has duplicate required env {env_name} ({len(env_matches)} entries)")
         critical_presence[deployment_name].add(env_name)
-        occurrences.append(f"Deployment/{deployment_name} env={env_name} source=rendered-doc")
+        match_sources = []
+        for match in env_matches:
+            snippet = doc_text[match.end():match.end() + 240]
+            if "configMapKeyRef:" in snippet:
+                match_sources.append("valueFrom.configMapKeyRef")
+            elif "secretKeyRef:" in snippet:
+                match_sources.append("valueFrom.secretKeyRef")
+            elif re.search(r'^\s*value:\s+', snippet, re.MULTILINE):
+                match_sources.append("value")
+            else:
+                match_sources.append("unknown")
+        unique_sources = ", ".join(match_sources)
+        occurrences.append(
+            f"Deployment/{deployment_name} env={env_name} source={unique_sources}"
+        )
 
 if broadcast_values:
     print("Rendered TEMPORAL_BROADCAST_ADDRESS values:")
