@@ -330,7 +330,6 @@ validate_rendered_airbyte_manifest() {
 
   log "Validating rendered Airbyte manifest env ownership"
   python3 - "$manifest_file" <<'PY'
-import re
 import sys
 from collections import defaultdict
 
@@ -360,10 +359,54 @@ with open(manifest_path, "r", encoding="utf-8") as handle:
 if current:
     docs.append(current)
 
+config_maps = {}
 errors = []
 occurrences = []
 broadcast_values = []
 critical_presence = defaultdict(set)
+
+for doc in docs:
+    kind = ""
+    resource_name = ""
+    in_metadata = False
+    metadata_indent = None
+    in_data = False
+    data_indent = None
+    data_keys = set()
+
+    for line in doc:
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+
+        if stripped.startswith("kind: "):
+            kind = stripped.split(":", 1)[1].strip()
+            continue
+
+        if stripped == "metadata:":
+            in_metadata = True
+            metadata_indent = indent
+            continue
+
+        if in_metadata and indent <= metadata_indent and stripped != "metadata:":
+            in_metadata = False
+
+        if in_metadata and stripped.startswith("name: ") and not resource_name:
+            resource_name = stripped.split(":", 1)[1].strip().strip('"')
+            continue
+
+        if stripped == "data:":
+            in_data = True
+            data_indent = indent
+            continue
+
+        if in_data and indent <= data_indent and stripped != "data:":
+            in_data = False
+
+        if in_data and indent == data_indent + 2 and ":" in stripped:
+            data_keys.add(stripped.split(":", 1)[0].strip().strip('"'))
+
+    if kind == "ConfigMap" and resource_name:
+        config_maps[resource_name] = data_keys
 
 for doc in docs:
     kind = ""
@@ -376,9 +419,12 @@ for doc in docs:
     current_container_indent = None
     in_env = False
     env_indent = None
+    in_env_from = False
+    env_from_indent = None
     current_env = None
     env_counts = defaultdict(int)
     env_presence = set()
+    pending_env_from_config_map = None
 
     def finish_env(current_env):
         if not current_env:
@@ -396,6 +442,20 @@ for doc in docs:
             if env_name == "TEMPORAL_BROADCAST_ADDRESS":
                 broadcast_values.append((kind, resource_name, current_container, current_env["value_literal"]))
         return None
+
+    def register_env_name(env_name, source):
+        if env_name in critical:
+            env_counts[(current_container, env_name)] += 1
+            env_presence.add(env_name)
+            if kind == "Deployment" and resource_name.startswith("airbyte-"):
+                critical_presence[resource_name].add(env_name)
+            occurrences.append(
+                f"{kind}/{resource_name} container={current_container or '<unknown>'} env={env_name} source={source}"
+            )
+
+    def register_config_map(config_map_name, source):
+        for key in sorted(config_maps.get(config_map_name, set())):
+            register_env_name(key, f"{source}:{config_map_name}")
 
     for line in doc:
         stripped = line.strip()
@@ -447,6 +507,19 @@ for doc in docs:
             current_env = finish_env(current_env)
             in_env = False
 
+        if current_container and stripped == "envFrom:" and indent > (current_container_indent or 0):
+            current_env = finish_env(current_env)
+            in_env_from = True
+            env_from_indent = indent
+            pending_env_from_config_map = None
+            continue
+
+        if in_env_from and indent <= env_from_indent and stripped != "envFrom:":
+            if pending_env_from_config_map:
+                register_config_map(pending_env_from_config_map, "envFrom")
+                pending_env_from_config_map = None
+            in_env_from = False
+
         if in_env and indent == env_indent + 2 and stripped.startswith("- name: "):
             current_env = finish_env(current_env)
             current_env = {
@@ -463,13 +536,30 @@ for doc in docs:
                 current_env["value_literal"] = stripped.split(":", 1)[1].strip().strip('"')
             elif stripped.startswith("valueFrom:"):
                 current_env["has_valueFrom"] = True
+            elif "configMapKeyRef:" in stripped:
+                current_env["has_valueFrom"] = True
+            elif stripped.startswith("key:"):
+                key_name = stripped.split(":", 1)[1].strip().strip('"')
+                if key_name == current_env["name"]:
+                    current_env["has_valueFrom"] = True
+            elif stripped.startswith("name:") and "name:" in stripped:
+                pass
+
+        if in_env_from:
+            if indent == env_from_indent + 2 and stripped.startswith("- "):
+                if pending_env_from_config_map:
+                    register_config_map(pending_env_from_config_map, "envFrom")
+                pending_env_from_config_map = None
+            elif "configMapRef:" in stripped:
+                pending_env_from_config_map = None
+            elif stripped.startswith("name: "):
+                pending_env_from_config_map = stripped.split(":", 1)[1].strip().strip('"')
 
     current_env = finish_env(current_env)
+    if pending_env_from_config_map:
+        register_config_map(pending_env_from_config_map, "envFrom")
 
     for (container_name, env_name), count in sorted(env_counts.items()):
-        occurrences.append(
-            f"{kind}/{resource_name} container={container_name or '<unknown>'} env={env_name} count={count}"
-        )
         if count > 1:
             errors.append(
                 f"{kind}/{resource_name} container={container_name or '<unknown>'} env={env_name} appears {count} times"
@@ -484,6 +574,19 @@ if critical_presence:
     for deployment_name in sorted(critical_presence):
         names = ", ".join(sorted(critical_presence[deployment_name]))
         print(f"Deployment/{deployment_name}: {names}")
+
+required_by_deployment = {
+    "airbyte-server": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-worker": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-cron": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-workload-api-server": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-workload-launcher": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+}
+
+for deployment_name, required in sorted(required_by_deployment.items()):
+    missing = sorted(required - critical_presence.get(deployment_name, set()))
+    for env_name in missing:
+        errors.append(f"Deployment/{deployment_name} is missing required env {env_name}")
 
 if broadcast_values:
     print("Rendered TEMPORAL_BROADCAST_ADDRESS values:")
