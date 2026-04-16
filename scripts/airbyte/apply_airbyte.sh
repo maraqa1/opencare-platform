@@ -19,6 +19,7 @@ require_airbyte_prereqs() {
   require_cmd sed
   require_cmd awk
   require_cmd grep
+  require_cmd python3
 }
 
 trim() {
@@ -312,34 +313,197 @@ wait_for_airbyte_deployments() {
 
 validate_rendered_airbyte_values() {
   local values_file="$1"
-  local missing=0
 
   log "Validating rendered Airbyte wiring"
-  for pattern in 'TEMPORAL_HOST' 'INTERNAL_API_HOST' 'TEMPORAL_BROADCAST_ADDRESS' 'PUBLIC_FRONTEND_ADDRESS' '7233'; do
+  for pattern in 'aws-region' 'aws-s3-access-key-id' 'aws-s3-secret-access-key'; do
     if ! grep -q "$pattern" "$values_file"; then
       log "Missing rendered Airbyte pattern: $pattern"
-      missing=1
+      fail "Rendered Airbyte values are missing required startup storage wiring"
     fi
   done
 
-  grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region' "$values_file" || true
-  [[ "$missing" -eq 0 ]] || fail "Rendered Airbyte values are missing required Temporal/internal API wiring"
+  grep -nE 'aws-region|aws-s3-access-key-id|aws-s3-secret-access-key' "$values_file" || true
 }
 
 validate_rendered_airbyte_manifest() {
   local manifest_file="$1"
-  local missing=0
 
-  log "Validating rendered Airbyte manifest wiring"
-  for pattern in 'TEMPORAL_HOST' 'INTERNAL_API_HOST' 'TEMPORAL_BROADCAST_ADDRESS' 'PUBLIC_FRONTEND_ADDRESS' '7233'; do
-    if ! grep -q "$pattern" "$manifest_file"; then
-      log "Missing rendered Airbyte manifest pattern: $pattern"
-      missing=1
-    fi
-  done
+  log "Validating rendered Airbyte manifest env ownership"
+  python3 - "$manifest_file" <<'PY'
+import re
+import sys
+from collections import defaultdict
+
+manifest_path = sys.argv[1]
+critical = {
+    "TEMPORAL_HOST",
+    "INTERNAL_API_HOST",
+    "RUN_DATABASE_MIGRATION_ON_STARTUP",
+    "CONFIGS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION",
+    "JOBS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION",
+    "BIND_ON_IP",
+    "TEMPORAL_BROADCAST_ADDRESS",
+    "SQL_TLS_ENABLED",
+    "POSTGRES_TLS_ENABLED",
+}
+must_exist = {"TEMPORAL_HOST", "INTERNAL_API_HOST"}
+must_exist_deployments = {
+    "airbyte-server",
+    "airbyte-worker",
+    "airbyte-cron",
+    "airbyte-workload-api-server",
+    "airbyte-workload-launcher",
+}
+docs = []
+current = []
+
+with open(manifest_path, "r", encoding="utf-8") as handle:
+    for raw_line in handle:
+        if raw_line.strip() == "---":
+            if current:
+                docs.append(current)
+                current = []
+            continue
+        current.append(raw_line.rstrip("\n"))
+if current:
+    docs.append(current)
+
+errors = []
+occurrences = []
+broadcast_values = []
+
+for doc in docs:
+    kind = ""
+    resource_name = ""
+    in_metadata = False
+    metadata_indent = None
+    in_containers = False
+    containers_indent = None
+    current_container = ""
+    current_container_indent = None
+    in_env = False
+    env_indent = None
+    current_env = None
+    env_counts = defaultdict(int)
+    env_presence = set()
+
+    def finish_env():
+        nonlocal current_env
+        if not current_env:
+            return
+        env_name = current_env["name"]
+        if current_env["has_value"] and current_env["has_valueFrom"]:
+            errors.append(
+                f"{kind}/{resource_name} container={current_container or '<unknown>'} env={env_name} has both value and valueFrom"
+            )
+        if env_name in critical:
+            env_counts[(current_container, env_name)] += 1
+            env_presence.add(env_name)
+            if env_name == "TEMPORAL_BROADCAST_ADDRESS":
+                broadcast_values.append((kind, resource_name, current_container, current_env["value_literal"]))
+        current_env = None
+
+    for line in doc:
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+
+        if stripped.startswith("kind: "):
+            kind = stripped.split(":", 1)[1].strip()
+            continue
+
+        if stripped == "metadata:":
+            in_metadata = True
+            metadata_indent = indent
+            continue
+
+        if in_metadata and indent <= metadata_indent and stripped != "metadata:":
+            in_metadata = False
+
+        if in_metadata and stripped.startswith("name: ") and not resource_name:
+            resource_name = stripped.split(":", 1)[1].strip().strip('"')
+            continue
+
+        if stripped == "containers:":
+            finish_env()
+            in_containers = True
+            containers_indent = indent
+            current_container = ""
+            current_container_indent = None
+            continue
+
+        if in_containers and indent <= containers_indent and stripped != "containers:":
+            finish_env()
+            in_containers = False
+            current_container = ""
+            current_container_indent = None
+
+        if in_containers and indent == containers_indent + 2 and stripped.startswith("- name: "):
+            finish_env()
+            current_container = stripped.split(":", 1)[1].strip().strip('"')
+            current_container_indent = indent
+            continue
+
+        if current_container and stripped == "env:" and indent > (current_container_indent or 0):
+            finish_env()
+            in_env = True
+            env_indent = indent
+            continue
+
+        if in_env and indent <= env_indent and stripped != "env:":
+            finish_env()
+            in_env = False
+
+        if in_env and indent == env_indent + 2 and stripped.startswith("- name: "):
+            finish_env()
+            current_env = {
+                "name": stripped.split(":", 1)[1].strip().strip('"'),
+                "has_value": False,
+                "has_valueFrom": False,
+                "value_literal": "",
+            }
+            continue
+
+        if current_env:
+            if stripped.startswith("value:"):
+                current_env["has_value"] = True
+                current_env["value_literal"] = stripped.split(":", 1)[1].strip().strip('"')
+            elif stripped.startswith("valueFrom:"):
+                current_env["has_valueFrom"] = True
+
+    finish_env()
+
+    for (container_name, env_name), count in sorted(env_counts.items()):
+        occurrences.append(
+            f"{kind}/{resource_name} container={container_name or '<unknown>'} env={env_name} count={count}"
+        )
+        if count > 1:
+            errors.append(
+                f"{kind}/{resource_name} container={container_name or '<unknown>'} env={env_name} appears {count} times"
+            )
+
+    if kind == "Deployment" and resource_name in must_exist_deployments:
+        for env_name in sorted(must_exist - env_presence):
+            errors.append(f"{kind}/{resource_name} is missing required env {env_name}")
+
+print("Rendered critical env counts:")
+for line in occurrences:
+    print(line)
+
+if broadcast_values:
+    print("Rendered TEMPORAL_BROADCAST_ADDRESS values:")
+    for kind, resource_name, container_name, value_literal in broadcast_values:
+        print(
+            f"{kind}/{resource_name} container={container_name or '<unknown>'} TEMPORAL_BROADCAST_ADDRESS={value_literal or '<valueFrom>'}"
+        )
+
+if errors:
+    print("Rendered manifest env ownership errors:", file=sys.stderr)
+    for error in errors:
+        print(f"- {error}", file=sys.stderr)
+    sys.exit(1)
+PY
 
   grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233' "$manifest_file" || true
-  [[ "$missing" -eq 0 ]] || fail "Rendered Airbyte manifest is missing required Temporal/internal API wiring"
 }
 
 validate_airbyte() {

@@ -10,23 +10,6 @@ ingress:
 connectorBuilderServer:
   enabled: false
 
-temporal:
-  extraEnv:
-    - name: POD_IP
-      valueFrom:
-        fieldRef:
-          fieldPath: status.podIP
-    - name: BIND_ON_IP
-      value: "0.0.0.0"
-    - name: TEMPORAL_BROADCAST_ADDRESS
-      value: "$(POD_IP)"
-    - name: PUBLIC_FRONTEND_ADDRESS
-      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
-    - name: SQL_TLS_ENABLED
-      value: "false"
-    - name: POSTGRES_TLS_ENABLED
-      value: "false"
-
 global:
   edition: community
   airbyteUrl: __AIRBYTE_WEBAPP_SERVICE_NAME__
@@ -65,19 +48,12 @@ global:
     AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_SOURCE_STUBS_URL: __AIRBYTE_ENTERPRISE_SOURCE_STUBS_URL__
     AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_DESTINATION_STUBS_URL: __AIRBYTE_ENTERPRISE_DESTINATION_STUBS_URL__
     AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED: "__AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED__"
-    RUN_DATABASE_MIGRATION_ON_STARTUP: "__RUN_DATABASE_MIGRATION_ON_STARTUP__"
-    CONFIGS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION: __CONFIGS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION__
-    JOBS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION: __JOBS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION__
     AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION: __AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION__
     AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION: __AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION__
     INTERNAL_API_TOKEN: __INTERNAL_API_TOKEN__
 
 server:
   extraEnv:
-    - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
-    - name: INTERNAL_API_HOST
-      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
       valueFrom:
         secretKeyRef:
@@ -103,10 +79,6 @@ server:
 
 worker:
   extraEnv:
-    - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
-    - name: INTERNAL_API_HOST
-      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
       valueFrom:
         secretKeyRef:
@@ -130,10 +102,6 @@ worker:
 
 cron:
   extraEnv:
-    - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
-    - name: INTERNAL_API_HOST
-      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
       valueFrom:
         secretKeyRef:
@@ -157,10 +125,6 @@ cron:
 
 workloadApiServer:
   extraEnv:
-    - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
-    - name: INTERNAL_API_HOST
-      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: AWS_REGION
       valueFrom:
         secretKeyRef:
@@ -184,14 +148,6 @@ workloadApiServer:
 
 workloadLauncher:
   extraEnv:
-    - name: TEMPORAL_HOST
-      value: "__AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233"
-    - name: INTERNAL_API_HOST
-      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
-    - name: SQL_TLS_ENABLED
-      value: "false"
-    - name: POSTGRES_TLS_ENABLED
-      value: "false"
     - name: AWS_REGION
       valueFrom:
         secretKeyRef:
