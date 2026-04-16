@@ -330,9 +330,9 @@ validate_rendered_airbyte_manifest() {
 
   log "Validating rendered Airbyte manifest env ownership"
   python3 - "$manifest_file" <<'PY'
-  import re
-  import sys
-  from collections import defaultdict
+import re
+import sys
+from collections import defaultdict
 
 manifest_path = sys.argv[1]
 critical = {
@@ -360,12 +360,12 @@ with open(manifest_path, "r", encoding="utf-8") as handle:
 if current:
     docs.append(current)
 
-  config_maps = {}
-  doc_text_by_resource = {}
-  errors = []
-  occurrences = []
-  broadcast_values = []
-  critical_presence = defaultdict(set)
+config_maps = {}
+doc_text_by_resource = {}
+errors = []
+occurrences = []
+broadcast_values = []
+critical_presence = defaultdict(set)
 
 for doc in docs:
     kind = ""
@@ -407,10 +407,10 @@ for doc in docs:
         if in_data and indent == data_indent + 2 and ":" in stripped:
             data_keys.add(stripped.split(":", 1)[0].strip().strip('"'))
 
-      if kind == "ConfigMap" and resource_name:
-          config_maps[resource_name] = data_keys
-      if kind and resource_name:
-          doc_text_by_resource[(kind, resource_name)] = "\n".join(doc)
+    if kind == "ConfigMap" and resource_name:
+        config_maps[resource_name] = data_keys
+    if kind and resource_name:
+        doc_text_by_resource[(kind, resource_name)] = "\n".join(doc)
 
 for doc in docs:
     kind = ""
@@ -557,8 +557,6 @@ for doc in docs:
                 key_name = stripped.split(":", 1)[1].strip().strip('"')
                 if key_name == current_env["name"]:
                     current_env["has_valueFrom"] = True
-            elif stripped.startswith("name:") and "name:" in stripped:
-                pass
 
         if in_env_from:
             if indent == env_from_indent + 2 and stripped.startswith("- "):
@@ -590,31 +588,31 @@ if critical_presence:
         names = ", ".join(sorted(critical_presence[deployment_name]))
         print(f"Deployment/{deployment_name}: {names}")
 
-  required_by_deployment = {
-      "airbyte-server": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
-      "airbyte-worker": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
-      "airbyte-cron": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
-      "airbyte-workload-api-server": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
-      "airbyte-workload-launcher": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
-  }
+required_by_deployment = {
+    "airbyte-server": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-worker": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-cron": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-workload-api-server": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+    "airbyte-workload-launcher": {"INTERNAL_API_HOST", "TEMPORAL_HOST"},
+}
 
-  for deployment_name, required in sorted(required_by_deployment.items()):
-      doc_text = doc_text_by_resource.get(("Deployment", deployment_name), "")
-      if not doc_text:
-          errors.append(f"Deployment/{deployment_name} was not found in rendered manifest")
-          continue
-      for env_name in sorted(required):
-          env_matches = re.findall(rf'^\s*-\s+name:\s+{re.escape(env_name)}\s*$', doc_text, re.MULTILINE)
-          if len(env_matches) == 0:
-              errors.append(f"Deployment/{deployment_name} is missing required env {env_name}")
-              continue
-          if len(env_matches) > 1:
-              errors.append(f"Deployment/{deployment_name} has duplicate required env {env_name} ({len(env_matches)} entries)")
-          critical_presence[deployment_name].add(env_name)
-          occurrences.append(f"Deployment/{deployment_name} env={env_name} source=rendered-doc")
+for deployment_name, required in sorted(required_by_deployment.items()):
+    doc_text = doc_text_by_resource.get(("Deployment", deployment_name), "")
+    if not doc_text:
+        errors.append(f"Deployment/{deployment_name} was not found in rendered manifest")
+        continue
+    for env_name in sorted(required):
+        env_matches = re.findall(rf'^\s*-\s+name:\s+{re.escape(env_name)}\s*$', doc_text, re.MULTILINE)
+        if len(env_matches) == 0:
+            errors.append(f"Deployment/{deployment_name} is missing required env {env_name}")
+            continue
+        if len(env_matches) > 1:
+            errors.append(f"Deployment/{deployment_name} has duplicate required env {env_name} ({len(env_matches)} entries)")
+        critical_presence[deployment_name].add(env_name)
+        occurrences.append(f"Deployment/{deployment_name} env={env_name} source=rendered-doc")
 
-  if broadcast_values:
-      print("Rendered TEMPORAL_BROADCAST_ADDRESS values:")
+if broadcast_values:
+    print("Rendered TEMPORAL_BROADCAST_ADDRESS values:")
     for kind, resource_name, container_name, value_literal in broadcast_values:
         print(
             f"{kind}/{resource_name} container={container_name or '<unknown>'} TEMPORAL_BROADCAST_ADDRESS={value_literal or '<valueFrom>'}"
