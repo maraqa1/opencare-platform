@@ -131,6 +131,10 @@ cron:
 
 workloadApiServer:
   extraEnv:
+    - name: INTERNAL_API_HOST
+      value: http://__AIRBYTE_SERVER_SERVICE_NAME__.__NAMESPACE__:8001
+    - name: TEMPORAL_HOST
+      value: __AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME__:7233
     - name: AWS_REGION
       valueFrom:
         secretKeyRef:
