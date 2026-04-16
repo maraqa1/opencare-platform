@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VALUES_TEMPLATE="$ROOT_DIR/manifests/airbyte/values.template.yaml"
 STATE_DIR="$ROOT_DIR/.state/airbyte"
+LAST_RENDERED_AIRBYTE_VALUES_FILE=""
 
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
@@ -209,8 +210,10 @@ render_values_file() {
     -e "s|__MINIO_SECRET_KEY__|${effective_minio_secret_key}|g" \
     -e "s|__AIRBYTE_SERVER_SERVICE_NAME__|${AIRBYTE_SERVER_SERVICE_NAME}|g" \
     -e "s|__AIRBYTE_WEBAPP_SERVICE_NAME__|${AIRBYTE_WEBAPP_SERVICE_NAME}|g" \
+    -e "s|__AIRBYTE_TEMPORAL_SERVICE_NAME__|${AIRBYTE_TEMPORAL_SERVICE_NAME}|g" \
     "$VALUES_TEMPLATE" >"$values_file"
 
+  LAST_RENDERED_AIRBYTE_VALUES_FILE="$values_file"
   printf '%s\n' "$values_file"
 }
 
@@ -239,6 +242,15 @@ print_airbyte_diagnostics() {
     echo
     echo "=== Airbyte Resources ==="
     kubectl -n "$NAMESPACE" get deploy,svc,pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o wide || true
+    echo
+    echo "=== Temporal Service And Endpoints ==="
+    kubectl -n "$NAMESPACE" get svc "$AIRBYTE_TEMPORAL_SERVICE_NAME" -o wide || true
+    kubectl -n "$NAMESPACE" get endpoints "$AIRBYTE_TEMPORAL_SERVICE_NAME" -o yaml || true
+    echo
+    echo "=== Rendered Airbyte Wiring ==="
+    if [[ -n "$LAST_RENDERED_AIRBYTE_VALUES_FILE" && -f "$LAST_RENDERED_AIRBYTE_VALUES_FILE" ]]; then
+      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region' "$LAST_RENDERED_AIRBYTE_VALUES_FILE" || true
+    fi
     echo
     echo "=== Recent Events ==="
     kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp | tail -n 100 || true
@@ -272,35 +284,20 @@ wait_for_airbyte_deployments() {
   done <<< "$deployments"
 }
 
-ensure_airbyte_runtime_envs() {
-  local effective_minio_access_key
-  local effective_minio_secret_key
+validate_rendered_airbyte_values() {
+  local values_file="$1"
+  local missing=0
 
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
+  log "Validating rendered Airbyte wiring"
+  for pattern in 'TEMPORAL_HOST' 'INTERNAL_API_HOST' 'TEMPORAL_BROADCAST_ADDRESS' 'PUBLIC_FRONTEND_ADDRESS' '7233'; do
+    if ! grep -q "$pattern" "$values_file"; then
+      log "Missing rendered Airbyte pattern: $pattern"
+      missing=1
+    fi
+  done
 
-  log "Ensuring Airbyte runtime AWS env vars are present on server, launcher, and worker"
-  kubectl -n "$NAMESPACE" set env deployment/airbyte-server \
-    AWS_REGION="$MINIO_REGION" \
-    AWS_DEFAULT_REGION="$MINIO_REGION" \
-    AWS_ACCESS_KEY_ID="$effective_minio_access_key" \
-    AWS_SECRET_ACCESS_KEY="$effective_minio_secret_key" >/dev/null
-
-  kubectl -n "$NAMESPACE" set env deployment/airbyte-workload-launcher \
-    AWS_REGION="$MINIO_REGION" \
-    AWS_DEFAULT_REGION="$MINIO_REGION" \
-    AWS_ACCESS_KEY_ID="$effective_minio_access_key" \
-    AWS_SECRET_ACCESS_KEY="$effective_minio_secret_key" >/dev/null
-
-  kubectl -n "$NAMESPACE" set env deployment/airbyte-worker \
-    AWS_REGION="$MINIO_REGION" \
-    AWS_DEFAULT_REGION="$MINIO_REGION" \
-    AWS_ACCESS_KEY_ID="$effective_minio_access_key" \
-    AWS_SECRET_ACCESS_KEY="$effective_minio_secret_key" >/dev/null
-
-  kubectl -n "$NAMESPACE" rollout status deployment/airbyte-server --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
-  kubectl -n "$NAMESPACE" rollout status deployment/airbyte-workload-launcher --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
-  kubectl -n "$NAMESPACE" rollout status deployment/airbyte-worker --timeout="${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s"
+  grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region' "$values_file" || true
+  [[ "$missing" -eq 0 ]] || fail "Rendered Airbyte values are missing required Temporal/internal API wiring"
 }
 
 validate_airbyte() {
@@ -347,6 +344,7 @@ main() {
   configure_helm_repo
   remove_legacy_airbyte_resources
   values_file="$(render_values_file)"
+  validate_rendered_airbyte_values "$values_file"
 
   log "Deploying Airbyte via Helm"
   helm upgrade --install "$AIRBYTE_RELEASE_NAME" "$AIRBYTE_CHART_NAME" \
@@ -357,7 +355,6 @@ main() {
     --timeout "${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s" \
     -f "$values_file"
 
-  ensure_airbyte_runtime_envs
   wait_for_airbyte_deployments
   validate_airbyte
 

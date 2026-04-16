@@ -8,10 +8,20 @@ ingress:
   enabled: false
 
 connectorBuilderServer:
-  enabled: true
+  enabled: false
 
 temporal:
   extraEnv:
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    - name: BIND_ON_IP
+      value: "0.0.0.0"
+    - name: TEMPORAL_BROADCAST_ADDRESS
+      value: "$(POD_IP)"
+    - name: PUBLIC_FRONTEND_ADDRESS
+      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
     - name: SQL_TLS_ENABLED
       value: "false"
     - name: POSTGRES_TLS_ENABLED
@@ -63,16 +73,142 @@ global:
     INTERNAL_API_TOKEN: __INTERNAL_API_TOKEN__
 
 server:
+  extraEnv:
+    - name: TEMPORAL_HOST
+      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+    - name: INTERNAL_API_HOST
+      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
   service:
     type: ClusterIP
 
-worker: {}
+worker:
+  extraEnv:
+    - name: TEMPORAL_HOST
+      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+    - name: INTERNAL_API_HOST
+      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
 
-cron: {}
+cron:
+  extraEnv:
+    - name: TEMPORAL_HOST
+      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+    - name: INTERNAL_API_HOST
+      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
+
+workloadApiServer:
+  extraEnv:
+    - name: TEMPORAL_HOST
+      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+    - name: INTERNAL_API_HOST
+      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
 
 workloadLauncher:
   extraEnv:
+    - name: TEMPORAL_HOST
+      value: "__AIRBYTE_TEMPORAL_SERVICE_NAME__:7233"
+    - name: INTERNAL_API_HOST
+      value: "__AIRBYTE_SERVER_SERVICE_NAME__:8001"
     - name: SQL_TLS_ENABLED
       value: "false"
     - name: POSTGRES_TLS_ENABLED
       value: "false"
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
