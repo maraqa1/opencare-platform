@@ -354,7 +354,6 @@ main() {
     --create-namespace \
     --version "$AIRBYTE_CHART_VERSION" \
     --wait \
-    --atomic \
     --timeout "${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s" \
     -f "$values_file"
 
