@@ -129,6 +129,8 @@ type: Opaque
 stringData:
   database-user: ${AIRBYTE_DB_USER}
   database-password: ${AIRBYTE_DB_PASSWORD}
+  CONFIG_DATABASE_REPLICA_USER: ${AIRBYTE_DB_USER}
+  CONFIG_DATABASE_REPLICA_PASSWORD: ${AIRBYTE_DB_PASSWORD}
   aws-s3-access-key-id: ${effective_minio_access_key}
   aws-s3-secret-access-key: ${effective_minio_secret_key}
   aws-region: ${MINIO_REGION}
