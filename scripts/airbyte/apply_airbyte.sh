@@ -549,7 +549,8 @@ PY
     rendered_required_list="$(printf '%s\n' "$rendered_required" | tr -d '\r' | sed '/^$/d')"
     while IFS= read -r env_name; do
       [[ -n "$env_name" ]] || continue
-      if ! printf '%s\n' "$runtime_dump" | grep -q "^${env_name}="; then
+      env_name="$(printf '%s' "$env_name" | tr -d '\r' | tr -d '[:space:]')"
+      if ! printf '%s\n' "$runtime_dump" | awk -F= -v name="$env_name" '$1==name {found=1} END{exit !found}'; then
         fail "Deployment ${deployment} is missing required Airbyte storage runtime env: ${env_name}. Found envs: $(printf '%s' "$found_storage_envs" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
       fi
     done <<< "$rendered_required_list"
@@ -563,7 +564,8 @@ PY
       S3_REGION \
       AWS_ACCESS_KEY_ID \
       AWS_SECRET_ACCESS_KEY; do
-      if printf '%s\n' "$rendered_required_list" | grep -qx "$env_name" && ! printf '%s\n' "$runtime_dump" | grep -q "^${env_name}="; then
+      env_name="$(printf '%s' "$env_name" | tr -d '\r' | tr -d '[:space:]')"
+      if printf '%s\n' "$rendered_required_list" | grep -qx "$env_name" && ! printf '%s\n' "$runtime_dump" | awk -F= -v name="$env_name" '$1==name {found=1} END{exit !found}'; then
         fail "Deployment ${deployment} is missing required Airbyte storage runtime env: ${env_name}. Found envs: $(printf '%s' "$found_storage_envs" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
       fi
     done
