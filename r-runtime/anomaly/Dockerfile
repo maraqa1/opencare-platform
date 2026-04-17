@@ -1,11 +1,22 @@
 FROM rocker/r-ver:4.4.1
 
 RUN set -eux; \
-    for i in 1 2 3; do \
-        apt-get update && break; \
-        sleep 15; \
+    sed -i 's|http://archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|https://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \
+    for i in 1 2 3 4 5; do \
+        apt-get -o Acquire::Retries=5 -o Acquire::ForceIPv4=true update && \
+        apt-get -o Acquire::Retries=5 -o Acquire::ForceIPv4=true install -y --no-install-recommends --fix-missing \
+            build-essential \
+            pkg-config \
+            zlib1g-dev \
+            libcurl4-openssl-dev \
+            libpq-dev \
+            libsodium-dev \
+            libssl-dev \
+            libxml2-dev && break; \
+        rm -rf /var/lib/apt/lists/*; \
+        sleep 20; \
     done; \
-    apt-get install -y --no-install-recommends \
+    apt-get -o Acquire::Retries=5 -o Acquire::ForceIPv4=true install -y --no-install-recommends --fix-missing \
         build-essential \
         pkg-config \
         zlib1g-dev \
