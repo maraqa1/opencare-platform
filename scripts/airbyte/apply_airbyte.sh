@@ -265,20 +265,25 @@ remove_legacy_airbyte_resources() {
 
 ensure_airbyte_runtime_config() {
   local internal_api_host
+  local connector_builder_server_api_host
   local temporal_host
   local deployment
   local missing_envs
   local json_patch
 
   internal_api_host="http://${AIRBYTE_SERVER_SERVICE_NAME}.${NAMESPACE}:8001"
+  connector_builder_server_api_host="http://${AIRBYTE_RELEASE_NAME}-airbyte-connector-builder-server-svc.${NAMESPACE}:80"
   temporal_host="${AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME}:7233"
 
   log "Patching Airbyte shared runtime config"
   kubectl -n "$NAMESPACE" patch configmap airbyte-airbyte-env --type=merge -p "$(cat <<EOF
 {
   "data": {
+    "CONNECTOR_BUILDER_SERVER_API_HOST": "${connector_builder_server_api_host}",
     "INTERNAL_API_HOST": "${internal_api_host}",
+    "POSTGRES_TLS_DISABLE_HOST_VERIFICATION": "false",
     "TEMPORAL_HOST": "${temporal_host}",
+    "SQL_TLS_DISABLE_HOST_VERIFICATION": "false",
     "POSTGRES_TLS_ENABLED": "false",
     "SQL_TLS_ENABLED": "false"
   }
