@@ -306,22 +306,11 @@ EOF
 }
 
 ensure_airbyte_internal_storage_secret() {
-  local effective_minio_access_key
-  local effective_minio_secret_key
-
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
-
-  log "Aligning Airbyte internal storage secret"
-  kubectl -n "$NAMESPACE" patch secret airbyte-airbyte-secrets --type=merge -p "$(cat <<EOF
-{
-  "stringData": {
-    "AWS_ASSUME_ROLE_ACCESS_KEY_ID": "${effective_minio_access_key}",
-    "AWS_ASSUME_ROLE_SECRET_ACCESS_KEY": "${effective_minio_secret_key}"
-  }
-}
-EOF
-)" >/dev/null
+  log "Removing Airbyte assume-role storage secret keys"
+  kubectl -n "$NAMESPACE" patch secret airbyte-airbyte-secrets --type=json -p='[
+    {"op":"remove","path":"/data/AWS_ASSUME_ROLE_ACCESS_KEY_ID"},
+    {"op":"remove","path":"/data/AWS_ASSUME_ROLE_SECRET_ACCESS_KEY"}
+  ]' >/dev/null 2>&1 || true
 }
 
 print_airbyte_diagnostics() {
