@@ -458,12 +458,6 @@ validate_airbyte_storage_runtime() {
   configmap_dump="$(kubectl -n "$NAMESPACE" get configmap airbyte-airbyte-env -o yaml)"
 
   for pattern in \
-    'STORAGE_TYPE: S3' \
-    'S3_ENDPOINT:' \
-    'MINIO_ENDPOINT:' \
-    'AWS_ENDPOINT_URL_S3:' \
-    'S3_PATH_STYLE_ACCESS:' \
-    'S3_REGION:' \
     'STORAGE_BUCKET_LOG:' \
     'STORAGE_BUCKET_STATE:' \
     'STORAGE_BUCKET_WORKLOAD_OUTPUT:' \
@@ -477,9 +471,9 @@ validate_airbyte_storage_runtime() {
   for deployment in airbyte-server airbyte-worker airbyte-workload-api-server airbyte-workload-launcher; do
     runtime_dump="$(kubectl -n "$NAMESPACE" exec "deployment/${deployment}" -- printenv)"
     for pattern in \
+      'AWS_ENDPOINT_URL_S3=' \
       'S3_ENDPOINT=' \
       'MINIO_ENDPOINT=' \
-      'AWS_ENDPOINT_URL_S3=' \
       'S3_PATH_STYLE_ACCESS=' \
       'S3_REGION=' \
       'STORAGE_BUCKET_LOG=' \
