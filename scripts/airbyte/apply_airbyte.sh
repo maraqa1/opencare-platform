@@ -453,6 +453,9 @@ validate_airbyte_storage_runtime() {
   local configmap_dump
   local deployment
   local runtime_dump
+  local rendered_required
+  local rendered_required_list
+  local found_storage_envs
 
   log "Validating Airbyte storage runtime wiring"
   configmap_dump="$(kubectl -n "$NAMESPACE" get configmap airbyte-airbyte-env -o yaml)"
@@ -470,23 +473,80 @@ validate_airbyte_storage_runtime() {
 
   for deployment in airbyte-server airbyte-worker airbyte-workload-api-server airbyte-workload-launcher; do
     runtime_dump="$(kubectl -n "$NAMESPACE" exec "deployment/${deployment}" -- printenv)"
-    for pattern in \
-      'AWS_ENDPOINT_URL_S3=' \
-      'S3_ENDPOINT=' \
-      'MINIO_ENDPOINT=' \
-      'S3_PATH_STYLE_ACCESS=' \
-      'S3_REGION=' \
-      'AWS_ACCESS_KEY_ID=' \
-      'AWS_SECRET_ACCESS_KEY=' \
-      'STORAGE_BUCKET_LOG=' \
-      'STORAGE_BUCKET_STATE=' \
-      'STORAGE_BUCKET_WORKLOAD_OUTPUT=' \
-      'STORAGE_BUCKET_ACTIVITY_PAYLOAD=' \
-      'STORAGE_BUCKET_AUDIT_LOGGING='; do
-      if ! printf '%s\n' "$runtime_dump" | grep -q "$pattern"; then
-        fail "Deployment ${deployment} is missing required Airbyte storage runtime env: ${pattern%=}"
+    found_storage_envs="$(printf '%s\n' "$runtime_dump" | grep -E 'AWS_|S3_|MINIO_|STORAGE_BUCKET_' || true)"
+    rendered_required="$(
+      python3 - "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" "$deployment" <<'PY'
+import re
+import sys
+
+manifest_path, deployment_name = sys.argv[1], sys.argv[2]
+target = {
+    "AWS_ENDPOINT_URL_S3",
+    "MINIO_ENDPOINT",
+    "S3_ENDPOINT",
+    "S3_PATH_STYLE_ACCESS",
+    "S3_REGION",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "STORAGE_BUCKET_LOG",
+    "STORAGE_BUCKET_STATE",
+    "STORAGE_BUCKET_WORKLOAD_OUTPUT",
+    "STORAGE_BUCKET_ACTIVITY_PAYLOAD",
+    "STORAGE_BUCKET_AUDIT_LOGGING",
+}
+
+docs = []
+current = []
+with open(manifest_path, "r", encoding="utf-8") as handle:
+    for raw_line in handle:
+        if raw_line.strip() == "---":
+            if current:
+                docs.append(current)
+                current = []
+            continue
+        current.append(raw_line.rstrip("\n"))
+if current:
+    docs.append(current)
+
+for doc in docs:
+    text = "\n".join(doc)
+    if not re.search(r"^kind:\s+Deployment\s*$", text, re.MULTILINE):
+        continue
+    if not re.search(rf"^  name:\s+{re.escape(deployment_name)}\s*$", text, re.MULTILINE):
+        continue
+    names = []
+    for match in re.finditer(r"^\s*-\s+name:\s+([A-Z0-9_]+)\s*$", text, re.MULTILINE):
+        env_name = match.group(1)
+        if env_name in target:
+            names.append(env_name)
+    print("\n".join(dict.fromkeys(names)))
+    break
+PY
+    )"
+    rendered_required_list="$(printf '%s\n' "$rendered_required" | sed '/^$/d')"
+    while IFS= read -r env_name; do
+      [[ -n "$env_name" ]] || continue
+      if ! printf '%s\n' "$runtime_dump" | grep -q "^${env_name}="; then
+        fail "Deployment ${deployment} is missing required Airbyte storage runtime env: ${env_name}. Found envs: $(printf '%s' "$found_storage_envs" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+      fi
+    done <<< "$rendered_required_list"
+
+    for env_name in \
+      AWS_ENDPOINT_URL_S3 \
+      MINIO_ENDPOINT \
+      S3_ENDPOINT \
+      S3_PATH_STYLE_ACCESS \
+      S3_REGION \
+      AWS_ACCESS_KEY_ID \
+      AWS_SECRET_ACCESS_KEY; do
+      if printf '%s\n' "$rendered_required_list" | grep -qx "$env_name" && ! printf '%s\n' "$runtime_dump" | grep -q "^${env_name}="; then
+        fail "Deployment ${deployment} is missing required Airbyte storage runtime env: ${env_name}. Found envs: $(printf '%s' "$found_storage_envs" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
       fi
     done
+
+    if [[ -z "$rendered_required_list" ]]; then
+      fail "Deployment ${deployment} has no rendered Airbyte storage runtime contract to validate"
+    fi
   done
 
   print_airbyte_storage_runtime
