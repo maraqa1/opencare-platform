@@ -527,7 +527,7 @@ with open(manifest_path, "r", encoding="utf-8") as handle:
                 docs.append(current)
                 current = []
             continue
-        current.append(raw_line.rstrip("\n"))
+        current.append(raw_line.rstrip("\r\n"))
 if current:
     docs.append(current)
 
@@ -546,7 +546,7 @@ for doc in docs:
     break
 PY
     )"
-    rendered_required_list="$(printf '%s\n' "$rendered_required" | sed '/^$/d')"
+    rendered_required_list="$(printf '%s\n' "$rendered_required" | tr -d '\r' | sed '/^$/d')"
     while IFS= read -r env_name; do
       [[ -n "$env_name" ]] || continue
       if ! printf '%s\n' "$runtime_dump" | grep -q "^${env_name}="; then
