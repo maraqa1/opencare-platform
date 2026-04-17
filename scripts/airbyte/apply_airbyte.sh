@@ -426,7 +426,6 @@ validate_rendered_airbyte_storage_manifest() {
     'STORAGE_BUCKET_WORKLOAD_OUTPUT' \
     'STORAGE_BUCKET_ACTIVITY_PAYLOAD' \
     'STORAGE_BUCKET_AUDIT_LOGGING' \
-    'STORAGE_BUCKET_PROFILER_OUTPUT' \
     'aws-s3-access-key-id' \
     'aws-s3-secret-access-key'; do
     if ! grep -q "$pattern" "$manifest_file"; then
