@@ -242,6 +242,50 @@ remove_legacy_airbyte_resources() {
   kubectl -n "$NAMESPACE" delete configmap airbyte-temporal-dynamic-config --ignore-not-found >/dev/null 2>&1 || true
 }
 
+ensure_airbyte_runtime_config() {
+  local internal_api_host
+  local temporal_host
+  local deployment
+  local missing_envs
+  local json_patch
+
+  internal_api_host="http://${AIRBYTE_SERVER_SERVICE_NAME}.${NAMESPACE}:8001"
+  temporal_host="${AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME}:7233"
+
+  log "Patching Airbyte shared runtime config"
+  kubectl -n "$NAMESPACE" patch configmap airbyte-airbyte-env --type=merge -p "$(cat <<EOF
+{
+  "data": {
+    "INTERNAL_API_HOST": "${internal_api_host}",
+    "TEMPORAL_HOST": "${temporal_host}",
+    "POSTGRES_TLS_ENABLED": "false",
+    "SQL_TLS_ENABLED": "false"
+  }
+}
+EOF
+)" >/dev/null
+
+  for deployment in airbyte-worker airbyte-workload-api-server airbyte-workload-launcher; do
+    missing_envs="$(
+      kubectl -n "$NAMESPACE" get deployment "$deployment" -o json \
+        | python3 -c "import json,sys; data=json.load(sys.stdin); env=data['spec']['template']['spec']['containers'][0].get('env', []); names={item.get('name') for item in env}; missing=[name for name in ('INTERNAL_API_HOST','TEMPORAL_HOST') if name not in names]; print(' '.join(missing))"
+    )"
+
+    json_patch="[]"
+    if [[ " $missing_envs " == *" INTERNAL_API_HOST "* ]]; then
+      json_patch="$(python3 -c "import json; print(json.dumps([{'op':'add','path':'/spec/template/spec/containers/0/env/-','value':{'name':'INTERNAL_API_HOST','value':'${internal_api_host}'}}]))")"
+      kubectl -n "$NAMESPACE" patch deployment "$deployment" --type=json -p="$json_patch" >/dev/null
+    fi
+    if [[ " $missing_envs " == *" TEMPORAL_HOST "* ]]; then
+      json_patch="$(python3 -c "import json; print(json.dumps([{'op':'add','path':'/spec/template/spec/containers/0/env/-','value':{'name':'TEMPORAL_HOST','value':'${temporal_host}'}}]))")"
+      kubectl -n "$NAMESPACE" patch deployment "$deployment" --type=json -p="$json_patch" >/dev/null
+    fi
+  done
+
+  log "Restarting patched Airbyte deployments"
+  kubectl -n "$NAMESPACE" rollout restart deployment/airbyte-temporal deployment/airbyte-server deployment/airbyte-worker deployment/airbyte-workload-api-server deployment/airbyte-workload-launcher >/dev/null
+}
+
 print_airbyte_diagnostics() {
   local diagnostics_dir
   local diagnostics_file
@@ -696,10 +740,10 @@ main() {
     --namespace "$NAMESPACE" \
     --create-namespace \
     --version "$AIRBYTE_CHART_VERSION" \
-    --wait \
     --timeout "${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s" \
     -f "$values_file"
 
+  ensure_airbyte_runtime_config
   wait_for_airbyte_deployments
   validate_airbyte
 
