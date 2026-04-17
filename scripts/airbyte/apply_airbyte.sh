@@ -305,6 +305,25 @@ EOF
   kubectl -n "$NAMESPACE" rollout restart deployment/airbyte-temporal deployment/airbyte-server deployment/airbyte-worker deployment/airbyte-workload-api-server deployment/airbyte-workload-launcher >/dev/null
 }
 
+ensure_airbyte_internal_storage_secret() {
+  local effective_minio_access_key
+  local effective_minio_secret_key
+
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
+
+  log "Aligning Airbyte internal storage secret"
+  kubectl -n "$NAMESPACE" patch secret airbyte-airbyte-secrets --type=merge -p "$(cat <<EOF
+{
+  "stringData": {
+    "AWS_ASSUME_ROLE_ACCESS_KEY_ID": "${effective_minio_access_key}",
+    "AWS_ASSUME_ROLE_SECRET_ACCESS_KEY": "${effective_minio_secret_key}"
+  }
+}
+EOF
+)" >/dev/null
+}
+
 print_airbyte_diagnostics() {
   local diagnostics_dir
   local diagnostics_file
@@ -932,6 +951,7 @@ main() {
     --timeout "${AIRBYTE_DEPLOYMENT_TIMEOUT_SECONDS}s" \
     -f "$values_file"
 
+  ensure_airbyte_internal_storage_secret
   ensure_airbyte_runtime_config
   wait_for_airbyte_deployments
   validate_airbyte_storage_runtime "$manifest_file"
