@@ -450,6 +450,7 @@ print_airbyte_storage_runtime() {
 }
 
 validate_airbyte_storage_runtime() {
+  local manifest_file="$1"
   local configmap_dump
   local deployment
   local runtime_dump
@@ -475,7 +476,7 @@ validate_airbyte_storage_runtime() {
     runtime_dump="$(kubectl -n "$NAMESPACE" exec "deployment/${deployment}" -- printenv)"
     found_storage_envs="$(printf '%s\n' "$runtime_dump" | grep -E 'AWS_|S3_|MINIO_|STORAGE_BUCKET_' || true)"
     rendered_required="$(
-      python3 - "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" "$deployment" <<'PY'
+      python3 - "$manifest_file" "$deployment" <<'PY'
 import re
 import sys
 
@@ -933,7 +934,7 @@ main() {
 
   ensure_airbyte_runtime_config
   wait_for_airbyte_deployments
-  validate_airbyte_storage_runtime
+  validate_airbyte_storage_runtime "$manifest_file"
   validate_airbyte
 
   log "Airbyte facts: endpoint=${AIRBYTE_URL}"
