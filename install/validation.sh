@@ -28,8 +28,8 @@ log "Checking Superset service"
 run_cluster_http_check superset "$SUPERSET_EMBED_URL"
 
 if [[ -f "$SCRIPT_DIR/../manifests/airbyte/values.template.yaml" ]]; then
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ACCESS_KEY "$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_SECRET_KEY "$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$MINIO_SECRET_KEY")")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
   log "Checking Airbyte migration tables"
   run_cluster_command airbyte-migrations postgres:16-alpine sh -c "psql postgresql://${AIRBYTE_DB_USER}:${AIRBYTE_DB_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${AIRBYTE_DB_NAME} -Atc \"select coalesce(to_regclass('public.airbyte_configs_migrations')::text, '') = 'airbyte_configs_migrations' and coalesce(to_regclass('public.airbyte_jobs_migrations')::text, '') = 'airbyte_jobs_migrations';\" | grep -qx t"

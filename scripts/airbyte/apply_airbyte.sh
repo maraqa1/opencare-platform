@@ -113,8 +113,8 @@ apply_airbyte_secret() {
   local effective_minio_access_key
   local effective_minio_secret_key
 
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ACCESS_KEY "$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_SECRET_KEY "$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$MINIO_SECRET_KEY")")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
   log "Applying Airbyte chart secret contract"
   secret_file="$(mktemp "${STATE_DIR}/airbyte-secret.XXXXXX.yaml")"
@@ -145,8 +145,8 @@ ensure_airbyte_buckets() {
   local effective_minio_secret_key
 
   minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ACCESS_KEY "$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_SECRET_KEY "$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$MINIO_SECRET_KEY")")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
   log "Ensuring Airbyte MinIO buckets exist"
   run_cluster_command airbyte-buckets "$AIRBYTE_MC_IMAGE" sh -c "
@@ -168,8 +168,8 @@ validate_airbyte_minio_secret_parity() {
   local secret_secret_key
   local secret_region
 
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ACCESS_KEY "$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_SECRET_KEY "$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$MINIO_SECRET_KEY")")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
   secret_access_key="$(secret_value_or_default "$AIRBYTE_SECRET_NAME" aws-s3-access-key-id "")"
   secret_secret_key="$(secret_value_or_default "$AIRBYTE_SECRET_NAME" aws-s3-secret-access-key "")"
   secret_region="$(secret_value_or_default "$AIRBYTE_SECRET_NAME" aws-region "")"
@@ -199,8 +199,8 @@ render_values_file() {
 
   values_file="$(mktemp "${STATE_DIR}/airbyte-values.XXXXXX.yaml")"
   minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ACCESS_KEY "$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_SECRET_KEY "$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$MINIO_SECRET_KEY")")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
   sed \
     -e "s|__NAMESPACE__|${NAMESPACE}|g" \
@@ -309,8 +309,8 @@ ensure_airbyte_internal_storage_secret() {
   local effective_minio_access_key
   local effective_minio_secret_key
 
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ACCESS_KEY "$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_SECRET_KEY "$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$MINIO_SECRET_KEY")")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
   log "Aligning Airbyte internal storage secret"
   kubectl -n "$NAMESPACE" patch secret airbyte-airbyte-secrets --type=merge -p "$(cat <<EOF
@@ -897,8 +897,8 @@ validate_airbyte() {
   local effective_minio_secret_key
 
   minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
-  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ACCESS_KEY "$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$MINIO_ACCESS_KEY")")"
-  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_SECRET_KEY "$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$MINIO_SECRET_KEY")")"
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
   log "Validating Airbyte migration tables"
   run_cluster_command airbyte-migrations postgres:16-alpine sh -c \
