@@ -476,12 +476,13 @@ validate_airbyte_storage_runtime() {
       'MINIO_ENDPOINT=' \
       'S3_PATH_STYLE_ACCESS=' \
       'S3_REGION=' \
+      'AWS_ACCESS_KEY_ID=' \
+      'AWS_SECRET_ACCESS_KEY=' \
       'STORAGE_BUCKET_LOG=' \
       'STORAGE_BUCKET_STATE=' \
       'STORAGE_BUCKET_WORKLOAD_OUTPUT=' \
       'STORAGE_BUCKET_ACTIVITY_PAYLOAD=' \
-      'STORAGE_BUCKET_AUDIT_LOGGING=' \
-      'STORAGE_BUCKET_PROFILER_OUTPUT='; do
+      'STORAGE_BUCKET_AUDIT_LOGGING='; do
       if ! printf '%s\n' "$runtime_dump" | grep -q "$pattern"; then
         fail "Deployment ${deployment} is missing required Airbyte storage runtime env: ${pattern%=}"
       fi
