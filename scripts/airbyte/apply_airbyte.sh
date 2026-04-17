@@ -161,6 +161,25 @@ ensure_airbyte_buckets() {
   "
 }
 
+validate_airbyte_minio_secret_parity() {
+  local effective_minio_access_key
+  local effective_minio_secret_key
+  local secret_access_key
+  local secret_secret_key
+  local secret_region
+
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
+  secret_access_key="$(secret_value_or_default "$AIRBYTE_SECRET_NAME" aws-s3-access-key-id "")"
+  secret_secret_key="$(secret_value_or_default "$AIRBYTE_SECRET_NAME" aws-s3-secret-access-key "")"
+  secret_region="$(secret_value_or_default "$AIRBYTE_SECRET_NAME" aws-region "")"
+
+  log "Validating Airbyte MinIO credential parity"
+  [[ "$secret_access_key" == "$effective_minio_access_key" ]] || fail "Airbyte MinIO access key does not match the live MinIO deployment"
+  [[ "$secret_secret_key" == "$effective_minio_secret_key" ]] || fail "Airbyte MinIO secret key does not match the live MinIO deployment"
+  [[ "$secret_region" == "$MINIO_REGION" ]] || fail "Airbyte MinIO region does not match the configured MinIO region"
+}
+
 configure_helm_repo() {
   log "Configuring Airbyte Helm repository"
   if ! helm repo list | awk '{print $1}' | grep -qx "$AIRBYTE_CHART_REPO_NAME"; then
@@ -306,7 +325,7 @@ print_airbyte_diagnostics() {
     helm -n "$NAMESPACE" get values "$AIRBYTE_RELEASE_NAME" -a || true
     echo
     echo "=== Helm Manifest Wiring Snippets ==="
-    helm -n "$NAMESPACE" get manifest "$AIRBYTE_RELEASE_NAME" | grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233' || true
+    helm -n "$NAMESPACE" get manifest "$AIRBYTE_RELEASE_NAME" | grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' || true
     echo
     echo "=== Airbyte Resources ==="
     kubectl -n "$NAMESPACE" get deploy,svc,pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o wide || true
@@ -317,12 +336,12 @@ print_airbyte_diagnostics() {
     echo
     echo "=== Rendered Airbyte Values Wiring ==="
     if [[ -n "$LAST_RENDERED_AIRBYTE_VALUES_FILE" && -f "$LAST_RENDERED_AIRBYTE_VALUES_FILE" ]]; then
-      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region' "$LAST_RENDERED_AIRBYTE_VALUES_FILE" || true
+      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|authenticationType|pathStyleAccess|bucket:' "$LAST_RENDERED_AIRBYTE_VALUES_FILE" || true
     fi
     echo
     echo "=== Rendered Airbyte Manifest Wiring ==="
     if [[ -n "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" && -f "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" ]]; then
-      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233' "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" || true
+      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" || true
     fi
     echo
     echo "=== Recent Events ==="
@@ -361,14 +380,122 @@ validate_rendered_airbyte_values() {
   local values_file="$1"
 
   log "Validating rendered Airbyte wiring"
-  for pattern in 'aws-region' 'aws-s3-access-key-id' 'aws-s3-secret-access-key'; do
+  for pattern in \
+    'type: S3' \
+    'endpoint:' \
+    'pathStyleAccess:' \
+    'authenticationType: credentials' \
+    'accessKeyIdSecretKey: aws-s3-access-key-id' \
+    'secretAccessKeySecretKey: aws-s3-secret-access-key' \
+    'region:' \
+    'aws-region' \
+    'aws-s3-access-key-id' \
+    'aws-s3-secret-access-key' \
+    'MINIO_ENDPOINT:' \
+    'S3_ENDPOINT:' \
+    'AWS_ENDPOINT_URL_S3:' \
+    'S3_PATH_STYLE_ACCESS:' \
+    'S3_REGION:' \
+    'log:' \
+    'state:' \
+    'workloadOutput:' \
+    'activityPayload:' \
+    'auditLogging:' \
+    'profilerOutput:'; do
     if ! grep -q "$pattern" "$values_file"; then
       log "Missing rendered Airbyte pattern: $pattern"
       fail "Rendered Airbyte values are missing required startup storage wiring"
     fi
   done
 
-  grep -nE 'aws-region|aws-s3-access-key-id|aws-s3-secret-access-key' "$values_file" || true
+  grep -nE 'type: S3|endpoint:|pathStyleAccess:|authenticationType: credentials|aws-region|aws-s3-access-key-id|aws-s3-secret-access-key|MINIO_ENDPOINT|S3_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|log:|state:|workloadOutput:|activityPayload:|auditLogging:|profilerOutput:' "$values_file" || true
+}
+
+validate_rendered_airbyte_storage_manifest() {
+  local manifest_file="$1"
+
+  log "Validating rendered Airbyte storage manifest wiring"
+  for pattern in \
+    'S3_ENDPOINT' \
+    'MINIO_ENDPOINT' \
+    'AWS_ENDPOINT_URL_S3' \
+    'S3_PATH_STYLE_ACCESS' \
+    'S3_REGION' \
+    'STORAGE_BUCKET_LOG' \
+    'STORAGE_BUCKET_STATE' \
+    'STORAGE_BUCKET_WORKLOAD_OUTPUT' \
+    'STORAGE_BUCKET_ACTIVITY_PAYLOAD' \
+    'STORAGE_BUCKET_AUDIT_LOGGING' \
+    'STORAGE_BUCKET_PROFILER_OUTPUT' \
+    'aws-s3-access-key-id' \
+    'aws-s3-secret-access-key'; do
+    if ! grep -q "$pattern" "$manifest_file"; then
+      fail "Rendered Airbyte manifest is missing required storage wiring: $pattern"
+    fi
+  done
+
+  grep -nE 'S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' "$manifest_file" || true
+}
+
+print_airbyte_storage_runtime() {
+  local deployment
+  local env_filter='AWS_|S3_|MINIO_|STORAGE_|ENDPOINT|REGION|PATH_STYLE'
+
+  log "Airbyte storage runtime config"
+  kubectl -n "$NAMESPACE" get configmap airbyte-airbyte-env -o yaml | grep -nE "$env_filter|BUCKET_" || true
+
+  for deployment in airbyte-server airbyte-worker airbyte-workload-api-server airbyte-workload-launcher; do
+    log "Airbyte storage env for ${deployment}"
+    kubectl -n "$NAMESPACE" exec "deployment/${deployment}" -- printenv | grep -E "$env_filter|BUCKET_" || true
+  done
+}
+
+validate_airbyte_storage_runtime() {
+  local configmap_dump
+  local deployment
+  local runtime_dump
+
+  log "Validating Airbyte storage runtime wiring"
+  configmap_dump="$(kubectl -n "$NAMESPACE" get configmap airbyte-airbyte-env -o yaml)"
+
+  for pattern in \
+    'STORAGE_TYPE: S3' \
+    'S3_ENDPOINT:' \
+    'MINIO_ENDPOINT:' \
+    'AWS_ENDPOINT_URL_S3:' \
+    'S3_PATH_STYLE_ACCESS:' \
+    'S3_REGION:' \
+    'STORAGE_BUCKET_LOG:' \
+    'STORAGE_BUCKET_STATE:' \
+    'STORAGE_BUCKET_WORKLOAD_OUTPUT:' \
+    'STORAGE_BUCKET_ACTIVITY_PAYLOAD:' \
+    'STORAGE_BUCKET_AUDIT_LOGGING:'; do
+    if ! printf '%s\n' "$configmap_dump" | grep -q "$pattern"; then
+      fail "Airbyte runtime config is missing required storage setting: $pattern"
+    fi
+  done
+
+  for deployment in airbyte-server airbyte-worker airbyte-workload-api-server airbyte-workload-launcher; do
+    runtime_dump="$(kubectl -n "$NAMESPACE" exec "deployment/${deployment}" -- printenv)"
+    for pattern in \
+      'S3_ENDPOINT=' \
+      'MINIO_ENDPOINT=' \
+      'AWS_ENDPOINT_URL_S3=' \
+      'S3_PATH_STYLE_ACCESS=' \
+      'S3_REGION=' \
+      'STORAGE_BUCKET_LOG=' \
+      'STORAGE_BUCKET_STATE=' \
+      'STORAGE_BUCKET_WORKLOAD_OUTPUT=' \
+      'STORAGE_BUCKET_ACTIVITY_PAYLOAD=' \
+      'STORAGE_BUCKET_AUDIT_LOGGING=' \
+      'STORAGE_BUCKET_PROFILER_OUTPUT='; do
+      if ! printf '%s\n' "$runtime_dump" | grep -q "$pattern"; then
+        fail "Deployment ${deployment} is missing required Airbyte storage runtime env: ${pattern%=}"
+      fi
+    done
+  done
+
+  print_airbyte_storage_runtime
 }
 
 validate_rendered_airbyte_manifest() {
@@ -713,6 +840,11 @@ validate_airbyte() {
     mc ls airbyte/${AIRBYTE_BUCKET_ACTIVITY_PAYLOAD} >/dev/null &&
     mc ls airbyte/${AIRBYTE_BUCKET_AUDIT_LOGGING} >/dev/null &&
     mc ls airbyte/${AIRBYTE_BUCKET_PROFILER_OUTPUT} >/dev/null"
+
+  log "Validating Airbyte MinIO S3-compatible endpoint access"
+  run_cluster_command airbyte-minio-s3-probe "${AIRBYTE_MC_IMAGE}" sh -c \
+    "mc alias set airbyte '${minio_url}' '${effective_minio_access_key}' '${effective_minio_secret_key}' >/dev/null &&
+    mc ls airbyte >/dev/null"
 }
 
 main() {
@@ -728,11 +860,13 @@ main() {
   ensure_airbyte_database
   apply_airbyte_secret
   ensure_airbyte_buckets
+  validate_airbyte_minio_secret_parity
   configure_helm_repo
   remove_legacy_airbyte_resources
   values_file="$(render_values_file)"
   validate_rendered_airbyte_values "$values_file"
   manifest_file="$(render_manifest_file "$values_file")"
+  validate_rendered_airbyte_storage_manifest "$manifest_file"
   validate_rendered_airbyte_manifest "$manifest_file"
 
   log "Deploying Airbyte via Helm"
@@ -745,6 +879,7 @@ main() {
 
   ensure_airbyte_runtime_config
   wait_for_airbyte_deployments
+  validate_airbyte_storage_runtime
   validate_airbyte
 
   log "Airbyte facts: endpoint=${AIRBYTE_URL}"
