@@ -344,7 +344,7 @@ print_airbyte_diagnostics() {
     helm -n "$NAMESPACE" get values "$AIRBYTE_RELEASE_NAME" -a || true
     echo
     echo "=== Helm Manifest Wiring Snippets ==="
-    helm -n "$NAMESPACE" get manifest "$AIRBYTE_RELEASE_NAME" | grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' || true
+    helm -n "$NAMESPACE" get manifest "$AIRBYTE_RELEASE_NAME" | grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' || true
     echo
     echo "=== Airbyte Resources ==="
     kubectl -n "$NAMESPACE" get deploy,svc,pods -l "app.kubernetes.io/instance=${AIRBYTE_RELEASE_NAME}" -o wide || true
@@ -355,12 +355,12 @@ print_airbyte_diagnostics() {
     echo
     echo "=== Rendered Airbyte Values Wiring ==="
     if [[ -n "$LAST_RENDERED_AIRBYTE_VALUES_FILE" && -f "$LAST_RENDERED_AIRBYTE_VALUES_FILE" ]]; then
-      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|authenticationType|pathStyleAccess|bucket:' "$LAST_RENDERED_AIRBYTE_VALUES_FILE" || true
+      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|aws-region|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|authenticationType|pathStyleAccess|bucket:' "$LAST_RENDERED_AIRBYTE_VALUES_FILE" || true
     fi
     echo
     echo "=== Rendered Airbyte Manifest Wiring ==="
     if [[ -n "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" && -f "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" ]]; then
-      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" || true
+      grep -nE 'TEMPORAL_HOST|INTERNAL_API_HOST|TEMPORAL_BROADCAST_ADDRESS|PUBLIC_FRONTEND_ADDRESS|7233|S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' "$LAST_RENDERED_AIRBYTE_MANIFEST_FILE" || true
     fi
     echo
     echo "=== Recent Events ==="
@@ -412,6 +412,7 @@ validate_rendered_airbyte_values() {
     'aws-s3-secret-access-key' \
     'MINIO_ENDPOINT:' \
     'S3_ENDPOINT:' \
+    'AWS_ENDPOINT_URL:' \
     'AWS_ENDPOINT_URL_S3:' \
     'S3_PATH_STYLE_ACCESS:' \
     'S3_REGION:' \
@@ -427,7 +428,7 @@ validate_rendered_airbyte_values() {
     fi
   done
 
-  grep -nE 'type: S3|endpoint:|pathStyleAccess:|authenticationType: credentials|aws-region|aws-s3-access-key-id|aws-s3-secret-access-key|MINIO_ENDPOINT|S3_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|log:|state:|workloadOutput:|activityPayload:|auditLogging:|profilerOutput:' "$values_file" || true
+  grep -nE 'type: S3|endpoint:|pathStyleAccess:|authenticationType: credentials|aws-region|aws-s3-access-key-id|aws-s3-secret-access-key|MINIO_ENDPOINT|S3_ENDPOINT|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|log:|state:|workloadOutput:|activityPayload:|auditLogging:|profilerOutput:' "$values_file" || true
 }
 
 validate_rendered_airbyte_storage_manifest() {
@@ -437,6 +438,7 @@ validate_rendered_airbyte_storage_manifest() {
   for pattern in \
     'S3_ENDPOINT' \
     'MINIO_ENDPOINT' \
+    'AWS_ENDPOINT_URL' \
     'AWS_ENDPOINT_URL_S3' \
     'S3_PATH_STYLE_ACCESS' \
     'S3_REGION' \
@@ -452,7 +454,7 @@ validate_rendered_airbyte_storage_manifest() {
     fi
   done
 
-  grep -nE 'S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' "$manifest_file" || true
+  grep -nE 'S3_ENDPOINT|MINIO_ENDPOINT|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|STORAGE_BUCKET_|aws-s3-access-key-id|aws-s3-secret-access-key' "$manifest_file" || true
 }
 
 print_airbyte_storage_runtime() {
@@ -501,6 +503,7 @@ import sys
 
 manifest_path, deployment_name = sys.argv[1], sys.argv[2]
 target = {
+    "AWS_ENDPOINT_URL",
     "AWS_ENDPOINT_URL_S3",
     "MINIO_ENDPOINT",
     "S3_ENDPOINT",
@@ -552,6 +555,7 @@ PY
     done <<< "$rendered_required_list"
 
     for env_name in \
+      AWS_ENDPOINT_URL \
       AWS_ENDPOINT_URL_S3 \
       MINIO_ENDPOINT \
       S3_ENDPOINT \
