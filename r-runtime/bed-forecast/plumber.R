@@ -45,7 +45,7 @@ run_forecast <- function() {
   query <- sprintf("
     with base as (
       select
-        ward_id as department_id,
+        ward_id,
         date_day,
         occupied_beds,
         staffed_beds
@@ -53,16 +53,16 @@ run_forecast <- function() {
     ),
     ranked as (
       select
-        department_id,
+        ward_id,
         date_day,
         occupied_beds,
         staffed_beds,
-        row_number() over (partition by department_id order by date_day desc) as rn
+        row_number() over (partition by ward_id order by date_day desc) as rn
       from base
     ),
     latest as (
       select
-        department_id,
+        ward_id,
         date_day,
         occupied_beds,
         staffed_beds
@@ -70,12 +70,12 @@ run_forecast <- function() {
       where rn <= 7
     )
     select
-      department_id,
+      ward_id as department_id,
       max(date_day) + integer '1' as forecast_date,
       round(avg(occupied_beds))::integer as predicted_occupied_beds,
       max(staffed_beds)::integer as capacity_beds
     from latest
-    group by department_id
+    group by ward_id
   ", analytics_schema)
 
   ensure_forecast_table(con)

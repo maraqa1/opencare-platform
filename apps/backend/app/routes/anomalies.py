@@ -15,8 +15,8 @@ def latest_anomalies() -> dict[str, object]:
             from {settings.analytics_schema}.anomaly_bed_occupancy
         )
         select
-            d.department_code,
-            d.department_name,
+            coalesce(d.department_code, w.ward_code) as department_code,
+            coalesce(d.department_name, w.ward_name) as department_name,
             a.event_date,
             a.severity,
             a.deviation_ratio as score,
@@ -27,6 +27,8 @@ def latest_anomalies() -> dict[str, object]:
         join latest_run on a.generated_at = latest_run.generated_at
         left join {settings.analytics_schema}.dim_department d
           on d.department_id = a.department_id
+        left join {settings.analytics_schema}.dim_ward w
+          on w.ward_id = a.department_id
         order by
             case a.severity when 'high' then 0 when 'medium' then 1 else 2 end,
             a.event_date desc,

@@ -47,7 +47,7 @@ run_anomaly_detection <- function() {
   query <- sprintf("
     with ordered as (
       select
-        ward_id as department_id,
+        ward_id,
         date_day,
         occupied_beds,
         avg(occupied_beds) over (
@@ -58,7 +58,7 @@ run_anomaly_detection <- function() {
       from %s.fct_bed_occupancy
     )
     select
-      department_id,
+      ward_id as department_id,
       date_day as event_date,
       occupied_beds,
       trailing_mean,
