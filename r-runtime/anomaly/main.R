@@ -73,9 +73,11 @@ run_anomaly_detection <- function() {
   ensure_anomaly_table(con)
   anomalies <- DBI::dbGetQuery(con, query)
   if (nrow(anomalies) == 0) {
-    DBI::dbExecute(con, sprintf("truncate table %s.%s", analytics_schema, anomaly_table))
-    log_info("no anomaly rows produced")
-    return(invisible(NULL))
+    DBI::dbWithTransaction(con, {
+      DBI::dbExecute(con, sprintf("truncate table %s.%s", analytics_schema, anomaly_table))
+    })
+    log_info(sprintf("no anomaly rows produced; cleared %s.%s", analytics_schema, anomaly_table))
+    return(data.frame())
   }
 
   anomalies$severity <- ifelse(anomalies$deviation_ratio >= 0.25, "high", "medium")
