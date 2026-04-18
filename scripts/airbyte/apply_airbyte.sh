@@ -14,6 +14,7 @@ mkdir -p "$STATE_DIR"
 
 require_airbyte_prereqs() {
   ensure_helm
+  require_cmd base64
   require_cmd kubectl
   require_cmd mktemp
   require_cmd sed
@@ -40,6 +41,10 @@ normalize_http_url() {
   printf 'http://%s' "$endpoint"
 }
 
+b64_encode() {
+  printf '%s' "$1" | base64 | tr -d '\r\n'
+}
+
 sql_escape_literal() {
   printf "%s" "$1" | sed "s/'/''/g"
 }
@@ -62,6 +67,24 @@ resolve_running_minio_credential() {
   fi
 
   printf '%s' "$fallback"
+}
+
+ensure_airbyte_minio_alias_service() {
+  log "Ensuring Airbyte MinIO alias service"
+  kubectl apply -f - <<EOF >/dev/null
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${AIRBYTE_MINIO_ALIAS_SERVICE_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  type: ExternalName
+  externalName: minio.${NAMESPACE}.svc.cluster.local
+  ports:
+    - name: api
+      port: 9000
+      targetPort: 9000
+EOF
 }
 
 ensure_airbyte_database() {
@@ -146,7 +169,7 @@ ensure_airbyte_buckets() {
   local effective_minio_access_key
   local effective_minio_secret_key
 
-  minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
+  minio_url="$(normalize_http_url "$AIRBYTE_MINIO_ALIAS_ENDPOINT")"
   effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
   effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
@@ -200,7 +223,7 @@ render_values_file() {
   [[ -f "$VALUES_TEMPLATE" ]] || fail "Airbyte values template not found: manifests/airbyte/values.template.yaml"
 
   values_file="$(mktemp "${STATE_DIR}/airbyte-values.XXXXXX.yaml")"
-  minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
+  minio_url="$(normalize_http_url "$AIRBYTE_MINIO_ALIAS_ENDPOINT")"
   effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
   effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
@@ -213,6 +236,7 @@ render_values_file() {
     -e "s|__AIRBYTE_DB_USER__|${AIRBYTE_DB_USER}|g" \
     -e "s|__MINIO_ENDPOINT__|${minio_url}|g" \
     -e "s|__MINIO_REGION__|${MINIO_REGION}|g" \
+    -e "s|__AIRBYTE_STORAGE_TYPE__|${AIRBYTE_STORAGE_TYPE}|g" \
     -e "s|__AIRBYTE_S3_PATH_STYLE__|${AIRBYTE_S3_PATH_STYLE}|g" \
     -e "s|__AIRBYTE_BUCKET_LOG__|${AIRBYTE_BUCKET_LOG}|g" \
     -e "s|__AIRBYTE_BUCKET_STATE__|${AIRBYTE_BUCKET_STATE}|g" \
@@ -264,24 +288,33 @@ remove_legacy_airbyte_resources() {
 }
 
 ensure_airbyte_runtime_config() {
+  local airbyte_minio_url
+  local deployment
+  local desired_env_json
   local internal_api_host
   local connector_builder_server_api_host
+  local patch
   local temporal_host
-  local deployment
-  local missing_envs
-  local json_patch
 
   internal_api_host="http://${AIRBYTE_SERVER_SERVICE_NAME}.${NAMESPACE}:8001"
   connector_builder_server_api_host="http://${AIRBYTE_RELEASE_NAME}-airbyte-connector-builder-server-svc.${NAMESPACE}:80"
   temporal_host="${AIRBYTE_TEMPORAL_FRONTEND_SERVICE_NAME}:7233"
+  airbyte_minio_url="$(normalize_http_url "$AIRBYTE_MINIO_ALIAS_ENDPOINT")"
 
   log "Patching Airbyte shared runtime config"
   kubectl -n "$NAMESPACE" patch configmap airbyte-airbyte-env --type=merge -p "$(cat <<EOF
 {
   "data": {
+    "AWS_ENDPOINT_URL": "${airbyte_minio_url}",
+    "AWS_ENDPOINT_URL_S3": "${airbyte_minio_url}",
     "CONNECTOR_BUILDER_SERVER_API_HOST": "${connector_builder_server_api_host}",
     "INTERNAL_API_HOST": "${internal_api_host}",
+    "MINIO_ENDPOINT": "${airbyte_minio_url}",
     "POSTGRES_TLS_DISABLE_HOST_VERIFICATION": "false",
+    "S3_ENDPOINT": "${airbyte_minio_url}",
+    "S3_PATH_STYLE_ACCESS": "${AIRBYTE_S3_PATH_STYLE}",
+    "S3_REGION": "${MINIO_REGION}",
+    "STORAGE_TYPE": "${AIRBYTE_STORAGE_TYPE}",
     "TEMPORAL_HOST": "${temporal_host}",
     "SQL_TLS_DISABLE_HOST_VERIFICATION": "false",
     "POSTGRES_TLS_ENABLED": "false",
@@ -291,33 +324,99 @@ ensure_airbyte_runtime_config() {
 EOF
 )" >/dev/null
 
-  for deployment in airbyte-worker airbyte-workload-api-server airbyte-workload-launcher; do
-    missing_envs="$(
-      kubectl -n "$NAMESPACE" get deployment "$deployment" -o json \
-        | python3 -c "import json,sys; data=json.load(sys.stdin); env=data['spec']['template']['spec']['containers'][0].get('env', []); names={item.get('name') for item in env}; missing=[name for name in ('INTERNAL_API_HOST','TEMPORAL_HOST') if name not in names]; print(' '.join(missing))"
-    )"
+  desired_env_json="$(cat <<EOF
+[
+  {"name":"AWS_REGION","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-region"}}},
+  {"name":"AWS_DEFAULT_REGION","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-region"}}},
+  {"name":"AWS_ACCESS_KEY_ID","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-s3-access-key-id"}}},
+  {"name":"AWS_SECRET_ACCESS_KEY","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-s3-secret-access-key"}}},
+  {"name":"AWS_ENDPOINT_URL","value":"${airbyte_minio_url}"},
+  {"name":"AWS_ENDPOINT_URL_S3","value":"${airbyte_minio_url}"},
+  {"name":"INTERNAL_API_HOST","value":"${internal_api_host}"},
+  {"name":"MINIO_ENDPOINT","value":"${airbyte_minio_url}"},
+  {"name":"S3_ENDPOINT","value":"${airbyte_minio_url}"},
+  {"name":"S3_PATH_STYLE_ACCESS","value":"${AIRBYTE_S3_PATH_STYLE}"},
+  {"name":"S3_REGION","value":"${MINIO_REGION}"},
+  {"name":"STORAGE_TYPE","value":"${AIRBYTE_STORAGE_TYPE}"},
+  {"name":"TEMPORAL_HOST","value":"${temporal_host}"}
+]
+EOF
+)"
 
-    json_patch="[]"
-    if [[ " $missing_envs " == *" INTERNAL_API_HOST "* ]]; then
-      json_patch="$(python3 -c "import json; print(json.dumps([{'op':'add','path':'/spec/template/spec/containers/0/env/-','value':{'name':'INTERNAL_API_HOST','value':'${internal_api_host}'}}]))")"
-      kubectl -n "$NAMESPACE" patch deployment "$deployment" --type=json -p="$json_patch" >/dev/null
+  for deployment in airbyte-server airbyte-worker airbyte-cron airbyte-manifest-server airbyte-workload-api-server airbyte-workload-launcher; do
+    if ! kubectl -n "$NAMESPACE" get deployment "$deployment" >/dev/null 2>&1; then
+      continue
     fi
-    if [[ " $missing_envs " == *" TEMPORAL_HOST "* ]]; then
-      json_patch="$(python3 -c "import json; print(json.dumps([{'op':'add','path':'/spec/template/spec/containers/0/env/-','value':{'name':'TEMPORAL_HOST','value':'${temporal_host}'}}]))")"
-      kubectl -n "$NAMESPACE" patch deployment "$deployment" --type=json -p="$json_patch" >/dev/null
+
+    patch="$(
+      kubectl -n "$NAMESPACE" get deployment "$deployment" -o json \
+        | python3 -c 'import json,sys
+data=json.load(sys.stdin)
+desired=json.loads(sys.argv[1])
+container=data["spec"]["template"]["spec"]["containers"][0]
+env=container.get("env")
+ops=[]
+if env is None:
+    ops.append({"op":"add","path":"/spec/template/spec/containers/0/env","value":[]})
+    existing=set()
+else:
+    existing={item.get("name") for item in env}
+for item in desired:
+    if item["name"] not in existing:
+        ops.append({"op":"add","path":"/spec/template/spec/containers/0/env/-","value":item})
+print(json.dumps(ops))' "$desired_env_json"
+    )"
+    if [[ "$patch" != "[]" ]]; then
+      kubectl -n "$NAMESPACE" patch deployment "$deployment" --type=json -p="$patch" >/dev/null
     fi
   done
 
   log "Restarting patched Airbyte deployments"
-  kubectl -n "$NAMESPACE" rollout restart deployment/airbyte-temporal deployment/airbyte-server deployment/airbyte-worker deployment/airbyte-workload-api-server deployment/airbyte-workload-launcher >/dev/null
+  kubectl -n "$NAMESPACE" rollout restart deployment/airbyte-temporal deployment/airbyte-server deployment/airbyte-worker deployment/airbyte-cron deployment/airbyte-manifest-server deployment/airbyte-workload-api-server deployment/airbyte-workload-launcher >/dev/null 2>&1 || true
 }
 
 ensure_airbyte_internal_storage_secret() {
-  log "Removing Airbyte assume-role storage secret keys"
+  local effective_minio_access_key
+  local effective_minio_secret_key
+
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
+
+  log "Normalizing Airbyte internal storage secret contract"
+  kubectl -n "$NAMESPACE" patch secret airbyte-airbyte-secrets --type=merge -p "$(cat <<EOF
+{
+  "data": {
+    "CONFIG_DATABASE_REPLICA_PASSWORD": "$(b64_encode "$AIRBYTE_DB_PASSWORD")",
+    "CONFIG_DATABASE_REPLICA_USER": "$(b64_encode "$AIRBYTE_DB_USER")",
+    "DATABASE_PASSWORD": "$(b64_encode "$AIRBYTE_DB_PASSWORD")",
+    "DATABASE_USER": "$(b64_encode "$AIRBYTE_DB_USER")",
+    "MINIO_ACCESS_KEY_ID": "$(b64_encode "$effective_minio_access_key")",
+    "MINIO_SECRET_ACCESS_KEY": "$(b64_encode "$effective_minio_secret_key")"
+  }
+}
+EOF
+)" >/dev/null
+
   kubectl -n "$NAMESPACE" patch secret airbyte-airbyte-secrets --type=json -p='[
     {"op":"remove","path":"/data/AWS_ASSUME_ROLE_ACCESS_KEY_ID"},
     {"op":"remove","path":"/data/AWS_ASSUME_ROLE_SECRET_ACCESS_KEY"}
   ]' >/dev/null 2>&1 || true
+}
+
+validate_airbyte_internal_storage_secret() {
+  local effective_minio_access_key
+  local effective_minio_secret_key
+
+  effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
+  effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
+
+  log "Validating Airbyte hook secret contract"
+  [[ "$(secret_value_or_default airbyte-airbyte-secrets DATABASE_USER "")" == "$AIRBYTE_DB_USER" ]] || fail "airbyte-airbyte-secrets DATABASE_USER drifted from canonical Airbyte database user"
+  [[ "$(secret_value_or_default airbyte-airbyte-secrets DATABASE_PASSWORD "")" == "$AIRBYTE_DB_PASSWORD" ]] || fail "airbyte-airbyte-secrets DATABASE_PASSWORD drifted from canonical Airbyte database password"
+  [[ "$(secret_value_or_default airbyte-airbyte-secrets CONFIG_DATABASE_REPLICA_USER "")" == "$AIRBYTE_DB_USER" ]] || fail "airbyte-airbyte-secrets CONFIG_DATABASE_REPLICA_USER drifted from canonical Airbyte database user"
+  [[ "$(secret_value_or_default airbyte-airbyte-secrets CONFIG_DATABASE_REPLICA_PASSWORD "")" == "$AIRBYTE_DB_PASSWORD" ]] || fail "airbyte-airbyte-secrets CONFIG_DATABASE_REPLICA_PASSWORD drifted from canonical Airbyte database password"
+  [[ "$(secret_value_or_default airbyte-airbyte-secrets MINIO_ACCESS_KEY_ID "")" == "$effective_minio_access_key" ]] || fail "airbyte-airbyte-secrets MINIO_ACCESS_KEY_ID drifted from the live MinIO access key"
+  [[ "$(secret_value_or_default airbyte-airbyte-secrets MINIO_SECRET_ACCESS_KEY "")" == "$effective_minio_secret_key" ]] || fail "airbyte-airbyte-secrets MINIO_SECRET_ACCESS_KEY drifted from the live MinIO secret key"
 }
 
 print_airbyte_diagnostics() {
@@ -408,6 +507,7 @@ validate_rendered_airbyte_values() {
     'aws-s3-secret-access-key' \
     'MINIO_ENDPOINT:' \
     'S3_ENDPOINT:' \
+    'STORAGE_TYPE:' \
     'AWS_ENDPOINT_URL:' \
     'AWS_ENDPOINT_URL_S3:' \
     'S3_PATH_STYLE_ACCESS:' \
@@ -424,7 +524,7 @@ validate_rendered_airbyte_values() {
     fi
   done
 
-  grep -nE 'type: S3|endpoint:|pathStyleAccess:|authenticationType: credentials|aws-region|aws-s3-access-key-id|aws-s3-secret-access-key|MINIO_ENDPOINT|S3_ENDPOINT|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|log:|state:|workloadOutput:|activityPayload:|auditLogging:|profilerOutput:' "$values_file" || true
+  grep -nE 'type: S3|endpoint:|pathStyleAccess:|authenticationType: credentials|aws-region|aws-s3-access-key-id|aws-s3-secret-access-key|MINIO_ENDPOINT|S3_ENDPOINT|STORAGE_TYPE|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|log:|state:|workloadOutput:|activityPayload:|auditLogging:|profilerOutput:' "$values_file" || true
 }
 
 validate_rendered_airbyte_storage_manifest() {
@@ -489,7 +589,10 @@ validate_airbyte_storage_runtime() {
     fi
   done
 
-  for deployment in airbyte-server airbyte-worker airbyte-workload-api-server airbyte-workload-launcher; do
+  for deployment in airbyte-server airbyte-worker airbyte-cron airbyte-manifest-server airbyte-workload-api-server airbyte-workload-launcher; do
+    if ! kubectl -n "$NAMESPACE" get deployment "$deployment" >/dev/null 2>&1; then
+      continue
+    fi
     runtime_dump="$(kubectl -n "$NAMESPACE" exec "deployment/${deployment}" -- printenv)"
     found_storage_envs="$(printf '%s\n' "$runtime_dump" | grep -E 'AWS_|S3_|MINIO_|STORAGE_BUCKET_' || true)"
     rendered_required="$(
@@ -507,6 +610,7 @@ target = {
     "S3_REGION",
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
+    "STORAGE_TYPE",
     "STORAGE_BUCKET_LOG",
     "STORAGE_BUCKET_STATE",
     "STORAGE_BUCKET_WORKLOAD_OUTPUT",
@@ -894,7 +998,7 @@ validate_airbyte() {
   local effective_minio_access_key
   local effective_minio_secret_key
 
-  minio_url="$(normalize_http_url "$MINIO_ENDPOINT")"
+  minio_url="$(normalize_http_url "$AIRBYTE_MINIO_ALIAS_ENDPOINT")"
   effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"
   effective_minio_secret_key="$(resolve_running_minio_credential MINIO_ROOT_PASSWORD "$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$MINIO_SECRET_KEY")")"
 
@@ -934,6 +1038,7 @@ main() {
   trap 'print_airbyte_diagnostics' ERR
 
   ensure_airbyte_database
+  ensure_airbyte_minio_alias_service
   apply_airbyte_secret
   ensure_airbyte_buckets
   validate_airbyte_minio_secret_parity
@@ -954,6 +1059,7 @@ main() {
     -f "$values_file"
 
   ensure_airbyte_internal_storage_secret
+  validate_airbyte_internal_storage_secret
   ensure_airbyte_runtime_config
   wait_for_airbyte_deployments
   validate_airbyte_storage_runtime "$manifest_file"
@@ -962,7 +1068,7 @@ main() {
   log "Airbyte facts: endpoint=${AIRBYTE_URL}"
   log "Airbyte facts: release=${AIRBYTE_RELEASE_NAME}"
   log "Airbyte facts: database=${AIRBYTE_DB_NAME}"
-  log "Airbyte facts: minio_endpoint=http://${MINIO_ENDPOINT}"
+  log "Airbyte facts: minio_endpoint=http://${AIRBYTE_MINIO_ALIAS_ENDPOINT}"
   log "Airbyte facts: region=${MINIO_REGION}"
   log "Airbyte facts: log_bucket=${AIRBYTE_BUCKET_LOG}"
   log "Airbyte facts: state_bucket=${AIRBYTE_BUCKET_STATE}"
