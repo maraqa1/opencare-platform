@@ -249,6 +249,8 @@ render_values_file() {
     -e "s|__AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED__|${AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED}|g" \
     -e "s|__AIRBYTE_SQL_TLS_ENABLED__|${AIRBYTE_SQL_TLS_ENABLED}|g" \
     -e "s|__AIRBYTE_POSTGRES_TLS_ENABLED__|${AIRBYTE_POSTGRES_TLS_ENABLED}|g" \
+    -e "s|__AIRBYTE_SQL_TLS_DISABLE_HOST_VERIFICATION__|${AIRBYTE_SQL_TLS_DISABLE_HOST_VERIFICATION}|g" \
+    -e "s|__AIRBYTE_POSTGRES_TLS_DISABLE_HOST_VERIFICATION__|${AIRBYTE_POSTGRES_TLS_DISABLE_HOST_VERIFICATION}|g" \
     -e "s|__RUN_DATABASE_MIGRATION_ON_STARTUP__|${RUN_DATABASE_MIGRATION_ON_STARTUP}|g" \
     -e "s|__CONFIGS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION__|${CONFIGS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION}|g" \
     -e "s|__JOBS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION__|${JOBS_DATABASE_MINIMUM_FLYWAY_MIGRATION_VERSION}|g" \
@@ -289,11 +291,8 @@ remove_legacy_airbyte_resources() {
 
 ensure_airbyte_runtime_config() {
   local airbyte_minio_url
-  local deployment
-  local desired_env_json
   local internal_api_host
   local connector_builder_server_api_host
-  local patch
   local temporal_host
 
   internal_api_host="http://${AIRBYTE_SERVER_SERVICE_NAME}.${NAMESPACE}:8001"
@@ -323,55 +322,7 @@ ensure_airbyte_runtime_config() {
 }
 EOF
 )" >/dev/null
-
-  desired_env_json="$(cat <<EOF
-[
-  {"name":"AWS_REGION","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-region"}}},
-  {"name":"AWS_DEFAULT_REGION","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-region"}}},
-  {"name":"AWS_ACCESS_KEY_ID","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-s3-access-key-id"}}},
-  {"name":"AWS_SECRET_ACCESS_KEY","valueFrom":{"secretKeyRef":{"name":"${AIRBYTE_SECRET_NAME}","key":"aws-s3-secret-access-key"}}},
-  {"name":"AWS_ENDPOINT_URL","value":"${airbyte_minio_url}"},
-  {"name":"AWS_ENDPOINT_URL_S3","value":"${airbyte_minio_url}"},
-  {"name":"INTERNAL_API_HOST","value":"${internal_api_host}"},
-  {"name":"MINIO_ENDPOINT","value":"${airbyte_minio_url}"},
-  {"name":"S3_ENDPOINT","value":"${airbyte_minio_url}"},
-  {"name":"S3_PATH_STYLE_ACCESS","value":"${AIRBYTE_S3_PATH_STYLE}"},
-  {"name":"S3_REGION","value":"${MINIO_REGION}"},
-  {"name":"STORAGE_TYPE","value":"${AIRBYTE_STORAGE_TYPE}"},
-  {"name":"TEMPORAL_HOST","value":"${temporal_host}"}
-]
-EOF
-)"
-
-  for deployment in airbyte-server airbyte-worker airbyte-cron airbyte-manifest-server airbyte-workload-api-server airbyte-workload-launcher; do
-    if ! kubectl -n "$NAMESPACE" get deployment "$deployment" >/dev/null 2>&1; then
-      continue
-    fi
-
-    patch="$(
-      kubectl -n "$NAMESPACE" get deployment "$deployment" -o json \
-        | python3 -c 'import json,sys
-data=json.load(sys.stdin)
-desired=json.loads(sys.argv[1])
-container=data["spec"]["template"]["spec"]["containers"][0]
-env=container.get("env")
-ops=[]
-if env is None:
-    ops.append({"op":"add","path":"/spec/template/spec/containers/0/env","value":[]})
-    existing=set()
-else:
-    existing={item.get("name") for item in env}
-for item in desired:
-    if item["name"] not in existing:
-        ops.append({"op":"add","path":"/spec/template/spec/containers/0/env/-","value":item})
-print(json.dumps(ops))' "$desired_env_json"
-    )"
-    if [[ "$patch" != "[]" ]]; then
-      kubectl -n "$NAMESPACE" patch deployment "$deployment" --type=json -p="$patch" >/dev/null
-    fi
-  done
-
-  log "Restarting patched Airbyte deployments"
+  log "Restarting Airbyte deployments to pick up shared runtime config"
   kubectl -n "$NAMESPACE" rollout restart deployment/airbyte-temporal deployment/airbyte-server deployment/airbyte-worker deployment/airbyte-cron deployment/airbyte-manifest-server deployment/airbyte-workload-api-server deployment/airbyte-workload-launcher >/dev/null 2>&1 || true
 }
 
@@ -506,7 +457,11 @@ validate_rendered_airbyte_values() {
     'aws-s3-access-key-id' \
     'aws-s3-secret-access-key' \
     'MINIO_ENDPOINT:' \
+    'POSTGRES_TLS_DISABLE_HOST_VERIFICATION:' \
+    'POSTGRES_TLS_ENABLED:' \
     'S3_ENDPOINT:' \
+    'SQL_TLS_DISABLE_HOST_VERIFICATION:' \
+    'SQL_TLS_ENABLED:' \
     'STORAGE_TYPE:' \
     'AWS_ENDPOINT_URL:' \
     'AWS_ENDPOINT_URL_S3:' \
@@ -524,7 +479,7 @@ validate_rendered_airbyte_values() {
     fi
   done
 
-  grep -nE 'type: S3|endpoint:|pathStyleAccess:|authenticationType: credentials|aws-region|aws-s3-access-key-id|aws-s3-secret-access-key|MINIO_ENDPOINT|S3_ENDPOINT|STORAGE_TYPE|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|log:|state:|workloadOutput:|activityPayload:|auditLogging:|profilerOutput:' "$values_file" || true
+  grep -nE 'type: S3|endpoint:|pathStyleAccess:|authenticationType: credentials|aws-region|aws-s3-access-key-id|aws-s3-secret-access-key|MINIO_ENDPOINT|POSTGRES_TLS_DISABLE_HOST_VERIFICATION|POSTGRES_TLS_ENABLED|S3_ENDPOINT|SQL_TLS_DISABLE_HOST_VERIFICATION|SQL_TLS_ENABLED|STORAGE_TYPE|AWS_ENDPOINT_URL|AWS_ENDPOINT_URL_S3|S3_PATH_STYLE_ACCESS|S3_REGION|log:|state:|workloadOutput:|activityPayload:|auditLogging:|profilerOutput:' "$values_file" || true
 }
 
 validate_rendered_airbyte_storage_manifest() {
