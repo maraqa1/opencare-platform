@@ -235,7 +235,7 @@ build_catalog() {
 
   discovery_payload="$(jq -n --arg sourceId "$source_id" '{sourceId: $sourceId}')"
 
-  api_post "${AIRBYTE_PUBLIC_API_PREFIX}/sources/discover_schema" "$discovery_payload" \
+  api_post "/api/v1/sources/discover_schema" "$discovery_payload" \
     | jq -c '
         (
           .catalog.streams // .catalog // .streams // []
