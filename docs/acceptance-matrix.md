@@ -77,25 +77,25 @@ bash scripts/airbyte/setup_mysql_demo.sh
   - connection `OpenCare Bed Occupancy Demo`
 - the first Airbyte sync completes successfully
 - Postgres raw tables exist:
-  - `raw.wards`
-  - `raw.patients`
-  - `raw.bed_events`
+  - `raw_demo.wards`
+  - `raw_demo.patients`
+  - `raw_demo.bed_events`
 
 ### Raw-table SQL checks
 
 ```sql
-select 'wards' as table_name, count(*) as row_count from raw.wards
+select 'wards' as table_name, count(*) as row_count from raw_demo.wards
 union all
-select 'patients' as table_name, count(*) as row_count from raw.patients
+select 'patients' as table_name, count(*) as row_count from raw_demo.patients
 union all
-select 'bed_events' as table_name, count(*) as row_count from raw.bed_events;
+select 'bed_events' as table_name, count(*) as row_count from raw_demo.bed_events;
 ```
 
 ### Expected raw-table results
 
-- `raw.wards = 12`
-- `raw.patients = 2400`
-- `raw.bed_events = 12363`
+- `raw_demo.wards = 12`
+- `raw_demo.patients = 2400`
+- `raw_demo.bed_events = 12363`
 
 ## 4. Run dbt
 
@@ -105,8 +105,9 @@ select 'bed_events' as table_name, count(*) as row_count from raw.bed_events;
 cd dbt/opencare
 cp profiles.template.yml profiles.yml
 dbt debug --profiles-dir . --project-dir .
-dbt run --profiles-dir . --project-dir . --select stg_wards stg_patients stg_bed_events dim_ward dim_date fct_bed_occupancy fact_capacity dict_metrics fact_bed_occupancy dim_department dim_time
-dbt test --profiles-dir . --project-dir .
+DBT_SOURCE_SCHEMA=raw_demo dbt debug --profiles-dir . --project-dir .
+DBT_SOURCE_SCHEMA=raw_demo dbt run --profiles-dir . --project-dir . --select stg_wards stg_patients stg_bed_events dim_ward dim_date fct_bed_occupancy fact_capacity dict_metrics fact_bed_occupancy dim_department dim_time
+DBT_SOURCE_SCHEMA=raw_demo dbt test --profiles-dir . --project-dir .
 ```
 
 ### Expected success conditions

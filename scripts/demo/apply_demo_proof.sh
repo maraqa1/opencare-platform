@@ -130,9 +130,9 @@ check_postgres_greater_than_zero() {
 
 validate_phase1_counts() {
   log "Validating Phase 1 raw counts"
-  check_postgres_equals "select count(*) from ${RAW_SCHEMA}.wards;" "12"
-  check_postgres_equals "select count(*) from ${RAW_SCHEMA}.patients;" "2400"
-  check_postgres_equals "select count(*) from ${RAW_SCHEMA}.bed_events;" "12363"
+  check_postgres_equals "select count(*) from ${DEMO_RAW_SCHEMA}.wards;" "12"
+  check_postgres_equals "select count(*) from ${DEMO_RAW_SCHEMA}.patients;" "2400"
+  check_postgres_equals "select count(*) from ${DEMO_RAW_SCHEMA}.bed_events;" "12363"
 
   log "Validating Phase 1 analytics and dictionary counts"
   check_postgres_equals "select count(*) from ${ANALYTICS_SCHEMA}.dim_ward;" "12"
@@ -172,7 +172,7 @@ main() {
   run_with_demo_log airbyte-demo-sync bash "$ROOT_DIR/scripts/airbyte/setup_mysql_demo.sh"
 
   log "Re-running dbt for the synthetic demo dataset"
-  run_with_demo_log demo-dbt bash "$ROOT_DIR/scripts/dbt/apply_dbt.sh"
+  run_with_demo_log demo-dbt env DBT_SOURCE_SCHEMA="$DEMO_RAW_SCHEMA" bash "$ROOT_DIR/scripts/dbt/apply_dbt.sh"
 
   validate_phase1_counts
   log_success "Phase 1 synthetic-data proof flow completed"
