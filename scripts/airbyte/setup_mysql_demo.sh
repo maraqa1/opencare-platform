@@ -230,12 +230,27 @@ upsert_destination() {
 }
 
 build_catalog() {
-  :
+  local source_id="$1"
+  local discovery_payload
+
+  discovery_payload="$(jq -n --arg sourceId "$source_id" '{sourceId: $sourceId}')"
+
+  api_post "${AIRBYTE_PUBLIC_API_PREFIX}/sources/discover_schema" "$discovery_payload" \
+    | jq -c '
+        (
+          .catalog.streams // .catalog // .streams // []
+        )
+        | map({
+            name: .name,
+            syncMode: "full_refresh_overwrite"
+          })
+      '
 }
 
 upsert_connection() {
   local source_id="$1"
   local destination_id="$2"
+  local catalog_json="$3"
   local existing_id
   local payload
 
@@ -245,10 +260,14 @@ upsert_connection() {
     --arg name "$DEMO_AIRBYTE_CONNECTION_NAME" \
     --arg sourceId "$source_id" \
     --arg destinationId "$destination_id" \
+    --argjson streams "$catalog_json" \
     '{
       name: $name,
       sourceId: $sourceId,
       destinationId: $destinationId,
+      configurations: {
+        streams: $streams
+      },
       namespaceDefinition: "custom_format",
       namespaceFormat: "raw",
       prefix: "",
@@ -316,6 +335,7 @@ main() {
   local postgres_definition_id
   local source_id
   local destination_id
+  local catalog_json
   local connection_id
   local sync_job_id
 
@@ -340,8 +360,12 @@ main() {
   log "Configuring Airbyte Postgres raw destination"
   destination_id="$(upsert_destination "$workspace" "$postgres_definition_id")"
 
+  log "Discovering Airbyte source schema"
+  catalog_json="$(build_catalog "$source_id")"
+  [[ "$(printf '%s' "$catalog_json" | jq 'length')" -gt 0 ]] || fail "Airbyte source discovery returned zero streams for the demo source"
+
   log "Configuring Airbyte connection"
-  connection_id="$(upsert_connection "$source_id" "$destination_id")"
+  connection_id="$(upsert_connection "$source_id" "$destination_id" "$catalog_json")"
 
   log "Triggering first Airbyte sync"
   sync_job_id="$(api_post "${AIRBYTE_PUBLIC_API_PREFIX}/jobs" "{\"connectionId\":\"${connection_id}\",\"jobType\":\"sync\"}" | jq -r '.jobId')"
