@@ -43,6 +43,8 @@ main() {
   done
 
   ensure_cluster_access
+  log "Refreshing seeded demo source before accelerated Phase 2 cycles"
+  bash "$ROOT_DIR/scripts/airbyte/test_demo_sync.sh"
 
   for cycle in $(seq 1 "$CYCLES"); do
     log "Starting accelerated Phase 2 cycle ${cycle}/${CYCLES}"

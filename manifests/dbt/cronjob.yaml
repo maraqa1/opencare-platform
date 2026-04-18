@@ -139,42 +139,42 @@ data:
     {%- endmacro %}
   sources.yml: |
     version: 2
-
+  
     sources:
       - name: raw
         description: Operational landing schema populated by Airbyte from the external hospital MySQL source.
         schema: "{{ env_var('DBT_SOURCE_SCHEMA', env_var('RAW_SCHEMA', 'raw')) }}"
         tables:
-            - name: wards
-              description: Raw ward reference records from the source system.
-              columns:
-                - name: ward_id
-                  tests:
-                    - not_null
-                - name: ward_code
-                  tests:
-                    - not_null
+          - name: wards
+            description: Raw ward reference records from the source system.
+            columns:
+              - name: ward_id
+                tests:
+                  - not_null
+              - name: ward_code
+                tests:
+                  - not_null
               - name: ward_name
                 tests:
                   - not_null
-            - name: patients
-              description: Raw patient reference records from the source system.
-              columns:
-                - name: patient_id
-                  tests:
-                    - not_null
-                - name: medical_record_number
-                  tests:
-                    - not_null
-            - name: bed_events
-              description: Raw ward occupancy and movement events from the source system.
-              columns:
-                - name: event_id
-                  tests:
-                    - not_null
-                - name: event_timestamp
-                  tests:
-                    - not_null
+          - name: patients
+            description: Raw patient reference records from the source system.
+            columns:
+              - name: patient_id
+                tests:
+                  - not_null
+              - name: medical_record_number
+                tests:
+                  - not_null
+          - name: bed_events
+            description: Raw ward occupancy and movement events from the source system.
+            columns:
+              - name: event_id
+                tests:
+                  - not_null
+              - name: event_timestamp
+                tests:
+                  - not_null
               - name: ward_id
                 tests:
                   - not_null
