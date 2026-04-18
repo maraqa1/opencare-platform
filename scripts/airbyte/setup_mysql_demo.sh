@@ -242,7 +242,7 @@ build_catalog() {
         )
         | map({
             name: (.stream.name // .name),
-            syncMode: "full_refresh_overwrite"
+            syncMode: "full_refresh_append"
           })
       '
 }
