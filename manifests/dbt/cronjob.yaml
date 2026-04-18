@@ -5,7 +5,9 @@ metadata:
   name: dbt-runner
   namespace: opencare
 spec:
-  schedule: "*/30 * * * *"
+  schedule: "20 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 2
   jobTemplate:

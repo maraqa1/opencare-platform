@@ -14,12 +14,16 @@ log_info <- function(message) {
 }
 
 analytics_schema <- get_env("ANALYTICS_SCHEMA", "analytics")
-forecast_table <- get_env("FORECAST_OUTPUT_TABLE", "forecast_bed_occupancy")
+output_schema <- get_env("OUTPUT_SCHEMA", "output")
+forecast_table <- get_env("FORECAST_OUTPUT_TABLE", "forecast")
+forecast_horizon_days <- as.integer(get_env("FORECAST_HORIZON_DAYS", "7"))
 
 ensure_forecast_table <- function(con) {
+  DBI::dbExecute(con, sprintf("create schema if not exists %s", output_schema))
   DBI::dbExecute(
     con,
-    sprintf("
+    sprintf(
+      "
       create table if not exists %s.%s (
         department_id text not null,
         forecast_date date not null,
@@ -27,7 +31,10 @@ ensure_forecast_table <- function(con) {
         capacity_beds integer,
         generated_at timestamp not null
       )
-    ", analytics_schema, forecast_table)
+      ",
+      output_schema,
+      forecast_table
+    )
   )
 }
 
@@ -42,63 +49,97 @@ run_forecast <- function() {
   )
   on.exit(DBI::dbDisconnect(con), add = TRUE)
 
-  query <- sprintf("
-    with base as (
-      select
-        ward_id,
-        date_day,
-        occupied_beds,
-        staffed_beds
-      from %s.fct_bed_occupancy
-    ),
-    ranked as (
+  query <- sprintf(
+    "
+    with ranked as (
       select
         ward_id,
         date_day,
         occupied_beds,
         staffed_beds,
-        row_number() over (partition by ward_id order by date_day desc) as rn
-      from base
+        row_number() over (partition by ward_id order by date_day desc) as recency_rank
+      from %s.fct_bed_occupancy
     ),
-    latest as (
+    recent as (
       select
         ward_id,
         date_day,
         occupied_beds,
-        staffed_beds
+        staffed_beds,
+        recency_rank
       from ranked
-      where rn <= 7
+      where recency_rank <= %s
+    ),
+    ward_summary as (
+      select
+        ward_id,
+        max(date_day) as last_observed_date,
+        round(avg(occupied_beds))::integer as baseline_occupied_beds,
+        max(staffed_beds)::integer as capacity_beds,
+        coalesce(
+          round(
+            avg(case when recency_rank <= 3 then occupied_beds end)
+            - avg(case when recency_rank between 4 and least(%s, 7) then occupied_beds end)
+          )::integer,
+          0
+        ) as recent_trend
+      from recent
+      group by ward_id
+    ),
+    offsets as (
+      select generate_series(1, %s) as horizon_offset
     )
     select
-      ward_id as department_id,
-      max(date_day) + integer '1' as forecast_date,
-      round(avg(occupied_beds))::integer as predicted_occupied_beds,
-      max(staffed_beds)::integer as capacity_beds
-    from latest
-    group by ward_id
-  ", analytics_schema)
+      ward_summary.ward_id as department_id,
+      ward_summary.last_observed_date + offsets.horizon_offset as forecast_date,
+      greatest(
+        least(
+          ward_summary.baseline_occupied_beds + (offsets.horizon_offset * ward_summary.recent_trend),
+          ward_summary.capacity_beds
+        ),
+        0
+      )::integer as predicted_occupied_beds,
+      ward_summary.capacity_beds
+    from ward_summary
+    cross join offsets
+    order by ward_summary.ward_id, forecast_date
+    ",
+    analytics_schema,
+    as.integer(get_env("FORECAST_LOOKBACK_DAYS", "14")),
+    as.integer(get_env("FORECAST_LOOKBACK_DAYS", "14")),
+    forecast_horizon_days
+  )
 
   ensure_forecast_table(con)
   forecast <- DBI::dbGetQuery(con, query)
+  ward_count <- DBI::dbGetQuery(
+    con,
+    sprintf("select count(distinct ward_id) as ward_count from %s.fct_bed_occupancy", analytics_schema)
+  )$ward_count[[1]]
+  expected_rows <- ward_count * forecast_horizon_days
+
   if (nrow(forecast) == 0) {
-    log_info("no forecast rows produced")
-    return(data.frame())
+    stop(sprintf("Forecast query returned zero rows from %s.fct_bed_occupancy", analytics_schema))
+  }
+
+  if (nrow(forecast) != expected_rows) {
+    stop(sprintf("Forecast row count mismatch: expected %s rows, got %s", expected_rows, nrow(forecast)))
   }
 
   forecast$generated_at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
 
   DBI::dbWithTransaction(con, {
-    DBI::dbExecute(con, sprintf("truncate table %s.%s", analytics_schema, forecast_table))
+    DBI::dbExecute(con, sprintf("truncate table %s.%s", output_schema, forecast_table))
     DBI::dbWriteTable(
       con,
-      DBI::Id(schema = analytics_schema, table = forecast_table),
+      DBI::Id(schema = output_schema, table = forecast_table),
       forecast,
       append = TRUE,
       row.names = FALSE
     )
   })
 
-  log_info(sprintf("wrote %s forecast rows", nrow(forecast)))
+  log_info(sprintf("wrote %s forecast rows to %s.%s", nrow(forecast), output_schema, forecast_table))
   forecast
 }
 
@@ -115,7 +156,8 @@ function() {
   list(
     status = "ok",
     rows_written = nrow(output),
-    target_table = sprintf("%s.%s", analytics_schema, forecast_table)
+    target_table = sprintf("%s.%s", output_schema, forecast_table),
+    horizon_days = forecast_horizon_days
   )
 }
 
@@ -134,7 +176,8 @@ function() {
 
   ensure_forecast_table(con)
 
-  query <- sprintf("
+  query <- sprintf(
+    "
     select
       department_id,
       forecast_date,
@@ -142,9 +185,12 @@ function() {
       capacity_beds,
       generated_at
     from %s.%s
-    order by forecast_date desc, department_id
-    limit 25
-  ", analytics_schema, forecast_table)
+    order by forecast_date, department_id
+    limit 200
+    ",
+    output_schema,
+    forecast_table
+  )
 
   rows <- DBI::dbGetQuery(con, query)
   list(status = "ok", items = rows)

@@ -102,10 +102,11 @@ def build_patients(patient_count: int) -> list[dict[str, object]]:
     return patients
 
 
-def scenario_for(ward: WardBlueprint, event_day: date) -> tuple[int, float, str | None]:
+def scenario_for(ward: WardBlueprint, event_day: date, end_day: date) -> tuple[int, float, str | None]:
     staff_delta = 0
     occupancy_delta = 0.0
     scenario = None
+    days_to_end = (end_day - event_day).days
 
     if ward.ward_id in {"WARD-03", "WARD-07"} and (
         (event_day.year == 2025 and event_day.month in {11, 12})
@@ -129,6 +130,15 @@ def scenario_for(ward: WardBlueprint, event_day: date) -> tuple[int, float, str 
         occupancy_delta += 0.09
         scenario = "critical_care_staffing_squeeze"
 
+    if ward.ward_id == "WARD-08" and days_to_end in {0, 1}:
+        staff_delta -= 2
+        occupancy_delta += 0.19
+        scenario = "phase2_pressure_signal"
+
+    if ward.ward_id == "WARD-07" and days_to_end == 2:
+        occupancy_delta += 0.18
+        scenario = "phase2_pressure_signal"
+
     return staff_delta, occupancy_delta, scenario
 
 
@@ -145,7 +155,7 @@ def build_bed_events(start_day: date, end_day: date, patients: list[dict[str, ob
         weekly = math.cos((2 * math.pi * ordinal) / 7.0) * 0.03
 
         for ward_index, ward in enumerate(WARD_BLUEPRINTS):
-            staff_delta, occupancy_delta, scenario = scenario_for(ward, current_day)
+            staff_delta, occupancy_delta, scenario = scenario_for(ward, current_day, end_day)
             staffed_beds = max(ward.staffed_beds_baseline + staff_delta, 8)
             licensed_beds = ward.licensed_beds
             jitter = (((ordinal + 1) * (ward_index + 3)) % 5 - 2) * 0.0125
@@ -329,6 +339,7 @@ SELECT 'bed_event_date_range' AS check_name, MIN(DATE(event_timestamp)) AS min_e
 SELECT 'null_ward_id_rows' AS check_name, COUNT(*) AS result FROM bed_events WHERE ward_id IS NULL;
 SELECT event_type, COUNT(*) AS event_count FROM bed_events GROUP BY event_type ORDER BY event_type;
 SELECT scenario_tag, COUNT(*) AS event_count FROM bed_events WHERE scenario_tag IS NOT NULL GROUP BY scenario_tag ORDER BY scenario_tag;
+SELECT 'phase2_pressure_signal_rows' AS check_name, COUNT(*) AS result FROM bed_events WHERE scenario_tag = 'phase2_pressure_signal';
 """
 
 
@@ -350,6 +361,8 @@ def build_summary(wards: list[WardBlueprint], patients: list[dict[str, object]],
         "null_ward_id_rows": sum(1 for event in bed_events if event["ward_id"] is None),
         "event_type_distribution": event_type_counts,
         "scenario_event_distribution": scenario_counts,
+        "phase2_expected_alert_wards": ["WARD-07", "WARD-08"],
+        "phase2_expected_alert_range": {"min": 2, "max": 3},
     }
 
 

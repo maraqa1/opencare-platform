@@ -1025,6 +1025,7 @@ main() {
   wait_for_airbyte_deployments
   validate_airbyte_storage_runtime "$manifest_file"
   validate_airbyte
+  apply_file "$ROOT_DIR/manifests/airbyte/demo-sync-cronjob.yaml"
 
   log "Airbyte facts: endpoint=${AIRBYTE_URL}"
   log "Airbyte facts: release=${AIRBYTE_RELEASE_NAME}"

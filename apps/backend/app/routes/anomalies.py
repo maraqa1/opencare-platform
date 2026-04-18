@@ -12,7 +12,7 @@ def latest_anomalies() -> dict[str, object]:
     query = f"""
         with latest_run as (
             select max(generated_at) as generated_at
-            from {settings.analytics_schema}.anomaly_bed_occupancy
+            from {settings.output_schema}.{settings.anomaly_output_table}
         )
         select
             coalesce(d.department_code, w.ward_code) as department_code,
@@ -23,7 +23,7 @@ def latest_anomalies() -> dict[str, object]:
             a.occupied_beds,
             a.trailing_mean,
             latest_run.generated_at
-        from {settings.analytics_schema}.anomaly_bed_occupancy a
+        from {settings.output_schema}.{settings.anomaly_output_table} a
         join latest_run on a.generated_at = latest_run.generated_at
         left join {settings.analytics_schema}.dim_department d
           on d.department_id = a.department_id
@@ -48,7 +48,7 @@ def latest_anomalies() -> dict[str, object]:
 
     return {
         "status": "ok",
-        "source_schema": settings.analytics_schema,
+        "source_schema": settings.output_schema,
         "runtime_url": settings.anomaly_runtime_url,
         "generated_at": generated_at.isoformat() + "Z" if generated_at else None,
         "items": [

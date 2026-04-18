@@ -149,7 +149,7 @@ main() {
   local validation_sql
 
   if [[ "$DEMO_PROOF_FLOW_ENABLED" != "true" ]]; then
-    log_skip "Phase 1 synthetic-data proof flow disabled (set DEMO_PROOF_FLOW_ENABLED=true to enable)"
+    log_skip "Synthetic-data proof flow disabled (set DEMO_PROOF_FLOW_ENABLED=true to enable)"
     exit 0
   fi
 
@@ -174,8 +174,12 @@ main() {
   log "Re-running dbt for the synthetic demo dataset"
   run_with_demo_log demo-dbt env DBT_SOURCE_SCHEMA="$DEMO_RAW_SCHEMA" bash "$ROOT_DIR/scripts/dbt/apply_dbt.sh"
 
+  log "Re-running runtimes for the synthetic demo dataset"
+  run_with_demo_log demo-runtimes bash "$ROOT_DIR/scripts/runtime/apply_runtimes.sh"
+
   validate_phase1_counts
-  log_success "Phase 1 synthetic-data proof flow completed"
+  bash "$ROOT_DIR/scripts/demo/validate_phase2_loop.sh"
+  log_success "Synthetic-data proof flow completed through Phase 2 analytics validation"
 }
 
 main "$@"

@@ -76,6 +76,8 @@ metadata:
   namespace: opencare
 spec:
   schedule: "45 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 2
   jobTemplate:

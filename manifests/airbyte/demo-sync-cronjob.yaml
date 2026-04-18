@@ -1,0 +1,102 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airbyte-demo-sync-script
+  namespace: opencare
+data:
+  trigger-demo-sync.py: |
+    import json
+    import os
+    import sys
+    import time
+    import urllib.request
+
+
+    API_BASE = os.getenv("AIRBYTE_URL", "http://airbyte-airbyte-server-svc:8001")
+    API_PREFIX = os.getenv("AIRBYTE_PUBLIC_API_PREFIX", "/api/public/v1")
+    CONNECTION_NAME = os.getenv("DEMO_AIRBYTE_CONNECTION_NAME", "OpenCare Bed Occupancy Demo")
+
+
+    def request_json(path: str, method: str = "GET", payload: dict | None = None) -> dict:
+        body = None if payload is None else json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            f"{API_BASE}{API_PREFIX}{path}",
+            data=body,
+            method=method,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+
+
+    workspace_id = request_json("/workspaces")["data"][0]["workspaceId"]
+    if not workspace_id:
+        raise SystemExit("Unable to resolve Airbyte workspaceId")
+
+    connections = request_json(f"/connections?workspaceIds={workspace_id}").get("data", [])
+    connection_id = next(
+        (connection["connectionId"] for connection in connections if connection.get("name") == CONNECTION_NAME),
+        None,
+    )
+    if not connection_id:
+        raise SystemExit(f"Unable to resolve Airbyte connection {CONNECTION_NAME!r}")
+
+    job_id = request_json("/jobs", method="POST", payload={"connectionId": connection_id, "jobType": "sync"}).get("jobId")
+    if not job_id:
+        raise SystemExit("Unable to trigger Airbyte sync job")
+
+    while True:
+        job_payload = request_json(f"/jobs/{job_id}")
+        status = job_payload.get("status") or job_payload.get("job", {}).get("status")
+        if status == "succeeded":
+            print(f"Airbyte demo sync job {job_id} completed")
+            sys.exit(0)
+        if status in {"failed", "cancelled", "incomplete"}:
+            raise SystemExit(f"Airbyte demo sync job {job_id} finished with status {status}")
+        time.sleep(10)
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: airbyte-demo-sync
+  namespace: opencare
+spec:
+  schedule: "5 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: trigger
+              image: python:3.12-alpine
+              command:
+                - python3
+                - /scripts/trigger-demo-sync.py
+              envFrom:
+                - configMapRef:
+                    name: opencare-config
+                - secretRef:
+                    name: opencare-secrets
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
+          volumes:
+            - name: scripts
+              configMap:
+                name: airbyte-demo-sync-script
+                defaultMode: 0555

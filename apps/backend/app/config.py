@@ -18,6 +18,7 @@ class Settings:
     host: str = os.getenv("APP_HOST", "0.0.0.0")
     port: int = int(os.getenv("APP_PORT", "8000"))
     analytics_schema: str = os.getenv("ANALYTICS_SCHEMA", "analytics")
+    output_schema: str = os.getenv("OUTPUT_SCHEMA", "output")
     raw_schema: str = os.getenv("RAW_SCHEMA", "raw")
     postgres_host: str = os.getenv("POSTGRES_HOST", "postgres")
     postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
@@ -36,6 +37,9 @@ class Settings:
     anomaly_runtime_url: str = os.getenv(
         "ANOMALY_RUNTIME_URL", "http://anomaly:8000"
     )
+    forecast_output_table: str = os.getenv("FORECAST_OUTPUT_TABLE", "forecast")
+    anomaly_output_table: str = os.getenv("ANOMALY_OUTPUT_TABLE", "anomaly")
+    forecast_horizon_days: int = int(os.getenv("FORECAST_HORIZON_DAYS", "7"))
     superset_embed_url: str = os.getenv(
         "SUPERSET_EMBED_URL", "http://superset:8088"
     )
