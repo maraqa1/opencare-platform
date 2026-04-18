@@ -9,6 +9,7 @@ source "$ROOT_DIR/install/helpers.sh"
 AIRBYTE_PORT_FORWARD_PID=""
 AIRBYTE_API_BASE_URL=""
 AIRBYTE_PUBLIC_API_PREFIX="${AIRBYTE_PUBLIC_API_PREFIX:-/api/public/v1}"
+DEMO_AIRBYTE_DESTINATION_SCHEMA="${DEMO_AIRBYTE_DESTINATION_SCHEMA:-raw_demo}"
 
 log_error() {
   >&2 printf '[%s] ERROR: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -202,7 +203,7 @@ upsert_destination() {
     --arg host "$POSTGRES_HOST" \
     --argjson port "$POSTGRES_PORT" \
     --arg database "$POSTGRES_DB" \
-    --arg schema "$RAW_SCHEMA" \
+    --arg schema "$DEMO_AIRBYTE_DESTINATION_SCHEMA" \
     --arg username "$POSTGRES_USER" \
     --arg password "$POSTGRES_PASSWORD" \
     '{
@@ -308,24 +309,24 @@ wait_for_sync() {
 verify_raw_tables() {
   log "Verifying Airbyte raw tables in Postgres"
   kubectl -n "$NAMESPACE" exec -i postgres-0 -- sh -c "psql -U '${POSTGRES_USER}' -d '${POSTGRES_DB}' -v ON_ERROR_STOP=1 <<'SQL'
-select to_regclass('${RAW_SCHEMA}.wards');
-select to_regclass('${RAW_SCHEMA}.patients');
-select to_regclass('${RAW_SCHEMA}.bed_events');
-select 'wards' as table_name, count(*) as row_count from ${RAW_SCHEMA}.wards
+select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards');
+select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients');
+select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events');
+select 'wards' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards
 union all
-select 'patients' as table_name, count(*) as row_count from ${RAW_SCHEMA}.patients
+select 'patients' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients
 union all
-select 'bed_events' as table_name, count(*) as row_count from ${RAW_SCHEMA}.bed_events;
+select 'bed_events' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events;
 SQL"
 
   kubectl -n "$NAMESPACE" exec -i postgres-0 -- sh -c "psql -U '${POSTGRES_USER}' -d '${POSTGRES_DB}' -Atc \"
 select
-  coalesce(to_regclass('${RAW_SCHEMA}.wards')::text, '') = '${RAW_SCHEMA}.wards'
-  and coalesce(to_regclass('${RAW_SCHEMA}.patients')::text, '') = '${RAW_SCHEMA}.patients'
-  and coalesce(to_regclass('${RAW_SCHEMA}.bed_events')::text, '') = '${RAW_SCHEMA}.bed_events'
-  and (select count(*) from ${RAW_SCHEMA}.wards) > 0
-  and (select count(*) from ${RAW_SCHEMA}.patients) > 0
-  and (select count(*) from ${RAW_SCHEMA}.bed_events) > 0;
+  coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards'
+  and coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients'
+  and coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events'
+  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards) > 0
+  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients) > 0
+  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events) > 0;
 \" | grep -qx t"
 }
 
