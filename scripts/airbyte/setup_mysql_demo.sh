@@ -241,7 +241,7 @@ build_catalog() {
           .catalog.streams // .catalog // .streams // []
         )
         | map({
-            name: .name,
+            name: (.stream.name // .name),
             syncMode: "full_refresh_overwrite"
           })
       '
