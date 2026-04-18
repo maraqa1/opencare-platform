@@ -14,6 +14,23 @@ log_info <- function(message) {
 analytics_schema <- get_env("ANALYTICS_SCHEMA", "analytics")
 anomaly_table <- get_env("ANOMALY_OUTPUT_TABLE", "anomaly_bed_occupancy")
 
+ensure_anomaly_table <- function(con) {
+  DBI::dbExecute(
+    con,
+    sprintf("
+      create table if not exists %s.%s (
+        department_id text not null,
+        event_date date not null,
+        occupied_beds integer not null,
+        trailing_mean numeric,
+        deviation_ratio numeric not null,
+        severity text not null,
+        generated_at timestamp not null
+      )
+    ", analytics_schema, anomaly_table)
+  )
+}
+
 run_anomaly_detection <- function() {
   log_info("starting anomaly refresh")
   con <- DBI::dbConnect(
@@ -29,15 +46,15 @@ run_anomaly_detection <- function() {
   query <- sprintf("
     with ordered as (
       select
-        department_id,
+        ward_id as department_id,
         date_day,
         occupied_beds,
         avg(occupied_beds) over (
-          partition by department_id
+          partition by ward_id
           order by date_day
           rows between 6 preceding and 1 preceding
         ) as trailing_mean
-      from %s.fact_bed_occupancy
+      from %s.fct_bed_occupancy
     )
     select
       department_id,
@@ -53,6 +70,7 @@ run_anomaly_detection <- function() {
       and occupied_beds > trailing_mean * 1.15
   ", analytics_schema)
 
+  ensure_anomaly_table(con)
   anomalies <- DBI::dbGetQuery(con, query)
   if (nrow(anomalies) == 0) {
     log_info("no anomaly rows produced")
@@ -61,21 +79,6 @@ run_anomaly_detection <- function() {
 
   anomalies$severity <- ifelse(anomalies$deviation_ratio >= 0.25, "high", "medium")
   anomalies$generated_at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-
-  DBI::dbExecute(
-    con,
-    sprintf("
-      create table if not exists %s.%s (
-        department_id text not null,
-        event_date date not null,
-        occupied_beds integer not null,
-        trailing_mean numeric,
-        deviation_ratio numeric not null,
-        severity text not null,
-        generated_at timestamp not null
-      )
-    ", analytics_schema, anomaly_table)
-  )
 
   staging_table <- paste0(anomaly_table, "_staging")
   DBI::dbWriteTable(

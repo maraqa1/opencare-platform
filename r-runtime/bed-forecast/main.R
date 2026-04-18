@@ -14,6 +14,21 @@ log_info <- function(message) {
 analytics_schema <- get_env("ANALYTICS_SCHEMA", "analytics")
 forecast_table <- get_env("FORECAST_OUTPUT_TABLE", "forecast_bed_occupancy")
 
+ensure_forecast_table <- function(con) {
+  DBI::dbExecute(
+    con,
+    sprintf("
+      create table if not exists %s.%s (
+        department_id text not null,
+        forecast_date date not null,
+        predicted_occupied_beds integer not null,
+        capacity_beds integer,
+        generated_at timestamp not null
+      )
+    ", analytics_schema, forecast_table)
+  )
+}
+
 run_forecast <- function() {
   log_info("starting forecast refresh")
   con <- DBI::dbConnect(
@@ -29,11 +44,11 @@ run_forecast <- function() {
   query <- sprintf("
     with base as (
       select
-        department_id,
+        ward_id as department_id,
         date_day,
         occupied_beds,
         staffed_beds
-      from %s.fact_bed_occupancy
+      from %s.fct_bed_occupancy
     ),
     ranked as (
       select
@@ -62,28 +77,16 @@ run_forecast <- function() {
     group by department_id
   ", analytics_schema)
 
+  ensure_forecast_table(con)
   forecast <- DBI::dbGetQuery(con, query)
   if (nrow(forecast) == 0) {
-    log_info("no source rows available in analytics fact_bed_occupancy")
+    log_info("no source rows available in analytics fct_bed_occupancy")
     return(invisible(NULL))
   }
 
   forecast$generated_at <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
   target <- DBI::Id(schema = analytics_schema, table = forecast_table)
   staging_table <- DBI::Id(schema = analytics_schema, table = paste0(forecast_table, "_staging"))
-
-  DBI::dbExecute(
-    con,
-    sprintf("
-      create table if not exists %s.%s (
-        department_id text not null,
-        forecast_date date not null,
-        predicted_occupied_beds integer not null,
-        capacity_beds integer,
-        generated_at timestamp not null
-      )
-    ", analytics_schema, forecast_table)
-  )
 
   DBI::dbWriteTable(con, staging_table, forecast, overwrite = TRUE, temporary = FALSE)
   DBI::dbWithTransaction(con, {
