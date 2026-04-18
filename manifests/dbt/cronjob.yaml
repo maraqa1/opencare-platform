@@ -141,7 +141,7 @@ data:
     sources:
       - name: raw
         description: Operational landing schema populated by Airbyte from the external hospital MySQL source.
-        schema: raw
+        schema: "{{ env_var('DBT_SOURCE_SCHEMA', env_var('RAW_SCHEMA', 'raw')) }}"
         tables:
           - name: wards
             description: Raw ward reference records from the source system.
