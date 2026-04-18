@@ -1,5 +1,5 @@
 with source_data as (
-    select
+    select distinct
         cast(event_id as text) as bed_event_key,
         cast(event_timestamp as timestamp) as event_timestamp,
         cast(event_timestamp as date) as event_date,

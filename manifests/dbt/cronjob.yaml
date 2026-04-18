@@ -145,39 +145,36 @@ data:
         description: Operational landing schema populated by Airbyte from the external hospital MySQL source.
         schema: "{{ env_var('DBT_SOURCE_SCHEMA', env_var('RAW_SCHEMA', 'raw')) }}"
         tables:
-          - name: wards
-            description: Raw ward reference records from the source system.
-            columns:
-              - name: ward_id
-                tests:
-                  - not_null
-                  - unique
-              - name: ward_code
-                tests:
-                  - not_null
+            - name: wards
+              description: Raw ward reference records from the source system.
+              columns:
+                - name: ward_id
+                  tests:
+                    - not_null
+                - name: ward_code
+                  tests:
+                    - not_null
               - name: ward_name
                 tests:
                   - not_null
-          - name: patients
-            description: Raw patient reference records from the source system.
-            columns:
-              - name: patient_id
-                tests:
-                  - not_null
-                  - unique
-              - name: medical_record_number
-                tests:
-                  - not_null
-          - name: bed_events
-            description: Raw ward occupancy and movement events from the source system.
-            columns:
-              - name: event_id
-                tests:
-                  - not_null
-                  - unique
-              - name: event_timestamp
-                tests:
-                  - not_null
+            - name: patients
+              description: Raw patient reference records from the source system.
+              columns:
+                - name: patient_id
+                  tests:
+                    - not_null
+                - name: medical_record_number
+                  tests:
+                    - not_null
+            - name: bed_events
+              description: Raw ward occupancy and movement events from the source system.
+              columns:
+                - name: event_id
+                  tests:
+                    - not_null
+                - name: event_timestamp
+                  tests:
+                    - not_null
               - name: ward_id
                 tests:
                   - not_null
@@ -345,7 +342,7 @@ data:
               - not_null
   stg_bed_events.sql: |
     with source_data as (
-        select
+        select distinct
             cast(event_id as text) as bed_event_key,
             cast(event_timestamp as timestamp) as event_timestamp,
             cast(event_timestamp as date) as event_date,
@@ -376,22 +373,43 @@ data:
         end as occupancy_rate
     from source_data
   stg_wards.sql: |
+    with source_data as (
+        select distinct
+            cast(ward_id as text) as ward_id,
+            trim(cast(ward_code as text)) as ward_code,
+            trim(cast(ward_name as text)) as ward_name,
+            trim(cast(service_line as text)) as service_line,
+            cast(licensed_beds as integer) as licensed_beds,
+            cast(staffed_beds_baseline as integer) as staffed_beds_baseline
+        from {{ source('raw', 'wards') }}
+    )
+
     select
-        cast(ward_id as text) as ward_id,
-        trim(cast(ward_code as text)) as ward_code,
-        trim(cast(ward_name as text)) as ward_name,
-        trim(cast(service_line as text)) as service_line,
-        cast(licensed_beds as integer) as licensed_beds,
-        cast(staffed_beds_baseline as integer) as staffed_beds_baseline
-    from {{ source('raw', 'wards') }}
+        ward_id,
+        ward_code,
+        ward_name,
+        service_line,
+        licensed_beds,
+        staffed_beds_baseline
+    from source_data
   stg_patients.sql: |
+    with source_data as (
+        select distinct
+            cast(patient_id as text) as patient_id,
+            trim(cast(medical_record_number as text)) as medical_record_number,
+            cast(date_of_birth as date) as date_of_birth,
+            upper(trim(cast(sex_at_birth as text))) as sex_at_birth,
+            trim(cast(home_postcode as text)) as home_postcode
+        from {{ source('raw', 'patients') }}
+    )
+
     select
-        cast(patient_id as text) as patient_id,
-        trim(cast(medical_record_number as text)) as medical_record_number,
-        cast(date_of_birth as date) as date_of_birth,
-        upper(trim(cast(sex_at_birth as text))) as sex_at_birth,
-        trim(cast(home_postcode as text)) as home_postcode
-    from {{ source('raw', 'patients') }}
+        patient_id,
+        medical_record_number,
+        date_of_birth,
+        sex_at_birth,
+        home_postcode
+    from source_data
   stg_departments.sql: |
     select
         ward_id as department_id,

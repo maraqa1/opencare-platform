@@ -14,12 +14,30 @@ require_phase2_validation_prereqs() {
 }
 
 ensure_demo_summary_file() {
+  local should_regenerate="true"
+
   if [[ -f "$SUMMARY_FILE" ]]; then
-    return 0
+    if python3 - "$SUMMARY_FILE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+required = {"phase2_expected_alert_wards", "phase2_expected_alert_range"}
+missing = [key for key in required if key not in payload]
+if missing:
+    raise SystemExit(1)
+PY
+    then
+      should_regenerate="false"
+    fi
   fi
 
-  mkdir -p "$ROOT_DIR/$DEMO_SEED_OUTPUT_DIR"
-  python3 "$ROOT_DIR/scripts/demo/generate_demo_data.py" --output-dir "$ROOT_DIR/$DEMO_SEED_OUTPUT_DIR" >/dev/null
+  if [[ "$should_regenerate" == "true" ]]; then
+    mkdir -p "$ROOT_DIR/$DEMO_SEED_OUTPUT_DIR"
+    python3 "$ROOT_DIR/scripts/demo/generate_demo_data.py" --output-dir "$ROOT_DIR/$DEMO_SEED_OUTPUT_DIR" >/dev/null
+  fi
 }
 
 summary_json_value() {
