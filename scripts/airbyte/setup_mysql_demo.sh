@@ -270,7 +270,7 @@ upsert_connection() {
         streams: $streams
       },
       namespaceDefinition: "custom_format",
-      namespaceFormat: "raw",
+      namespaceFormat: "raw_demo",
       prefix: "",
       status: "active"
     }'
