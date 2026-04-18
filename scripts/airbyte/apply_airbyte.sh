@@ -289,6 +289,11 @@ remove_legacy_airbyte_resources() {
   kubectl -n "$NAMESPACE" delete configmap airbyte-temporal-dynamic-config --ignore-not-found >/dev/null 2>&1 || true
 }
 
+cleanup_drifted_airbyte_deployments() {
+  log "Cleaning drifted Helm-managed Airbyte deployments before Helm upgrade"
+  kubectl -n "$NAMESPACE" delete deployment airbyte-worker airbyte-workload-launcher --ignore-not-found >/dev/null 2>&1 || true
+}
+
 ensure_airbyte_runtime_config() {
   local airbyte_minio_url
   local internal_api_host
@@ -999,6 +1004,7 @@ main() {
   validate_airbyte_minio_secret_parity
   configure_helm_repo
   remove_legacy_airbyte_resources
+  cleanup_drifted_airbyte_deployments
   values_file="$(render_values_file)"
   validate_rendered_airbyte_values "$values_file"
   manifest_file="$(render_manifest_file "$values_file")"
