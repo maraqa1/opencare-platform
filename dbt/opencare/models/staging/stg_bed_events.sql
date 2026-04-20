@@ -1,5 +1,5 @@
 with source_data as (
-    select distinct
+    select
         cast(event_id as text) as bed_event_key,
         cast(event_timestamp as timestamp) as event_timestamp,
         cast(event_timestamp as date) as event_date,
@@ -9,7 +9,15 @@ with source_data as (
         cast(occupied_beds as integer) as occupied_beds,
         cast(licensed_beds as integer) as licensed_beds,
         cast(staffed_beds as integer) as staffed_beds,
-        nullif(trim(cast(scenario_tag as text)), '') as scenario_tag
+        nullif(trim(cast(scenario_tag as text)), '') as scenario_tag,
+        row_number() over (
+            partition by cast(event_id as text)
+            order by
+                cast(event_timestamp as timestamp) desc,
+                coalesce(nullif(trim(cast(scenario_tag as text)), ''), '') desc,
+                cast(occupied_beds as integer) desc nulls last,
+                cast(staffed_beds as integer) desc nulls last
+        ) as dedupe_rank
     from {{ source('raw', 'bed_events') }}
 )
 
@@ -29,3 +37,4 @@ select
         else round(occupied_beds::numeric / staffed_beds::numeric, 4)
     end as occupancy_rate
 from source_data
+where dedupe_rank = 1
