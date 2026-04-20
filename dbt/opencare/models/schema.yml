@@ -3,147 +3,266 @@ version: 2
 models:
   - name: stg_wards
     description: Standardized ward dimension inputs shaped from Airbyte-loaded raw ward records.
+    meta:
+      stage: staging
+      owner: Data Platform
+      classification: operational
     columns:
       - name: ward_id
+        description: Standardized ward identifier carried into analytics models.
         tests:
           - not_null
           - unique
       - name: ward_code
+        description: Clean ward code used in portal labels and dashboards.
         tests:
           - not_null
           - unique
       - name: ward_name
+        description: Canonical ward name surfaced across the product.
         tests:
           - not_null
 
   - name: stg_patients
     description: Standardized patient reference inputs for downstream healthcare analytics use cases.
+    meta:
+      stage: staging
+      owner: Data Platform
+      classification: patient_identifiable
+      masking: Applied in non-production environments.
+      retention_days: 2555
     columns:
       - name: patient_id
+        description: Pseudonymous patient key retained for relationships and auditability.
+        meta:
+          contains_pii: true
+          pii_level: HIGH
         tests:
           - not_null
           - unique
       - name: medical_record_number
+        description: Source medical record number retained for traceability controls.
+        meta:
+          contains_pii: true
+          pii_level: HIGH
         tests:
           - not_null
           - unique
+      - name: date_of_birth
+        description: Date of birth used for cohorting and age-band derivation.
+        meta:
+          contains_pii: true
+          pii_level: MEDIUM
+      - name: sex_at_birth
+        description: Sex at birth as supplied by the source system.
+      - name: home_postcode
+        description: Source postcode retained for geography-derived analysis.
+        meta:
+          contains_pii: true
+          pii_level: MEDIUM
 
   - name: stg_bed_events
     description: Standardized bed occupancy and movement event records.
+    meta:
+      stage: staging
+      owner: Data Platform
+      classification: operational
     columns:
       - name: bed_event_key
+        description: Deduplicated surrogate key for a raw bed event.
         tests:
           - not_null
           - unique
       - name: ward_id
+        description: Ward identifier associated with the event.
         tests:
           - not_null
           - relationships:
               to: ref('stg_wards')
               field: ward_id
       - name: patient_id
+        description: Patient identifier when the event is linked to a named admission.
+        meta:
+          contains_pii: true
+          pii_level: HIGH
         tests:
           - relationships:
               to: ref('stg_patients')
               field: patient_id
               where: "patient_id is not null"
       - name: event_type
+        description: Operational event type recorded by the source system.
         tests:
           - not_null
           - accepted_values:
               values: ['midnight_census', 'admission', 'discharge', 'transfer_in', 'transfer_out']
       - name: event_date
+        description: Calendar date used to aggregate bed activity.
         tests:
           - not_null
       - name: occupied_beds
+        description: Occupied bed count recorded at the event timestamp.
         tests:
           - not_null
+      - name: licensed_beds
+        description: Licensed bed count associated with the ward at the event timestamp.
+      - name: staffed_beds
+        description: Staffed bed count available operationally at the event timestamp.
+      - name: occupancy_rate
+        description: occupied_beds / staffed_beds expressed as a ratio.
+        meta:
+          formula: occupied_beds / staffed_beds
 
   - name: dim_ward
     description: Analytics ward dimension for operational reporting and runtime joins.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: reference
     columns:
       - name: ward_id
+        description: Trusted ward identifier used throughout analytics and runtime outputs.
         tests:
           - not_null
           - unique
       - name: ward_code
+        description: Operational ward code used in UI labels and exports.
         tests:
           - not_null
           - unique
       - name: ward_name
+        description: Preferred ward display name for board-ready outputs.
         tests:
           - not_null
 
   - name: dim_date
     description: Analytics date dimension derived from the bed occupancy event calendar.
+    meta:
+      stage: analytics
+      owner: Data Platform
+      classification: reference
     columns:
       - name: date_day
+        description: Calendar day grain used for daily occupancy facts.
         tests:
           - not_null
           - unique
 
   - name: fct_bed_occupancy
     description: Daily ward-level occupancy fact used by forecasting and anomaly detection.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
+      data_product: bed_pressure
+      freshness_sla_hours: 4
     columns:
       - name: occupancy_fact_key
+        description: Surrogate key for one ward-day occupancy record.
         tests:
           - not_null
           - unique
       - name: date_day
+        description: Calendar day for the occupancy snapshot.
         tests:
           - not_null
       - name: ward_id
+        description: Ward identifier that ties the fact row back to dim_ward.
         tests:
           - not_null
           - relationships:
               to: ref('dim_ward')
               field: ward_id
+      - name: occupied_beds
+        description: Number of staffed beds occupied at the midnight census.
+      - name: licensed_beds
+        description: Licensed beds available to the ward on the day.
+      - name: staffed_beds
+        description: Beds that were actually staffed and available for use.
+      - name: available_beds
+        description: Remaining staffed capacity after subtracting occupied beds.
+        meta:
+          formula: greatest(staffed_beds - occupied_beds, 0)
       - name: occupancy_rate
+        description: Percentage of staffed beds occupied for the ward-day.
+        meta:
+          formula: occupied_beds / staffed_beds * 100
         tests:
           - not_null
+      - name: pressure_flag
+        description: Boolean indicator showing occupancy at or above 90 percent of staffed beds.
+        meta:
+          formula: occupancy_rate >= 90
 
   - name: dict_metrics
     description: Dictionary metrics reference for the Hospital Bed Occupancy Intelligence demo.
+    meta:
+      stage: analytics
+      owner: Product Experience
+      classification: reference
     columns:
       - name: metric_id
+        description: Stable metric identifier used by the portal dictionary.
         tests:
           - not_null
           - unique
       - name: metric_name
+        description: Human-readable label for the metric.
         tests:
           - not_null
       - name: metric_schema
+        description: Qualified analytics or output table the metric is sourced from.
         tests:
           - not_null
 
   - name: fact_bed_occupancy
     description: Compatibility alias for runtime consumers that still read analytics.fact_bed_occupancy.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
     columns:
       - name: occupancy_fact_key
+        description: Compatibility key retained for downstream runtime consumers.
         tests:
           - not_null
           - unique
 
   - name: dim_department
     description: Compatibility alias for runtime consumers that still read analytics.dim_department.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: reference
     columns:
       - name: department_id
+        description: Compatibility department identifier aligned to ward_id.
         tests:
           - not_null
           - unique
 
   - name: dim_time
     description: Compatibility alias for runtime consumers that still read analytics.dim_time.
+    meta:
+      stage: analytics
+      owner: Data Platform
+      classification: reference
     columns:
       - name: date_day
+        description: Compatibility date key for runtime consumers.
         tests:
           - not_null
           - unique
 
   - name: fact_capacity
     description: Daily ward capacity fact retained for runtime compatibility and capacity KPI calculations.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
     columns:
       - name: capacity_fact_key
+        description: Surrogate key for a ward-day capacity record.
         tests:
           - not_null
           - unique

@@ -55,6 +55,9 @@ class Settings:
     dictionary_version: str = os.getenv("DICTIONARY_VERSION", "2026.04")
     runtime_writes_enabled: bool = _get_bool("RUNTIME_WRITES_ENABLED", True)
     use_cases_config_path: str = os.getenv("USE_CASES_CONFIG_PATH", "")
+    dbt_project_dir: str = os.getenv("DBT_PROJECT_DIR", "/app/dbt")
+    dbt_manifest_path: str = os.getenv("DBT_MANIFEST_PATH", "/app/dbt/target/manifest.json")
+    dbt_models_dir: str = os.getenv("DBT_MODELS_DIR", "/app/dbt/models")
 
     def postgres_dsn(self) -> str:
         credentials = self.postgres_user

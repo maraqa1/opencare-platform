@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY apps/backend/app ./app
 COPY config ./config
+COPY dbt/opencare/models ./dbt/models
 
 EXPOSE 8000
 

@@ -1,4 +1,5 @@
 import { EmbeddedDashboard } from "@/components/EmbeddedDashboard";
+import { GovernanceView } from "@/components/GovernanceView";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { DictionaryView } from "@/components/DictionaryView";
 import { PageFrame } from "@/components/page-frame";
@@ -27,6 +28,7 @@ export default async function BedPressureDashboard({
     { key: "alerts", label: "Alerts", href: "/occupancy?tab=alerts" },
     { key: "analytics", label: "Analytics", href: "/occupancy?tab=analytics" },
     { key: "dictionary", label: "Data Dictionary", href: "/occupancy?tab=dictionary" },
+    { key: "governance", label: "Governance", href: "/occupancy?tab=governance" },
   ];
 
   return (
@@ -70,6 +72,12 @@ export default async function BedPressureDashboard({
         />
       ) : null}
       {activeTab === "dictionary" ? <DictionaryView useCase="bed_pressure" /> : null}
+      {activeTab === "governance" ? (
+        <>
+          <GovernanceView />
+          <RecordSpecification table="analytics.fct_bed_occupancy" />
+        </>
+      ) : null}
       {activeTab === "occupancy" ? (
         <>
           <OccupancyGrid />

@@ -8,3 +8,4 @@ This directory holds operational and architecture documentation for the OpenCare
 - `phase2-diagnosis.md`: retrospective diagnosis of the Phase 2 analytics loop and proof boundaries
 - `phase2-analytics-loop.md`: Phase 2 analytics loop and repeat-cycle validation
 - `phase4-investor-dashboard.md`: investor-facing portal, analytics, and extensibility work for Phase 4
+- `phase4b-governance-trust-layer.md`: lineage, dictionary, freshness, quality, and compliance trust layer
