@@ -134,11 +134,12 @@ export function ForecastView({ selectedWardId }: { selectedWardId?: string }) {
     }
 
     let cancelled = false;
+    const wardId = activeWardId;
     setIsReady(false);
 
     async function loadForecast() {
       const response = await fetch(
-        `/api/portal/api/v1/forecast?days=7&ward_id=${encodeURIComponent(activeWardId)}`,
+        `/api/portal/api/v1/forecast?days=7&ward_id=${encodeURIComponent(wardId)}`,
         { cache: "no-store" },
       );
       const payload = (await response.json()) as { items?: ForecastRow[] };

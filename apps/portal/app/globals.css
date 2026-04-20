@@ -925,7 +925,7 @@ code {
 
 .selector-form {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
