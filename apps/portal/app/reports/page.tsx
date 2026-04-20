@@ -1,6 +1,6 @@
 import { PageFrame } from "@/components/page-frame";
+import { RecordSpecification } from "@/components/RecordSpecification";
 import { getApiJson } from "@/lib/api";
-import { reportRows } from "@/lib/site-data";
 
 export default async function ReportsPage() {
   const reports = await getApiJson<{
@@ -27,14 +27,26 @@ export default async function ReportsPage() {
       ]}
     >
       <section className="report-grid">
-        {(rows.length > 0 ? rows : reportRows).map((report) => (
+        {rows.map((report) => (
           <article className="report-card" key={report.name}>
             <p className="eyebrow">{report.format}</p>
             <h3>{report.name}</h3>
-            <p className="subtle">{rows.length > 0 ? report.updated : `Last updated ${report.updated}`}</p>
+            <p className="subtle">{report.updated}</p>
+            <a
+              className="button primary"
+              href={
+                report.name.toLowerCase().includes("forecast")
+                  ? "/api/v1/reports/export/forecast"
+                  : "/api/v1/reports/export/anomaly"
+              }
+            >
+              Download CSV
+            </a>
           </article>
         ))}
       </section>
+      <RecordSpecification table="output.forecast" />
+      <RecordSpecification table="output.anomaly" />
     </PageFrame>
   );
 }

@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict, dataclass
+from functools import lru_cache
+from pathlib import Path
+
+import yaml
 
 
 def _get_bool(name: str, default: bool) -> bool:
@@ -18,8 +22,11 @@ class Settings:
     host: str = os.getenv("APP_HOST", "0.0.0.0")
     port: int = int(os.getenv("APP_PORT", "8000"))
     analytics_schema: str = os.getenv("ANALYTICS_SCHEMA", "analytics")
+    dictionary_schema: str = os.getenv("DICTIONARY_SCHEMA", "dictionary")
     output_schema: str = os.getenv("OUTPUT_SCHEMA", "output")
     raw_schema: str = os.getenv("RAW_SCHEMA", "raw")
+    staging_schema: str = os.getenv("STAGING_SCHEMA", "staging")
+    dbt_source_schema: str = os.getenv("DBT_SOURCE_SCHEMA", os.getenv("RAW_SCHEMA", "raw"))
     postgres_host: str = os.getenv("POSTGRES_HOST", "postgres")
     postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
     postgres_db: str = os.getenv("POSTGRES_DB", "opencare")
@@ -37,6 +44,7 @@ class Settings:
     anomaly_runtime_url: str = os.getenv(
         "ANOMALY_RUNTIME_URL", "http://anomaly:8000"
     )
+    airbyte_url: str = os.getenv("AIRBYTE_URL", "http://airbyte-airbyte-server-svc:8001")
     forecast_output_table: str = os.getenv("FORECAST_OUTPUT_TABLE", "forecast")
     anomaly_output_table: str = os.getenv("ANOMALY_OUTPUT_TABLE", "anomaly")
     forecast_horizon_days: int = int(os.getenv("FORECAST_HORIZON_DAYS", "7"))
@@ -46,6 +54,7 @@ class Settings:
     reports_prefix: str = os.getenv("REPORTS_PREFIX", "reports")
     dictionary_version: str = os.getenv("DICTIONARY_VERSION", "2026.04")
     runtime_writes_enabled: bool = _get_bool("RUNTIME_WRITES_ENABLED", True)
+    use_cases_config_path: str = os.getenv("USE_CASES_CONFIG_PATH", "")
 
     def postgres_dsn(self) -> str:
         credentials = self.postgres_user
@@ -64,3 +73,59 @@ class Settings:
 
 
 settings = Settings()
+
+
+def _candidate_use_case_paths() -> list[Path]:
+    candidates: list[Path] = []
+    if settings.use_cases_config_path:
+        candidates.append(Path(settings.use_cases_config_path))
+
+    repo_root = Path(__file__).resolve().parents[3]
+    candidates.append(repo_root / "config" / "use_cases.yaml")
+    candidates.append(Path("/app/config/use_cases.yaml"))
+    return candidates
+
+
+@lru_cache(maxsize=1)
+def load_use_cases(include_disabled: bool = True) -> dict[str, dict[str, object]]:
+    for path in _candidate_use_case_paths():
+        if not path.is_file():
+            continue
+
+        with path.open("r", encoding="utf-8") as handle:
+            payload = yaml.safe_load(handle) or {}
+
+        use_cases = payload.get("use_cases", {})
+        if not isinstance(use_cases, dict):
+            return {}
+
+        if include_disabled:
+            return use_cases
+
+        return {
+            key: value
+            for key, value in use_cases.items()
+            if isinstance(value, dict) and value.get("enabled", False)
+        }
+
+    return {}
+
+
+def load_enabled_use_cases() -> dict[str, dict[str, object]]:
+    return load_use_cases(include_disabled=False)
+
+
+@lru_cache(maxsize=1)
+def load_record_spec_map() -> dict[str, dict[str, object]]:
+    record_specs: dict[str, dict[str, object]] = {}
+    for use_case_key, use_case in load_use_cases(include_disabled=True).items():
+        for spec in use_case.get("record_specs", []):
+            table = spec.get("table")
+            if not isinstance(table, str):
+                continue
+            record_specs[table] = {
+                "use_case": use_case_key,
+                "grain": spec.get("grain"),
+                "table": table,
+            }
+    return record_specs

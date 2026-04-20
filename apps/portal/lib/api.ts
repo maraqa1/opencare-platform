@@ -1,11 +1,15 @@
 const DEFAULT_API_BASE_URL = "http://backend:8000";
 
-function getApiBaseUrl() {
+export function getApiBaseUrl() {
   return (
     process.env.BACKEND_URL ??
     process.env.NEXT_PUBLIC_API_BASE_URL ??
     DEFAULT_API_BASE_URL
   );
+}
+
+export function getApiUrl(path: string) {
+  return `${getApiBaseUrl()}${path}`;
 }
 
 export async function getApiJson<TData>({

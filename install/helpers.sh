@@ -21,6 +21,7 @@ fi
 
 NAMESPACE="${NAMESPACE:-opencare}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-180}"
+JOB_TIMEOUT_SECONDS="${JOB_TIMEOUT_SECONDS:-420}"
 POSTGRES_HOST="${POSTGRES_HOST:-postgres}"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_DB="${POSTGRES_DB:-opencare}"
@@ -259,7 +260,7 @@ wait_for_job_cleanup() {
 wait_for_job_completion() {
   local job_name="$1"
   log "Waiting for job/$job_name"
-  kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$job_name" --timeout="${TIMEOUT_SECONDS}s"
+  kubectl -n "$NAMESPACE" wait --for=condition=complete "job/$job_name" --timeout="${JOB_TIMEOUT_SECONDS}s"
 }
 
 print_job_logs() {

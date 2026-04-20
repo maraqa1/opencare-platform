@@ -1,0 +1,76 @@
+use_cases:
+  bed_pressure:
+    name: "Bed Pressure Intelligence"
+    description: "Monitor occupancy and forecast ward pressure"
+    enabled: true
+    source_tables:
+      - bed_events
+      - wards
+      - patients
+    portal_pages:
+      - slug: "occupancy"
+        label: "Occupancy"
+        icon: "hospital-bed"
+        tab_order: 1
+      - slug: "forecast"
+        label: "Forecasts"
+        icon: "trending-up"
+        tab_order: 2
+      - slug: "anomalies"
+        label: "Alerts"
+        icon: "alert-triangle"
+        tab_order: 3
+    superset_dashboard_id: "bed-occupancy-trends"
+    api_prefix: "/api/v1"
+    api_endpoints:
+      - path: "/occupancy/current"
+        method: "GET"
+      - path: "/occupancy/historical"
+        method: "GET"
+      - path: "/forecast"
+        method: "GET"
+      - path: "/anomalies"
+        method: "GET"
+      - path: "/anomalies/summary"
+        method: "GET"
+    r_runtimes:
+      - name: "forecast"
+        schedule: "20 * * * *"
+        model: "arima_occupancy"
+      - name: "anomaly"
+        schedule: "25 * * * *"
+        model: "zscore_occupancy"
+    record_specs:
+      - table: "analytics.fct_bed_occupancy"
+        grain: "One row per ward per day"
+      - table: "output.forecast"
+        grain: "One row per ward per forecast date"
+      - table: "output.anomaly"
+        grain: "One row per ward per anomaly event"
+  staff_scheduling:
+    name: "Staff Scheduling Pressure"
+    description: "Optimize staff allocation across wards"
+    enabled: false
+    source_tables:
+      - staff_shifts
+      - staff_availability
+      - ward_staffing_ratios
+    portal_pages:
+      - slug: "staffing-dashboard"
+        label: "Staff Scheduling"
+        icon: "users"
+        tab_order: 1
+        badge: "NEW"
+    superset_dashboard_id: "staff-utilization"
+    api_prefix: "/api/v1/staffing"
+    api_endpoints:
+      - path: "/current"
+        method: "GET"
+      - path: "/forecast"
+        method: "GET"
+      - path: "/alerts"
+        method: "GET"
+    r_runtimes:
+      - name: "shift_forecast"
+        schedule: "0 2 * * *"
+        model: "arima_staffing"

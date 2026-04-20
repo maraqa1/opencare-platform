@@ -100,7 +100,7 @@ jobs:
       matrix:
         include:
           - name: backend
-            context: ./apps/backend
+            context: .
             dockerfile: ./apps/backend/Dockerfile
             image_repo: ghcr.io/maraqa1/opencare-backend
           - name: portal

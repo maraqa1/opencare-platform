@@ -1,20 +1,35 @@
-from fastapi import APIRouter
+from decimal import Decimal
+
+from fastapi import APIRouter, Query
+from psycopg import sql
 from psycopg.errors import UndefinedTable
 
 from app.config import settings
-from app.db import connect
+from app.db import connect, qualified_table
 
-router = APIRouter(prefix="/api", tags=["forecasts"])
+router = APIRouter(tags=["forecasts"])
 
 
-@router.get("/forecasts/latest")
-def latest_forecast() -> dict[str, object]:
-    query = f"""
+def _to_float(value: object) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, Decimal):
+        return float(value)
+    return float(value)
+
+
+def _latest_forecast_rows(ward_id: str | None = None, days: int | None = None) -> list[dict[str, object]]:
+    forecast_table = qualified_table(settings.output_schema, settings.forecast_output_table)
+    dim_department_table = qualified_table(settings.analytics_schema, "dim_department")
+    dim_ward_table = qualified_table(settings.analytics_schema, "dim_ward")
+    query = sql.SQL(
+        """
         with latest_run as (
             select max(run_timestamp) as run_timestamp
-            from {settings.output_schema}.{settings.forecast_output_table}
+            from {forecast_table}
         )
         select
+            f.ward_id,
             coalesce(d.department_code, w.ward_code) as department_code,
             coalesce(d.department_name, w.ward_name) as department_name,
             f.forecast_date,
@@ -27,22 +42,47 @@ def latest_forecast() -> dict[str, object]:
                 when f.capacity_beds is null or f.capacity_beds = 0 then null
                 else round(f.predicted_occupancy::numeric / f.capacity_beds::numeric, 4)
             end as occupancy_rate,
+            case
+                when f.capacity_beds is null or f.capacity_beds = 0 then false
+                when f.predicted_occupancy::numeric / f.capacity_beds::numeric >= 0.9 then true
+                else false
+            end as breach_risk,
             latest_run.run_timestamp
-        from {settings.output_schema}.{settings.forecast_output_table} f
+        from {forecast_table} f
         join latest_run on f.run_timestamp = latest_run.run_timestamp
-        left join {settings.analytics_schema}.dim_department d
+        left join {dim_department_table} d
           on d.department_id = f.ward_id
-        left join {settings.analytics_schema}.dim_ward w
+        left join {dim_ward_table} w
           on w.ward_id = f.ward_id
+        where (%(ward_id)s is null or f.ward_id = %(ward_id)s)
+          and (%(days)s is null or f.forecast_date < (
+            select min(f2.forecast_date) + make_interval(days => %(days)s)
+            from {forecast_table} f2
+            join latest_run lr2 on f2.run_timestamp = lr2.run_timestamp
+            where (%(ward_id)s is null or f2.ward_id = %(ward_id)s)
+          ))
         order by d.department_code nulls last, f.ward_id, f.forecast_date
-    """
+        """
+    ).format(
+        forecast_table=forecast_table,
+        dim_department_table=dim_department_table,
+        dim_ward_table=dim_ward_table,
+    )
 
     try:
         with connect() as conn:
-            rows = conn.execute(query).fetchall()
+            return conn.execute(query, {"ward_id": ward_id, "days": days}).fetchall()
     except UndefinedTable:
-        rows = []
+        return []
 
+
+@router.get("/api/forecasts/latest")
+@router.get("/api/v1/forecast")
+def latest_forecast(
+    ward_id: str | None = Query(default=None),
+    days: int | None = Query(default=None, ge=1, le=30),
+) -> dict[str, object]:
+    rows = _latest_forecast_rows(ward_id=ward_id, days=days)
     generated_at = None
     if rows:
         generated_at = rows[0]["run_timestamp"]
@@ -52,19 +92,21 @@ def latest_forecast() -> dict[str, object]:
         "source_schema": settings.output_schema,
         "runtime_url": settings.forecast_runtime_url,
         "generated_at": generated_at.isoformat() + "Z" if generated_at else None,
-        "horizon_days": settings.forecast_horizon_days,
+        "horizon_days": days or settings.forecast_horizon_days,
         "items": [
             {
+                "ward_id": row["ward_id"],
                 "department_code": row["department_code"],
                 "department_name": row["department_name"],
                 "forecast_date": row["forecast_date"].isoformat(),
-                "predicted_occupied_beds": int(round(float(row["predicted_occupancy"]))),
-                "predicted_occupancy": float(row["predicted_occupancy"]),
-                "lower_ci_95": float(row["lower_ci_95"]) if row["lower_ci_95"] is not None else None,
-                "upper_ci_95": float(row["upper_ci_95"]) if row["upper_ci_95"] is not None else None,
+                "predicted_occupied_beds": int(round(_to_float(row["predicted_occupancy"]) or 0)),
+                "predicted_occupancy": _to_float(row["predicted_occupancy"]),
+                "lower_ci_95": _to_float(row["lower_ci_95"]),
+                "upper_ci_95": _to_float(row["upper_ci_95"]),
                 "capacity_beds": row["capacity_beds"],
                 "model_used": row["model_used"],
-                "occupancy_rate": float(row["occupancy_rate"]) if row["occupancy_rate"] is not None else None,
+                "occupancy_rate": _to_float(row["occupancy_rate"]),
+                "breach_risk": bool(row["breach_risk"]),
             }
             for row in rows
         ],
