@@ -1,0 +1,118 @@
+version: 1
+
+dashboards:
+  bed_pressure:
+    enabled: true
+    use_case: bed_pressure
+    dashboard_id: bed-occupancy-trends
+    title: Bed Occupancy Intelligence
+    schema: analytics
+    datasets:
+      - analytics.fct_bed_occupancy
+      - analytics.dim_ward
+      - analytics.dim_date
+    filters:
+      - key: ward
+        type: native_filter
+        label: Ward
+        target_dataset: analytics.fct_bed_occupancy
+        column: ward_id
+        control: multi_select
+        searchable: true
+      - key: date_range
+        type: native_filter
+        label: Date Range
+        target_dataset: analytics.fct_bed_occupancy
+        column: date_day
+        control: date_range
+        default: Last 30 days
+        presets:
+          - 7d
+          - 14d
+          - 30d
+          - 90d
+    charts:
+      - key: occupancy_trend_30d
+        enabled: true
+        title: 30-Day Occupancy Trend
+        viz_type: echarts_timeseries_line
+        layout:
+          x: 0
+          y: 0
+          w: 12
+          h: 16
+        dataset: analytics.fct_bed_occupancy
+        metrics:
+          - avg_occupancy_rate
+        group_by:
+          - ward_id
+        time_column: date_day
+        row_limit: 1200
+        reference_lines:
+          - label: Critical Threshold
+            value: 0.90
+            color: "#B71C1C"
+          - label: Warning Threshold
+            value: 0.75
+            color: "#E65100"
+      - key: ward_comparison
+        enabled: true
+        title: Ward Comparison
+        viz_type: echarts_timeseries_bar
+        layout:
+          x: 0
+          y: 16
+          w: 5
+          h: 12
+        dataset: analytics.fct_bed_occupancy
+        metrics:
+          - current_occupancy_rate
+        group_by:
+          - ward_id
+        sort_desc: true
+      - key: admissions_vs_discharges
+        enabled: true
+        title: Admissions vs Discharges
+        viz_type: echarts_area
+        layout:
+          x: 5
+          y: 16
+          w: 7
+          h: 12
+        dataset: analytics.fct_bed_occupancy
+        metrics:
+          - admissions_total
+          - discharges_total
+        time_column: date_day
+        row_limit: 120
+
+  staff_scheduling:
+    enabled: false
+    use_case: staff_scheduling
+    dashboard_id: staff-utilization
+    title: Staff Scheduling Pressure
+    schema: analytics
+    datasets:
+      - analytics.staffing_pressure_daily
+    filters:
+      - key: ward
+        type: native_filter
+        label: Ward
+        target_dataset: analytics.staffing_pressure_daily
+        column: ward_id
+        control: multi_select
+        searchable: true
+    charts:
+      - key: staffing_pressure_trend
+        enabled: true
+        title: Staffing Pressure Trend
+        viz_type: echarts_timeseries_line
+        layout:
+          x: 0
+          y: 0
+          w: 12
+          h: 14
+        dataset: analytics.staffing_pressure_daily
+        metrics:
+          - staffing_pressure_index
+        time_column: date_day

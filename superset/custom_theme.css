@@ -1,0 +1,72 @@
+:root {
+  --primary-color: #2e75b6;
+  --secondary-color: #1f3864;
+  --background-color: #fafafa;
+  --surface-color: #ffffff;
+  --text-color: #212121;
+  --text-secondary: #757575;
+  --border-color: #e0e0e0;
+  --success-color: #2e7d32;
+  --warning-color: #e65100;
+  --danger-color: #b71c1c;
+}
+
+body {
+  background: var(--background-color);
+  color: var(--text-color);
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.dashboard--embedded .header-with-actions,
+.dashboard--embedded .dashboard-header,
+.dashboard--embedded .ant-breadcrumb {
+  display: none;
+}
+
+.dashboard--embedded .dashboard-content {
+  padding-top: 12px;
+}
+
+.slice_container,
+.chart-slice,
+.dashboard-component-chart-holder {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chart-header,
+.dashboard-component-title,
+.ant-page-header-heading-title {
+  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+}
+
+.dragdroppable-row,
+.dragdroppable-column,
+.dashboard-chart,
+.ant-card,
+.ant-tabs-content-holder {
+  background: var(--surface-color);
+}
+
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn,
+.ant-btn-link,
+.ant-dropdown-link,
+.ant-select-selection-item {
+  color: var(--primary-color);
+}
+
+.ant-btn-primary {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.native-filter-control,
+.filter-bar,
+.dashboard-filters-panel {
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.dashboard-component-tabs .ant-tabs-nav::before {
+  border-color: var(--border-color);
+}

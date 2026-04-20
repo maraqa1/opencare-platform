@@ -45,6 +45,22 @@ spec:
             - name: SUPERSET_DATABASE_URI
               value: >-
                 postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?options=-csearch_path%3Danalytics,public
+            - name: SUPERSET_CONFIG_PATH
+              value: /app/pythonpath/superset_config.py
+            - name: PYTHONPATH
+              value: /app/pythonpath
+            - name: SUPERSET_READONLY_USER
+              value: $(SUPERSET_READONLY_USER)
+            - name: SUPERSET_READONLY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencare-secrets
+                  key: SUPERSET_READONLY_PASSWORD
+                  optional: true
+          volumeMounts:
+            - name: superset-assets
+              mountPath: /app/pythonpath
+              readOnly: true
           resources:
             requests:
               cpu: 100m
@@ -62,3 +78,7 @@ spec:
               port: 8088
             initialDelaySeconds: 45
             periodSeconds: 20
+      volumes:
+        - name: superset-assets
+          configMap:
+            name: superset-assets

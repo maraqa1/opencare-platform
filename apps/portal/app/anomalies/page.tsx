@@ -19,7 +19,7 @@ export default async function AnomaliesPage({
         { label: "Threshold-aware", tone: "accent" },
       ]}
     >
-      <AnomalyAlerts severity={params.severity} />
+      <AnomalyAlerts severity={params.severity} basePath="/anomalies" />
       <RecordSpecification table="output.anomaly" />
     </PageFrame>
   );

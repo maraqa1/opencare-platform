@@ -1,4 +1,5 @@
 import { EmbeddedDashboard } from "@/components/EmbeddedDashboard";
+import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { DictionaryView } from "@/components/DictionaryView";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
@@ -31,12 +32,21 @@ export default async function BedPressureDashboard({
   return (
     <PageFrame
       title="Bed Pressure Intelligence"
-      description="Monitor live occupancy, review forecast pressure, investigate anomalies, and inspect the governed record contracts behind each view."
+      description="The investor-facing command surface for live occupancy, forecast breach risk, anomaly escalation, and board-ready analytics."
       chips={[
         { label: "Real backend data", tone: "primary" },
-        { label: "Record specs on every data tab", tone: "accent" },
+        { label: "Config-driven use case", tone: "accent" },
+      ]}
+      actions={[
+        <a key="report" className="secondary-link" href="/reports">
+          Download Reports
+        </a>,
+        <a key="analytics" className="button primary" href="/occupancy?tab=analytics">
+          Open Analytics
+        </a>,
       ]}
     >
+      <KPISummaryBar />
       <TabNav items={tabs} activeKey={activeTab} />
       {activeTab === "forecast" ? (
         <>

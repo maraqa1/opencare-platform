@@ -6,24 +6,33 @@ type HeroChip = {
 };
 
 type PageFrameProps = {
+  eyebrow?: string;
   title: string;
   description: string;
   chips?: HeroChip[];
+  actions?: ReactNode;
   children: ReactNode;
 };
 
 export function PageFrame({
+  eyebrow = "OpenCare Portal",
   title,
   description,
   chips = [],
+  actions,
   children,
 }: PageFrameProps) {
   return (
     <div className="page">
       <section className="hero">
-        <p className="eyebrow">OpenCare Portal</p>
-        <h2>{title}</h2>
-        <p>{description}</p>
+        <div className="hero-header">
+          <div className="hero-copy">
+            <p className="eyebrow">{eyebrow}</p>
+            <h2>{title}</h2>
+            <p>{description}</p>
+          </div>
+          {actions ? <div className="hero-actions">{actions}</div> : null}
+        </div>
         {chips.length > 0 ? (
           <div className="hero-strip">
             {chips.map((chip) => (

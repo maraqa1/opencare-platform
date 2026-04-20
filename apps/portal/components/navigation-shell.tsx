@@ -56,16 +56,30 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-kicker">OpenCare Insight Platform</span>
-          <h1>Bed Occupancy Intelligence</h1>
+          <h1>Operations Intelligence</h1>
           <p>
-            Customer views stay inside the portal while analytics, runtimes, dashboards,
-            and record contracts remain governed behind the scenes.
+            Live ward pressure, forecasts, anomaly signals, and executive analytics stay
+            in one clinical command surface.
           </p>
         </div>
         <NavSection title="Use Cases" items={customerItems} pathname={pathname} />
         <NavSection title="Admin" items={adminItems} pathname={pathname} />
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        <header className="main-topbar">
+          <div>
+            <p className="topbar-label">Investor Demo Environment</p>
+            <h2 className="topbar-title">OpenCare Command Centre</h2>
+          </div>
+          <div className="topbar-actions">
+            <span className="persona-badge">Bed Manager</span>
+            <Link className="settings-link" href="/admin">
+              Settings
+            </Link>
+          </div>
+        </header>
+        {children}
+      </main>
     </div>
   );
 }

@@ -1,84 +1,250 @@
-import { getApiJson } from "@/lib/api";
+"use client";
 
-export async function AnomalyAlerts({ severity }: { severity?: string }) {
-  const [summary, anomalies] = await Promise.all([
-    getApiJson<{
-      summary?: { critical: number; warning: number; info: number };
-      total?: number;
-    }>({
-      path: "/api/v1/anomalies/summary",
-      fallback: { summary: { critical: 0, warning: 0, info: 0 }, total: 0 },
-    }),
-    getApiJson<{
-      items?: Array<{
-        ward_id: string;
-        department_name?: string;
-        event_date: string;
-        anomaly_type: string;
-        severity: string;
-        occupancy_rate: number | null;
-        z_score: number | null;
-        threshold_breached: string;
-      }>;
-    }>({
-      path: `/api/v1/anomalies${severity ? `?severity=${encodeURIComponent(severity)}` : ""}`,
-      fallback: { items: [] },
-    }),
-  ]);
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+
+type SummaryPayload = {
+  generated_at?: string | null;
+  summary?: { critical: number; warning: number; info: number };
+  total?: number;
+};
+
+type AnomalyItem = {
+  ward_id: string;
+  department_name?: string;
+  event_date: string;
+  anomaly_type: string;
+  severity: "critical" | "warning" | "info";
+  occupancy_rate: number | null;
+  z_score: number | null;
+  threshold_breached: string;
+  message?: string;
+};
+
+type AnomalyPayload = {
+  generated_at?: string | null;
+  items?: AnomalyItem[];
+};
+
+function timeAgo(iso: string | null | undefined) {
+  if (!iso) {
+    return "unknown";
+  }
+
+  const value = new Date(iso);
+  if (Number.isNaN(value.getTime())) {
+    return "unknown";
+  }
+
+  const minutes = Math.max(0, Math.round((Date.now() - value.getTime()) / 60000));
+  return `${minutes} min ago`;
+}
+
+function severityLabel(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function AlertsSkeleton() {
+  return (
+    <section className="panel" aria-label="Loading alerts">
+      <div className="button-row">
+        <span className="skeleton-line medium" style={{ width: 480, height: 44 }} />
+      </div>
+      <div className="alert-feed">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="alert-card severity-warning">
+            <span className="skeleton-line medium" />
+            <span className="skeleton-line short" style={{ marginTop: 14 }} />
+            <span className="skeleton-line medium" style={{ marginTop: 14 }} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function AnomalyAlerts({
+  severity,
+  basePath = "/occupancy?tab=alerts",
+}: {
+  severity?: string;
+  basePath?: string;
+}) {
+  const [summary, setSummary] = useState<SummaryPayload | null>(null);
+  const [anomalies, setAnomalies] = useState<AnomalyPayload | null>(null);
+  const activeFilter = severity ?? "all";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAlerts() {
+      const [summaryResponse, anomalyResponse] = await Promise.all([
+        fetch("/api/portal/api/v1/anomalies/summary", { cache: "no-store" }),
+        fetch(
+          `/api/portal/api/v1/anomalies${severity ? `?severity=${encodeURIComponent(severity)}` : ""}`,
+          { cache: "no-store" },
+        ),
+      ]);
+
+      const nextSummary = (await summaryResponse.json()) as SummaryPayload;
+      const nextAnomalies = (await anomalyResponse.json()) as AnomalyPayload;
+
+      if (!cancelled) {
+        setSummary(nextSummary);
+        setAnomalies(nextAnomalies);
+      }
+    }
+
+    loadAlerts().catch(() => {
+      if (!cancelled) {
+        setSummary({ summary: { critical: 0, warning: 0, info: 0 }, total: 0 });
+        setAnomalies({ items: [] });
+      }
+    });
+
+    const intervalId = window.setInterval(() => {
+      loadAlerts().catch(() => undefined);
+    }, 60000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [severity]);
+
+  const groupedAlerts = useMemo(() => {
+    const grouped: Record<string, AnomalyItem[]> = {
+      critical: [],
+      warning: [],
+      info: [],
+    };
+
+    (anomalies?.items ?? []).forEach((item) => {
+      grouped[item.severity] ??= [];
+      grouped[item.severity].push(item);
+    });
+
+    return grouped;
+  }, [anomalies]);
+
+  if (!summary || !anomalies) {
+    return <AlertsSkeleton />;
+  }
 
   const filters = [
-    { key: "all", label: "All", href: "/anomalies" },
-    { key: "critical", label: `Critical (${summary.summary?.critical ?? 0})`, href: "/anomalies?severity=critical" },
-    { key: "warning", label: `Warning (${summary.summary?.warning ?? 0})`, href: "/anomalies?severity=warning" },
+    { key: "all", label: "All", href: basePath },
+    {
+      key: "critical",
+      label: `Critical (${summary.summary?.critical ?? 0})`,
+      href: `${basePath}${basePath.includes("?") ? "&" : "?"}severity=critical`,
+    },
+    {
+      key: "warning",
+      label: `Warning (${summary.summary?.warning ?? 0})`,
+      href: `${basePath}${basePath.includes("?") ? "&" : "?"}severity=warning`,
+    },
+    {
+      key: "info",
+      label: `Info (${summary.summary?.info ?? 0})`,
+      href: `${basePath}${basePath.includes("?") ? "&" : "?"}severity=info`,
+    },
   ];
-
-  const activeFilter = severity ?? "all";
 
   return (
     <section className="panel">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Alert Summary</p>
-          <h3>{summary.total ?? 0} active alerts</h3>
+          <p className="eyebrow">Alert Feed</p>
+          <h3 className="section-heading">{summary.total ?? 0} active alerts</h3>
+          <p className="section-subtitle">
+            Severity-ranked signals generated by the anomaly runtime. Last checked {timeAgo(summary.generated_at)}.
+          </p>
         </div>
         <div className="filter-row">
           {filters.map((filter) => (
-            <a
+            <Link
               key={filter.key}
               href={filter.href}
               className={filter.key === activeFilter ? "filter-chip active" : "filter-chip"}
             >
               {filter.label}
-            </a>
+            </Link>
           ))}
         </div>
       </div>
-      <table className="table anomaly-table">
-        <thead>
-          <tr>
-            <th>Severity</th>
-            <th>Ward</th>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Occupancy</th>
-            <th>Z-Score</th>
-            <th>Threshold Breached</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(anomalies.items ?? []).map((item) => (
-            <tr key={`${item.ward_id}-${item.event_date}-${item.anomaly_type}`} className={`severity-${item.severity}`}>
-              <td>{item.severity}</td>
-              <td>{item.department_name ?? item.ward_id}</td>
-              <td>{item.event_date}</td>
-              <td>{item.anomaly_type}</td>
-              <td>{item.occupancy_rate?.toFixed(1) ?? "n/a"}%</td>
-              <td>{item.z_score?.toFixed(3) ?? "n/a"}</td>
-              <td>{item.threshold_breached}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      {(["critical", "warning", "info"] as const).map((severityKey) => {
+        const items = groupedAlerts[severityKey];
+        if (!items || items.length === 0) {
+          return null;
+        }
+
+        return (
+          <details className="alert-group" key={severityKey} open>
+            <summary>
+              <div className="alert-group-header">
+                <div>
+                  <p className="eyebrow">Severity</p>
+                  <h3>{severityLabel(severityKey)}</h3>
+                </div>
+                <span className={`alert-count-badge ${severityKey}`}>{items.length}</span>
+              </div>
+            </summary>
+            <div className="alert-feed">
+              {items.map((item, index) => (
+                <details
+                  key={`${item.ward_id}-${item.event_date}-${item.anomaly_type}`}
+                  className={`alert-card severity-${item.severity}`}
+                  open={index === 0}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <summary>
+                    <div className="alert-card-header">
+                      <div>
+                        <p className="alert-card-title">
+                          {item.department_name ?? item.ward_id} - {item.anomaly_type.replaceAll("_", " ")}
+                        </p>
+                        <p className="alert-card-meta">
+                          {item.message ?? "An anomaly signal has crossed its learned threshold."}
+                        </p>
+                      </div>
+                      <span className="data-pill">{item.event_date}</span>
+                    </div>
+                  </summary>
+                  <div className="alert-detail-grid">
+                    <div className="alert-detail">
+                      <dt className="eyebrow">Occupancy</dt>
+                      <dd className="mono">{item.occupancy_rate?.toFixed(1) ?? "n/a"}%</dd>
+                    </div>
+                    <div className="alert-detail">
+                      <dt className="eyebrow">Z-score</dt>
+                      <dd className="mono">{item.z_score?.toFixed(3) ?? "n/a"}</dd>
+                    </div>
+                    <div className="alert-detail">
+                      <dt className="eyebrow">Threshold</dt>
+                      <dd className="mono">{item.threshold_breached}</dd>
+                    </div>
+                  </div>
+                  <div className="alert-actions">
+                    <Link
+                      className="secondary-link"
+                      href={`/occupancy?tab=occupancy`}
+                    >
+                      View Ward
+                    </Link>
+                    <Link
+                      className="button primary"
+                      href={`/occupancy?tab=forecast&ward=${encodeURIComponent(item.ward_id)}`}
+                    >
+                      View Forecast
+                    </Link>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </details>
+        );
+      })}
     </section>
   );
 }
