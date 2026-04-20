@@ -75,7 +75,7 @@ metadata:
   name: anomaly-refresh
   namespace: opencare
 spec:
-  schedule: "45 * * * *"
+  schedule: "25 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 900
   successfulJobsHistoryLimit: 1

@@ -75,7 +75,7 @@ metadata:
   name: bed-forecast-refresh
   namespace: opencare
 spec:
-  schedule: "35 * * * *"
+  schedule: "20 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 900
   successfulJobsHistoryLimit: 1

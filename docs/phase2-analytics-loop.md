@@ -19,7 +19,7 @@ Phase 2 closes the analytics loop for the Bed Pressure Early Warning workflow:
 Run the repo-controlled loop:
 
 ```bash
-bash scripts/airbyte/test_demo_sync.sh --sync-only
+bash scripts/airbyte/test_demo_sync.sh
 bash scripts/dbt/apply_dbt.sh
 bash scripts/runtime/apply_runtimes.sh
 bash scripts/demo/validate_phase2_loop.sh
@@ -40,6 +40,12 @@ bash scripts/demo/exercise_phase2_cycle.sh --cycles 3 --sleep-seconds 0
 ```
 
 This proves that the Airbyte -> dbt -> runtime path can be rerun repeatedly without manual repair and that the validation checks stay green after each cycle.
+
+To generate a live-state diagnosis report without claiming a fresh rerun, use:
+
+```bash
+bash scripts/demo/phase2_diagnosis.sh
+```
 
 ## Real 24-Hour Soak Checklist
 

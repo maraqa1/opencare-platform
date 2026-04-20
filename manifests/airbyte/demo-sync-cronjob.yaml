@@ -62,7 +62,7 @@ metadata:
   name: airbyte-demo-sync
   namespace: opencare
 spec:
-  schedule: "5 * * * *"
+  schedule: "0 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 900
   successfulJobsHistoryLimit: 1

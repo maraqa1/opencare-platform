@@ -11,29 +11,30 @@ router = APIRouter(prefix="/api", tags=["anomalies"])
 def latest_anomalies() -> dict[str, object]:
     query = f"""
         with latest_run as (
-            select max(generated_at) as generated_at
+            select max(run_timestamp) as run_timestamp
             from {settings.output_schema}.{settings.anomaly_output_table}
         )
         select
             coalesce(d.department_code, w.ward_code) as department_code,
             coalesce(d.department_name, w.ward_name) as department_name,
-            a.event_date,
+            a.anomaly_date,
+            a.anomaly_type,
             a.severity,
-            a.deviation_ratio as score,
-            a.occupied_beds,
-            a.trailing_mean,
-            latest_run.generated_at
+            a.z_score as score,
+            a.occupancy_rate,
+            a.threshold_breached,
+            latest_run.run_timestamp
         from {settings.output_schema}.{settings.anomaly_output_table} a
-        join latest_run on a.generated_at = latest_run.generated_at
+        join latest_run on a.run_timestamp = latest_run.run_timestamp
         left join {settings.analytics_schema}.dim_department d
-          on d.department_id = a.department_id
+          on d.department_id = a.ward_id
         left join {settings.analytics_schema}.dim_ward w
-          on w.ward_id = a.department_id
+          on w.ward_id = a.ward_id
         order by
-            case a.severity when 'high' then 0 when 'medium' then 1 else 2 end,
-            a.event_date desc,
+            case a.severity when 'critical' then 0 when 'warning' then 1 else 2 end,
+            a.anomaly_date desc,
             d.department_code nulls last,
-            a.department_id
+            a.ward_id
     """
 
     try:
@@ -44,7 +45,7 @@ def latest_anomalies() -> dict[str, object]:
 
     generated_at = None
     if rows:
-        generated_at = rows[0]["generated_at"]
+        generated_at = rows[0]["run_timestamp"]
 
     return {
         "status": "ok",
@@ -55,15 +56,12 @@ def latest_anomalies() -> dict[str, object]:
             {
                 "department_code": row["department_code"],
                 "department_name": row["department_name"],
-                "event_date": row["event_date"].isoformat(),
+                "event_date": row["anomaly_date"].isoformat(),
+                "anomaly_type": row["anomaly_type"],
                 "severity": row["severity"],
-                "score": float(row["score"]),
-                "message": (
-                    f"Occupied beds reached {row['occupied_beds']} versus a trailing mean of "
-                    f"{float(row['trailing_mean']):.1f}."
-                    if row["trailing_mean"] is not None
-                    else "Occupancy anomaly detected."
-                ),
+                "score": float(row["score"]) if row["score"] is not None else 0.0,
+                "occupancy_rate": float(row["occupancy_rate"]),
+                "message": f"{row['anomaly_type'].replace('_', ' ').title()} triggered: {row['threshold_breached']}.",
             }
             for row in rows
         ],

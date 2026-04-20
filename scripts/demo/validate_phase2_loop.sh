@@ -118,14 +118,18 @@ validate_phase2_loop() {
   check_postgres_equals "select count(distinct ward_id) from ${ANALYTICS_SCHEMA}.fct_bed_occupancy;" "$expected_ward_count"
   check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_bed_occupancy;"
 
-  check_postgres_equals "select count(distinct department_id) from ${OUTPUT_SCHEMA}.${FORECAST_OUTPUT_TABLE};" "$expected_ward_count"
+  check_postgres_equals "select count(distinct ward_id) from ${OUTPUT_SCHEMA}.${FORECAST_OUTPUT_TABLE};" "$expected_ward_count"
   check_postgres_equals "select count(distinct forecast_date) from ${OUTPUT_SCHEMA}.${FORECAST_OUTPUT_TABLE};" "$FORECAST_HORIZON_DAYS"
   check_postgres_equals "select count(*) from ${OUTPUT_SCHEMA}.${FORECAST_OUTPUT_TABLE};" "$forecast_expected_rows"
+  check_postgres_equals "select count(*) from ${OUTPUT_SCHEMA}.${FORECAST_OUTPUT_TABLE} where predicted_occupancy < 0 or predicted_occupancy > 150;" "0"
+  check_postgres_greater_than_zero "select count(*) from ${OUTPUT_SCHEMA}.${FORECAST_OUTPUT_TABLE} where run_timestamp >= now() - interval '2 hours';"
 
   check_postgres_between "select count(*) from ${OUTPUT_SCHEMA}.${ANOMALY_OUTPUT_TABLE};" "$expected_alert_min" "$expected_alert_max"
+  check_postgres_greater_than_zero "select count(*) from ${OUTPUT_SCHEMA}.${ANOMALY_OUTPUT_TABLE} where run_timestamp >= now() - interval '2 hours';"
   for seeded_ward in "${seeded_wards[@]}"; do
-    check_postgres_greater_than_zero "select count(*) from ${OUTPUT_SCHEMA}.${ANOMALY_OUTPUT_TABLE} where department_id = '${seeded_ward}';"
+    check_postgres_greater_than_zero "select count(*) from ${OUTPUT_SCHEMA}.${ANOMALY_OUTPUT_TABLE} where ward_id = '${seeded_ward}';"
   done
+  check_postgres_greater_than_zero "select count(*) from ${OUTPUT_SCHEMA}.${ANOMALY_OUTPUT_TABLE} where severity = 'critical';"
 
   kubectl -n "$NAMESPACE" get cronjob airbyte-demo-sync dbt-runner bed-forecast-refresh anomaly-refresh >/dev/null
   log_success "Phase 2 analytics loop validated"
