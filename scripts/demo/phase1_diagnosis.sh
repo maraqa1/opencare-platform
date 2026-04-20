@@ -36,6 +36,8 @@ emit_report() {
   local min_date max_date pressure_days
   local generated_range
   local summary_file="$ROOT_DIR/$DEMO_SEED_OUTPUT_DIR/opencare_demo_summary.json"
+  local summary_json
+  local fence='```'
 
   raw_wards="$(sql_value "select count(*) from ${DEMO_RAW_SCHEMA}.wards;")"
   raw_patients="$(sql_value "select count(*) from ${DEMO_RAW_SCHEMA}.patients;")"
@@ -48,6 +50,16 @@ emit_report() {
   max_date="$(sql_value "select max(date_day)::text from ${ANALYTICS_SCHEMA}.dim_date;")"
   pressure_days="$(sql_value "select count(*) from ${ANALYTICS_SCHEMA}.fct_bed_occupancy where pressure_flag is true;")"
   generated_range="$(sql_value "select min(generated_at)::text || '|' || max(generated_at)::text from ${ANALYTICS_SCHEMA}.fct_bed_occupancy;")"
+  summary_json="$(python3 - "$summary_file" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as handle:
+    payload = json.load(handle)
+
+print(json.dumps(payload, indent=2))
+PY
+)"
 
   mkdir -p "$REPORT_DIR"
 
@@ -81,9 +93,9 @@ Phase 1 proves the flagship ingest and transform chain:
 
 ## Seed Summary
 
-```json
-$(cat "$summary_file")
-```
+${fence}json
+$summary_json
+${fence}
 
 ## Phase 1 Diagnosis
 
