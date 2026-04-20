@@ -105,7 +105,20 @@ KC_DB_PASSWORD="${KC_DB_PASSWORD:-$POSTGRES_PASSWORD}"
 KEYCLOAK_HEALTH_URL="${KEYCLOAK_HEALTH_URL:-http://keycloak:9000}"
 BACKEND_URL="${BACKEND_URL:-http://backend:8000}"
 PORTAL_URL="${PORTAL_URL:-http://portal:3000}"
+ENABLE_EXTERNAL_INGRESS="${ENABLE_EXTERNAL_INGRESS:-true}"
+EXTERNAL_HOST="${EXTERNAL_HOST:-}"
+INGRESS_CLASS_NAME="${INGRESS_CLASS_NAME:-traefik}"
+TRAEFIK_ENTRYPOINTS="${TRAEFIK_ENTRYPOINTS:-web}"
+EXTERNAL_TLS_SECRET_NAME="${EXTERNAL_TLS_SECRET_NAME:-}"
+BASE_DOMAIN="${BASE_DOMAIN:-}"
+PORTAL_HOST="${PORTAL_HOST:-}"
+API_HOST="${API_HOST:-}"
+AUTH_HOST="${AUTH_HOST:-}"
+ANALYTICS_HOST="${ANALYTICS_HOST:-}"
+TLS_EMAIL="${TLS_EMAIL:-}"
 SUPERSET_EMBED_URL="${SUPERSET_EMBED_URL:-http://superset:8088}"
+SUPERSET_READONLY_USER="${SUPERSET_READONLY_USER:-superset_readonly}"
+SUPERSET_READONLY_PASSWORD="${SUPERSET_READONLY_PASSWORD:-opencare_superset_readonly}"
 AIRBYTE_URL="${AIRBYTE_URL:-http://${AIRBYTE_SERVER_SERVICE_NAME}:8001}"
 FORECAST_RUNTIME_URL="${FORECAST_RUNTIME_URL:-http://bed-forecast:8000}"
 ANOMALY_RUNTIME_URL="${ANOMALY_RUNTIME_URL:-http://anomaly:8000}"
@@ -476,6 +489,19 @@ OpenCare endpoints:
 - MinIO API: http://minio.${NAMESPACE}.svc.cluster.local:9000
 - MinIO Console: http://minio.${NAMESPACE}.svc.cluster.local:9001
 EOF
+
+  if [[ "$ENABLE_EXTERNAL_INGRESS" == "true" ]]; then
+    if [[ -n "$EXTERNAL_HOST" ]]; then
+      cat <<EOF
+- External Portal: http://${EXTERNAL_HOST}/
+- External API: http://${EXTERNAL_HOST}/api/v1/
+EOF
+    else
+      cat <<EOF
+- External Access: enabled through Traefik ingress with no host restriction
+EOF
+    fi
+  fi
 }
 
 secret_value_or_default() {

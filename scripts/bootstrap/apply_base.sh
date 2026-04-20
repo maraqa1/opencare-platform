@@ -16,6 +16,7 @@ resolved_internal_api_token="$INTERNAL_API_TOKEN"
 resolved_keycloak_admin_password="$KEYCLOAK_ADMIN_PASSWORD"
 resolved_demo_mysql_password="$DEMO_MYSQL_PASSWORD"
 resolved_demo_mysql_root_password="$DEMO_MYSQL_ROOT_PASSWORD"
+resolved_superset_readonly_password="$SUPERSET_READONLY_PASSWORD"
 
 if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_postgres_password="$(secret_value_or_default opencare-secrets POSTGRES_PASSWORD "$resolved_postgres_password")"
@@ -28,6 +29,7 @@ if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_keycloak_admin_password="$(secret_value_or_default opencare-secrets KEYCLOAK_ADMIN_PASSWORD "$resolved_keycloak_admin_password")"
   resolved_demo_mysql_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_PASSWORD "$resolved_demo_mysql_password")"
   resolved_demo_mysql_root_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_ROOT_PASSWORD "$resolved_demo_mysql_root_password")"
+  resolved_superset_readonly_password="$(secret_value_or_default opencare-secrets SUPERSET_READONLY_PASSWORD "$resolved_superset_readonly_password")"
 fi
 
 render_platform_config() {
@@ -90,6 +92,17 @@ data:
   NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
   BACKEND_URL: ${BACKEND_URL}
   PORTAL_URL: ${PORTAL_URL}
+  BASE_DOMAIN: ${BASE_DOMAIN}
+  PORTAL_HOST: ${PORTAL_HOST}
+  API_HOST: ${API_HOST}
+  AUTH_HOST: ${AUTH_HOST}
+  ANALYTICS_HOST: ${ANALYTICS_HOST}
+  TLS_EMAIL: ${TLS_EMAIL}
+  ENABLE_EXTERNAL_INGRESS: "${ENABLE_EXTERNAL_INGRESS}"
+  EXTERNAL_HOST: ${EXTERNAL_HOST}
+  INGRESS_CLASS_NAME: ${INGRESS_CLASS_NAME}
+  TRAEFIK_ENTRYPOINTS: ${TRAEFIK_ENTRYPOINTS}
+  EXTERNAL_TLS_SECRET_NAME: ${EXTERNAL_TLS_SECRET_NAME}
   FORECAST_OUTPUT_TABLE: ${FORECAST_OUTPUT_TABLE}
   ANOMALY_OUTPUT_TABLE: ${ANOMALY_OUTPUT_TABLE}
   FORECAST_MODEL_NAME: ${FORECAST_MODEL_NAME}
@@ -116,6 +129,7 @@ data:
   DEMO_MYSQL_PORT: "${DEMO_MYSQL_PORT}"
   DEMO_MYSQL_DATABASE: ${DEMO_MYSQL_DATABASE}
   DEMO_MYSQL_USER: ${DEMO_MYSQL_USER}
+  SUPERSET_READONLY_USER: ${SUPERSET_READONLY_USER}
   SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
   SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES}"
 ---
@@ -136,6 +150,7 @@ stringData:
   KEYCLOAK_ADMIN_PASSWORD: ${resolved_keycloak_admin_password}
   DEMO_MYSQL_PASSWORD: ${resolved_demo_mysql_password}
   DEMO_MYSQL_ROOT_PASSWORD: ${resolved_demo_mysql_root_password}
+  SUPERSET_READONLY_PASSWORD: ${resolved_superset_readonly_password}
 EOF
 }
 
