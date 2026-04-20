@@ -95,3 +95,13 @@ The strongest Phase 1 lessons for later phases are:
 - keep dbt as the governed analytics authoring layer
 
 Those are the habits that kept Phase 2 from becoming another pile of special cases.
+
+## Runnable Report
+
+To generate a current Phase 1 report from the VM, run:
+
+```bash
+bash scripts/demo/phase1_diagnosis.sh
+```
+
+The script writes a markdown report to `.state/demo-reports/` and prints the same report to stdout.
