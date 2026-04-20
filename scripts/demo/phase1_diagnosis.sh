@@ -36,6 +36,7 @@ emit_report() {
   local min_date max_date pressure_days
   local summary_file="$ROOT_DIR/$DEMO_SEED_OUTPUT_DIR/opencare_demo_summary.json"
   local summary_json
+  local proof_status
   local fence='```'
 
   raw_wards="$(sql_value "select count(*) from ${DEMO_RAW_SCHEMA}.wards;")"
@@ -58,6 +59,13 @@ with open(sys.argv[1], "r", encoding="utf-8") as handle:
 print(json.dumps(payload, indent=2))
 PY
 )"
+  proof_status="$(cat <<'EOF'
+- Proves the current repo-controlled Phase 1 state from live VM data.
+- Proves Airbyte-landed raw tables, dbt-built analytics, and dictionary outputs exist.
+- Does not re-run the full seed -> Airbyte -> dbt cycle end to end.
+- Does not validate Phase 2 runtime outputs or CronJob repeatability.
+EOF
+)"
 
   mkdir -p "$REPORT_DIR"
 
@@ -75,6 +83,10 @@ PY
 Phase 1 proves the flagship ingest and transform chain:
 
 \`MySQL source -> Airbyte -> raw -> dbt -> analytics/dictionary\`
+
+## Proof Status
+
+$proof_status
 
 ## Current Counts
 
