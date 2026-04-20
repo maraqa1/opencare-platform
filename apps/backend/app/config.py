@@ -80,8 +80,10 @@ def _candidate_use_case_paths() -> list[Path]:
     if settings.use_cases_config_path:
         candidates.append(Path(settings.use_cases_config_path))
 
-    repo_root = Path(__file__).resolve().parents[3]
-    candidates.append(repo_root / "config" / "use_cases.yaml")
+    resolved_file = Path(__file__).resolve()
+    for parent in resolved_file.parents:
+        candidates.append(parent / "config" / "use_cases.yaml")
+
     candidates.append(Path("/app/config/use_cases.yaml"))
     return candidates
 

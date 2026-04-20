@@ -45,7 +45,7 @@ def _latest_anomaly_rows(severity: str | None = None) -> list[dict[str, object]]
           on d.department_id = a.ward_id
         left join {dim_ward_table} w
           on w.ward_id = a.ward_id
-        where (%(severity)s is null or a.severity = %(severity)s)
+        where (cast(%(severity)s as text) is null or a.severity = cast(%(severity)s as text))
         order by
             case a.severity when 'critical' then 0 when 'warning' then 1 else 2 end,
             a.anomaly_date desc,

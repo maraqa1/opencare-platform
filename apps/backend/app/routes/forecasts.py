@@ -54,12 +54,12 @@ def _latest_forecast_rows(ward_id: str | None = None, days: int | None = None) -
           on d.department_id = f.ward_id
         left join {dim_ward_table} w
           on w.ward_id = f.ward_id
-        where (%(ward_id)s is null or f.ward_id = %(ward_id)s)
-          and (%(days)s is null or f.forecast_date < (
+        where (cast(%(ward_id)s as text) is null or f.ward_id = cast(%(ward_id)s as text))
+          and (cast(%(days)s as integer) is null or f.forecast_date < (
             select min(f2.forecast_date) + make_interval(days => %(days)s)
             from {forecast_table} f2
             join latest_run lr2 on f2.run_timestamp = lr2.run_timestamp
-            where (%(ward_id)s is null or f2.ward_id = %(ward_id)s)
+            where (cast(%(ward_id)s as text) is null or f2.ward_id = cast(%(ward_id)s as text))
           ))
         order by d.department_code nulls last, f.ward_id, f.forecast_date
         """
