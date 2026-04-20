@@ -40,6 +40,13 @@ EOF
         - ${API_HOST}
 EOF
     fi
+    if [[ -n "$ANALYTICS_HOST" && "$ANALYTICS_HOST" != "$PORTAL_HOST" && "$ANALYTICS_HOST" != "$API_HOST" ]]; then
+      cat >>"$output_file" <<EOF
+    - secretName: ${EXTERNAL_TLS_SECRET_NAME}
+      hosts:
+        - ${ANALYTICS_HOST}
+EOF
+    fi
     if [[ -z "$PORTAL_HOST" && -z "$API_HOST" && -n "$EXTERNAL_HOST" ]]; then
       cat >>"$output_file" <<EOF
     - secretName: ${EXTERNAL_TLS_SECRET_NAME}
@@ -161,6 +168,21 @@ EOF
                 name: portal
                 port:
                   number: 3000
+EOF
+  fi
+
+  if [[ -n "$ANALYTICS_HOST" ]]; then
+    cat >>"$output_file" <<EOF
+    - host: ${ANALYTICS_HOST}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: superset
+                port:
+                  number: 8088
 EOF
   fi
 }

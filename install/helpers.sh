@@ -116,7 +116,13 @@ API_HOST="${API_HOST:-}"
 AUTH_HOST="${AUTH_HOST:-}"
 ANALYTICS_HOST="${ANALYTICS_HOST:-}"
 TLS_EMAIL="${TLS_EMAIL:-}"
-SUPERSET_EMBED_URL="${SUPERSET_EMBED_URL:-http://superset:8088}"
+if [[ -z "${SUPERSET_EMBED_URL:-}" ]]; then
+  if [[ -n "$ANALYTICS_HOST" ]]; then
+    SUPERSET_EMBED_URL="http://${ANALYTICS_HOST}"
+  else
+    SUPERSET_EMBED_URL="http://superset:8088"
+  fi
+fi
 SUPERSET_READONLY_USER="${SUPERSET_READONLY_USER:-superset_readonly}"
 SUPERSET_READONLY_PASSWORD="${SUPERSET_READONLY_PASSWORD:-opencare_superset_readonly}"
 AIRBYTE_URL="${AIRBYTE_URL:-http://${AIRBYTE_SERVER_SERVICE_NAME}:8001}"
@@ -491,15 +497,21 @@ OpenCare endpoints:
 EOF
 
   if [[ "$ENABLE_EXTERNAL_INGRESS" == "true" ]]; then
-    if [[ -n "$EXTERNAL_HOST" ]]; then
+  if [[ -n "$EXTERNAL_HOST" ]]; then
       cat <<EOF
 - External Portal: http://${EXTERNAL_HOST}/
 - External API: http://${EXTERNAL_HOST}/api/v1/
 EOF
     else
       cat <<EOF
-- External Access: enabled through Traefik ingress with no host restriction
+- External Portal: http://${PORTAL_HOST}/
+- External API: http://${API_HOST}/
 EOF
+      if [[ -n "$ANALYTICS_HOST" ]]; then
+        cat <<EOF
+- External Analytics: http://${ANALYTICS_HOST}/
+EOF
+      fi
     fi
   fi
 }

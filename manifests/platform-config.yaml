@@ -51,7 +51,7 @@ data:
   KEYCLOAK_REALM: opencare
   FORECAST_RUNTIME_URL: http://bed-forecast:8000
   ANOMALY_RUNTIME_URL: http://anomaly:8000
-  SUPERSET_EMBED_URL: http://superset:8088
+  SUPERSET_EMBED_URL: http://analytics.opencare.opendatalake.com
   AIRBYTE_URL: http://airbyte-airbyte-server-svc:8001
   REPORTS_PREFIX: reports
   DICTIONARY_VERSION: "2026.04"

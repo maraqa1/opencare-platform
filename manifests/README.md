@@ -19,4 +19,6 @@ External access is rendered during bootstrap rather than committed as a static m
 - `scripts/bootstrap/apply_app.sh` creates a Traefik-compatible ingress
 - `/` routes to `portal`
 - `/api`, `/docs`, `/openapi.json`, `/healthz`, and `/readyz` route to `backend`
+- `ANALYTICS_HOST` routes to `superset`
 - set `EXTERNAL_HOST` to attach the ingress to a specific host, or leave it blank to match all hosts
+- set `SUPERSET_EMBED_URL` explicitly if you want the portal iframe to target a different public analytics URL; otherwise it derives from `ANALYTICS_HOST`
