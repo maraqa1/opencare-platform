@@ -34,7 +34,6 @@ emit_report() {
   local raw_wards raw_patients raw_bed_events
   local dim_ward dim_date fct_bed_occupancy dict_metrics
   local min_date max_date pressure_days
-  local generated_range
   local summary_file="$ROOT_DIR/$DEMO_SEED_OUTPUT_DIR/opencare_demo_summary.json"
   local summary_json
   local fence='```'
@@ -49,7 +48,6 @@ emit_report() {
   min_date="$(sql_value "select min(date_day)::text from ${ANALYTICS_SCHEMA}.dim_date;")"
   max_date="$(sql_value "select max(date_day)::text from ${ANALYTICS_SCHEMA}.dim_date;")"
   pressure_days="$(sql_value "select count(*) from ${ANALYTICS_SCHEMA}.fct_bed_occupancy where pressure_flag is true;")"
-  generated_range="$(sql_value "select min(generated_at)::text || '|' || max(generated_at)::text from ${ANALYTICS_SCHEMA}.fct_bed_occupancy;")"
   summary_json="$(python3 - "$summary_file" <<'PY'
 import json
 import sys
@@ -89,7 +87,6 @@ Phase 1 proves the flagship ingest and transform chain:
 - dictionary.dict_metrics: \`$dict_metrics\`
 - analytics.dim_date range: \`$min_date\` to \`$max_date\`
 - pressure days: \`$pressure_days\`
-- generated_at span in analytics.fct_bed_occupancy: \`$generated_range\`
 
 ## Seed Summary
 
