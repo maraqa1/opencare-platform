@@ -294,7 +294,6 @@ def ensure_dashboard(
                 "native_filter_configuration": dashboard_config.get("filters", []),
             }
         ),
-        "charts": chart_ids,
     }
 
     if existing:
