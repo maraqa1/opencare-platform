@@ -172,17 +172,25 @@ def adhoc_metric(metric_name: str) -> dict[str, Any]:
 
 
 def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
+    metrics = [adhoc_metric(metric_name) for metric_name in chart_config.get("metrics", [])]
+    group_by = chart_config.get("group_by", [])
     params = {
         "datasource": f"{dataset_id}__table",
         "viz_type": chart_config["viz_type"],
-        "groupby": chart_config.get("group_by", []),
-        "metrics": [adhoc_metric(metric_name) for metric_name in chart_config.get("metrics", [])],
+        "groupby": group_by,
+        "metrics": metrics,
         "granularity_sqla": chart_config.get("time_column"),
         "row_limit": chart_config.get("row_limit", 500),
         "adhoc_filters": [],
         "orderby": [],
         "time_range": "Last 30 days",
     }
+    if chart_config["viz_type"] == "echarts_bar":
+        params["x_axis"] = group_by[0] if group_by else None
+        params["metrics"] = metrics
+        params["orientation"] = "horizontal"
+        params["sort_series_type"] = "sum"
+        params.pop("granularity_sqla", None)
     return {
         "slice_name": chart_config["title"],
         "viz_type": chart_config["viz_type"],

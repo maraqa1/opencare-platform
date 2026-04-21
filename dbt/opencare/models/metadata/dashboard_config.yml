@@ -58,7 +58,7 @@ dashboards:
       - key: ward_comparison
         enabled: true
         title: Ward Comparison
-        viz_type: echarts_timeseries_bar
+        viz_type: echarts_bar
         layout:
           x: 0
           y: 16
