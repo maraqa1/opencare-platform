@@ -242,33 +242,44 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     raise RuntimeError(f"Superset created dataset {dataset_name} but did not return an id")
 
 
-def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_id: int) -> int:
+def get_chart_uuid(client: SupersetClient, chart_id: int) -> str:
+    chart = client.get(f"/api/v1/chart/{chart_id}")
+    result_payload = chart.get("result", chart)
+    chart_uuid = result_payload.get("uuid")
+    if not chart_uuid:
+        raise RuntimeError(f"Superset chart {chart_id} did not return a uuid")
+    return str(chart_uuid)
+
+
+def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
     query = parse.quote(json.dumps({"filters": [{"col": "slice_name", "opr": "eq", "value": chart_config["title"]}]}))
     result = client.get(f"/api/v1/chart/?q={query}")
     existing = find_existing(result, "slice_name", chart_config["title"])
     payload = chart_payload(chart_config, dataset_id)
     if existing:
         client.put(f"/api/v1/chart/{existing['id']}", payload)
-        return int(existing["id"])
+        chart_id = int(existing["id"])
+        return {"id": chart_id, "uuid": get_chart_uuid(client, chart_id), "title": chart_config["title"]}
 
     created = client.post("/api/v1/chart/", payload)
     created_id = response_id(created)
     if created_id is not None:
-        return created_id
+        return {"id": created_id, "uuid": get_chart_uuid(client, created_id), "title": chart_config["title"]}
 
     result = client.get(f"/api/v1/chart/?q={query}")
     existing = find_existing(result, "slice_name", chart_config["title"])
     if existing:
-        return int(existing["id"])
+        chart_id = int(existing["id"])
+        return {"id": chart_id, "uuid": get_chart_uuid(client, chart_id), "title": chart_config["title"]}
     raise RuntimeError(f"Superset created chart {chart_config['title']} but did not return an id")
 
 
-def dashboard_position_data(dashboard_config: dict[str, Any], chart_ids: list[int]) -> dict[str, Any]:
+def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[dict[str, Any]]) -> dict[str, Any]:
     enabled_charts = [chart for chart in dashboard_config.get("charts", []) if chart.get("enabled", True)]
-    rows: dict[int, list[tuple[dict[str, Any], int]]] = {}
-    for chart_config, chart_id in zip(enabled_charts, chart_ids, strict=False):
+    rows: dict[int, list[tuple[dict[str, Any], dict[str, Any]]]] = {}
+    for chart_config, chart_ref in zip(enabled_charts, chart_refs, strict=False):
         layout = chart_config.get("layout", {})
-        rows.setdefault(int(layout.get("y", 0)), []).append((chart_config, chart_id))
+        rows.setdefault(int(layout.get("y", 0)), []).append((chart_config, chart_ref))
 
     position_data: dict[str, Any] = {
         "DASHBOARD_VERSION_KEY": "v2",
@@ -281,6 +292,7 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_ids: list[in
             "type": "GRID",
             "id": "GRID_ID",
             "children": [],
+            "parents": ["ROOT_ID"],
         },
     }
 
@@ -291,10 +303,12 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_ids: list[in
             "type": "ROW",
             "id": row_id,
             "children": [],
+            "parents": ["ROOT_ID", "GRID_ID"],
             "meta": {"background": "BACKGROUND_TRANSPARENT"},
         }
 
-        for chart_config, chart_id in sorted(rows[row_y], key=lambda item: int(item[0].get("layout", {}).get("x", 0))):
+        for chart_config, chart_ref in sorted(rows[row_y], key=lambda item: int(item[0].get("layout", {}).get("x", 0))):
+            chart_id = int(chart_ref["id"])
             chart_component_id = f"CHART-{chart_id}"
             layout = chart_config.get("layout", {})
             position_data[row_id]["children"].append(chart_component_id)
@@ -302,9 +316,11 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_ids: list[in
                 "type": "CHART",
                 "id": chart_component_id,
                 "children": [],
+                "parents": ["ROOT_ID", "GRID_ID", row_id],
                 "meta": {
                     "chartId": chart_id,
                     "sliceName": chart_config["title"],
+                    "uuid": chart_ref["uuid"],
                     "width": int(layout.get("w", 12)),
                     "height": int(layout.get("h", 12)) * 4,
                 },
@@ -316,7 +332,7 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_ids: list[in
 def ensure_dashboard(
     client: SupersetClient,
     dashboard_config: dict[str, Any],
-    chart_ids: list[int],
+    chart_refs: list[dict[str, Any]],
 ) -> None:
     slug = dashboard_config["dashboard_id"]
     query = parse.quote(json.dumps({"filters": [{"col": "slug", "opr": "eq", "value": slug}]}))
@@ -327,7 +343,7 @@ def ensure_dashboard(
         "dashboard_title": dashboard_config["title"],
         "slug": slug,
         "published": True,
-        "position_json": json.dumps(dashboard_position_data(dashboard_config, chart_ids)),
+        "position_json": json.dumps(dashboard_position_data(dashboard_config, chart_refs)),
         "json_metadata": json.dumps(
             {
                 "default_filters": "{}",
@@ -369,7 +385,7 @@ def sync_dashboards(config_path: Path) -> None:
             dataset_ids[dataset_name] = ensure_dataset(client, dataset_name, database_id)
             print(f"  [ok] dataset {dataset_name} -> {dataset_ids[dataset_name]}")
 
-        chart_ids: list[int] = []
+        chart_refs: list[dict[str, Any]] = []
         for chart in dashboard_config.get("charts", []):
             if not chart.get("enabled", True):
                 print(f"  [skip] chart {chart['key']} is disabled")
@@ -377,11 +393,11 @@ def sync_dashboards(config_path: Path) -> None:
 
             dataset_name = chart["dataset"]
             dataset_id = dataset_ids[dataset_name]
-            chart_id = ensure_chart(client, chart, dataset_id)
-            chart_ids.append(chart_id)
-            print(f"  [ok] chart {chart['title']} -> {chart_id}")
+            chart_ref = ensure_chart(client, chart, dataset_id)
+            chart_refs.append(chart_ref)
+            print(f"  [ok] chart {chart['title']} -> {chart_ref['id']}")
 
-        ensure_dashboard(client, dashboard_config, chart_ids)
+        ensure_dashboard(client, dashboard_config, chart_refs)
         print(f"[ok] dashboard {dashboard_config['title']}")
 
 
