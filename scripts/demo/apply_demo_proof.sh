@@ -128,6 +128,15 @@ check_postgres_greater_than_zero() {
   (( actual > 0 )) || fail "Expected result greater than zero for [$sql], got [$actual]"
 }
 
+reset_demo_raw_schema() {
+  log "Resetting ${DEMO_RAW_SCHEMA} before synthetic demo sync"
+  kubectl -n "$NAMESPACE" exec -i postgres-0 -- psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<SQL
+drop schema if exists ${DEMO_RAW_SCHEMA} cascade;
+create schema ${DEMO_RAW_SCHEMA};
+grant usage, create on schema ${DEMO_RAW_SCHEMA} to ${POSTGRES_USER};
+SQL
+}
+
 validate_phase1_counts() {
   log "Validating Phase 1 raw counts"
   check_postgres_equals "select count(*) from ${DEMO_RAW_SCHEMA}.wards;" "12"
@@ -167,6 +176,7 @@ main() {
   ensure_demo_seed_files "$output_dir"
   apply_mysql_script "$sql_file"
   apply_mysql_script "$validation_sql"
+  reset_demo_raw_schema
 
   log "Running Airbyte synthetic demo sync"
   run_with_demo_log airbyte-demo-sync bash "$ROOT_DIR/scripts/airbyte/setup_mysql_demo.sh"

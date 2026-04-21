@@ -243,9 +243,18 @@ build_catalog() {
         )
         | map({
             name: (.stream.name // .name),
-            syncMode: "full_refresh_append"
+            syncMode: "full_refresh_overwrite"
           })
       '
+}
+
+reset_demo_destination_schema() {
+  log "Resetting Airbyte demo destination schema ${DEMO_AIRBYTE_DESTINATION_SCHEMA}"
+  kubectl -n "$NAMESPACE" exec -i postgres-0 -- psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<SQL
+drop schema if exists ${DEMO_AIRBYTE_DESTINATION_SCHEMA} cascade;
+create schema ${DEMO_AIRBYTE_DESTINATION_SCHEMA};
+grant usage, create on schema ${DEMO_AIRBYTE_DESTINATION_SCHEMA} to ${POSTGRES_USER};
+SQL
 }
 
 upsert_connection() {
@@ -367,6 +376,8 @@ main() {
 
   log "Configuring Airbyte connection"
   connection_id="$(upsert_connection "$source_id" "$destination_id" "$catalog_json")"
+
+  reset_demo_destination_schema
 
   log "Triggering first Airbyte sync"
   sync_job_id="$(api_post "${AIRBYTE_PUBLIC_API_PREFIX}/jobs" "{\"connectionId\":\"${connection_id}\",\"jobType\":\"sync\"}" | jq -r '.jobId')"
