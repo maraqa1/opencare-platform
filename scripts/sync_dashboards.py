@@ -226,7 +226,8 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     existing = find_existing(result, "table_name", table_name)
     payload = dataset_payload(dataset_name, database_id)
     if existing:
-        client.put(f"/api/v1/dataset/{existing['id']}", payload)
+        # Superset accepts the database field when a dataset is created, but not
+        # on every update path. Existing datasets are safe to reuse by id.
         return int(existing["id"])
 
     created = client.post("/api/v1/dataset/", payload)
