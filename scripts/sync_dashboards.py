@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
+from http.cookiejar import CookieJar
 from urllib import error, parse, request
 
 import yaml
@@ -21,13 +22,16 @@ class SupersetClient:
         self.username = username
         self.password = password
         self.access_token: str | None = None
+        self.csrf_token: str | None = None
+        self.cookie_jar = CookieJar()
+        self.opener = request.build_opener(request.HTTPCookieProcessor(self.cookie_jar))
 
     def authenticate(self) -> None:
         payload = {
-          "username": self.username,
-          "password": self.password,
-          "provider": "db",
-          "refresh": True,
+            "username": self.username,
+            "password": self.password,
+            "provider": "db",
+            "refresh": True,
         }
         response = self._request(
             "POST",
@@ -36,6 +40,8 @@ class SupersetClient:
             use_auth=False,
         )
         self.access_token = response["access_token"]
+        csrf_response = self.get("/api/v1/security/csrf_token/")
+        self.csrf_token = csrf_response.get("result")
 
     def get(self, path: str) -> dict[str, Any]:
         return self._request("GET", path)
@@ -55,11 +61,14 @@ class SupersetClient:
     ) -> dict[str, Any]:
         headers = {"Content-Type": "application/json"}
         if use_auth and self.access_token:
-          headers["Authorization"] = f"Bearer {self.access_token}"
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        if method in {"POST", "PUT", "PATCH", "DELETE"} and self.csrf_token:
+            headers["X-CSRFToken"] = self.csrf_token
+            headers["Referer"] = self.base_url
 
         body = None
         if payload is not None:
-          body = json.dumps(payload).encode("utf-8")
+            body = json.dumps(payload).encode("utf-8")
 
         http_request = request.Request(
             url=f"{self.base_url}{path}",
@@ -69,7 +78,7 @@ class SupersetClient:
         )
 
         try:
-            with request.urlopen(http_request, timeout=30) as response:
+            with self.opener.open(http_request, timeout=30) as response:
                 return json.loads(response.read().decode("utf-8"))
         except error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="ignore")
@@ -88,13 +97,77 @@ def quote_sql_identifier(value: str) -> str:
     return f'"{value}"'
 
 
-def dataset_payload(dataset_name: str) -> dict[str, Any]:
+def superset_database_uri() -> str:
+    configured_uri = os.getenv("SUPERSET_DATABASE_SQLALCHEMY_URI") or os.getenv("SUPERSET_DATABASE_URI")
+    if configured_uri and "$(" not in configured_uri:
+        return configured_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+    user = parse.quote(os.getenv("POSTGRES_USER", "opencare"), safe="")
+    password = parse.quote(os.getenv("POSTGRES_PASSWORD", ""), safe="")
+    host = os.getenv("POSTGRES_HOST", "postgres")
+    port = os.getenv("POSTGRES_PORT", "5432")
+    database = os.getenv("POSTGRES_DB", "opencare")
+    credentials = user if not password else f"{user}:{password}"
+    return (
+        f"postgresql+psycopg2://{credentials}@{host}:{port}/{database}"
+        "?options=-csearch_path%3Danalytics,public"
+    )
+
+
+def ensure_database(client: SupersetClient) -> int:
+    database_name = os.getenv("SUPERSET_DATABASE_NAME", "OpenCare Analytics")
+    query = parse.quote(json.dumps({"filters": [{"col": "database_name", "opr": "eq", "value": database_name}]}))
+    result = client.get(f"/api/v1/database/?q={query}")
+    existing = find_existing(result, "database_name", database_name)
+
+    payload = {
+        "database_name": database_name,
+        "sqlalchemy_uri": superset_database_uri(),
+        "configuration_method": "sqlalchemy_form",
+        "engine": "postgresql",
+        "expose_in_sqllab": True,
+        "allow_ctas": False,
+        "allow_cvas": False,
+        "allow_dml": False,
+        "allow_run_async": False,
+    }
+
+    if existing:
+        client.put(f"/api/v1/database/{existing['id']}", payload)
+        return int(existing["id"])
+
+    created = client.post("/api/v1/database/", payload)
+    result_payload = created.get("result", created)
+    return int(result_payload["id"])
+
+
+def dataset_payload(dataset_name: str, database_id: int) -> dict[str, Any]:
     schema_name, table_name = dataset_name.split(".", 1)
     return {
-        "database": int(os.getenv("SUPERSET_DATABASE_ID", "1")),
+        "database": database_id,
         "schema": schema_name,
         "table_name": table_name,
-        "sql": f"select * from {quote_sql_identifier(dataset_name)}",
+    }
+
+
+def adhoc_metric(metric_name: str) -> dict[str, Any]:
+    metric_map = {
+        "avg_occupancy_rate": ("occupancy_rate", "AVG", "Average Occupancy Rate"),
+        "current_occupancy_rate": ("occupancy_rate", "AVG", "Current Occupancy Rate"),
+        "admissions_total": ("occupied_beds", "SUM", "Occupied Beds"),
+        "discharges_total": ("available_beds", "SUM", "Available Beds"),
+        "staffing_pressure_index": ("staffing_pressure_index", "AVG", "Staffing Pressure Index"),
+    }
+    column_name, aggregate, label = metric_map.get(metric_name, (metric_name, "AVG", metric_name.replace("_", " ").title()))
+    return {
+        "expressionType": "SIMPLE",
+        "column": {
+            "column_name": column_name,
+            "type": "NUMERIC",
+        },
+        "aggregate": aggregate,
+        "label": label,
+        "optionName": f"metric_{metric_name}",
     }
 
 
@@ -103,7 +176,7 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "datasource": f"{dataset_id}__table",
         "viz_type": chart_config["viz_type"],
         "groupby": chart_config.get("group_by", []),
-        "metrics": chart_config.get("metrics", []),
+        "metrics": [adhoc_metric(metric_name) for metric_name in chart_config.get("metrics", [])],
         "granularity_sqla": chart_config.get("time_column"),
         "row_limit": chart_config.get("row_limit", 500),
         "adhoc_filters": [],
@@ -126,18 +199,28 @@ def find_existing(result_payload: dict[str, Any], name_field: str, target_value:
     return None
 
 
-def ensure_dataset(client: SupersetClient, dataset_name: str) -> int:
+def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) -> int:
     schema_name, table_name = dataset_name.split(".", 1)
-    query = parse.quote(json.dumps({"filters": [{"col": "table_name", "opr": "eq", "value": table_name}]}))
+    query = parse.quote(
+        json.dumps(
+            {
+                "filters": [
+                    {"col": "table_name", "opr": "eq", "value": table_name},
+                    {"col": "schema", "opr": "eq", "value": schema_name},
+                ]
+            }
+        )
+    )
     result = client.get(f"/api/v1/dataset/?q={query}")
     existing = find_existing(result, "table_name", table_name)
-    payload = dataset_payload(dataset_name)
+    payload = dataset_payload(dataset_name, database_id)
     if existing:
         client.put(f"/api/v1/dataset/{existing['id']}", payload)
         return int(existing["id"])
 
     created = client.post("/api/v1/dataset/", payload)
-    return int(created["id"])
+    result_payload = created.get("result", created)
+    return int(result_payload["id"])
 
 
 def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_id: int) -> int:
@@ -150,7 +233,8 @@ def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_i
         return int(existing["id"])
 
     created = client.post("/api/v1/chart/", payload)
-    return int(created["id"])
+    result_payload = created.get("result", created)
+    return int(result_payload["id"])
 
 
 def ensure_dashboard(
@@ -205,6 +289,8 @@ def sync_dashboards(config_path: Path) -> None:
         password=os.getenv("SUPERSET_ADMIN_PASSWORD", "admin"),
     )
     client.authenticate()
+    database_id = ensure_database(client)
+    print(f"[ok] database OpenCare Analytics -> {database_id}")
 
     for key, dashboard_config in dashboards.items():
         if not dashboard_config.get("enabled", False):
@@ -214,7 +300,8 @@ def sync_dashboards(config_path: Path) -> None:
         print(f"[sync] dashboard {key}")
         dataset_ids: dict[str, int] = {}
         for dataset_name in dashboard_config.get("datasets", []):
-            dataset_ids[dataset_name] = ensure_dataset(client, dataset_name)
+            dataset_ids[dataset_name] = ensure_dataset(client, dataset_name, database_id)
+            print(f"  [ok] dataset {dataset_name} -> {dataset_ids[dataset_name]}")
 
         chart_ids: list[int] = []
         for chart in dashboard_config.get("charts", []):
