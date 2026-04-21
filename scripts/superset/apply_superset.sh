@@ -51,7 +51,17 @@ fi
 if command -v python3 >/dev/null 2>&1; then
   log "Syncing Superset dashboards from metadata"
   export SUPERSET_URL="${SUPERSET_URL:-$SUPERSET_EMBED_URL}"
-  python3 "$ROOT_DIR/scripts/sync_dashboards.py" "$ROOT_DIR/dbt/opencare/models/metadata/dashboard_config.yml" || log_skip "Superset dashboard sync script failed during bootstrap"
+  if python3 "$ROOT_DIR/scripts/sync_dashboards.py" "$ROOT_DIR/dbt/opencare/models/metadata/dashboard_config.yml"; then
+    log "Linking Superset dashboard chart relationships"
+    kubectl -n "$NAMESPACE" exec -i deploy/superset -- sh -c 'cat >/tmp/dashboard_config.yml' \
+      < "$ROOT_DIR/dbt/opencare/models/metadata/dashboard_config.yml"
+    kubectl -n "$NAMESPACE" exec -i deploy/superset -- sh -c 'cat >/tmp/link_dashboard_slices.py' \
+      < "$ROOT_DIR/scripts/superset/link_dashboard_slices.py"
+    kubectl -n "$NAMESPACE" exec deploy/superset -- python /tmp/link_dashboard_slices.py /tmp/dashboard_config.yml \
+      || log_skip "Superset dashboard chart relationship link failed during bootstrap"
+  else
+    log_skip "Superset dashboard sync script failed during bootstrap"
+  fi
 else
   log_skip "python3 not available; skipping Superset dashboard sync"
 fi
