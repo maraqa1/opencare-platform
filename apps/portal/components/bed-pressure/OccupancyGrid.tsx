@@ -59,7 +59,11 @@ function OccupancySkeleton() {
   );
 }
 
-export function OccupancyGrid() {
+export function OccupancyGrid({
+  forecastBasePath = "/occupancy?tab=forecast",
+}: {
+  forecastBasePath?: string;
+}) {
   const [payload, setPayload] = useState<OccupancyPayload | null>(null);
 
   useEffect(() => {
@@ -156,7 +160,7 @@ export function OccupancyGrid() {
               </dl>
               <Link
                 className="inline-link"
-                href={`/occupancy?tab=forecast&ward=${encodeURIComponent(item.ward_id)}`}
+                href={`${forecastBasePath}${forecastBasePath.includes("?") ? "&" : "?"}ward=${encodeURIComponent(item.ward_id)}`}
               >
                 View Forecast
               </Link>

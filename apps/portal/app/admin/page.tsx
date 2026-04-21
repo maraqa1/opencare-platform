@@ -1,47 +1,50 @@
+import Link from "next/link";
+
 import { PageFrame } from "@/components/page-frame";
-import { getApiJson } from "@/lib/api";
 
-export default async function AdminHomePage() {
-  const [health, ingestion, runtime] = await Promise.all([
-    getApiJson<{ checks?: Array<unknown> }>({
-      path: "/api/v1/admin/health",
-      fallback: { checks: [] },
-    }),
-    getApiJson<{ tables?: Array<unknown> }>({
-      path: "/api/v1/admin/ingestion-status",
-      fallback: { tables: [] },
-    }),
-    getApiJson<{ runtimes?: Array<unknown> }>({
-      path: "/api/v1/admin/runtime-status",
-      fallback: { runtimes: [] },
-    }),
-  ]);
+const adminSections = [
+  {
+    href: "/admin/operations",
+    title: "Operations",
+    description: "Service health, pipeline schedule, runtime status, ingestion status, and quality summary.",
+  },
+  {
+    href: "/admin/governance",
+    title: "Governance",
+    description: "Dictionary, lineage DAG, record specs, freshness, impact analysis, tests, contracts, compliance, and audit summary.",
+  },
+  {
+    href: "/admin/configuration",
+    title: "Configuration",
+    description: "Use case enablement, thresholds, alert rules, schedules, and current YAML-driven settings.",
+  },
+  {
+    href: "/admin/audit",
+    title: "Audit",
+    description: "Access logs, data access trail, configuration changes, and exportable audit history.",
+  },
+];
 
+export default function AdminPage() {
   return (
     <PageFrame
-      title="Admin Home"
-      description="Administrative oversight for runtime health, refresh cadence, platform services, and terminology stewardship."
+      eyebrow="Administration"
+      title="Operations, governance, configuration, and audit"
+      description="Deep governance is available to platform admins and auditors without competing with operational bed-manager workflows."
       chips={[
-        { label: "Operational visibility", tone: "primary" },
-        { label: "Single-tenant controls", tone: "accent" },
+        { label: "Admin separated from operations", tone: "primary" },
+        { label: "Full 4b preservation", tone: "accent" },
       ]}
     >
-      <section className="grid">
-        <article className="stat span-4">
-          <p className="eyebrow">Runtime Jobs</p>
-          <p className="value">{runtime.runtimes?.length ?? 0}</p>
-          <p className="subtle">Forecast and anomaly runtimes tracked in-platform.</p>
-        </article>
-        <article className="stat span-4">
-          <p className="eyebrow">Core Services</p>
-          <p className="value">{health.checks?.length ?? 0}</p>
-          <p className="subtle">Database, storage, cache, and embedded analytics.</p>
-        </article>
-        <article className="stat span-4">
-          <p className="eyebrow">Refresh Pipelines</p>
-          <p className="value">{ingestion.tables?.length ?? 0}</p>
-          <p className="subtle">Live ingestion tables tracked through the backend.</p>
-        </article>
+      <section className="operations-grid">
+        {adminSections.map((section) => (
+          <Link href={section.href} className="status-card" key={section.href}>
+            <p className="eyebrow">Administration</p>
+            <h3>{section.title}</h3>
+            <p>{section.description}</p>
+            <span className="inline-link">Open {section.title}</span>
+          </Link>
+        ))}
       </section>
     </PageFrame>
   );

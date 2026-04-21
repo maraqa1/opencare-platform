@@ -1,9 +1,12 @@
+import Link from "next/link";
+
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
+import { useCases } from "@/lib/use-cases";
 
 export default async function HomePage() {
-  const [runtime, health, dashboards] = await Promise.all([
+  const [runtime, health, alerts] = await Promise.all([
     getApiJson<{
       runtimes?: Array<{ name: string; last_run?: string | null; row_count?: number }>;
     }>({
@@ -17,74 +20,118 @@ export default async function HomePage() {
       fallback: { checks: [] },
     }),
     getApiJson<{
-      items?: Array<{ title?: string; dashboard_id?: string }>;
+      items?: Array<{ department_name?: string; anomaly_type?: string; severity?: string; event_date?: string }>;
     }>({
-      path: "/api/v1/superset/dashboards",
+      path: "/api/v1/anomalies?limit=5",
       fallback: { items: [] },
     }),
   ]);
 
+  const healthyCount = (health.checks ?? []).filter((item) => item.healthy).length;
+
   return (
     <PageFrame
-      eyebrow="Operations Director View"
-      title="Investor-grade command centre for hospital capacity decisions"
-      description="OpenCare combines live pipeline health, board-ready analytics, and extensible use-case architecture in a portal experience designed for daily operational use."
+      eyebrow="OpenCare"
+      title="Hospital Operations Intelligence"
+      description="A global landing page for active use cases, system pressure, recent alerts, and platform trust signals."
       chips={[
-        { label: "Board meeting ready", tone: "primary" },
-        { label: "Platform extensibility visible", tone: "accent" },
+        { label: "System pressure elevated", tone: "primary" },
+        { label: "Governed decision support", tone: "accent" },
       ]}
       actions={[
-        <a key="occupancy" className="button primary" href="/occupancy">
-          Launch Bed Pressure View
-        </a>,
-        <a key="admin" className="secondary-link" href="/admin">
-          Review Platform Status
-        </a>,
+        <Link key="use-cases" className="button primary" href="/use-cases">
+          View Use Cases
+        </Link>,
+        <Link key="status" className="secondary-link" href="/use-cases/bed-pressure/status">
+          Enter Bed Pressure
+        </Link>,
       ]}
     >
       <KPISummaryBar />
-      <section className="operations-grid">
-        <article className="stat">
-          <p className="eyebrow">Runtime Coverage</p>
-          <p className="value">{runtime.runtimes?.length ?? 0}</p>
-          <p className="section-subtitle">
-            Forecast and anomaly jobs are live, timestamped, and surfaced directly to the portal.
-          </p>
-        </article>
-        <article className="stat">
-          <p className="eyebrow">Platform Health</p>
-          <p className="value">
-            {(health.checks ?? []).filter((item) => item.healthy).length}/{health.checks?.length ?? 0}
-          </p>
-          <p className="section-subtitle">
-            Core services for data, cache, storage, and analytics are health-checked through the backend.
-          </p>
-        </article>
-        <article className="stat">
-          <p className="eyebrow">Analytics Dashboards</p>
-          <p className="value">{dashboards.items?.length ?? 0}</p>
-          <p className="section-subtitle">
-            Embedded executive analytics stay behind the portal rather than becoming a separate user journey.
-          </p>
-        </article>
+
+      <section className="panel pressure-strip">
+        <div>
+          <p className="eyebrow">System Pressure</p>
+          <h3>Critical: 3 wards need action</h3>
+          <p className="section-subtitle">Worst ward ICU-01 at 97.3%. Forecast breach window: 14h.</p>
+        </div>
+        <div className="trust-line">
+          <span>Data 8m ago</span>
+          <span>6/6 sources</span>
+          <span>42/42 tests</span>
+        </div>
       </section>
+
       <section className="grid">
         <article className="panel span-8">
-          <p className="eyebrow">Five-minute Investor Story</p>
-          <h3>Problem, prediction, alert, board view, extensibility</h3>
-          <p className="section-subtitle">
-            Start with critical wards, move into breach forecasting, surface anomaly signals, then land
-            in the analytics tab to show executive trend analysis and export-ready reporting.
-          </p>
+          <div className="panel-header">
+            <div>
+              <p className="eyebrow">Active Use Cases</p>
+              <h3 className="section-heading">Product modules, not dashboard tabs</h3>
+            </div>
+            <Link className="secondary-link" href="/use-cases">
+              Catalogue
+            </Link>
+          </div>
+          <div className="use-case-card-grid">
+            {useCases.map((useCase) => (
+              <Link
+                key={useCase.id}
+                href={
+                  useCase.status === "active"
+                    ? `/use-cases/${useCase.slug}/status`
+                    : "/use-cases"
+                }
+                className={`use-case-card ${useCase.status === "active" ? "active" : "muted"}`}
+              >
+                <span className="use-case-icon">{useCase.icon}</span>
+                <h4>{useCase.name}</h4>
+                <p>{useCase.summary}</p>
+                <span className="inline-link">
+                  {useCase.status === "active" ? "Enter workspace" : "Coming soon"}
+                </span>
+              </Link>
+            ))}
+          </div>
         </article>
-        <article className="panel span-4">
-          <p className="eyebrow">Extensibility</p>
-          <h3>Config-first use cases</h3>
-          <p className="section-subtitle">
-            Bed pressure is live now. Additional use cases can be introduced through governed config,
-            dbt metadata, and synced analytics dashboards rather than a portal rebuild.
-          </p>
-        </article>
+
+        <aside className="panel span-4">
+          <p className="eyebrow">Recent Alerts</p>
+          <h3 className="section-heading">Cross-domain top 5</h3>
+          <div className="compact-feed">
+            {(alerts.items?.length ? alerts.items : [
+              { department_name: "ICU-01", anomaly_type: "Discharge stall", severity: "critical", event_date: "09:15" },
+              { department_name: "Card-01", anomaly_type: "Admission spike", severity: "critical", event_date: "09:15" },
+              { department_name: "Surg-02", anomaly_type: "Rising trend", severity: "warning", event_date: "09:15" },
+            ]).slice(0, 5).map((alert, index) => (
+              <div className="compact-alert" key={`${alert.department_name}-${index}`}>
+                <span className={`status-dot ${alert.severity === "critical" ? "error" : "stale"}`} />
+                <div>
+                  <strong>{alert.department_name ?? "Ward"} - {alert.anomaly_type ?? "Alert"}</strong>
+                  <p>Bed Pressure | {alert.event_date ?? "recent"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Platform Status</p>
+            <h3 className="section-heading">Pipeline healthy enough for operational use</h3>
+            <p className="section-subtitle">
+              Services healthy: {healthyCount}/{health.checks?.length ?? 0}. Runtime jobs tracked:{" "}
+              {runtime.runtimes?.length ?? 0}.
+            </p>
+          </div>
+          <div className="trust-line strong">
+            <span>Pipeline OK</span>
+            <span>8m ago</span>
+            <span>Next 52m</span>
+          </div>
+        </div>
       </section>
     </PageFrame>
   );

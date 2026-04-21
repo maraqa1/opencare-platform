@@ -93,7 +93,13 @@ function ForecastSkeleton() {
   );
 }
 
-export function ForecastView({ selectedWardId }: { selectedWardId?: string }) {
+export function ForecastView({
+  selectedWardId,
+  statusHref = "/occupancy?tab=occupancy",
+}: {
+  selectedWardId?: string;
+  statusHref?: string;
+}) {
   const [wards, setWards] = useState<OccupancyItem[]>([]);
   const [activeWardId, setActiveWardId] = useState<string | undefined>(selectedWardId);
   const [forecastRows, setForecastRows] = useState<ForecastRow[] | null>(null);
@@ -358,7 +364,7 @@ export function ForecastView({ selectedWardId }: { selectedWardId?: string }) {
             <li>Escalate to the on-call capacity manager before the breach window.</li>
           </ul>
           <div className="button-row">
-            <a className="button secondary" href="/occupancy?tab=occupancy">
+            <a className="button secondary" href={statusHref}>
               View All Wards
             </a>
             <a className="button primary" href="/api/v1/reports/export/forecast">

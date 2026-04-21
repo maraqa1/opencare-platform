@@ -66,9 +66,13 @@ function AlertsSkeleton() {
 export function AnomalyAlerts({
   severity,
   basePath = "/occupancy?tab=alerts",
+  statusHref = "/occupancy?tab=occupancy",
+  forecastBasePath = "/occupancy?tab=forecast",
 }: {
   severity?: string;
   basePath?: string;
+  statusHref?: string;
+  forecastBasePath?: string;
 }) {
   const [summary, setSummary] = useState<SummaryPayload | null>(null);
   const [anomalies, setAnomalies] = useState<AnomalyPayload | null>(null);
@@ -228,13 +232,13 @@ export function AnomalyAlerts({
                   <div className="alert-actions">
                     <Link
                       className="secondary-link"
-                      href={`/occupancy?tab=occupancy`}
+                      href={statusHref}
                     >
                       View Ward
                     </Link>
                     <Link
                       className="button primary"
-                      href={`/occupancy?tab=forecast&ward=${encodeURIComponent(item.ward_id)}`}
+                      href={`${forecastBasePath}${forecastBasePath.includes("?") ? "&" : "?"}ward=${encodeURIComponent(item.ward_id)}`}
                     >
                       View Forecast
                     </Link>
