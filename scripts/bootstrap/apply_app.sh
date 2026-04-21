@@ -190,6 +190,9 @@ EOF
 apply_file "$ROOT_DIR/manifests/backend/deployment.yaml"
 apply_file "$ROOT_DIR/manifests/portal/deployment.yaml"
 
+log "Restarting application deployments to pull current images"
+kubectl -n "$NAMESPACE" rollout restart deployment/backend deployment/portal >/dev/null
+
 if [[ "$ENABLE_EXTERNAL_INGRESS" == "true" ]]; then
   rendered_ingress="$(mktemp)"
   render_app_ingress "$rendered_ingress"
