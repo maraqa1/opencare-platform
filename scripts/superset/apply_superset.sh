@@ -14,20 +14,20 @@ ensure_superset_admin() {
 
   users="$(kubectl -n "$NAMESPACE" exec deploy/superset -- superset fab list-users 2>/dev/null || true)"
 
-  if grep -qE "(^|[[:space:]])${SUPERSET_ADMIN_USER}([[:space:]]|$)" <<<"$users"; then
-    log "Resetting Superset admin password for ${SUPERSET_ADMIN_USER}"
-    kubectl -n "$NAMESPACE" exec deploy/superset -- superset fab reset-password \
-      --username "$SUPERSET_ADMIN_USER" \
-      --password "$SUPERSET_ADMIN_PASSWORD"
-  else
+  if ! grep -qE "(^|[[:space:]])${SUPERSET_ADMIN_USER}([[:space:]]|$)" <<<"$users"; then
     log "Creating Superset admin user ${SUPERSET_ADMIN_USER}"
     kubectl -n "$NAMESPACE" exec deploy/superset -- superset fab create-admin \
       --username "$SUPERSET_ADMIN_USER" \
       --firstname OpenCare \
       --lastname Admin \
       --email admin@opencare.local \
-      --password "$SUPERSET_ADMIN_PASSWORD"
+      --password "$SUPERSET_ADMIN_PASSWORD" || true
   fi
+
+  log "Resetting Superset admin password for ${SUPERSET_ADMIN_USER}"
+  kubectl -n "$NAMESPACE" exec deploy/superset -- superset fab reset-password \
+    --username "$SUPERSET_ADMIN_USER" \
+    --password "$SUPERSET_ADMIN_PASSWORD"
 
   kubectl -n "$NAMESPACE" exec deploy/superset -- superset init
 }

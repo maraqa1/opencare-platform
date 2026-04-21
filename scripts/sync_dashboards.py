@@ -199,6 +199,17 @@ def find_existing(result_payload: dict[str, Any], name_field: str, target_value:
     return None
 
 
+def response_id(response_payload: dict[str, Any]) -> int | None:
+    result_payload = response_payload.get("result", response_payload)
+    if isinstance(result_payload, dict) and result_payload.get("id") is not None:
+        return int(result_payload["id"])
+    if isinstance(result_payload, list) and result_payload and result_payload[0].get("id") is not None:
+        return int(result_payload[0]["id"])
+    if response_payload.get("id") is not None:
+        return int(response_payload["id"])
+    return None
+
+
 def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) -> int:
     schema_name, table_name = dataset_name.split(".", 1)
     query = parse.quote(
@@ -219,8 +230,15 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
         return int(existing["id"])
 
     created = client.post("/api/v1/dataset/", payload)
-    result_payload = created.get("result", created)
-    return int(result_payload["id"])
+    created_id = response_id(created)
+    if created_id is not None:
+        return created_id
+
+    result = client.get(f"/api/v1/dataset/?q={query}")
+    existing = find_existing(result, "table_name", table_name)
+    if existing:
+        return int(existing["id"])
+    raise RuntimeError(f"Superset created dataset {dataset_name} but did not return an id")
 
 
 def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_id: int) -> int:
@@ -233,8 +251,15 @@ def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_i
         return int(existing["id"])
 
     created = client.post("/api/v1/chart/", payload)
-    result_payload = created.get("result", created)
-    return int(result_payload["id"])
+    created_id = response_id(created)
+    if created_id is not None:
+        return created_id
+
+    result = client.get(f"/api/v1/chart/?q={query}")
+    existing = find_existing(result, "slice_name", chart_config["title"])
+    if existing:
+        return int(existing["id"])
+    raise RuntimeError(f"Superset created chart {chart_config['title']} but did not return an id")
 
 
 def ensure_dashboard(
