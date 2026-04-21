@@ -263,6 +263,56 @@ def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_i
     raise RuntimeError(f"Superset created chart {chart_config['title']} but did not return an id")
 
 
+def dashboard_position_data(dashboard_config: dict[str, Any], chart_ids: list[int]) -> dict[str, Any]:
+    enabled_charts = [chart for chart in dashboard_config.get("charts", []) if chart.get("enabled", True)]
+    rows: dict[int, list[tuple[dict[str, Any], int]]] = {}
+    for chart_config, chart_id in zip(enabled_charts, chart_ids, strict=False):
+        layout = chart_config.get("layout", {})
+        rows.setdefault(int(layout.get("y", 0)), []).append((chart_config, chart_id))
+
+    position_data: dict[str, Any] = {
+        "DASHBOARD_VERSION_KEY": "v2",
+        "ROOT_ID": {
+            "type": "ROOT",
+            "id": "ROOT_ID",
+            "children": ["GRID_ID"],
+        },
+        "GRID_ID": {
+            "type": "GRID",
+            "id": "GRID_ID",
+            "children": [],
+        },
+    }
+
+    for row_index, row_y in enumerate(sorted(rows), start=1):
+        row_id = f"ROW-{row_index}"
+        position_data["GRID_ID"]["children"].append(row_id)
+        position_data[row_id] = {
+            "type": "ROW",
+            "id": row_id,
+            "children": [],
+            "meta": {"background": "BACKGROUND_TRANSPARENT"},
+        }
+
+        for chart_config, chart_id in sorted(rows[row_y], key=lambda item: int(item[0].get("layout", {}).get("x", 0))):
+            chart_component_id = f"CHART-{chart_id}"
+            layout = chart_config.get("layout", {})
+            position_data[row_id]["children"].append(chart_component_id)
+            position_data[chart_component_id] = {
+                "type": "CHART",
+                "id": chart_component_id,
+                "children": [],
+                "meta": {
+                    "chartId": chart_id,
+                    "sliceName": chart_config["title"],
+                    "width": int(layout.get("w", 12)),
+                    "height": int(layout.get("h", 12)) * 4,
+                },
+            }
+
+    return position_data
+
+
 def ensure_dashboard(
     client: SupersetClient,
     dashboard_config: dict[str, Any],
@@ -273,25 +323,16 @@ def ensure_dashboard(
     result = client.get(f"/api/v1/dashboard/?q={query}")
     existing = find_existing(result, "slug", slug)
 
-    position_data = {
-        chart_config["key"]: {
-            "meta": {
-                "chartId": chart_id,
-                "sliceName": chart_config["title"],
-            },
-            "type": "CHART",
-        }
-        for chart_config, chart_id in zip(dashboard_config.get("charts", []), chart_ids, strict=False)
-    }
-
     payload = {
         "dashboard_title": dashboard_config["title"],
         "slug": slug,
         "published": True,
-        "position_json": json.dumps(position_data),
+        "position_json": json.dumps(dashboard_position_data(dashboard_config, chart_ids)),
         "json_metadata": json.dumps(
             {
-                "native_filter_configuration": dashboard_config.get("filters", []),
+                "default_filters": "{}",
+                "expanded_slices": {},
+                "timed_refresh_immune_slices": [],
             }
         ),
     }
