@@ -13,6 +13,10 @@ Service areas prepared here:
 - dbt
 - runtimes
 
+Superset runs from `ghcr.io/maraqa1/opencare-superset:latest`, a small wrapper image
+around `apache/superset:4.1.1` that installs the PostgreSQL driver required for
+metadata setup and dashboard sync.
+
 Keep deployment assets minimal, production-shaped, and consistent with one VM operation.
 
 External access is rendered during bootstrap rather than committed as a static manifest:

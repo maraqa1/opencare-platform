@@ -107,6 +107,10 @@ jobs:
             context: ./apps/portal
             dockerfile: ./apps/portal/Dockerfile
             image_repo: ghcr.io/maraqa1/opencare-portal
+          - name: superset
+            context: .
+            dockerfile: ./superset/Dockerfile
+            image_repo: ghcr.io/maraqa1/opencare-superset
           - name: runtime-bed-forecast
             context: ./r-runtime/bed-forecast
             dockerfile: ./r-runtime/bed-forecast/Dockerfile
