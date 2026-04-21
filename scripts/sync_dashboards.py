@@ -185,12 +185,6 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "orderby": [],
         "time_range": "Last 30 days",
     }
-    if chart_config["viz_type"] == "echarts_bar":
-        params["x_axis"] = group_by[0] if group_by else None
-        params["metrics"] = metrics
-        params["orientation"] = "horizontal"
-        params["sort_series_type"] = "sum"
-        params.pop("granularity_sqla", None)
     return {
         "slice_name": chart_config["title"],
         "viz_type": chart_config["viz_type"],

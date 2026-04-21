@@ -58,7 +58,7 @@ dashboards:
       - key: ward_comparison
         enabled: true
         title: Ward Comparison
-        viz_type: echarts_bar
+        viz_type: echarts_timeseries_bar
         layout:
           x: 0
           y: 16
@@ -69,6 +69,7 @@ dashboards:
           - current_occupancy_rate
         group_by:
           - ward_id
+        time_column: date_day
         sort_desc: true
       - key: admissions_vs_discharges
         enabled: true
