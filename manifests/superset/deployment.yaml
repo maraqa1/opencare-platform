@@ -57,6 +57,14 @@ spec:
                   name: opencare-secrets
                   key: SUPERSET_READONLY_PASSWORD
                   optional: true
+            - name: SUPERSET_ADMIN_USER
+              value: $(SUPERSET_ADMIN_USER)
+            - name: SUPERSET_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opencare-secrets
+                  key: SUPERSET_ADMIN_PASSWORD
+                  optional: true
           volumeMounts:
             - name: superset-assets
               mountPath: /app/pythonpath

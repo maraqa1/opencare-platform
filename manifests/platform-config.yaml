@@ -71,6 +71,7 @@ data:
   TRAEFIK_ENTRYPOINTS: web
   EXTERNAL_TLS_SECRET_NAME: ""
   SUPERSET_READONLY_USER: superset_readonly
+  SUPERSET_ADMIN_USER: admin
   FORECAST_OUTPUT_TABLE: forecast
   ANOMALY_OUTPUT_TABLE: anomaly
   FORECAST_MODEL_NAME: auto.arima
@@ -112,3 +113,4 @@ stringData:
   INTERNAL_API_TOKEN: opencare-internal-token
   KEYCLOAK_ADMIN_PASSWORD: opencare123
   SUPERSET_READONLY_PASSWORD: opencare_superset_readonly
+  SUPERSET_ADMIN_PASSWORD: admin

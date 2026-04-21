@@ -17,6 +17,7 @@ resolved_keycloak_admin_password="$KEYCLOAK_ADMIN_PASSWORD"
 resolved_demo_mysql_password="$DEMO_MYSQL_PASSWORD"
 resolved_demo_mysql_root_password="$DEMO_MYSQL_ROOT_PASSWORD"
 resolved_superset_readonly_password="$SUPERSET_READONLY_PASSWORD"
+resolved_superset_admin_password="$SUPERSET_ADMIN_PASSWORD"
 
 if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_postgres_password="$(secret_value_or_default opencare-secrets POSTGRES_PASSWORD "$resolved_postgres_password")"
@@ -30,6 +31,7 @@ if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_demo_mysql_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_PASSWORD "$resolved_demo_mysql_password")"
   resolved_demo_mysql_root_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_ROOT_PASSWORD "$resolved_demo_mysql_root_password")"
   resolved_superset_readonly_password="$(secret_value_or_default opencare-secrets SUPERSET_READONLY_PASSWORD "$resolved_superset_readonly_password")"
+  resolved_superset_admin_password="$(secret_value_or_default opencare-secrets SUPERSET_ADMIN_PASSWORD "$resolved_superset_admin_password")"
 fi
 
 render_platform_config() {
@@ -130,6 +132,7 @@ data:
   DEMO_MYSQL_DATABASE: ${DEMO_MYSQL_DATABASE}
   DEMO_MYSQL_USER: ${DEMO_MYSQL_USER}
   SUPERSET_READONLY_USER: ${SUPERSET_READONLY_USER}
+  SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER}
   SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
   SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES}"
 ---
@@ -151,6 +154,7 @@ stringData:
   DEMO_MYSQL_PASSWORD: ${resolved_demo_mysql_password}
   DEMO_MYSQL_ROOT_PASSWORD: ${resolved_demo_mysql_root_password}
   SUPERSET_READONLY_PASSWORD: ${resolved_superset_readonly_password}
+  SUPERSET_ADMIN_PASSWORD: ${resolved_superset_admin_password}
 EOF
 }
 
