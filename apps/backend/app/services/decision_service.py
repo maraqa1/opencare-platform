@@ -14,6 +14,7 @@ from app.db import connect, qualified_table
 from app.services.notification_service import send_decision_email
 
 ACTIVE_STATUSES = ("recommended", "assigned", "in_progress")
+TERMINAL_STATUSES = ("completed", "dismissed", "expired")
 
 
 def _float(value: object, default: float = 0.0) -> float:
@@ -712,6 +713,18 @@ def transition_decision(
             return None
 
         previous = row["status"]
+        allowed_transitions = {
+            "assign": {"recommended"},
+            "start": {"assigned", "recommended"},
+            "complete": {"assigned", "in_progress"},
+            "dismiss": {"recommended", "assigned", "in_progress"},
+        }
+        if previous in TERMINAL_STATUSES:
+            raise ValueError(f"Decision is already {previous} and cannot be changed")
+        if action in allowed_transitions and previous not in allowed_transitions[action]:
+            allowed = ", ".join(sorted(allowed_transitions[action]))
+            raise ValueError(f"Cannot {action} decision from status {previous}; expected one of: {allowed}")
+
         if action == "assign":
             new_state = "assigned"
             assignee_user = payload.get("assignee_user") or performed_by

@@ -152,7 +152,14 @@ export function DecisionCards({
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      setMessage(`Decision update failed with HTTP ${response.status}.`);
+      let detail = `HTTP ${response.status}`;
+      try {
+        const payload = (await response.json()) as { detail?: string };
+        detail = payload.detail ?? detail;
+      } catch {
+        // Keep the HTTP status fallback if the backend did not return JSON.
+      }
+      setMessage(`Decision update failed: ${detail}.`);
       return;
     }
     const updated = (await response.json()) as ApiDecision;
