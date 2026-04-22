@@ -110,6 +110,7 @@ EXTERNAL_HOST="${EXTERNAL_HOST:-}"
 INGRESS_CLASS_NAME="${INGRESS_CLASS_NAME:-traefik}"
 TRAEFIK_ENTRYPOINTS="${TRAEFIK_ENTRYPOINTS:-web}"
 EXTERNAL_TLS_SECRET_NAME="${EXTERNAL_TLS_SECRET_NAME:-}"
+CERT_MANAGER_CLUSTER_ISSUER="${CERT_MANAGER_CLUSTER_ISSUER:-}"
 BASE_DOMAIN="${BASE_DOMAIN:-}"
 PORTAL_HOST="${PORTAL_HOST:-}"
 API_HOST="${API_HOST:-}"
@@ -498,6 +499,11 @@ run_script_module() {
 }
 
 print_endpoints() {
+  local external_scheme="http"
+  if [[ -n "$EXTERNAL_TLS_SECRET_NAME" ]]; then
+    external_scheme="https"
+  fi
+
   cat <<EOF
 OpenCare endpoints:
 - Portal: http://portal.${NAMESPACE}.svc.cluster.local:3000
@@ -512,17 +518,17 @@ EOF
   if [[ "$ENABLE_EXTERNAL_INGRESS" == "true" ]]; then
   if [[ -n "$EXTERNAL_HOST" ]]; then
       cat <<EOF
-- External Portal: http://${EXTERNAL_HOST}/
-- External API: http://${EXTERNAL_HOST}/api/v1/
+- External Portal: ${external_scheme}://${EXTERNAL_HOST}/
+- External API: ${external_scheme}://${EXTERNAL_HOST}/api/v1/
 EOF
     else
       cat <<EOF
-- External Portal: http://${PORTAL_HOST}/
-- External API: http://${API_HOST}/
+- External Portal: ${external_scheme}://${PORTAL_HOST}/
+- External API: ${external_scheme}://${API_HOST}/
 EOF
       if [[ -n "$ANALYTICS_HOST" ]]; then
         cat <<EOF
-- External Analytics: http://${ANALYTICS_HOST}/
+- External Analytics: ${external_scheme}://${ANALYTICS_HOST}/
 EOF
       fi
     fi

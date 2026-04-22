@@ -18,6 +18,15 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: ${INGRESS_CLASS_NAME}
     traefik.ingress.kubernetes.io/router.entrypoints: ${TRAEFIK_ENTRYPOINTS}
+EOF
+
+  if [[ -n "$CERT_MANAGER_CLUSTER_ISSUER" && -n "$EXTERNAL_TLS_SECRET_NAME" ]]; then
+    cat >>"$output_file" <<EOF
+    cert-manager.io/cluster-issuer: ${CERT_MANAGER_CLUSTER_ISSUER}
+EOF
+  fi
+
+  cat >>"$output_file" <<EOF
 spec:
   ingressClassName: ${INGRESS_CLASS_NAME}
 EOF
