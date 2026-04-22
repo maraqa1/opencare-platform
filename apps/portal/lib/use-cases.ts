@@ -11,6 +11,24 @@ export type UseCaseModule = {
   kpis: Array<{ label: string; value: string; note: string }>;
 };
 
+export type DecisionItem = {
+  urgency: string;
+  tone: "critical" | "warning";
+  ward: string;
+  title: string;
+  signal: string;
+  decision: string;
+  rationale: string;
+  confidence: string;
+  actions: string[];
+};
+
+export type ResolvedDecision = {
+  title: string;
+  date: string;
+  outcome: string;
+};
+
 export const useCases: UseCaseModule[] = [
   {
     id: "bed_pressure",
@@ -64,7 +82,7 @@ export const bedPressureTabs = [
   { key: "decisions", label: "Decisions", href: "/use-cases/bed-pressure/decisions" },
 ];
 
-export const decisionQueue = [
+export const decisionQueue: DecisionItem[] = [
   {
     urgency: "URGENT",
     tone: "critical",
@@ -111,7 +129,7 @@ export const decisionQueue = [
   },
 ];
 
-export const resolvedDecisions = [
+export const resolvedDecisions: ResolvedDecision[] = [
   {
     title: "Med-01: Discharge backlog cleared",
     date: "Apr 18",
