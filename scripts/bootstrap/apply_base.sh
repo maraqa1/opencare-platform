@@ -18,6 +18,7 @@ resolved_demo_mysql_password="$DEMO_MYSQL_PASSWORD"
 resolved_demo_mysql_root_password="$DEMO_MYSQL_ROOT_PASSWORD"
 resolved_superset_readonly_password="$SUPERSET_READONLY_PASSWORD"
 resolved_superset_admin_password="$SUPERSET_ADMIN_PASSWORD"
+resolved_smtp_pass="$SMTP_PASS"
 
 if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_postgres_password="$(secret_value_or_default opencare-secrets POSTGRES_PASSWORD "$resolved_postgres_password")"
@@ -32,6 +33,7 @@ if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_demo_mysql_root_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_ROOT_PASSWORD "$resolved_demo_mysql_root_password")"
   resolved_superset_readonly_password="$(secret_value_or_default opencare-secrets SUPERSET_READONLY_PASSWORD "$resolved_superset_readonly_password")"
   resolved_superset_admin_password="$(secret_value_or_default opencare-secrets SUPERSET_ADMIN_PASSWORD "$resolved_superset_admin_password")"
+  resolved_smtp_pass="$(secret_value_or_default opencare-secrets SMTP_PASS "$resolved_smtp_pass")"
 fi
 
 render_platform_config() {
@@ -91,6 +93,16 @@ data:
   REPORTS_PREFIX: ${REPORTS_PREFIX}
   DICTIONARY_VERSION: "${DICTIONARY_VERSION}"
   RUNTIME_WRITES_ENABLED: "${RUNTIME_WRITES_ENABLED}"
+  DECISION_SCHEMA: ${DECISION_SCHEMA}
+  DECISION_DEFAULT_EMAIL: ${DECISION_DEFAULT_EMAIL}
+  ESCALATION_EMAIL: ${ESCALATION_EMAIL}
+  ESCALATION_THRESHOLD_MINUTES: "${ESCALATION_THRESHOLD_MINUTES}"
+  MAX_ESCALATIONS: "${MAX_ESCALATIONS}"
+  SMTP_HOST: ${SMTP_HOST}
+  SMTP_PORT: "${SMTP_PORT}"
+  SMTP_USER: ${SMTP_USER}
+  SMTP_FROM: ${SMTP_FROM}
+  SMTP_USE_TLS: "${SMTP_USE_TLS}"
   NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
   BACKEND_URL: ${BACKEND_URL}
   PORTAL_URL: ${PORTAL_URL}
@@ -155,6 +167,7 @@ stringData:
   DEMO_MYSQL_ROOT_PASSWORD: ${resolved_demo_mysql_root_password}
   SUPERSET_READONLY_PASSWORD: ${resolved_superset_readonly_password}
   SUPERSET_ADMIN_PASSWORD: ${resolved_superset_admin_password}
+  SMTP_PASS: "${resolved_smtp_pass}"
 EOF
 }
 

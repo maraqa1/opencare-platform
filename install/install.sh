@@ -24,6 +24,7 @@ PHASES=(
   "runtime:$ROOT_DIR/scripts/runtime/apply_runtimes.sh"
   "ingestion:$ROOT_DIR/scripts/airbyte/apply_airbyte.sh"
   "demo:$ROOT_DIR/scripts/demo/apply_demo_proof.sh"
+  "decision:$ROOT_DIR/scripts/decisions/apply_decisions.sh"
 )
 
 current_phase=""

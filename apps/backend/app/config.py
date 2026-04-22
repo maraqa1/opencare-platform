@@ -58,6 +58,17 @@ class Settings:
     dbt_project_dir: str = os.getenv("DBT_PROJECT_DIR", "/app/dbt")
     dbt_manifest_path: str = os.getenv("DBT_MANIFEST_PATH", "/app/dbt/target/manifest.json")
     dbt_models_dir: str = os.getenv("DBT_MODELS_DIR", "/app/dbt/models")
+    decision_schema: str = os.getenv("DECISION_SCHEMA", "decision")
+    decision_default_email: str = os.getenv("DECISION_DEFAULT_EMAIL", "admin@opendatalake.com")
+    escalation_threshold_minutes: int = int(os.getenv("ESCALATION_THRESHOLD_MINUTES", "120"))
+    max_escalations: int = int(os.getenv("MAX_ESCALATIONS", "3"))
+    escalation_email: str = os.getenv("ESCALATION_EMAIL", os.getenv("DECISION_DEFAULT_EMAIL", "admin@opendatalake.com"))
+    smtp_host: str = os.getenv("SMTP_HOST", "mail.privateemail.com")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user: str = os.getenv("SMTP_USER", "admin@opendatalake.com")
+    smtp_password: str = os.getenv("SMTP_PASS", "")
+    smtp_from: str = os.getenv("SMTP_FROM", "admin@opendatalake.com")
+    smtp_use_tls: bool = _get_bool("SMTP_USE_TLS", True)
 
     def postgres_dsn(self) -> str:
         credentials = self.postgres_user

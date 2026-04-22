@@ -21,6 +21,12 @@ run_cluster_http_check keycloak "${KEYCLOAK_HEALTH_URL}/health/ready" 15 2
 log "Checking backend health"
 run_cluster_http_check backend "${BACKEND_URL}/healthz"
 
+log "Checking decision schema"
+run_cluster_command decision-schema postgres:16-alpine sh -c "psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} -Atc \"select to_regclass('decision.decision_queue') is not null and to_regclass('decision.decision_log') is not null;\" | grep -qx t"
+
+log "Checking decision API"
+run_cluster_http_check decisions "${BACKEND_URL}/api/v1/decisions/count"
+
 log "Checking portal service"
 run_cluster_http_check portal "$PORTAL_URL"
 

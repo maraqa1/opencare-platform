@@ -40,6 +40,32 @@ use_cases:
       - name: "anomaly"
         schedule: "25 * * * *"
         model: "zscore_occupancy"
+    decisions:
+      types:
+        - id: "expedite_discharge"
+          trigger: "occupancy >= 90"
+          impact_formula: "expected_beds * 25"
+          actions_template:
+            - "Notify discharge coordinator for {ward_name}"
+            - "Review {discharge_count} discharge-ready patients"
+            - "Arrange transport and pharmacy for same-day discharge"
+        - id: "activate_surge"
+          trigger: "occupancy >= 95 OR breach < 12h"
+          impact_formula: "surge_beds_available * 20"
+        - id: "defer_elective"
+          trigger: "occupancy >= 90 AND breach < 24h"
+          impact_formula: "electives_deferrable * 30"
+        - id: "escalate_to_manager"
+          trigger: "anomaly = critical AND occupancy >= 85 AND trend rising"
+          impact_formula: "40"
+      notifications:
+        default_team_email: "admin@opendatalake.com"
+        escalation_email: "admin@opendatalake.com"
+        escalation_threshold_minutes: 120
+        max_escalations: 3
+      outcome_measurement:
+        delay_hours: 24
+        accuracy_threshold_pct: 10
     record_specs:
       - table: "analytics.fct_bed_occupancy"
         grain: "One row per ward per day"
