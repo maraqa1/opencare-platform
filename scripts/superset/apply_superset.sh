@@ -50,7 +50,7 @@ fi
 
 if command -v python3 >/dev/null 2>&1; then
   log "Syncing Superset dashboards from metadata"
-  export SUPERSET_URL="${SUPERSET_URL:-$SUPERSET_EMBED_URL}"
+  export SUPERSET_URL="${SUPERSET_URL:-http://superset.${NAMESPACE}.svc.cluster.local:8088}"
   if python3 "$ROOT_DIR/scripts/sync_dashboards.py" "$ROOT_DIR/dbt/opencare/models/metadata/dashboard_config.yml"; then
     log "Linking Superset dashboard chart relationships"
     kubectl -n "$NAMESPACE" exec -i deploy/superset -- sh -c 'cat >/tmp/dashboard_config.yml' \

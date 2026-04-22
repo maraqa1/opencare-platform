@@ -31,7 +31,7 @@ log "Checking portal service"
 run_cluster_http_check portal "$PORTAL_URL"
 
 log "Checking Superset service"
-run_cluster_http_check superset "$SUPERSET_EMBED_URL"
+run_cluster_http_check superset "http://superset:8088/health"
 
 if [[ -f "$SCRIPT_DIR/../manifests/airbyte/values.template.yaml" ]]; then
   effective_minio_access_key="$(resolve_running_minio_credential MINIO_ROOT_USER "$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$MINIO_ACCESS_KEY")")"

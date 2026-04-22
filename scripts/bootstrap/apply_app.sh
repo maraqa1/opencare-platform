@@ -34,32 +34,26 @@ EOF
   if [[ -n "$EXTERNAL_TLS_SECRET_NAME" ]]; then
     cat >>"$output_file" <<EOF
   tls:
+    - secretName: ${EXTERNAL_TLS_SECRET_NAME}
+      hosts:
 EOF
     if [[ -n "$PORTAL_HOST" ]]; then
       cat >>"$output_file" <<EOF
-    - secretName: ${EXTERNAL_TLS_SECRET_NAME}
-      hosts:
         - ${PORTAL_HOST}
 EOF
     fi
     if [[ -n "$API_HOST" && "$API_HOST" != "$PORTAL_HOST" ]]; then
       cat >>"$output_file" <<EOF
-    - secretName: ${EXTERNAL_TLS_SECRET_NAME}
-      hosts:
         - ${API_HOST}
 EOF
     fi
     if [[ -n "$ANALYTICS_HOST" && "$ANALYTICS_HOST" != "$PORTAL_HOST" && "$ANALYTICS_HOST" != "$API_HOST" ]]; then
       cat >>"$output_file" <<EOF
-    - secretName: ${EXTERNAL_TLS_SECRET_NAME}
-      hosts:
         - ${ANALYTICS_HOST}
 EOF
     fi
     if [[ -z "$PORTAL_HOST" && -z "$API_HOST" && -n "$EXTERNAL_HOST" ]]; then
       cat >>"$output_file" <<EOF
-    - secretName: ${EXTERNAL_TLS_SECRET_NAME}
-      hosts:
         - ${EXTERNAL_HOST}
 EOF
     fi
