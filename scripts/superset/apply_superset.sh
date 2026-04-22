@@ -39,6 +39,8 @@ kubectl -n "$NAMESPACE" create configmap superset-assets \
   --dry-run=client -o yaml | kubectl apply -f -
 
 apply_file "$ROOT_DIR/manifests/superset/deployment.yaml"
+log "Restarting Superset to pick up current assets and configuration"
+kubectl -n "$NAMESPACE" rollout restart deployment/superset >/dev/null
 wait_for_deployment superset
 ensure_superset_admin
 

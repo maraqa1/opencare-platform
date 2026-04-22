@@ -125,7 +125,11 @@ ANALYTICS_HOST="${ANALYTICS_HOST:-}"
 TLS_EMAIL="${TLS_EMAIL:-}"
 if [[ -z "${SUPERSET_EMBED_URL:-}" ]]; then
   if [[ -n "$ANALYTICS_HOST" ]]; then
-    SUPERSET_EMBED_URL="http://${ANALYTICS_HOST}"
+    if [[ -n "$EXTERNAL_TLS_SECRET_NAME" || "$TRAEFIK_ENTRYPOINTS" == *websecure* ]]; then
+      SUPERSET_EMBED_URL="https://${ANALYTICS_HOST}"
+    else
+      SUPERSET_EMBED_URL="http://${ANALYTICS_HOST}"
+    fi
   else
     SUPERSET_EMBED_URL="http://superset:8088"
   fi
