@@ -18,6 +18,7 @@ PHASES=(
   "data:$ROOT_DIR/scripts/minio/apply_minio.sh"
   "data:$ROOT_DIR/scripts/bootstrap/apply_redis.sh"
   "identity:$ROOT_DIR/scripts/keycloak/apply_keycloak.sh"
+  "tls:$ROOT_DIR/scripts/tls/apply_cert_manager.sh"
   "app:$ROOT_DIR/scripts/bootstrap/apply_app.sh"
   "analytics:$ROOT_DIR/scripts/superset/apply_superset.sh"
   "analytics:$ROOT_DIR/scripts/dbt/apply_dbt.sh"

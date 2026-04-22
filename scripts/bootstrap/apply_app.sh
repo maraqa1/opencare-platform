@@ -201,6 +201,19 @@ if [[ "$ENABLE_EXTERNAL_INGRESS" == "true" ]]; then
   render_app_ingress "$rendered_ingress"
   kubectl apply -f "$rendered_ingress"
   rm -f "$rendered_ingress"
+
+  if [[ -n "$EXTERNAL_TLS_SECRET_NAME" ]]; then
+    log "Waiting for TLS secret/${EXTERNAL_TLS_SECRET_NAME}"
+    deadline=$((SECONDS + TIMEOUT_SECONDS))
+    while ! kubectl -n "$NAMESPACE" get secret "$EXTERNAL_TLS_SECRET_NAME" >/dev/null 2>&1; do
+      if (( SECONDS >= deadline )); then
+        kubectl -n "$NAMESPACE" get certificate,certificaterequest,order,challenge 2>/dev/null || true
+        kubectl -n "$NAMESPACE" describe ingress opencare-app || true
+        fail "Timed out waiting for TLS secret: ${EXTERNAL_TLS_SECRET_NAME}"
+      fi
+      sleep 5
+    done
+  fi
 else
   log_skip "External ingress disabled via ENABLE_EXTERNAL_INGRESS=${ENABLE_EXTERNAL_INGRESS}"
 fi

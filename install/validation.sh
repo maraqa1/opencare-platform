@@ -27,6 +27,11 @@ run_cluster_command decision-schema postgres:16-alpine sh -c "psql postgresql://
 log "Checking decision API"
 run_cluster_http_check decisions "${BACKEND_URL}/api/v1/decisions/count"
 
+if [[ -n "$EXTERNAL_TLS_SECRET_NAME" ]]; then
+  log "Checking TLS certificate secret"
+  kubectl -n "$NAMESPACE" get secret "$EXTERNAL_TLS_SECRET_NAME" >/dev/null
+fi
+
 log "Checking portal service"
 run_cluster_http_check portal "$PORTAL_URL"
 
