@@ -33,6 +33,18 @@ type ApiDecision = {
   owner_team?: string | null;
 };
 
+type DecisionLogItem = {
+  id: number;
+  previous_state?: string | null;
+  new_state: string;
+  action: string;
+  performed_by?: string | null;
+  performed_by_role?: string | null;
+  reason?: string | null;
+  notes?: string | null;
+  created_at: string;
+};
+
 function statusLabel(state: DecisionState) {
   switch (state) {
     case "assigned":
@@ -80,6 +92,20 @@ function toneForDecision(decision: ApiDecision) {
   return decision.priority === "urgent" || decision.priority === "high" ? "critical" : "warning";
 }
 
+function formatLogTime(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
 export function DecisionCards({
   decisions,
   resolved,
@@ -91,6 +117,9 @@ export function DecisionCards({
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Decision API loading. Static demo queue remains visible until live data responds.");
   const [checkedActions, setCheckedActions] = useState<Record<string, Record<number, boolean>>>({});
+  const [openLogs, setOpenLogs] = useState<Record<number, boolean>>({});
+  const [decisionLogs, setDecisionLogs] = useState<Record<number, DecisionLogItem[]>>({});
+  const [logMessages, setLogMessages] = useState<Record<number, string>>({});
 
   async function loadDecisions() {
     setLoading(true);
@@ -186,6 +215,52 @@ export function DecisionCards({
     }));
   }
 
+  async function toggleDecisionLog(decision: ApiDecision) {
+    const nextOpen = !openLogs[decision.id];
+    setOpenLogs((current) => ({ ...current, [decision.id]: nextOpen }));
+
+    if (!nextOpen || decisionLogs[decision.id]) {
+      return;
+    }
+
+    if (decision.id < 0) {
+      setDecisionLogs((current) => ({
+        ...current,
+        [decision.id]: [
+          {
+            id: decision.id,
+            previous_state: null,
+            new_state: decision.status,
+            action: "demo",
+            performed_by: "browser",
+            performed_by_role: "demo",
+            notes: "Demo fallback card. Persisted audit rows appear after backend generation.",
+            created_at: new Date().toISOString(),
+          },
+        ],
+      }));
+      return;
+    }
+
+    setLogMessages((current) => ({ ...current, [decision.id]: "Loading decision log..." }));
+    try {
+      const response = await fetch(`/api/portal/api/v1/decisions/${decision.id}/log`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = (await response.json()) as { items?: DecisionLogItem[] };
+      setDecisionLogs((current) => ({ ...current, [decision.id]: payload.items ?? [] }));
+      setLogMessages((current) => ({ ...current, [decision.id]: "" }));
+    } catch (error) {
+      setLogMessages((current) => ({
+        ...current,
+        [decision.id]: error instanceof Error ? `Unable to load decision log: ${error.message}` : "Unable to load decision log.",
+      }));
+    }
+  }
+
   return (
     <>
       <section className="decision-stack">
@@ -276,7 +351,42 @@ export function DecisionCards({
                 <button className="secondary-link" disabled={state === "completed" || state === "dismissed"} onClick={() => transitionDecision(decision, "dismiss")} type="button">
                   Dismiss with Reason
                 </button>
+                <button className="secondary-link" onClick={() => toggleDecisionLog(decision)} type="button">
+                  {openLogs[decision.id] ? "Hide Decision Log" : "View Decision Log"}
+                </button>
               </div>
+              {openLogs[decision.id] ? (
+                <div className="decision-log-panel">
+                  <div className="panel-header">
+                    <div>
+                      <p className="eyebrow">Decision Log</p>
+                      <h4>Audit timeline</h4>
+                    </div>
+                    <span className="summary-badge normal">{decisionLogs[decision.id]?.length ?? 0} events</span>
+                  </div>
+                  {logMessages[decision.id] ? <p className="section-subtitle mono">{logMessages[decision.id]}</p> : null}
+                  <div className="decision-log-list">
+                    {(decisionLogs[decision.id] ?? []).map((item) => (
+                      <div className="decision-log-item" key={item.id}>
+                        <span className="status-dot live" />
+                        <div>
+                          <strong>
+                            {item.action.toUpperCase()} {item.previous_state ? `${item.previous_state} -> ${item.new_state}` : item.new_state}
+                          </strong>
+                          <p>
+                            {formatLogTime(item.created_at)} by {item.performed_by ?? "system"} ({item.performed_by_role ?? "system"})
+                          </p>
+                          {item.reason ? <p>Reason: {item.reason}</p> : null}
+                          {item.notes ? <p>Notes: {item.notes}</p> : null}
+                        </div>
+                      </div>
+                    ))}
+                    {!logMessages[decision.id] && (decisionLogs[decision.id] ?? []).length === 0 ? (
+                      <p className="section-subtitle">No audit events found for this decision yet.</p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
             </article>
           );
         })}
