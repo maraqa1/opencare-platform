@@ -157,7 +157,8 @@ export function DecisionCards({
     }
     const updated = (await response.json()) as ApiDecision;
     setApiDecisions((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    setMessage(`Decision ${updated.id} moved to ${statusLabel(updated.status)} and logged in decision.decision_log.`);
+    const notificationNote = action === "complete" ? " Completion email was sent or recorded in notification_log." : "";
+    setMessage(`Decision ${updated.id} moved to ${statusLabel(updated.status)} and logged in decision.decision_log.${notificationNote}`);
   }
 
   function executeAll(decision: ApiDecision) {

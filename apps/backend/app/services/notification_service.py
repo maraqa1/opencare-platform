@@ -24,8 +24,33 @@ def send_decision_email(decision: dict[str, Any], recipient_email: str, notifica
     subject = f"[OpenCare] {priority}: Action required - {ward_label}"
     if notification_type == "escalation":
         subject = f"[OpenCare] ESCALATION: Unactioned {priority} decision - {ward_label}"
+    elif notification_type == "completion":
+        subject = f"[OpenCare] COMPLETED: Decision executed - {ward_label}"
 
-    body = f"""You have a {priority} decision requiring action in OpenCare.
+    if notification_type == "completion":
+        body = f"""A decision has been executed in OpenCare.
+
+Ward: {ward_label}
+Type: {decision_type}
+Priority: {priority}
+Status: COMPLETED
+
+Expected impact:
+- Beds released: {decision.get("expected_beds_released") or 0}
+- Occupancy before: {decision.get("expected_occupancy_before") or "n/a"}%
+- Occupancy after: {decision.get("expected_occupancy_after") or "n/a"}%
+- Risk change: {decision.get("expected_risk_reduction") or "pending"}
+
+OpenCare will measure the outcome against the latest ward snapshot after the configured measurement window.
+
+Review decision:
+https://opencare.opendatalake.com/use-cases/bed-pressure/decisions
+
+No patient-identifiable information is included in this notification.
+This is an automated message from OpenCare. Do not reply to this email.
+"""
+    else:
+        body = f"""You have a {priority} decision requiring action in OpenCare.
 
 Ward: {ward_label}
 Type: {decision_type}

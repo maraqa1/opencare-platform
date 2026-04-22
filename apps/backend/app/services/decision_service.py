@@ -748,6 +748,19 @@ def transition_decision(
                 """,
                 (new_state, _json(actions), decision_id),
             )
+            completion_recipient = row["assignee_email"] or settings.decision_default_email
+            completion_payload = {**row, "status": new_state, "recommended_actions": actions}
+            status, error = send_decision_email(completion_payload, completion_recipient, "completion")
+            _log_notification(
+                conn,
+                decision_id,
+                "completion",
+                completion_recipient,
+                row["owner_team"],
+                row["assignee_user"],
+                status,
+                error,
+            )
         elif action == "dismiss":
             reason = str(payload.get("reason") or "").strip()
             if not reason:
