@@ -96,6 +96,16 @@ code {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.brand-logo {
+  display: block;
+  width: auto;
+  max-width: 176px;
+  height: 42px;
+  object-fit: contain;
+  margin-bottom: 14px;
+  filter: brightness(0) invert(1);
+}
+
 .brand-kicker {
   display: inline-flex;
   align-items: center;

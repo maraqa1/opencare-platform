@@ -47,6 +47,11 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
     <div className="portal-shell">
       <aside className="sidebar">
         <div className="brand">
+          <img
+            src="https://yottalogica.com/wp-content/uploads/logo3.png"
+            alt="YottaLogica"
+            className="brand-logo"
+          />
           <span className="brand-kicker">OpenCare</span>
           <h1>Hospital Operations Intelligence</h1>
           <p>
