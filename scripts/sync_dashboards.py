@@ -28,6 +28,20 @@ class SupersetClient:
         self.opener = request.build_opener(request.HTTPCookieProcessor(self.cookie_jar))
 
     def authenticate(self) -> None:
+        api_payload = {
+            "username": self.username,
+            "password": self.password,
+            "provider": "db",
+            "refresh": True,
+        }
+        api_response = self._request(
+            "POST",
+            "/api/v1/security/login",
+            payload=api_payload,
+            use_auth=False,
+        )
+        self.access_token = api_response.get("access_token")
+
         login_page = self._open_raw("GET", "/login/", use_auth=False)
         csrf_token = extract_csrf_token(login_page)
         form_payload = parse.urlencode(
@@ -45,7 +59,7 @@ class SupersetClient:
             content_type="application/x-www-form-urlencoded",
             referer=f"{self.base_url}/login/",
         )
-        csrf_response = self._request("GET", "/api/v1/security/csrf_token/", use_auth=False)
+        csrf_response = self._request("GET", "/api/v1/security/csrf_token/")
         self.csrf_token = csrf_response.get("result")
 
     def get(self, path: str) -> dict[str, Any]:
