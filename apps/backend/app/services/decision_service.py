@@ -534,12 +534,13 @@ def generate_decisions() -> dict[str, Any]:
             exists = conn.execute(
                 """
                 select id from decision.decision_queue
-                where entity_id = %s
+                where use_case = %s
+                  and entity_id = %s
                   and decision_type = %s
                   and status in ('recommended', 'assigned', 'in_progress')
                 limit 1
                 """,
-                (decision["entity_id"], decision["decision_type"]),
+                (decision["use_case"], decision["entity_id"], decision["decision_type"]),
             ).fetchone()
             if exists:
                 continue
@@ -719,25 +720,30 @@ def list_resolved_decisions(use_case: str | None = None, limit: int = 10) -> lis
     with connect() as conn:
         rows = conn.execute(
             f"""
-            select
-              q.id,
-              q.entity_name,
-              q.title,
-              q.completed_at,
-              q.expected_beds_released,
-              q.expected_occupancy_before,
-              q.expected_occupancy_after,
-              q.expected_risk_reduction,
-              o.actual_beds_released,
-              o.actual_occupancy_after,
-              o.actual_risk_after,
-              o.prediction_accurate,
-              o.accuracy_notes,
-              o.measured_at
-            from decision.decision_queue q
-            left join decision.decision_outcomes o on o.decision_id = q.id
-            {where_sql}
-            order by coalesce(o.measured_at, q.completed_at) desc nulls last
+            select *
+            from (
+              select distinct on (q.entity_id, q.decision_type)
+                q.id,
+                q.entity_name,
+                q.title,
+                q.completed_at,
+                q.expected_beds_released,
+                q.expected_occupancy_before,
+                q.expected_occupancy_after,
+                q.expected_risk_reduction,
+                o.actual_beds_released,
+                o.actual_occupancy_after,
+                o.actual_risk_after,
+                o.prediction_accurate,
+                o.accuracy_notes,
+                o.measured_at,
+                coalesce(o.measured_at, q.completed_at) as sort_at
+              from decision.decision_queue q
+              left join decision.decision_outcomes o on o.decision_id = q.id
+              {where_sql}
+              order by q.entity_id, q.decision_type, coalesce(o.measured_at, q.completed_at) desc nulls last
+            ) resolved
+            order by resolved.sort_at desc nulls last
             limit %s
             """,
             [*params, limit],

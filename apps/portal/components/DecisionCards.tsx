@@ -129,7 +129,7 @@ export function DecisionCards() {
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Decision API loading.");
-  const [checkedActions, setCheckedActions] = useState<Record<string, Record<number, boolean>>>({});
+  const [checkedActions, setCheckedActions] = useState<Record<number, Record<number, boolean>>>({});
   const [openLogs, setOpenLogs] = useState<Record<number, boolean>>({});
   const [decisionLogs, setDecisionLogs] = useState<Record<number, DecisionLogItem[]>>({});
   const [logMessages, setLogMessages] = useState<Record<number, string>>({});
@@ -222,7 +222,7 @@ export function DecisionCards() {
 
     if (action === "complete") {
       body.actions_completed = decision.recommended_actions
-        .filter((item, index) => checkedActions[decision.title]?.[index] ?? Boolean(item.completed))
+        .filter((item) => checkedActions[decision.id]?.[item.order] ?? Boolean(item.completed))
         .map((item) => item.order);
       body.notes = "Executed from OpenCare Decisions tab.";
     }
@@ -260,12 +260,12 @@ export function DecisionCards() {
     setMessage(`Decision ${updated.id} moved to ${statusLabel(updated.status)} and logged in decision.decision_log.`);
   }
 
-  function toggleAction(title: string, index: number) {
+  function toggleAction(decisionId: number, actionOrder: number) {
     setCheckedActions((current) => ({
       ...current,
-      [title]: {
-        ...(current[title] ?? {}),
-        [index]: !(current[title]?.[index] ?? false),
+      [decisionId]: {
+        ...(current[decisionId] ?? {}),
+        [actionOrder]: !(current[decisionId]?.[actionOrder] ?? false),
       },
     }));
   }
@@ -402,11 +402,11 @@ export function DecisionCards() {
                   </p>
                 </div>
                 <div className="action-list">
-                  {decision.recommended_actions.map((action, actionIndex) => (
+                  {decision.recommended_actions.map((action) => (
                     <label className="action-check" key={`${decision.id}-${action.order}`}>
                       <input
-                        checked={checkedActions[decision.title]?.[actionIndex] ?? Boolean(action.completed)}
-                        onChange={() => toggleAction(decision.title, actionIndex)}
+                        checked={checkedActions[decision.id]?.[action.order] ?? Boolean(action.completed)}
+                        onChange={() => toggleAction(decision.id, action.order)}
                         type="checkbox"
                       />
                       <span>{action.action}</span>
@@ -416,7 +416,7 @@ export function DecisionCards() {
                 <div className="button-row">
                   <button
                     className="button primary"
-                    disabled={state === "completed" || state === "dismissed" || state === "expired"}
+                    disabled={state !== "assigned" && state !== "in_progress"}
                     onClick={() => void transitionDecision(decision, "complete")}
                     type="button"
                   >
@@ -502,7 +502,7 @@ export function DecisionCards() {
             <p className="eyebrow">Resolved - Last 7 Decisions</p>
             <h3 className="section-heading">Measured outcomes, not just completed tasks</h3>
           </div>
-          <span className="summary-badge normal">{resolved.length} measured or recently completed</span>
+          <span className="summary-badge normal">{resolved.length} latest resolved actions</span>
         </div>
         <div className="compact-feed">
           {resolved.length ? (
