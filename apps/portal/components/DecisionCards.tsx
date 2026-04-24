@@ -325,7 +325,7 @@ export function DecisionCards() {
       <section className="panel decision-control-strip">
         <div>
           <p className="eyebrow">Live Decision Queue</p>
-          <h3 className="section-heading">Signal -> decision -> action -> outcome</h3>
+          <h3 className="section-heading">Signal -&gt; decision -&gt; action -&gt; outcome</h3>
           <p className="section-subtitle mono">{loading ? "Loading persisted decisions..." : message}</p>
         </div>
         <div className="button-row">
