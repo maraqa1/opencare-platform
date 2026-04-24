@@ -59,8 +59,8 @@ class SupersetClient:
             content_type="application/x-www-form-urlencoded",
             referer=f"{self.base_url}/login/",
         )
-        csrf_response = self._request("GET", "/api/v1/security/csrf_token/")
-        self.csrf_token = csrf_response.get("result")
+        welcome_page = self._open_raw("GET", "/superset/welcome/", use_auth=False)
+        self.csrf_token = extract_app_csrf_token(welcome_page)
 
     def get(self, path: str) -> dict[str, Any]:
         return self._request("GET", path)
@@ -131,6 +131,22 @@ def extract_csrf_token(html: str) -> str:
     if not match:
         raise RuntimeError("Superset login page did not include a csrf_token field")
     return match.group(1)
+
+
+def extract_app_csrf_token(html: str) -> str:
+    patterns = (
+        r'"csrfToken":"([^"]+)"',
+        r'"csrf_token":"([^"]+)"',
+        r"'csrfToken':'([^']+)'",
+        r"'csrf_token':'([^']+)'",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, html)
+        if match:
+            return match.group(1)
+    if 'name="csrf_token"' in html:
+        return extract_csrf_token(html)
+    raise RuntimeError("Superset welcome page did not expose an application csrf token")
 
 
 def load_dashboard_config(config_path: Path) -> dict[str, Any]:
