@@ -627,6 +627,7 @@ def list_decisions(
     use_case: str | None = None,
     entity_id: str | None = None,
     priority: str | None = None,
+    active_only: bool = False,
     limit: int = 20,
     offset: int = 0,
 ) -> dict[str, Any]:
@@ -645,6 +646,9 @@ def list_decisions(
     if priority:
         filters.append("priority = %s")
         params.append(priority)
+    if active_only:
+        filters.append("status = any(%s)")
+        params.append(list(ACTIVE_STATUSES))
 
     where_sql = " where " + " and ".join(filters) if filters else ""
     with connect() as conn:

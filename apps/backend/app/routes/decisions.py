@@ -38,10 +38,19 @@ def decisions_index(
     use_case: str | None = Query(default=None),
     entity_id: str | None = Query(default=None),
     priority: str | None = Query(default=None),
+    active_only: bool = Query(default=False),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
-    return list_decisions(status=status, use_case=use_case, entity_id=entity_id, priority=priority, limit=limit, offset=offset)
+    return list_decisions(
+        status=status,
+        use_case=use_case,
+        entity_id=entity_id,
+        priority=priority,
+        active_only=active_only,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/decisions/count")

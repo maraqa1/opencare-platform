@@ -139,7 +139,7 @@ export function DecisionCards() {
     setLoading(true);
     try {
       const [decisionsResponse, countsResponse, resolvedResponse] = await Promise.all([
-        fetch("/api/portal/api/v1/decisions?use_case=bed_pressure&limit=50", { cache: "no-store" }),
+        fetch("/api/portal/api/v1/decisions?use_case=bed_pressure&active_only=true&limit=50", { cache: "no-store" }),
         fetch("/api/portal/api/v1/decisions/count?use_case=bed_pressure", { cache: "no-store" }),
         fetch("/api/portal/api/v1/decisions/resolved?use_case=bed_pressure&limit=7", { cache: "no-store" }),
       ]);
