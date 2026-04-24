@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -27,20 +28,24 @@ class SupersetClient:
         self.opener = request.build_opener(request.HTTPCookieProcessor(self.cookie_jar))
 
     def authenticate(self) -> None:
-        payload = {
-            "username": self.username,
-            "password": self.password,
-            "provider": "db",
-            "refresh": True,
-        }
-        response = self._request(
+        login_page = self._open_raw("GET", "/login/", use_auth=False)
+        csrf_token = extract_csrf_token(login_page)
+        form_payload = parse.urlencode(
+            {
+                "username": self.username,
+                "password": self.password,
+                "csrf_token": csrf_token,
+            }
+        ).encode("utf-8")
+        self._open_raw(
             "POST",
-            "/api/v1/security/login",
-            payload=payload,
+            "/login/",
+            payload=form_payload,
             use_auth=False,
+            content_type="application/x-www-form-urlencoded",
+            referer=f"{self.base_url}/login/",
         )
-        self.access_token = response["access_token"]
-        csrf_response = self.get("/api/v1/security/csrf_token/")
+        csrf_response = self._request("GET", "/api/v1/security/csrf_token/", use_auth=False)
         self.csrf_token = csrf_response.get("result")
 
     def get(self, path: str) -> dict[str, Any]:
@@ -70,19 +75,46 @@ class SupersetClient:
         if payload is not None:
             body = json.dumps(payload).encode("utf-8")
 
-        http_request = request.Request(
-            url=f"{self.base_url}{path}",
-            method=method,
-            data=body,
-            headers=headers,
-        )
-
         try:
-            with self.opener.open(http_request, timeout=30) as response:
-                return json.loads(response.read().decode("utf-8"))
+            response_text = self._open_raw(method, path, payload=body, use_auth=use_auth, headers=headers)
+            return json.loads(response_text)
         except error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="ignore")
             raise RuntimeError(f"{method} {path} failed with {exc.code}: {detail}") from exc
+
+    def _open_raw(
+        self,
+        method: str,
+        path: str,
+        payload: bytes | None = None,
+        use_auth: bool = True,
+        headers: dict[str, str] | None = None,
+        content_type: str | None = None,
+        referer: str | None = None,
+    ) -> str:
+        request_headers = dict(headers or {})
+        if use_auth and self.access_token:
+            request_headers.setdefault("Authorization", f"Bearer {self.access_token}")
+        if content_type:
+            request_headers["Content-Type"] = content_type
+        if referer:
+            request_headers["Referer"] = referer
+
+        http_request = request.Request(
+            url=f"{self.base_url}{path}",
+            method=method,
+            data=payload,
+            headers=request_headers,
+        )
+        with self.opener.open(http_request, timeout=30) as response:
+            return response.read().decode("utf-8")
+
+
+def extract_csrf_token(html: str) -> str:
+    match = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', html)
+    if not match:
+        raise RuntimeError("Superset login page did not include a csrf_token field")
+    return match.group(1)
 
 
 def load_dashboard_config(config_path: Path) -> dict[str, Any]:
