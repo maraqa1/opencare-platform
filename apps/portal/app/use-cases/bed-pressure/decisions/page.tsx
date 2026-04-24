@@ -1,7 +1,6 @@
 import { DecisionCards } from "@/components/DecisionCards";
 import { PageFrame } from "@/components/page-frame";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
-import { decisionQueue, resolvedDecisions } from "@/lib/use-cases";
 
 export default function BedPressureDecisionsPage() {
   return (
@@ -26,7 +25,7 @@ export default function BedPressureDecisionsPage() {
           </div>
         </section>
 
-        <DecisionCards decisions={decisionQueue} resolved={resolvedDecisions} />
+        <DecisionCards />
       </UseCaseWorkspace>
     </PageFrame>
   );

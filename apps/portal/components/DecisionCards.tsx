@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import type { DecisionItem, ResolvedDecision } from "@/lib/use-cases";
-
 type DecisionState = "recommended" | "assigned" | "in_progress" | "completed" | "dismissed" | "expired";
 
 type ApiAction = {
@@ -30,6 +28,7 @@ type ApiDecision = {
   expected_risk_reduction?: string;
   status: DecisionState;
   assignee_user?: string | null;
+  assignee_email?: string | null;
   owner_team?: string | null;
 };
 
@@ -43,6 +42,30 @@ type DecisionLogItem = {
   reason?: string | null;
   notes?: string | null;
   created_at: string;
+};
+
+type DecisionCounts = {
+  recommended: number;
+  assigned: number;
+  in_progress: number;
+  total_active: number;
+  urgent_count: number;
+};
+
+type ResolvedDecision = {
+  id: number;
+  title: string;
+  entity_name: string;
+  completed_at?: string | null;
+  measured_at?: string | null;
+  expected_beds_released?: number | null;
+  actual_beds_released?: number | null;
+  expected_occupancy_after?: number | null;
+  actual_occupancy_after?: number | null;
+  expected_risk_reduction?: string | null;
+  actual_risk_after?: string | null;
+  prediction_accurate?: boolean | null;
+  accuracy_notes?: string | null;
 };
 
 function statusLabel(state: DecisionState) {
@@ -60,32 +83,6 @@ function statusLabel(state: DecisionState) {
     default:
       return "RECOMMENDED";
   }
-}
-
-function fallbackToApi(decision: DecisionItem, index: number): ApiDecision {
-  return {
-    id: -1 - index,
-    entity_name: decision.ward,
-    priority: decision.urgency.toLowerCase(),
-    priority_score: decision.urgency === "URGENT" ? 92 : decision.urgency === "HIGH" ? 74 : 48,
-    title: `${decision.ward}: ${decision.title}`,
-    signal_summary: decision.signal,
-    decision_summary: decision.decision,
-    rationale: decision.rationale,
-    confidence_level: decision.confidence.split(" ")[0],
-    confidence_detail: decision.confidence,
-    recommended_actions: decision.actions.map((action, actionIndex) => ({
-      action,
-      order: actionIndex + 1,
-      completed: false,
-    })),
-    expected_beds_released: decision.title.includes("3") ? 3 : decision.title.includes("surge") ? 4 : 0,
-    expected_occupancy_before: decision.ward === "ICU-01" ? 97.3 : decision.ward === "Card-01" ? 93.1 : 91,
-    expected_occupancy_after: decision.ward === "ICU-01" ? 87.3 : decision.ward === "Card-01" ? 81.8 : 91,
-    expected_risk_reduction: decision.ward === "ICU-01" ? "CRIT -> WATCH" : "HIGH -> WATCH",
-    status: "recommended",
-    owner_team: "Bed Management Team",
-  };
 }
 
 function toneForDecision(decision: ApiDecision) {
@@ -106,39 +103,76 @@ function formatLogTime(value: string) {
   }).format(parsed);
 }
 
-export function DecisionCards({
-  decisions,
-  resolved,
-}: {
-  decisions: DecisionItem[];
-  resolved: ResolvedDecision[];
-}) {
-  const [apiDecisions, setApiDecisions] = useState<ApiDecision[]>(() => decisions.map(fallbackToApi));
+function formatShortDate(value?: string | null) {
+  if (!value) {
+    return "Pending";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+  }).format(parsed);
+}
+
+export function DecisionCards() {
+  const [apiDecisions, setApiDecisions] = useState<ApiDecision[]>([]);
+  const [resolved, setResolved] = useState<ResolvedDecision[]>([]);
+  const [counts, setCounts] = useState<DecisionCounts>({
+    recommended: 0,
+    assigned: 0,
+    in_progress: 0,
+    total_active: 0,
+    urgent_count: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("Decision API loading. Static demo queue remains visible until live data responds.");
+  const [message, setMessage] = useState("Decision API loading.");
   const [checkedActions, setCheckedActions] = useState<Record<string, Record<number, boolean>>>({});
   const [openLogs, setOpenLogs] = useState<Record<number, boolean>>({});
   const [decisionLogs, setDecisionLogs] = useState<Record<number, DecisionLogItem[]>>({});
   const [logMessages, setLogMessages] = useState<Record<number, string>>({});
+  const [generating, setGenerating] = useState(false);
 
   async function loadDecisions() {
     setLoading(true);
     try {
-      const response = await fetch("/api/portal/api/v1/decisions?use_case=bed_pressure&limit=50", {
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        throw new Error(`Decision API returned ${response.status}`);
+      const [decisionsResponse, countsResponse, resolvedResponse] = await Promise.all([
+        fetch("/api/portal/api/v1/decisions?use_case=bed_pressure&limit=50", { cache: "no-store" }),
+        fetch("/api/portal/api/v1/decisions/count?use_case=bed_pressure", { cache: "no-store" }),
+        fetch("/api/portal/api/v1/decisions/resolved?use_case=bed_pressure&limit=7", { cache: "no-store" }),
+      ]);
+
+      if (!decisionsResponse.ok || !countsResponse.ok || !resolvedResponse.ok) {
+        throw new Error(
+          `Decision API returned ${decisionsResponse.status}/${countsResponse.status}/${resolvedResponse.status}`,
+        );
       }
-      const payload = (await response.json()) as { items?: ApiDecision[] };
-      if (payload.items?.length) {
-        setApiDecisions(payload.items);
-        setMessage("Live decision queue loaded from decision.decision_queue.");
+
+      const decisionPayload = (await decisionsResponse.json()) as { items?: ApiDecision[] };
+      const countPayload = (await countsResponse.json()) as Partial<DecisionCounts>;
+      const resolvedPayload = (await resolvedResponse.json()) as { items?: ResolvedDecision[] };
+
+      setApiDecisions(decisionPayload.items ?? []);
+      setCounts({
+        recommended: countPayload.recommended ?? 0,
+        assigned: countPayload.assigned ?? 0,
+        in_progress: countPayload.in_progress ?? 0,
+        total_active: countPayload.total_active ?? 0,
+        urgent_count: countPayload.urgent_count ?? 0,
+      });
+      setResolved(resolvedPayload.items ?? []);
+
+      if (decisionPayload.items?.length) {
+        setMessage("Live closed-loop decision queue loaded from decision.decision_queue.");
       } else {
-        setMessage("No persisted decisions yet. Showing demo queue until the generator creates live recommendations.");
+        setMessage("No live bed-pressure decisions exist yet. Generate the queue from current forecast and anomaly evidence.");
       }
     } catch (error) {
       setMessage(error instanceof Error ? `Decision API unavailable: ${error.message}` : "Decision API unavailable.");
+      setApiDecisions([]);
+      setResolved([]);
     } finally {
       setLoading(false);
     }
@@ -148,24 +182,51 @@ export function DecisionCards({
     void loadDecisions();
   }, []);
 
-  async function transitionDecision(decision: ApiDecision, action: "start" | "complete" | "dismiss") {
-    if (decision.id < 0) {
-      setMessage("Demo decision updated locally. Persisted state starts after the backend generator creates a database row.");
-      setApiDecisions((current) =>
-        current.map((item) =>
-          item.id === decision.id
-            ? { ...item, status: action === "complete" ? "completed" : action === "start" ? "in_progress" : "dismissed" }
-            : item,
-        ),
+  async function generateQueue() {
+    setGenerating(true);
+    try {
+      const response = await fetch("/api/portal/api/v1/decisions/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = (await response.json()) as { generated?: number; generation_run_id?: string };
+      setMessage(
+        `Decision generator completed. ${payload.generated ?? 0} recommendations created${payload.generation_run_id ? ` (${payload.generation_run_id})` : ""}.`,
       );
-      return;
+      await loadDecisions();
+    } catch (error) {
+      setMessage(error instanceof Error ? `Decision generation failed: ${error.message}` : "Decision generation failed.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function transitionDecision(decision: ApiDecision, action: "assign" | "start" | "complete" | "dismiss") {
+    const body: Record<string, unknown> = {};
+
+    if (action === "assign") {
+      const assigneeUser = window.prompt("Assign to user/team member:", decision.assignee_user ?? "bed_manager");
+      if (!assigneeUser?.trim()) {
+        setMessage("Assignment cancelled.");
+        return;
+      }
+      const assigneeEmail = window.prompt("Assignee email for notification (optional):", decision.assignee_email ?? "");
+      body.assignee_user = assigneeUser.trim();
+      if (assigneeEmail?.trim()) {
+        body.assignee_email = assigneeEmail.trim();
+      }
     }
 
-    const body: Record<string, unknown> = {};
     if (action === "complete") {
-      body.actions_completed = decision.recommended_actions.map((item) => item.order);
+      body.actions_completed = decision.recommended_actions
+        .filter((item, index) => checkedActions[decision.title]?.[index] ?? Boolean(item.completed))
+        .map((item) => item.order);
       body.notes = "Executed from OpenCare Decisions tab.";
     }
+
     if (action === "dismiss") {
       const reason = window.prompt("Dismiss reason is required for audit trail:");
       if (!reason?.trim()) {
@@ -180,29 +241,23 @@ export function DecisionCards({
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
+
     if (!response.ok) {
       let detail = `HTTP ${response.status}`;
       try {
         const payload = (await response.json()) as { detail?: string };
         detail = payload.detail ?? detail;
       } catch {
-        // Keep the HTTP status fallback if the backend did not return JSON.
+        // Keep status fallback.
       }
       setMessage(`Decision update failed: ${detail}.`);
       return;
     }
+
     const updated = (await response.json()) as ApiDecision;
     setApiDecisions((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    const notificationNote = action === "complete" ? " Completion email was sent or recorded in notification_log." : "";
-    setMessage(`Decision ${updated.id} moved to ${statusLabel(updated.status)} and logged in decision.decision_log.${notificationNote}`);
-  }
-
-  function executeAll(decision: ApiDecision) {
-    setCheckedActions((current) => ({
-      ...current,
-      [decision.title]: Object.fromEntries(decision.recommended_actions.map((_, index) => [index, true])),
-    }));
-    void transitionDecision(decision, "complete");
+    await loadDecisions();
+    setMessage(`Decision ${updated.id} moved to ${statusLabel(updated.status)} and logged in decision.decision_log.`);
   }
 
   function toggleAction(title: string, index: number) {
@@ -220,25 +275,6 @@ export function DecisionCards({
     setOpenLogs((current) => ({ ...current, [decision.id]: nextOpen }));
 
     if (!nextOpen || decisionLogs[decision.id]) {
-      return;
-    }
-
-    if (decision.id < 0) {
-      setDecisionLogs((current) => ({
-        ...current,
-        [decision.id]: [
-          {
-            id: decision.id,
-            previous_state: null,
-            new_state: decision.status,
-            action: "demo",
-            performed_by: "browser",
-            performed_by_role: "demo",
-            notes: "Demo fallback card. Persisted audit rows appear after backend generation.",
-            created_at: new Date().toISOString(),
-          },
-        ],
-      }));
       return;
     }
 
@@ -263,149 +299,236 @@ export function DecisionCards({
 
   return (
     <>
-      <section className="decision-stack">
-        <p className="section-subtitle mono">{loading ? "Loading persisted decisions..." : message}</p>
-        {apiDecisions.map((decision, index) => {
-          const tone = toneForDecision(decision);
-          const state = decision.status;
-          const before = Number(decision.expected_occupancy_before ?? 0);
-          const after = Number(decision.expected_occupancy_after ?? before);
-          return (
-            <article className={`decision-card ${tone}`} key={decision.id}>
-              <div className="panel-header">
-                <div>
-                  <p className="eyebrow">Decision {index + 1}</p>
-                  <h3>{decision.title}</h3>
-                  <p className="section-subtitle">
-                    Owner: {decision.assignee_user ?? decision.owner_team ?? "Unassigned"} | Score:{" "}
-                    <span className="mono">{Number(decision.priority_score).toFixed(1)}</span>
-                  </p>
-                </div>
-                <div className="summary-badges">
-                  <span className={`summary-badge ${tone === "critical" ? "critical" : "warning"}`}>
-                    {decision.priority.toUpperCase()}
-                  </span>
-                  <span className="summary-badge normal">{statusLabel(state)}</span>
-                </div>
-              </div>
-              <div className="decision-grid">
-                <div>
-                  <p className="eyebrow">Signal</p>
-                  <p>{decision.signal_summary}</p>
-                </div>
-                <div>
-                  <p className="eyebrow">Decision</p>
-                  <p>{decision.decision_summary}</p>
-                </div>
-                <div>
-                  <p className="eyebrow">Rationale</p>
-                  <p>{decision.rationale}</p>
-                </div>
-                <div>
-                  <p className="eyebrow">Confidence</p>
-                  <p className="mono">{decision.confidence_detail ?? decision.confidence_level ?? "Confidence pending"}</p>
-                </div>
-              </div>
-              <div className="impact-simulation">
-                <p className="eyebrow">Impact Simulation</p>
-                <div className="impact-columns">
-                  <div>
-                    <span>Before</span>
-                    <strong>{before.toFixed(1)}%</strong>
-                    <div className="impact-bar">
-                      <span style={{ width: `${Math.max(0, Math.min(100, before))}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <span>After</span>
-                    <strong>{after.toFixed(1)}%</strong>
-                    <div className="impact-bar after">
-                      <span style={{ width: `${Math.max(0, Math.min(100, after))}%` }} />
-                    </div>
-                  </div>
-                </div>
-                <p className="section-subtitle">
-                  Impact: -{decision.expected_beds_released ?? 0} beds, {(before - after).toFixed(1)} pp,{" "}
-                  {decision.expected_risk_reduction ?? "risk unchanged"}
-                </p>
-              </div>
-              <div className="action-list">
-                {decision.recommended_actions.map((action, actionIndex) => (
-                  <label className="action-check" key={`${decision.id}-${action.order}`}>
-                    <input
-                      checked={checkedActions[decision.title]?.[actionIndex] ?? Boolean(action.completed)}
-                      onChange={() => toggleAction(decision.title, actionIndex)}
-                      type="checkbox"
-                    />
-                    <span>{action.action}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="button-row">
-                <button className="button primary" disabled={state === "completed" || state === "dismissed"} onClick={() => executeAll(decision)} type="button">
-                  Execute All
-                </button>
-                <button className="secondary-link" disabled={state === "completed" || state === "dismissed"} onClick={() => transitionDecision(decision, "start")} type="button">
-                  Mark In Progress
-                </button>
-                <button className="secondary-link" disabled={state === "completed" || state === "dismissed"} onClick={() => transitionDecision(decision, "dismiss")} type="button">
-                  Dismiss with Reason
-                </button>
-                <button className="secondary-link" onClick={() => toggleDecisionLog(decision)} type="button">
-                  {openLogs[decision.id] ? "Hide Decision Log" : "View Decision Log"}
-                </button>
-              </div>
-              {openLogs[decision.id] ? (
-                <div className="decision-log-panel">
-                  <div className="panel-header">
-                    <div>
-                      <p className="eyebrow">Decision Log</p>
-                      <h4>Audit timeline</h4>
-                    </div>
-                    <span className="summary-badge normal">{decisionLogs[decision.id]?.length ?? 0} events</span>
-                  </div>
-                  {logMessages[decision.id] ? <p className="section-subtitle mono">{logMessages[decision.id]}</p> : null}
-                  <div className="decision-log-list">
-                    {(decisionLogs[decision.id] ?? []).map((item) => (
-                      <div className="decision-log-item" key={item.id}>
-                        <span className="status-dot live" />
-                        <div>
-                          <strong>
-                            {item.action.toUpperCase()} {item.previous_state ? `${item.previous_state} -> ${item.new_state}` : item.new_state}
-                          </strong>
-                          <p>
-                            {formatLogTime(item.created_at)} by {item.performed_by ?? "system"} ({item.performed_by_role ?? "system"})
-                          </p>
-                          {item.reason ? <p>Reason: {item.reason}</p> : null}
-                          {item.notes ? <p>Notes: {item.notes}</p> : null}
-                        </div>
-                      </div>
-                    ))}
-                    {!logMessages[decision.id] && (decisionLogs[decision.id] ?? []).length === 0 ? (
-                      <p className="section-subtitle">No audit events found for this decision yet.</p>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
+      <section className="decision-summary-grid">
+        <article className="metric-card">
+          <span className="eyebrow">Active Queue</span>
+          <strong>{counts.total_active}</strong>
+          <p>Recommended, assigned, and in-progress decisions currently live.</p>
+        </article>
+        <article className="metric-card">
+          <span className="eyebrow">Urgent</span>
+          <strong>{counts.urgent_count}</strong>
+          <p>Highest-risk decisions requiring immediate operational action.</p>
+        </article>
+        <article className="metric-card">
+          <span className="eyebrow">Assigned</span>
+          <strong>{counts.assigned}</strong>
+          <p>Items with a named owner and notification trail.</p>
+        </article>
+        <article className="metric-card">
+          <span className="eyebrow">In Progress</span>
+          <strong>{counts.in_progress}</strong>
+          <p>Actions underway and tracked in the audit log.</p>
+        </article>
       </section>
 
+      <section className="panel decision-control-strip">
+        <div>
+          <p className="eyebrow">Live Decision Queue</p>
+          <h3 className="section-heading">Signal -> decision -> action -> outcome</h3>
+          <p className="section-subtitle mono">{loading ? "Loading persisted decisions..." : message}</p>
+        </div>
+        <div className="button-row">
+          <button className="button primary" disabled={generating} onClick={() => void generateQueue()} type="button">
+            {generating ? "Generating..." : "Generate Live Queue"}
+          </button>
+        </div>
+      </section>
+
+      {apiDecisions.length ? (
+        <section className="decision-stack">
+          {apiDecisions.map((decision, index) => {
+            const tone = toneForDecision(decision);
+            const state = decision.status;
+            const before = Number(decision.expected_occupancy_before ?? 0);
+            const after = Number(decision.expected_occupancy_after ?? before);
+            return (
+              <article className={`decision-card ${tone}`} key={decision.id}>
+                <div className="panel-header">
+                  <div>
+                    <p className="eyebrow">Decision {index + 1}</p>
+                    <h3>{decision.title}</h3>
+                    <p className="section-subtitle">
+                      Owner: {decision.assignee_user ?? decision.owner_team ?? "Unassigned"} | Score:{" "}
+                      <span className="mono">{Number(decision.priority_score).toFixed(1)}</span>
+                    </p>
+                  </div>
+                  <div className="summary-badges">
+                    <span className={`summary-badge ${tone === "critical" ? "critical" : "warning"}`}>
+                      {decision.priority.toUpperCase()}
+                    </span>
+                    <span className="summary-badge normal">{statusLabel(state)}</span>
+                  </div>
+                </div>
+                <div className="decision-grid">
+                  <div>
+                    <p className="eyebrow">Signal</p>
+                    <p>{decision.signal_summary}</p>
+                  </div>
+                  <div>
+                    <p className="eyebrow">Decision</p>
+                    <p>{decision.decision_summary}</p>
+                  </div>
+                  <div>
+                    <p className="eyebrow">Rationale</p>
+                    <p>{decision.rationale}</p>
+                  </div>
+                  <div>
+                    <p className="eyebrow">Confidence</p>
+                    <p className="mono">{decision.confidence_detail ?? decision.confidence_level ?? "Confidence pending"}</p>
+                  </div>
+                </div>
+                <div className="impact-simulation">
+                  <p className="eyebrow">Impact Simulation</p>
+                  <div className="impact-columns">
+                    <div>
+                      <span>Before</span>
+                      <strong>{before.toFixed(1)}%</strong>
+                      <div className="impact-bar">
+                        <span style={{ width: `${Math.max(0, Math.min(100, before))}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <span>After</span>
+                      <strong>{after.toFixed(1)}%</strong>
+                      <div className="impact-bar after">
+                        <span style={{ width: `${Math.max(0, Math.min(100, after))}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="section-subtitle">
+                    Impact: -{decision.expected_beds_released ?? 0} beds, {(before - after).toFixed(1)} pp,{" "}
+                    {decision.expected_risk_reduction ?? "risk unchanged"}
+                  </p>
+                </div>
+                <div className="action-list">
+                  {decision.recommended_actions.map((action, actionIndex) => (
+                    <label className="action-check" key={`${decision.id}-${action.order}`}>
+                      <input
+                        checked={checkedActions[decision.title]?.[actionIndex] ?? Boolean(action.completed)}
+                        onChange={() => toggleAction(decision.title, actionIndex)}
+                        type="checkbox"
+                      />
+                      <span>{action.action}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="button-row">
+                  <button
+                    className="button primary"
+                    disabled={state === "completed" || state === "dismissed" || state === "expired"}
+                    onClick={() => void transitionDecision(decision, "complete")}
+                    type="button"
+                  >
+                    Complete Selected Actions
+                  </button>
+                  <button
+                    className="secondary-link"
+                    disabled={state !== "recommended"}
+                    onClick={() => void transitionDecision(decision, "assign")}
+                    type="button"
+                  >
+                    Assign Owner
+                  </button>
+                  <button
+                    className="secondary-link"
+                    disabled={state === "completed" || state === "dismissed" || state === "expired"}
+                    onClick={() => void transitionDecision(decision, "start")}
+                    type="button"
+                  >
+                    Mark In Progress
+                  </button>
+                  <button
+                    className="secondary-link"
+                    disabled={state === "completed" || state === "dismissed" || state === "expired"}
+                    onClick={() => void transitionDecision(decision, "dismiss")}
+                    type="button"
+                  >
+                    Dismiss with Reason
+                  </button>
+                  <button className="secondary-link" onClick={() => void toggleDecisionLog(decision)} type="button">
+                    {openLogs[decision.id] ? "Hide Decision Log" : "View Decision Log"}
+                  </button>
+                </div>
+                {openLogs[decision.id] ? (
+                  <div className="decision-log-panel">
+                    <div className="panel-header">
+                      <div>
+                        <p className="eyebrow">Decision Log</p>
+                        <h4>Audit timeline</h4>
+                      </div>
+                      <span className="summary-badge normal">{decisionLogs[decision.id]?.length ?? 0} events</span>
+                    </div>
+                    {logMessages[decision.id] ? <p className="section-subtitle mono">{logMessages[decision.id]}</p> : null}
+                    <div className="decision-log-list">
+                      {(decisionLogs[decision.id] ?? []).map((item) => (
+                        <div className="decision-log-item" key={item.id}>
+                          <span className="status-dot live" />
+                          <div>
+                            <strong>
+                              {item.action.toUpperCase()} {item.previous_state ? `${item.previous_state} -> ${item.new_state}` : item.new_state}
+                            </strong>
+                            <p>
+                              {formatLogTime(item.created_at)} by {item.performed_by ?? "system"} ({item.performed_by_role ?? "system"})
+                            </p>
+                            {item.reason ? <p>Reason: {item.reason}</p> : null}
+                            {item.notes ? <p>Notes: {item.notes}</p> : null}
+                          </div>
+                        </div>
+                      ))}
+                      {!logMessages[decision.id] && (decisionLogs[decision.id] ?? []).length === 0 ? (
+                        <p className="section-subtitle">No audit events found for this decision yet.</p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </section>
+      ) : (
+        <section className="panel empty-state-panel">
+          <p className="eyebrow">No Active Decisions</p>
+          <h3 className="section-heading">The queue is empty right now</h3>
+          <p className="section-subtitle">
+            Generate the live queue from the latest occupancy, forecast, and anomaly evidence to seed the closed-loop workflow.
+          </p>
+        </section>
+      )}
+
       <section className="panel">
-        <p className="eyebrow">Resolved - Last 7 Days</p>
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Resolved - Last 7 Decisions</p>
+            <h3 className="section-heading">Measured outcomes, not just completed tasks</h3>
+          </div>
+          <span className="summary-badge normal">{resolved.length} measured or recently completed</span>
+        </div>
         <div className="compact-feed">
-          {resolved.map((decision) => (
-            <div className="compact-alert" key={decision.title}>
-              <span className="status-dot live" />
-              <div>
-                <strong>
-                  {decision.title} ({decision.date})
-                </strong>
-                <p>Outcome: {decision.outcome}</p>
+          {resolved.length ? (
+            resolved.map((decision) => (
+              <div className="compact-alert" key={decision.id}>
+                <span className="status-dot live" />
+                <div>
+                  <strong>
+                    {decision.title} ({formatShortDate(decision.measured_at ?? decision.completed_at)})
+                  </strong>
+                  <p>
+                    Expected after {decision.expected_occupancy_after ?? "n/a"}% | Actual after {decision.actual_occupancy_after ?? "pending"}%
+                    {" | "}
+                    {decision.prediction_accurate == null
+                      ? "Outcome pending"
+                      : decision.prediction_accurate
+                        ? "Prediction accurate"
+                        : "Prediction drift detected"}
+                  </p>
+                  {decision.accuracy_notes ? <p>{decision.accuracy_notes}</p> : null}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="section-subtitle">No measured outcomes yet. Completed decisions will appear here after the 24h outcome check runs.</p>
+          )}
         </div>
       </section>
     </>

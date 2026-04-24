@@ -670,23 +670,32 @@ def get_decision(decision_id: int) -> dict[str, Any] | None:
     return _serialize_decision(row) if row else None
 
 
-def count_decisions() -> dict[str, Any]:
+def count_decisions(use_case: str | None = None) -> dict[str, Any]:
     ensure_decision_schema()
+    where_sql = ""
+    params: list[Any] = []
+    if use_case:
+        where_sql = " where use_case = %s"
+        params.append(use_case)
+
     with connect() as conn:
         rows = conn.execute(
-            """
+            f"""
             select status, count(*) as count
             from decision.decision_queue
+            {where_sql}
             group by status
-            """
+            """,
+            params,
         ).fetchall()
         urgent = conn.execute(
-            """
+            f"""
             select count(*) as count
             from decision.decision_queue
-            where status in ('recommended', 'assigned', 'in_progress')
+            where status in ('recommended', 'assigned', 'in_progress'){" and use_case = %s" if use_case else ""}
               and priority = 'urgent'
-            """
+            """,
+            params,
         ).fetchone()["count"]
 
     counts = {row["status"]: row["count"] for row in rows}
@@ -697,6 +706,43 @@ def count_decisions() -> dict[str, Any]:
         "total_active": sum(counts.get(status, 0) for status in ACTIVE_STATUSES),
         "urgent_count": urgent,
     }
+
+
+def list_resolved_decisions(use_case: str | None = None, limit: int = 10) -> list[dict[str, Any]]:
+    ensure_decision_schema()
+    where_sql = "where q.status = 'completed'"
+    params: list[Any] = []
+    if use_case:
+        where_sql += " and q.use_case = %s"
+        params.append(use_case)
+
+    with connect() as conn:
+        rows = conn.execute(
+            f"""
+            select
+              q.id,
+              q.entity_name,
+              q.title,
+              q.completed_at,
+              q.expected_beds_released,
+              q.expected_occupancy_before,
+              q.expected_occupancy_after,
+              q.expected_risk_reduction,
+              o.actual_beds_released,
+              o.actual_occupancy_after,
+              o.actual_risk_after,
+              o.prediction_accurate,
+              o.accuracy_notes,
+              o.measured_at
+            from decision.decision_queue q
+            left join decision.decision_outcomes o on o.decision_id = q.id
+            {where_sql}
+            order by coalesce(o.measured_at, q.completed_at) desc nulls last
+            limit %s
+            """,
+            [*params, limit],
+        ).fetchall()
+    return [_serialize_decision(row) for row in rows]
 
 
 def transition_decision(

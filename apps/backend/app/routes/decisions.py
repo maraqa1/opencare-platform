@@ -13,6 +13,7 @@ from app.services.decision_service import (
     generate_decisions,
     get_decision,
     list_decisions,
+    list_resolved_decisions,
     measure_outcomes,
     transition_decision,
 )
@@ -44,8 +45,16 @@ def decisions_index(
 
 
 @router.get("/decisions/count")
-def decisions_count() -> dict[str, Any]:
-    return count_decisions()
+def decisions_count(use_case: str | None = Query(default=None)) -> dict[str, Any]:
+    return count_decisions(use_case=use_case)
+
+
+@router.get("/decisions/resolved")
+def decisions_resolved(
+    use_case: str | None = Query(default=None),
+    limit: int = Query(default=10, ge=1, le=50),
+) -> dict[str, Any]:
+    return {"items": list_resolved_decisions(use_case=use_case, limit=limit)}
 
 
 @router.post("/decisions/generate")
