@@ -15,7 +15,9 @@ Service areas prepared here:
 
 Superset runs from `ghcr.io/maraqa1/opencare-superset:latest`, a small wrapper image
 around `apache/superset:4.1.1` that installs the PostgreSQL driver required for
-metadata setup and dashboard sync.
+metadata setup and dashboard sync. Superset metadata is stored in PostgreSQL via
+`SQLALCHEMY_DATABASE_URI`, so dashboards/datasets survive pod replacement instead of
+falling back to the pod-local default SQLite database.
 
 Keep deployment assets minimal, production-shaped, and consistent with one VM operation.
 

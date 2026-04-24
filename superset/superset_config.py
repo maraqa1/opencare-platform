@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import quote
 
 APP_NAME = "OpenCare Analytics"
 FEATURE_FLAGS = {
@@ -29,6 +30,23 @@ CORS_OPTIONS = {
         f"http://{_portal_host}",
     ],
 }
+
+
+def _superset_metadata_uri() -> str:
+    configured_uri = os.getenv("SUPERSET_METADATA_DB_URI", "").strip()
+    if configured_uri:
+        return configured_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+    user = quote(os.getenv("POSTGRES_USER", "opencare"), safe="")
+    password = quote(os.getenv("POSTGRES_PASSWORD", ""), safe="")
+    host = os.getenv("POSTGRES_HOST", "postgres")
+    port = os.getenv("POSTGRES_PORT", "5432")
+    database = os.getenv("POSTGRES_DB", "opencare")
+    credentials = user if not password else f"{user}:{password}"
+    return f"postgresql+psycopg2://{credentials}@{host}:{port}/{database}"
+
+
+SQLALCHEMY_DATABASE_URI = _superset_metadata_uri()
 
 CUSTOM_THEME_PATH = Path("/app/pythonpath/custom_theme.css")
 if CUSTOM_THEME_PATH.exists():
