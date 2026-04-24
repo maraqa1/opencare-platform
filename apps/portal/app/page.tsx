@@ -6,7 +6,7 @@ import { getApiJson } from "@/lib/api";
 import { useCases } from "@/lib/use-cases";
 
 export default async function HomePage() {
-  const [runtime, health, alerts] = await Promise.all([
+  const [runtime, health, alerts, occupancy] = await Promise.all([
     getApiJson<{
       runtimes?: Array<{ name: string; last_run?: string | null; row_count?: number }>;
     }>({
@@ -25,9 +25,44 @@ export default async function HomePage() {
       path: "/api/v1/anomalies?limit=5",
       fallback: { items: [] },
     }),
+    getApiJson<{
+      summary?: { critical?: number; warning?: number; normal?: number };
+      items?: Array<{
+        department_name?: string;
+        ward_name?: string;
+        occupancy_rate?: number;
+        status?: string;
+      }>;
+    }>({
+      path: "/api/v1/occupancy/current",
+      fallback: { summary: {}, items: [] },
+    }),
   ]);
 
   const healthyCount = (health.checks ?? []).filter((item) => item.healthy).length;
+  const criticalCount = occupancy.summary?.critical ?? 0;
+  const warningCount = occupancy.summary?.warning ?? 0;
+  const actionCount = criticalCount + warningCount;
+  const worstWard = (occupancy.items ?? []).reduce<{
+    department_name?: string;
+    ward_name?: string;
+    occupancy_rate?: number;
+  } | null>((currentWorst, item) => {
+    if (!currentWorst) {
+      return item;
+    }
+    return (item.occupancy_rate ?? 0) > (currentWorst.occupancy_rate ?? 0) ? item : currentWorst;
+  }, null);
+  const worstWardName = worstWard?.department_name ?? worstWard?.ward_name ?? "No ward data";
+  const worstWardRate = `${((worstWard?.occupancy_rate ?? 0) * 100).toFixed(1)}%`;
+  const pressureHeadline =
+    criticalCount > 0
+      ? `Critical: ${criticalCount} ward${criticalCount === 1 ? "" : "s"} need immediate action`
+      : `Watchlist: ${actionCount} ward${actionCount === 1 ? "" : "s"} need action`;
+  const pressureSubtitle =
+    actionCount > 0
+      ? `Worst ward ${worstWardName} at ${worstWardRate}. ${warningCount} warning ward${warningCount === 1 ? "" : "s"} need proactive capacity planning.`
+      : "No wards currently above warning threshold. Capacity is operating inside expected bounds.";
 
   return (
     <PageFrame
@@ -52,8 +87,8 @@ export default async function HomePage() {
       <section className="panel pressure-strip">
         <div>
           <p className="eyebrow">System Pressure</p>
-          <h3>Critical: 3 wards need action</h3>
-          <p className="section-subtitle">Worst ward ICU-01 at 97.3%. Forecast breach window: 14h.</p>
+          <h3>{pressureHeadline}</h3>
+          <p className="section-subtitle">{pressureSubtitle}</p>
         </div>
         <div className="trust-line">
           <span>Data 8m ago</span>
