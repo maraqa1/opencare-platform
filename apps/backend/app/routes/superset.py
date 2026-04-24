@@ -5,9 +5,16 @@ from app.config import load_enabled_use_cases, settings
 router = APIRouter(prefix="/api/v1/superset", tags=["superset"])
 
 
+def _dashboard_embed_path(dashboard_id: str) -> str:
+    dashboard_key = dashboard_id.strip().strip("/")
+    if dashboard_key.isdigit():
+        return f"{settings.superset_embed_url.rstrip('/')}/superset/dashboard/{dashboard_key}/"
+    return f"{settings.superset_embed_url.rstrip('/')}/superset/dashboard/p/{dashboard_key}/"
+
+
 @router.get("/embed-token")
 def get_embed_token(dashboard_id: str) -> dict[str, object]:
-    embed_path = f"{settings.superset_embed_url.rstrip('/')}/superset/dashboard/{dashboard_id}/"
+    embed_path = _dashboard_embed_path(dashboard_id)
     return {
         "status": "ok",
         "dashboard_id": dashboard_id,
@@ -29,7 +36,7 @@ def list_dashboards() -> dict[str, object]:
                 "use_case": key,
                 "dashboard_id": dashboard_id,
                 "title": use_case.get("name"),
-                "embed_url": f"{settings.superset_embed_url.rstrip('/')}/superset/dashboard/{dashboard_id}/",
+                "embed_url": _dashboard_embed_path(str(dashboard_id)),
             }
         )
 
