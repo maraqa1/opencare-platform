@@ -37,13 +37,15 @@ def _superset_metadata_uri() -> str:
     if configured_uri:
         return configured_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
 
+    metadata_schema = os.getenv("SUPERSET_METADATA_SCHEMA", "superset_meta")
     user = quote(os.getenv("POSTGRES_USER", "opencare"), safe="")
     password = quote(os.getenv("POSTGRES_PASSWORD", ""), safe="")
     host = os.getenv("POSTGRES_HOST", "postgres")
     port = os.getenv("POSTGRES_PORT", "5432")
     database = os.getenv("POSTGRES_DB", "opencare")
     credentials = user if not password else f"{user}:{password}"
-    return f"postgresql+psycopg2://{credentials}@{host}:{port}/{database}"
+    search_path = quote(f"-csearch_path={metadata_schema},public", safe="")
+    return f"postgresql+psycopg2://{credentials}@{host}:{port}/{database}?options={search_path}"
 
 
 SQLALCHEMY_DATABASE_URI = _superset_metadata_uri()

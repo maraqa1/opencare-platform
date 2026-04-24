@@ -6,10 +6,37 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
 
+ensure_superset_metadata_schema() {
+  local metadata_schema
+  metadata_schema="${SUPERSET_METADATA_SCHEMA:-superset_meta}"
+
+  log "Ensuring Superset metadata schema ${metadata_schema}"
+  kubectl -n "$NAMESPACE" exec deploy/superset -- sh -c 'python - <<'"'"'PY'"'"'
+import os
+import psycopg2
+from psycopg2 import sql
+
+schema = os.getenv("SUPERSET_METADATA_SCHEMA", "superset_meta")
+conn = psycopg2.connect(
+    host=os.getenv("POSTGRES_HOST", "postgres"),
+    port=os.getenv("POSTGRES_PORT", "5432"),
+    dbname=os.getenv("POSTGRES_DB", "opencare"),
+    user=os.getenv("POSTGRES_USER", "opencare"),
+    password=os.getenv("POSTGRES_PASSWORD", ""),
+)
+conn.autocommit = True
+with conn.cursor() as cur:
+    cur.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(schema)))
+conn.close()
+print(f"[ok] ensured schema {schema}")
+PY'
+}
+
 ensure_superset_admin() {
   local users
 
   log "Ensuring Superset metadata DB and admin user"
+  ensure_superset_metadata_schema
   kubectl -n "$NAMESPACE" exec deploy/superset -- superset db upgrade
 
   users="$(kubectl -n "$NAMESPACE" exec deploy/superset -- superset fab list-users 2>/dev/null || true)"
