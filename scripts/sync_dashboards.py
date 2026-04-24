@@ -210,8 +210,15 @@ def ensure_database(client: SupersetClient) -> int:
         return int(existing["id"])
 
     created = client.post("/api/v1/database/", payload)
-    result_payload = created.get("result", created)
-    return int(result_payload["id"])
+    created_id = response_id(created)
+    if created_id is not None:
+        return created_id
+
+    result = client.get(f"/api/v1/database/?q={query}")
+    existing = find_existing(result, "database_name", database_name)
+    if existing:
+        return int(existing["id"])
+    raise RuntimeError(f"Superset created database {database_name} but did not return an id")
 
 
 def dataset_payload(dataset_name: str, database_id: int) -> dict[str, Any]:
