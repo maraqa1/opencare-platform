@@ -43,7 +43,13 @@ class SupersetClient:
         self.access_token = api_response.get("access_token")
 
         login_page = self._open_raw("GET", "/login/", use_auth=False)
-        csrf_token = extract_csrf_token(login_page)
+        try:
+            csrf_token = extract_csrf_token(login_page)
+        except RuntimeError:
+            # Demo environments may disable CSRF entirely. In that case the
+            # bearer token from the API login is sufficient for write calls.
+            self.csrf_token = None
+            return
         form_payload = parse.urlencode(
             {
                 "username": self.username,
@@ -60,7 +66,10 @@ class SupersetClient:
             referer=f"{self.base_url}/login/",
         )
         welcome_page = self._open_raw("GET", "/superset/welcome/", use_auth=False)
-        self.csrf_token = extract_app_csrf_token(welcome_page)
+        try:
+            self.csrf_token = extract_app_csrf_token(welcome_page)
+        except RuntimeError:
+            self.csrf_token = None
 
     def get(self, path: str) -> dict[str, Any]:
         return self._request("GET", path)
