@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import uuid
 from pathlib import Path
 from typing import Any
 from http.cookiejar import CookieJar
@@ -351,6 +352,12 @@ def response_id(response_payload: dict[str, Any]) -> int | None:
     return None
 
 
+def bytes_to_uuid(value: object) -> str:
+    if isinstance(value, bytes):
+        return str(uuid.UUID(bytes=value))
+    return str(value)
+
+
 def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) -> int:
     schema_name, table_name = dataset_name.split(".", 1)
     query = parse.quote(
@@ -396,38 +403,41 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     raise RuntimeError(f"Superset created dataset {dataset_name} but did not return an id")
 
 
-def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_id: int) -> int:
-    query = parse.quote(json.dumps({"filters": [{"col": "slice_name", "opr": "eq", "value": chart_config["title"]}]}))
-    result = client.get(f"/api/v1/chart/?q={query}")
-    existing = find_existing(result, "slice_name", chart_config["title"])
+def ensure_chart_orm(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
+    payload = chart_payload(chart_config, dataset_id)
+    try:
+        from superset import db
+        from superset.models.slice import Slice
+    except Exception as exc:
+        raise RuntimeError("Superset ORM chart sync must run inside the Superset pod.") from exc
+
+    existing = db.session.query(Slice).filter_by(slice_name=chart_config["title"]).one_or_none()
     payload = chart_payload(chart_config, dataset_id)
     if existing:
-        client.put(f"/api/v1/chart/{existing['id']}", payload)
-        return int(existing["id"])
+        existing.viz_type = payload["viz_type"]
+        existing.datasource_id = payload["datasource_id"]
+        existing.datasource_type = payload["datasource_type"]
+        existing.params = payload["params"]
+        if "query_context" in payload and hasattr(existing, "query_context"):
+            existing.query_context = payload["query_context"]
+        db.session.add(existing)
+        db.session.flush()
+        print(f"  [ok] chart {chart_config['title']} -> {existing.id} (updated)")
+        return {"id": int(existing.id), "uuid": bytes_to_uuid(existing.uuid), "title": existing.slice_name}
 
-    try:
-        created = client.post("/api/v1/chart/", payload)
-    except RuntimeError as exc:
-        if "already exists" not in str(exc).lower():
-            raise
-        chart_id = _lookup_chart_in_metadata(chart_config["title"])
-        if chart_id is not None:
-            print(f"  [ok] found chart '{chart_config['title']}' via metadata (id={chart_id})")
-            return chart_id
-        raise
-    created_id = response_id(created)
-    if created_id is not None:
-        return created_id
-
-    result = client.get(f"/api/v1/chart/?q={query}")
-    existing = find_existing(result, "slice_name", chart_config["title"])
-    if existing:
-        return int(existing["id"])
-    chart_id = _lookup_chart_in_metadata(chart_config["title"])
-    if chart_id is not None:
-        print(f"  [ok] found chart '{chart_config['title']}' via metadata (id={chart_id})")
-        return chart_id
-    raise RuntimeError(f"Superset created chart {chart_config['title']} but did not return an id")
+    chart = Slice(
+        slice_name=payload["slice_name"],
+        viz_type=payload["viz_type"],
+        datasource_id=payload["datasource_id"],
+        datasource_type=payload["datasource_type"],
+        params=payload["params"],
+    )
+    if "query_context" in payload and hasattr(chart, "query_context"):
+        chart.query_context = payload["query_context"]
+    db.session.add(chart)
+    db.session.flush()
+    print(f"  [ok] chart {chart_config['title']} -> {chart.id} (created)")
+    return {"id": int(chart.id), "uuid": bytes_to_uuid(chart.uuid), "title": chart.slice_name}
 
 
 def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[dict[str, Any]]) -> dict[str, Any]:
@@ -485,15 +495,19 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[d
     return position_data
 
 
-def ensure_dashboard(
-    client: SupersetClient,
+def ensure_dashboard_orm(
     dashboard_config: dict[str, Any],
     chart_refs: list[dict[str, Any]],
-) -> None:
+) -> dict[str, Any]:
+    try:
+        from superset import db
+        from superset.models.dashboard import Dashboard
+        from superset.models.slice import Slice
+    except Exception as exc:
+        raise RuntimeError("Superset ORM chart sync must run inside the Superset pod.") from exc
+
     slug = dashboard_config["dashboard_id"]
-    query = parse.quote(json.dumps({"filters": [{"col": "slug", "opr": "eq", "value": slug}]}))
-    result = client.get(f"/api/v1/dashboard/?q={query}")
-    existing = find_existing(result, "slug", slug)
+    existing = db.session.query(Dashboard).filter_by(slug=slug).one_or_none()
 
     payload = {
         "dashboard_title": dashboard_config["title"],
@@ -509,20 +523,31 @@ def ensure_dashboard(
         ),
     }
 
+    chart_ids = [int(chart_ref["id"]) for chart_ref in chart_refs]
+    slices = db.session.query(Slice).filter(Slice.id.in_(chart_ids)).all()
+    slices_by_id = {int(slice_.id): slice_ for slice_ in slices}
+    missing_ids = [chart_id for chart_id in chart_ids if chart_id not in slices_by_id]
+    if missing_ids:
+        raise RuntimeError(f"Missing chart ids for dashboard {slug}: {', '.join(str(chart_id) for chart_id in missing_ids)}")
+    ordered_slices = [slices_by_id[chart_id] for chart_id in chart_ids]
+
     if existing:
-        client.put(f"/api/v1/dashboard/{existing['id']}", payload)
+        dashboard = existing
     else:
-        try:
-            client.post("/api/v1/dashboard/", payload)
-        except RuntimeError as exc:
-            if "already exists" not in str(exc).lower():
-                raise
-            dashboard_id = _lookup_dashboard_in_metadata(slug)
-            if dashboard_id is not None:
-                print(f"[ok] found dashboard '{slug}' via metadata (id={dashboard_id})")
-                client.put(f"/api/v1/dashboard/{dashboard_id}", payload)
-                return
-            raise
+        dashboard = Dashboard()
+        db.session.add(dashboard)
+
+    dashboard.dashboard_title = payload["dashboard_title"]
+    dashboard.slug = payload["slug"]
+    dashboard.published = payload["published"]
+    dashboard.position_json = payload["position_json"]
+    dashboard.json_metadata = payload["json_metadata"]
+    dashboard.slices = ordered_slices
+    db.session.flush()
+    action = "updated" if existing else "created"
+    print(f"[ok] dashboard {dashboard.dashboard_title} -> {dashboard.id} ({action})")
+    print(f"[ok] dashboard chart count -> {len(ordered_slices)}")
+    return {"id": int(dashboard.id), "slug": dashboard.slug, "title": dashboard.dashboard_title}
 
 
 def sync_dashboards(config_path: Path) -> None:
@@ -539,32 +564,52 @@ def sync_dashboards(config_path: Path) -> None:
     client.authenticate()
     database_id = ensure_database(client)
     print(f"[ok] database OpenCare Analytics -> {database_id}")
+    try:
+        from superset.app import create_app
+    except Exception as exc:
+        raise RuntimeError("Superset ORM chart sync must run inside the Superset pod.") from exc
 
-    for key, dashboard_config in dashboards.items():
-        if not dashboard_config.get("enabled", False):
-            print(f"[skip] {key} is disabled")
-            continue
+    app = create_app()
+    with app.app_context():
+        try:
+            from superset import db
+        except Exception as exc:
+            raise RuntimeError("Superset ORM chart sync must run inside the Superset pod.") from exc
 
-        print(f"[sync] dashboard {key}")
-        dataset_ids: dict[str, int] = {}
-        for dataset_name in dashboard_config.get("datasets", []):
-            dataset_ids[dataset_name] = ensure_dataset(client, dataset_name, database_id)
-            print(f"  [ok] dataset {dataset_name} -> {dataset_ids[dataset_name]}")
+        try:
+            for key, dashboard_config in dashboards.items():
+                if not dashboard_config.get("enabled", False):
+                    print(f"[skip] {key} is disabled")
+                    continue
 
-        chart_ids: list[int] = []
-        for chart in dashboard_config.get("charts", []):
-            if not chart.get("enabled", True):
-                print(f"  [skip] chart {chart['key']} is disabled")
-                continue
+                print(f"[sync] dashboard {key}")
+                dataset_ids: dict[str, int] = {}
+                for dataset_name in dashboard_config.get("datasets", []):
+                    dataset_ids[dataset_name] = ensure_dataset(client, dataset_name, database_id)
+                    print(f"  [ok] dataset {dataset_name} -> {dataset_ids[dataset_name]}")
 
-            dataset_name = chart["dataset"]
-            dataset_id = dataset_ids[dataset_name]
-            chart_id = ensure_chart(client, chart, dataset_id)
-            chart_ids.append(chart_id)
-            print(f"  [ok] chart {chart['title']} -> {chart_id}")
+                chart_refs: list[dict[str, Any]] = []
+                for chart in dashboard_config.get("charts", []):
+                    if not chart.get("enabled", True):
+                        print(f"  [skip] chart {chart['key']} is disabled")
+                        continue
 
-        ensure_dashboard(client, dashboard_config, [{"id": chart_id, "uuid": "", "title": ""} for chart_id in chart_ids])
-        print(f"[ok] dashboard {dashboard_config['title']}")
+                    dataset_name = chart["dataset"]
+                    dataset_id = dataset_ids[dataset_name]
+                    chart_ref = ensure_chart_orm(chart, dataset_id)
+                    chart_refs.append(chart_ref)
+
+                dashboard_ref = ensure_dashboard_orm(dashboard_config, chart_refs)
+                print(
+                    f"[ok] dashboard url -> "
+                    f"{os.getenv('SUPERSET_EMBED_URL', os.getenv('SUPERSET_URL', 'http://localhost:8088')).rstrip('/')}"
+                    f"/superset/dashboard/{dashboard_ref['slug']}/"
+                )
+
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
 
 
 def main(argv: list[str]) -> int:
