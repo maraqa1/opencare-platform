@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 APP_NAME = "OpenCare Analytics"
+SECRET_KEY = os.getenv("SUPERSET_SECRET_KEY", "change-me-superset")
 FEATURE_FLAGS = {
     "EMBEDDED_SUPERSET": True,
     "DASHBOARD_NATIVE_FILTERS": True,
@@ -11,6 +12,8 @@ TALISMAN_ENABLED = False
 HTML_SANITIZATION = True
 ENABLE_PROXY_FIX = True
 WTF_CSRF_ENABLED = False
+JWT_COOKIE_CSRF_PROTECT = False
+JWT_SECRET_KEY = SECRET_KEY
 PUBLIC_ROLE_LIKE = "Gamma"
 
 _portal_host = os.getenv("PORTAL_HOST", "opencare.opendatalake.com")
