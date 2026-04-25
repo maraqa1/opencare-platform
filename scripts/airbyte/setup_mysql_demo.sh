@@ -354,7 +354,7 @@ wait_for_sync() {
 }
 
 wait_for_raw_tables_population() {
-  local attempts="${1:-36}"
+  local attempts=36
 
   while (( attempts > 0 )); do
     if verify_raw_tables >/dev/null 2>&1; then
