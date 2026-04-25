@@ -88,8 +88,7 @@ class SupersetClient:
         use_auth: bool = True,
     ) -> dict[str, Any]:
         headers = {"Content-Type": "application/json"}
-        send_session_auth = method in {"POST", "PUT", "PATCH", "DELETE"} and self.csrf_token
-        if use_auth and self.access_token and not send_session_auth:
+        if use_auth and self.access_token:
             headers["Authorization"] = f"Bearer {self.access_token}"
         if method in {"POST", "PUT", "PATCH", "DELETE"} and self.csrf_token:
             headers["X-CSRFToken"] = self.csrf_token
