@@ -1195,7 +1195,7 @@ def measure_outcomes() -> dict[str, Any]:
                     measurement_window_hours, measurement_status, measurement_method,
                     measured_window_start, measured_window_end
                 )
-                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     decision["id"],
