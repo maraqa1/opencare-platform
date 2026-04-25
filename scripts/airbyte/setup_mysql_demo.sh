@@ -138,6 +138,44 @@ api_patch() {
   api_request PATCH "$path" "$payload"
 }
 
+api_post_jobs_maybe_running() {
+  local payload="$1"
+  local response_file
+  local http_code
+
+  response_file="$(mktemp)"
+  http_code="$(
+    curl -sS -o "$response_file" -w '%{http_code}' \
+      -H "Content-Type: application/json" \
+      -X POST \
+      "${AIRBYTE_API_BASE_URL}${AIRBYTE_PUBLIC_API_PREFIX}/jobs" \
+      -d "$payload"
+  )"
+
+  case "$http_code" in
+    2*)
+      cat "$response_file"
+      rm -f "$response_file"
+      return 0
+      ;;
+    409)
+      if grep -qi "already running" "$response_file"; then
+        log "Airbyte sync already running for this connection; waiting for the in-flight job to finish"
+        rm -f "$response_file"
+        return 10
+      fi
+      ;;
+  esac
+
+  log_error "Airbyte API POST ${AIRBYTE_PUBLIC_API_PREFIX}/jobs returned HTTP ${http_code}"
+  log_error "Airbyte request payload:"
+  >&2 printf '%s\n' "$payload"
+  log_error "Airbyte response body:"
+  cat "$response_file" >&2 || true
+  rm -f "$response_file"
+  fail "Airbyte API request failed"
+}
+
 workspace_id() {
   api_get "${AIRBYTE_PUBLIC_API_PREFIX}/workspaces" | jq -r '.data[0].workspaceId'
 }
@@ -315,6 +353,20 @@ wait_for_sync() {
   done
 }
 
+wait_for_raw_tables_population() {
+  local attempts="${1:-36}"
+
+  while (( attempts > 0 )); do
+    if verify_raw_tables >/dev/null 2>&1; then
+      return 0
+    fi
+    attempts=$((attempts - 1))
+    sleep 10
+  done
+
+  fail "Airbyte sync was already running, but raw_demo tables did not repopulate within the expected window"
+}
+
 verify_raw_tables() {
   log "Verifying Airbyte raw tables in Postgres"
   kubectl -n "$NAMESPACE" exec -i postgres-0 -- sh -c "psql -U '${POSTGRES_USER}' -d '${POSTGRES_DB}' -v ON_ERROR_STOP=1 <<'SQL'
@@ -348,6 +400,8 @@ main() {
   local catalog_json
   local connection_id
   local sync_job_id
+  local sync_job_response
+  local status
 
   require_demo_prereqs
   ensure_cluster_access
@@ -380,10 +434,21 @@ main() {
   reset_demo_destination_schema
 
   log "Triggering first Airbyte sync"
-  sync_job_id="$(api_post "${AIRBYTE_PUBLIC_API_PREFIX}/jobs" "{\"connectionId\":\"${connection_id}\",\"jobType\":\"sync\"}" | jq -r '.jobId')"
-  [[ -n "$sync_job_id" && "$sync_job_id" != "null" ]] || fail "Unable to start Airbyte sync"
+  sync_job_id=""
+  sync_job_response=""
+  if sync_job_response="$(api_post_jobs_maybe_running "{\"connectionId\":\"${connection_id}\",\"jobType\":\"sync\"}")"; then
+    sync_job_id="$(printf '%s' "$sync_job_response" | jq -r '.jobId')"
+    [[ -n "$sync_job_id" && "$sync_job_id" != "null" ]] || fail "Unable to start Airbyte sync"
+    wait_for_sync "$sync_job_id"
+  else
+    status=$?
+    if [[ "$status" -eq 10 ]]; then
+      wait_for_raw_tables_population
+    else
+      exit "$status"
+    fi
+  fi
 
-  wait_for_sync "$sync_job_id"
   verify_raw_tables
   log_success "Airbyte MySQL demo source synced into Postgres raw tables"
 }
