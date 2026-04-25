@@ -192,6 +192,45 @@ def find_database_by_name(client: SupersetClient, database_name: str) -> dict[st
     return find_existing(result, "database_name", database_name)
 
 
+def _lookup_in_metadata(table: str, where_column: str, value: str, select_column: str = "id") -> int | None:
+    try:
+        import psycopg2
+
+        conn = psycopg2.connect(
+            host=os.getenv("POSTGRES_HOST", "postgres"),
+            port=os.getenv("POSTGRES_PORT", "5432"),
+            dbname=os.getenv("POSTGRES_DB", "opencare"),
+            user=os.getenv("POSTGRES_USER", "opencare"),
+            password=os.getenv("POSTGRES_PASSWORD", ""),
+            options=f"-csearch_path={os.getenv('SUPERSET_METADATA_SCHEMA', 'superset_meta')},public",
+        )
+        try:
+            cur = conn.cursor()
+            cur.execute(f"SELECT {select_column} FROM {table} WHERE {where_column} = %s", (value,))
+            row = cur.fetchone()
+            return int(row[0]) if row else None
+        finally:
+            conn.close()
+    except Exception:
+        return None
+
+
+def _lookup_database_in_metadata(database_name: str) -> int | None:
+    return _lookup_in_metadata("dbs", "database_name", database_name)
+
+
+def _lookup_dataset_in_metadata(table_name: str) -> int | None:
+    return _lookup_in_metadata("tables", "table_name", table_name)
+
+
+def _lookup_chart_in_metadata(slice_name: str) -> int | None:
+    return _lookup_in_metadata("slices", "slice_name", slice_name)
+
+
+def _lookup_dashboard_in_metadata(slug: str) -> int | None:
+    return _lookup_in_metadata("dashboards", "slug", slug)
+
+
 def ensure_database(client: SupersetClient) -> int:
     database_name = os.getenv("SUPERSET_DATABASE_NAME", "OpenCare Analytics")
     existing = find_database_by_name(client, database_name)
@@ -221,6 +260,10 @@ def ensure_database(client: SupersetClient) -> int:
         if existing:
             client.put(f"/api/v1/database/{existing['id']}", payload)
             return int(existing["id"])
+        db_id = _lookup_database_in_metadata(database_name)
+        if db_id is not None:
+            print(f"[ok] found database '{database_name}' via metadata (id={db_id})")
+            return db_id
         raise
     created_id = response_id(created)
     if created_id is not None:
@@ -229,6 +272,10 @@ def ensure_database(client: SupersetClient) -> int:
     existing = find_database_by_name(client, database_name)
     if existing:
         return int(existing["id"])
+    db_id = _lookup_database_in_metadata(database_name)
+    if db_id is not None:
+        print(f"[ok] found database '{database_name}' via metadata (id={db_id})")
+        return db_id
     raise RuntimeError(f"Superset created database {database_name} but did not return an id")
 
 
@@ -323,7 +370,16 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
         # on every update path. Existing datasets are safe to reuse by id.
         return int(existing["id"])
 
-    created = client.post("/api/v1/dataset/", payload)
+    try:
+        created = client.post("/api/v1/dataset/", payload)
+    except RuntimeError as exc:
+        if "already exists" not in str(exc).lower():
+            raise
+        dataset_id = _lookup_dataset_in_metadata(table_name)
+        if dataset_id is not None:
+            print(f"  [ok] found dataset '{dataset_name}' via metadata (id={dataset_id})")
+            return dataset_id
+        raise
     created_id = response_id(created)
     if created_id is not None:
         return created_id
@@ -332,6 +388,10 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     existing = find_existing(result, "table_name", table_name)
     if existing:
         return int(existing["id"])
+    dataset_id = _lookup_dataset_in_metadata(table_name)
+    if dataset_id is not None:
+        print(f"  [ok] found dataset '{dataset_name}' via metadata (id={dataset_id})")
+        return dataset_id
     raise RuntimeError(f"Superset created dataset {dataset_name} but did not return an id")
 
 
@@ -344,7 +404,16 @@ def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_i
         client.put(f"/api/v1/chart/{existing['id']}", payload)
         return int(existing["id"])
 
-    created = client.post("/api/v1/chart/", payload)
+    try:
+        created = client.post("/api/v1/chart/", payload)
+    except RuntimeError as exc:
+        if "already exists" not in str(exc).lower():
+            raise
+        chart_id = _lookup_chart_in_metadata(chart_config["title"])
+        if chart_id is not None:
+            print(f"  [ok] found chart '{chart_config['title']}' via metadata (id={chart_id})")
+            return chart_id
+        raise
     created_id = response_id(created)
     if created_id is not None:
         return created_id
@@ -353,6 +422,10 @@ def ensure_chart(client: SupersetClient, chart_config: dict[str, Any], dataset_i
     existing = find_existing(result, "slice_name", chart_config["title"])
     if existing:
         return int(existing["id"])
+    chart_id = _lookup_chart_in_metadata(chart_config["title"])
+    if chart_id is not None:
+        print(f"  [ok] found chart '{chart_config['title']}' via metadata (id={chart_id})")
+        return chart_id
     raise RuntimeError(f"Superset created chart {chart_config['title']} but did not return an id")
 
 
@@ -438,7 +511,17 @@ def ensure_dashboard(
     if existing:
         client.put(f"/api/v1/dashboard/{existing['id']}", payload)
     else:
-        client.post("/api/v1/dashboard/", payload)
+        try:
+            client.post("/api/v1/dashboard/", payload)
+        except RuntimeError as exc:
+            if "already exists" not in str(exc).lower():
+                raise
+            dashboard_id = _lookup_dashboard_in_metadata(slug)
+            if dashboard_id is not None:
+                print(f"[ok] found dashboard '{slug}' via metadata (id={dashboard_id})")
+                client.put(f"/api/v1/dashboard/{dashboard_id}", payload)
+                return
+            raise
 
 
 def sync_dashboards(config_path: Path) -> None:
