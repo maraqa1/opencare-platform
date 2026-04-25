@@ -187,11 +187,15 @@ def superset_database_uri() -> str:
     )
 
 
+def find_database_by_name(client: SupersetClient, database_name: str) -> dict[str, Any] | None:
+    query = parse.quote(json.dumps({"page": 0, "page_size": 1000}))
+    result = client.get(f"/api/v1/database/?q={query}")
+    return find_existing(result, "database_name", database_name)
+
+
 def ensure_database(client: SupersetClient) -> int:
     database_name = os.getenv("SUPERSET_DATABASE_NAME", "OpenCare Analytics")
-    query = parse.quote(json.dumps({"filters": [{"col": "database_name", "opr": "eq", "value": database_name}]}))
-    result = client.get(f"/api/v1/database/?q={query}")
-    existing = find_existing(result, "database_name", database_name)
+    existing = find_database_by_name(client, database_name)
 
     payload = {
         "database_name": database_name,
@@ -212,10 +216,9 @@ def ensure_database(client: SupersetClient) -> int:
     try:
         created = client.post("/api/v1/database/", payload)
     except RuntimeError as exc:
-        if "same name already exists" not in str(exc):
+        if "same name already exists" not in str(exc).lower():
             raise
-        result = client.get(f"/api/v1/database/?q={query}")
-        existing = find_existing(result, "database_name", database_name)
+        existing = find_database_by_name(client, database_name)
         if existing:
             client.put(f"/api/v1/database/{existing['id']}", payload)
             return int(existing["id"])
@@ -224,8 +227,7 @@ def ensure_database(client: SupersetClient) -> int:
     if created_id is not None:
         return created_id
 
-    result = client.get(f"/api/v1/database/?q={query}")
-    existing = find_existing(result, "database_name", database_name)
+    existing = find_database_by_name(client, database_name)
     if existing:
         return int(existing["id"])
     raise RuntimeError(f"Superset created database {database_name} but did not return an id")
