@@ -10,8 +10,8 @@ def _dashboard_embed_path(dashboard_id: str) -> str:
     if dashboard_key.isdigit():
         base_path = f"{settings.superset_embed_url.rstrip('/')}/superset/dashboard/{dashboard_key}/"
     else:
-        base_path = f"{settings.superset_embed_url.rstrip('/')}/superset/dashboard/p/{dashboard_key}/"
-    return f"{base_path}?standalone=1"
+        base_path = f"{settings.superset_embed_url.rstrip('/')}/superset/dashboard/{dashboard_key}/"
+    return f"{base_path}?standalone=2"
 
 
 @router.get("/embed-token")
