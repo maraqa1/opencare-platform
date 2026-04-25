@@ -188,8 +188,7 @@ def superset_database_uri() -> str:
 
 
 def find_database_by_name(client: SupersetClient, database_name: str) -> dict[str, Any] | None:
-    query = parse.quote(json.dumps({"page": 0, "page_size": 1000}))
-    result = client.get(f"/api/v1/database/?q={query}")
+    result = client.get("/api/v1/database/")
     return find_existing(result, "database_name", database_name)
 
 
