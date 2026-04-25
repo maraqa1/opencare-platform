@@ -56,6 +56,59 @@ class DecisionServiceTests(unittest.TestCase):
         self.assertEqual(conn.calls[0][1], [list(decision_service.ACTIVE_STATUSES)])
         self.assertEqual(conn.calls[1][1][0], list(decision_service.ACTIVE_STATUSES))
 
+    def test_generate_decisions_suppresses_recent_completed_duplicates(self):
+        candidate = {
+            "use_case": "bed_pressure",
+            "decision_type": "activate_surge",
+            "entity_type": "ward",
+            "entity_id": "WARD-08",
+            "entity_name": "ICU-01 - Intensive Care Unit",
+            "title": "ICU-01: Activate surge capacity",
+            "signal_summary": "Occupancy 98%",
+            "decision_summary": "Open 4 surge beds",
+            "rationale": "High pressure",
+            "recommended_actions": [],
+            "data_inputs": {},
+            "model_version": "test",
+            "model_accuracy": 4.2,
+            "confidence_level": "HIGH",
+            "freshness_seconds": 300,
+            "expected_beds_released": 4,
+            "expected_occupancy_before": 98.0,
+            "expected_occupancy_after": 88.0,
+            "expected_risk_reduction": "CRIT -> HIGH",
+            "owner_team": "Bed Management Team",
+        }
+
+        class Conn:
+            def __init__(self):
+                self.calls = 0
+
+            def execute(self, query, params=None):
+                self.calls += 1
+                if self.calls == 1:
+                    return Result([])
+                if self.calls == 2:
+                    return Result({"id": 42, "completed_at": None})
+                return Result([])
+
+        conn = Conn()
+
+        @contextmanager
+        def fake_connect():
+            yield conn
+
+        with (
+            patch.object(decision_service, "ensure_decision_schema"),
+            patch.object(decision_service, "connect", fake_connect),
+            patch.object(decision_service, "_current_ward_states", return_value=[{"ward_id": "WARD-08"}]),
+            patch.object(decision_service, "_evaluate_ward", return_value=[candidate]),
+        ):
+            result = decision_service.generate_decisions()
+
+        self.assertEqual(result["generated"], 0)
+        self.assertEqual(result["suppressed_cooldown"], 1)
+
     def test_transition_execute_all_logs_full_lifecycle(self):
         initial_row = {
             "id": 9,
@@ -112,6 +165,60 @@ class DecisionServiceTests(unittest.TestCase):
 
         self.assertEqual(updated["status"], "completed")
         self.assertEqual(conn.log_actions, ["assign", "started", "complete"])
+
+    def test_measure_outcomes_records_status_method_and_beds_released(self):
+        decision_row = {
+            "id": 5,
+            "status": "completed",
+            "entity_id": "WARD-08",
+            "expected_beds_released": 2,
+            "expected_occupancy_before": 96.0,
+            "expected_occupancy_after": 88.0,
+            "expected_risk_reduction": "CRIT -> HIGH",
+            "completed_at": None,
+        }
+
+        class Conn:
+            def __init__(self):
+                self.insert_params = None
+
+            def execute(self, query, params=None):
+                query_text = str(query)
+                if "from decision.decision_queue q" in query_text:
+                    return Result([decision_row])
+                if "from " in query_text and "fct_bed_occupancy" in query_text:
+                    return Result({"occupied_beds": 18, "occupancy_rate": 90.0})
+                if "beds_released" in query_text and "stg_bed_events" in query_text:
+                    return Result({"beds_released": 3})
+                if "insert into decision.decision_outcomes" in query_text:
+                    self.insert_params = params
+                    return Result(None)
+                return Result(None)
+
+        conn = Conn()
+
+        @contextmanager
+        def fake_connect():
+            yield conn
+
+        with patch.object(decision_service, "ensure_decision_schema"), patch.object(decision_service, "connect", fake_connect):
+            result = decision_service.measure_outcomes()
+
+        self.assertEqual(result["measured"], 1)
+        self.assertIsNotNone(conn.insert_params)
+        self.assertEqual(conn.insert_params[4], 3)
+        self.assertEqual(conn.insert_params[10], decision_service.MEASURED_STATUS)
+        self.assertEqual(conn.insert_params[11], decision_service.LATEST_WARD_SNAPSHOT_METHOD)
+
+    def test_accuracy_evaluation_uses_stricter_threshold_and_direction(self):
+        with patch.object(decision_service.settings, "decision_accuracy_threshold_pp", 5.0):
+            accurate, note = decision_service._evaluate_prediction_accuracy(100.0, 92.0, 97.5)
+            self.assertFalse(accurate)
+            self.assertIn("threshold 5.0pp", note)
+
+            accurate, note = decision_service._evaluate_prediction_accuracy(100.0, 95.0, 96.0)
+            self.assertTrue(accurate)
+            self.assertIn("Predicted direction down", note)
 
 
 class DecisionRoutesTests(unittest.TestCase):

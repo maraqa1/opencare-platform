@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -17,6 +17,7 @@ ACTIVE_STATUSES = ("recommended", "assigned", "in_progress")
 TERMINAL_STATUSES = ("completed", "dismissed", "expired")
 MEASURED_STATUS = "measured"
 PENDING_MEASUREMENT_STATUS = "pending"
+LATEST_WARD_SNAPSHOT_METHOD = "latest_ward_snapshot"
 
 
 def _float(value: object, default: float = 0.0) -> float:
@@ -115,7 +116,11 @@ def ensure_decision_schema() -> None:
                 prediction_accurate boolean,
                 accuracy_notes text,
                 measured_at timestamp not null default now(),
-                measurement_window_hours integer default 24
+                measurement_window_hours integer default 24,
+                measurement_status varchar(20) not null default 'measured',
+                measurement_method varchar(50),
+                measured_window_start timestamp,
+                measured_window_end timestamp
             );
 
             create table if not exists decision.notification_log (
@@ -141,6 +146,11 @@ def ensure_decision_schema() -> None:
             create index if not exists idx_decision_log_action on decision.decision_log(action);
             create index if not exists idx_decision_outcomes_decision on decision.decision_outcomes(decision_id);
             create index if not exists idx_notification_log_decision on decision.notification_log(decision_id);
+
+            alter table if exists decision.decision_outcomes add column if not exists measurement_status varchar(20) not null default 'measured';
+            alter table if exists decision.decision_outcomes add column if not exists measurement_method varchar(50);
+            alter table if exists decision.decision_outcomes add column if not exists measured_window_start timestamp;
+            alter table if exists decision.decision_outcomes add column if not exists measured_window_end timestamp;
 
             """
         )
@@ -519,6 +529,92 @@ def _serialize_decision(row: dict[str, Any]) -> dict[str, Any]:
     return item
 
 
+def _predicted_risk_after(expected_risk_reduction: object) -> str | None:
+    text = str(expected_risk_reduction or "").strip()
+    if not text:
+        return None
+    if "->" in text:
+        return text.split("->", 1)[1].strip() or None
+    return text
+
+
+def _measurement_window_bounds(reference_time: datetime | None) -> tuple[datetime, datetime]:
+    start = reference_time or datetime.utcnow()
+    end = start + timedelta(hours=settings.decision_measurement_window_hours)
+    return start, end
+
+
+def _movement_direction(before: float, after: float) -> str:
+    delta = after - before
+    if delta <= -0.5:
+        return "down"
+    if delta >= 0.5:
+        return "up"
+    return "flat"
+
+
+def _evaluate_prediction_accuracy(
+    expected_before: float,
+    predicted_after: float,
+    actual_after: float,
+) -> tuple[bool, str]:
+    threshold = settings.decision_accuracy_threshold_pp
+    delta = abs(predicted_after - actual_after)
+    predicted_direction = _movement_direction(expected_before, predicted_after)
+    actual_direction = _movement_direction(expected_before, actual_after)
+    direction_matches = predicted_direction == actual_direction or (
+        predicted_direction == "flat" and delta <= threshold
+    )
+    accurate = delta <= threshold and direction_matches
+    note = (
+        f"Observed {actual_after:.1f}% against predicted {predicted_after:.1f}% "
+        f"({delta:.1f}pp delta; threshold {threshold:.1f}pp). "
+        f"Predicted direction {predicted_direction}, actual direction {actual_direction}. "
+        "This is observational ward-level measurement, not causal proof."
+    )
+    return accurate, note
+
+
+def _reconciliation_note(window_start: datetime, window_end: datetime, beds_released: int | None) -> str:
+    if beds_released is None:
+        return (
+            "Ward-event reconciliation was unavailable for "
+            f"{window_start.isoformat()} to {window_end.isoformat()}."
+        )
+    return (
+        "Beds released counted from discharge and transfer_out events between "
+        f"{window_start.isoformat()} and {window_end.isoformat()}."
+    )
+
+
+def _actual_beds_released(
+    conn: Any,
+    decision: dict[str, Any],
+    window_start: datetime,
+    window_end: datetime,
+) -> int | None:
+    # Deterministic ward-level proxy: count departures from the ward inside the
+    # post-completion observation window instead of inferring release from occupancy.
+    events_table = qualified_table(settings.staging_schema, "stg_bed_events")
+    try:
+        row = conn.execute(
+            sql.SQL(
+                """
+                select count(*) as beds_released
+                from {events_table}
+                where ward_id = %s
+                  and event_timestamp > %s
+                  and event_timestamp <= %s
+                  and event_type in ('discharge', 'transfer_out')
+                """
+            ).format(events_table=events_table),
+            (decision["entity_id"], window_start, window_end),
+        ).fetchone()
+    except UndefinedTable:
+        return None
+    return _int(row["beds_released"]) if row else None
+
+
 def generate_decisions() -> dict[str, Any]:
     ensure_decision_schema()
     generation_run_id = f"decision-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
@@ -532,6 +628,7 @@ def generate_decisions() -> dict[str, Any]:
         candidates.extend(_evaluate_ward(dict(ward)))
 
     inserted: list[dict[str, Any]] = []
+    suppressed_cooldown: list[dict[str, Any]] = []
     with connect() as conn:
         for decision in candidates:
             exists = conn.execute(
@@ -546,6 +643,34 @@ def generate_decisions() -> dict[str, Any]:
                 (decision["use_case"], decision["entity_id"], decision["decision_type"]),
             ).fetchone()
             if exists:
+                continue
+
+            recent_completed = conn.execute(
+                """
+                select id, completed_at from decision.decision_queue
+                where use_case = %s
+                  and entity_id = %s
+                  and decision_type = %s
+                  and status = 'completed'
+                  and completed_at > now() - (%s * interval '1 hour')
+                order by completed_at desc
+                limit 1
+                """,
+                (
+                    decision["use_case"],
+                    decision["entity_id"],
+                    decision["decision_type"],
+                    settings.decision_cooldown_hours,
+                ),
+            ).fetchone()
+            if recent_completed:
+                suppressed_cooldown.append(
+                    {
+                        "entity_id": decision["entity_id"],
+                        "decision_type": decision["decision_type"],
+                        "blocked_by_decision_id": recent_completed["id"],
+                    }
+                )
                 continue
 
             urgency = _urgency_score(decision)
@@ -622,7 +747,14 @@ def generate_decisions() -> dict[str, Any]:
         for expired in expired_rows:
             _log_transition(conn, expired["id"], expired["previous_state"], "expired", "expired", reason="auto-expired after 24h")
 
-    return {"status": "ok", "generated": len(inserted), "items": inserted, "generation_run_id": generation_run_id}
+    return {
+        "status": "ok",
+        "generated": len(inserted),
+        "items": inserted,
+        "generation_run_id": generation_run_id,
+        "suppressed_cooldown": len(suppressed_cooldown),
+        "suppressed_items": suppressed_cooldown,
+    }
 
 
 def list_decisions(
@@ -1030,6 +1162,7 @@ def measure_outcomes() -> dict[str, Any]:
             """,
         ).fetchall()
         for decision in rows:
+            window_start, window_end = _measurement_window_bounds(decision.get("completed_at"))
             current = conn.execute(
                 sql.SQL(
                     """
@@ -1046,26 +1179,39 @@ def measure_outcomes() -> dict[str, Any]:
                 continue
             actual_occupancy = _float(current["occupancy_rate"])
             predicted_after = _float(decision["expected_occupancy_after"])
-            accurate = abs(predicted_after - actual_occupancy) <= 10
+            accurate, accuracy_note = _evaluate_prediction_accuracy(
+                _float(decision["expected_occupancy_before"]),
+                predicted_after,
+                actual_occupancy,
+            )
+            actual_beds_released = _actual_beds_released(conn, decision, window_start, window_end)
+            reconciliation_note = _reconciliation_note(window_start, window_end, actual_beds_released)
             conn.execute(
                 """
                 insert into decision.decision_outcomes (
                     decision_id, predicted_beds_released, predicted_occupancy_after,
                     predicted_risk_after, actual_beds_released, actual_occupancy_after,
-                    actual_risk_after, prediction_accurate, accuracy_notes
+                    actual_risk_after, prediction_accurate, accuracy_notes,
+                    measurement_window_hours, measurement_status, measurement_method,
+                    measured_window_start, measured_window_end
                 )
-                values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     decision["id"],
                     decision["expected_beds_released"],
                     predicted_after,
-                    decision["expected_risk_reduction"],
-                    None,
+                    _predicted_risk_after(decision["expected_risk_reduction"]),
+                    actual_beds_released,
                     actual_occupancy,
                     _risk_label(actual_occupancy),
                     accurate,
-                    "Measured against latest available occupancy snapshot. Actual beds released requires pre/post patient-level reconciliation.",
+                    f"{accuracy_note} {reconciliation_note}",
+                    settings.decision_measurement_window_hours,
+                    MEASURED_STATUS,
+                    LATEST_WARD_SNAPSHOT_METHOD,
+                    window_start,
+                    window_end,
                 ),
             )
             measured += 1

@@ -100,8 +100,17 @@ create table if not exists decision.decision_outcomes (
   prediction_accurate boolean,
   accuracy_notes text,
   measured_at timestamp not null default now(),
-  measurement_window_hours integer default 24
+  measurement_window_hours integer default 24,
+  measurement_status varchar(20) not null default 'measured',
+  measurement_method varchar(50),
+  measured_window_start timestamp,
+  measured_window_end timestamp
 );
+
+alter table if exists decision.decision_outcomes add column if not exists measurement_status varchar(20) not null default 'measured';
+alter table if exists decision.decision_outcomes add column if not exists measurement_method varchar(50);
+alter table if exists decision.decision_outcomes add column if not exists measured_window_start timestamp;
+alter table if exists decision.decision_outcomes add column if not exists measured_window_end timestamp;
 
 create table if not exists decision.notification_log (
   id serial primary key,
