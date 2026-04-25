@@ -23,12 +23,6 @@ export type DecisionItem = {
   actions: string[];
 };
 
-export type ResolvedDecision = {
-  title: string;
-  date: string;
-  outcome: string;
-};
-
 export const useCases: UseCaseModule[] = [
   {
     id: "bed_pressure",
@@ -126,18 +120,5 @@ export const decisionQueue: DecisionItem[] = [
       "Review tomorrow's elective list for deferral options",
       "Brief night shift on rising occupancy",
     ],
-  },
-];
-
-export const resolvedDecisions: ResolvedDecision[] = [
-  {
-    title: "Med-01: Discharge backlog cleared",
-    date: "Apr 18",
-    outcome: "Occupancy dropped 84% to 72% in 24h",
-  },
-  {
-    title: "Ortho-01: Elective deferrals avoided breach",
-    date: "Apr 16",
-    outcome: "Predicted 92% never materialised",
   },
 ];

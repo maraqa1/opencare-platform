@@ -19,9 +19,9 @@ export default function BedPressureDecisionsPage() {
             </p>
           </div>
           <div className="trust-line">
-            <span>Rules from use_cases.yaml</span>
+            <span>Decision rules executed in backend service</span>
             <span>Audit: decision_log</span>
-            <span>Impact: 24h outcome check</span>
+            <span>Impact: measured after 24h observation window</span>
           </div>
         </section>
 

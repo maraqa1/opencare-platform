@@ -61,10 +61,18 @@ def decisions_count(use_case: str | None = Query(default=None)) -> dict[str, Any
 @router.get("/decisions/resolved")
 def decisions_resolved(
     use_case: str | None = Query(default=None),
+    include_unmeasured: bool = Query(default=False),
+    days: int = Query(default=7, ge=1, le=30),
     limit: int = Query(default=10, ge=1, le=50),
 ) -> dict[str, Any]:
-    return {"items": list_resolved_decisions(use_case=use_case, limit=limit)}
-
+    return {
+        "items": list_resolved_decisions(
+            use_case=use_case,
+            limit=limit,
+            days=days,
+            include_unmeasured=include_unmeasured,
+        )
+    }
 
 @router.post("/decisions/generate")
 def decisions_generate() -> dict[str, Any]:
@@ -102,6 +110,11 @@ def decisions_start(decision_id: int, payload: DecisionActionPayload | None = No
 @router.post("/decisions/{decision_id}/complete")
 def decisions_complete(decision_id: int, payload: DecisionActionPayload) -> dict[str, Any]:
     return _transition(decision_id, "complete", payload)
+
+
+@router.post("/decisions/{decision_id}/execute-all")
+def decisions_execute_all(decision_id: int, payload: DecisionActionPayload) -> dict[str, Any]:
+    return _transition(decision_id, "execute_all", payload)
 
 
 @router.post("/decisions/{decision_id}/dismiss")

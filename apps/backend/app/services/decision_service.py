@@ -15,6 +15,8 @@ from app.services.notification_service import send_decision_email
 
 ACTIVE_STATUSES = ("recommended", "assigned", "in_progress")
 TERMINAL_STATUSES = ("completed", "dismissed", "expired")
+MEASURED_STATUS = "measured"
+PENDING_MEASUREMENT_STATUS = "pending"
 
 
 def _float(value: object, default: float = 0.0) -> float:
@@ -139,6 +141,7 @@ def ensure_decision_schema() -> None:
             create index if not exists idx_decision_log_action on decision.decision_log(action);
             create index if not exists idx_decision_outcomes_decision on decision.decision_outcomes(decision_id);
             create index if not exists idx_notification_log_decision on decision.notification_log(decision_id);
+
             """
         )
 
@@ -713,44 +716,49 @@ def count_decisions(use_case: str | None = None) -> dict[str, Any]:
     }
 
 
-def list_resolved_decisions(use_case: str | None = None, limit: int = 10) -> list[dict[str, Any]]:
+def list_resolved_decisions(
+    use_case: str | None = None,
+    limit: int = 10,
+    days: int = 7,
+    include_unmeasured: bool = False,
+) -> list[dict[str, Any]]:
     ensure_decision_schema()
-    where_sql = "where q.status = 'completed'"
-    params: list[Any] = []
+    where_sql = "where q.status = 'completed' and q.completed_at >= now() - (%s * interval '1 day')"
+    params: list[Any] = [days]
     if use_case:
         where_sql += " and q.use_case = %s"
         params.append(use_case)
+    if not include_unmeasured:
+        where_sql += " and o.id is not null"
 
     with connect() as conn:
         rows = conn.execute(
             f"""
-            select *
-            from (
-              select distinct on (q.entity_id, q.decision_type)
-                q.id,
-                q.entity_name,
-                q.title,
-                q.completed_at,
-                q.expected_beds_released,
-                q.expected_occupancy_before,
-                q.expected_occupancy_after,
-                q.expected_risk_reduction,
-                o.actual_beds_released,
-                o.actual_occupancy_after,
-                o.actual_risk_after,
-                o.prediction_accurate,
-                o.accuracy_notes,
-                o.measured_at,
-                coalesce(o.measured_at, q.completed_at) as sort_at
-              from decision.decision_queue q
-              left join decision.decision_outcomes o on o.decision_id = q.id
-              {where_sql}
-              order by q.entity_id, q.decision_type, coalesce(o.measured_at, q.completed_at) desc nulls last
-            ) resolved
-            order by resolved.sort_at desc nulls last
+            select
+              q.id,
+              q.entity_id,
+              q.entity_name,
+              q.decision_type,
+              q.title,
+              q.decision_summary,
+              q.rationale,
+              q.completed_at,
+              o.measured_at,
+              o.predicted_occupancy_after,
+              o.actual_occupancy_after,
+              o.predicted_risk_after,
+              o.actual_risk_after,
+              o.prediction_accurate,
+              o.accuracy_notes,
+              o.actual_beds_released,
+              case when o.id is null then %s else %s end as measurement_status
+            from decision.decision_queue q
+            left join decision.decision_outcomes o on o.decision_id = q.id
+            {where_sql}
+            order by o.measured_at desc nulls last, q.completed_at desc
             limit %s
             """,
-            [*params, limit],
+            [PENDING_MEASUREMENT_STATUS, MEASURED_STATUS, *params, limit],
         ).fetchall()
     return [_serialize_decision(row) for row in rows]
 
@@ -768,23 +776,34 @@ def transition_decision(
         if not row:
             return None
 
-        previous = row["status"]
         allowed_transitions = {
             "assign": {"recommended"},
             "start": {"assigned", "recommended"},
             "complete": {"assigned", "in_progress"},
             "dismiss": {"recommended", "assigned", "in_progress"},
+            "execute_all": {"recommended", "assigned", "in_progress"},
         }
-        if previous in TERMINAL_STATUSES:
-            raise ValueError(f"Decision is already {previous} and cannot be changed")
-        if action in allowed_transitions and previous not in allowed_transitions[action]:
-            allowed = ", ".join(sorted(allowed_transitions[action]))
-            raise ValueError(f"Cannot {action} decision from status {previous}; expected one of: {allowed}")
 
-        if action == "assign":
-            new_state = "assigned"
+        def refresh() -> dict[str, Any]:
+            current = conn.execute("select * from decision.decision_queue where id = %s", (decision_id,)).fetchone()
+            if not current:
+                raise ValueError("Decision not found after update")
+            return current
+
+        def ensure_allowed(current_row: dict[str, Any], requested_action: str) -> None:
+            current_state = current_row["status"]
+            if current_state in TERMINAL_STATUSES:
+                raise ValueError(f"Decision is already {current_state} and cannot be changed")
+            if requested_action in allowed_transitions and current_state not in allowed_transitions[requested_action]:
+                allowed = ", ".join(sorted(allowed_transitions[requested_action]))
+                raise ValueError(
+                    f"Cannot {requested_action} decision from status {current_state}; expected one of: {allowed}"
+                )
+
+        def assign(current_row: dict[str, Any]) -> dict[str, Any]:
+            ensure_allowed(current_row, "assign")
             assignee_user = payload.get("assignee_user") or performed_by
-            assignee_email = payload.get("assignee_email")
+            assignee_email = payload.get("assignee_email") or current_row.get("assignee_email")
             conn.execute(
                 """
                 update decision.decision_queue
@@ -792,22 +811,66 @@ def transition_decision(
                     assigned_at = now(), updated_at = now()
                 where id = %s
                 """,
-                (new_state, assignee_user, assignee_email, decision_id),
+                ("assigned", assignee_user, assignee_email, decision_id),
             )
-            status, error = send_decision_email({**row, "priority": row["priority"]}, assignee_email or "", "assignment")
-            _log_notification(conn, decision_id, "assignment", assignee_email, row["owner_team"], assignee_user, status, error)
-        elif action == "start":
-            new_state = "in_progress"
+            status, error = send_decision_email(
+                {**current_row, "priority": current_row["priority"]},
+                assignee_email or "",
+                "assignment",
+            )
+            _log_notification(
+                conn,
+                decision_id,
+                "assignment",
+                assignee_email,
+                current_row["owner_team"],
+                assignee_user,
+                status,
+                error,
+            )
+            _log_transition(
+                conn,
+                decision_id,
+                current_row["status"],
+                "assigned",
+                "assign",
+                performed_by=performed_by,
+                performed_by_role=performed_by_role,
+                notes=payload.get("notes"),
+            )
+            return refresh()
+
+        def start(current_row: dict[str, Any]) -> dict[str, Any]:
+            ensure_allowed(current_row, "start")
             conn.execute(
                 "update decision.decision_queue set status = %s, updated_at = now() where id = %s",
-                (new_state, decision_id),
+                ("in_progress", decision_id),
             )
-        elif action == "complete":
-            new_state = "completed"
-            actions_completed = set(payload.get("actions_completed") or [])
-            actions = row["recommended_actions"] or []
+            _log_transition(
+                conn,
+                decision_id,
+                current_row["status"],
+                "in_progress",
+                "started",
+                performed_by=performed_by,
+                performed_by_role=performed_by_role,
+                notes=payload.get("notes"),
+            )
+            return refresh()
+
+        def complete(
+            current_row: dict[str, Any],
+            actions_completed: list[int],
+            *,
+            default_to_all: bool = False,
+        ) -> dict[str, Any]:
+            ensure_allowed(current_row, "complete")
+            actions = current_row["recommended_actions"] or []
+            selected_actions = set(actions_completed)
+            if not selected_actions and default_to_all:
+                selected_actions = {item.get("order") for item in actions if item.get("order") is not None}
             for item in actions:
-                if item.get("order") in actions_completed:
+                if item.get("order") in selected_actions:
                     item["completed"] = True
             conn.execute(
                 """
@@ -815,50 +878,87 @@ def transition_decision(
                 set status = %s, completed_at = now(), updated_at = now(), recommended_actions = %s
                 where id = %s
                 """,
-                (new_state, _json(actions), decision_id),
+                ("completed", _json(actions), decision_id),
             )
-            completion_recipient = row["assignee_email"] or settings.decision_default_email
-            completion_payload = {**row, "status": new_state, "recommended_actions": actions}
+            completion_recipient = current_row["assignee_email"] or settings.decision_default_email
+            completion_payload = {**current_row, "status": "completed", "recommended_actions": actions}
             status, error = send_decision_email(completion_payload, completion_recipient, "completion")
             _log_notification(
                 conn,
                 decision_id,
                 "completion",
                 completion_recipient,
-                row["owner_team"],
-                row["assignee_user"],
+                current_row["owner_team"],
+                current_row["assignee_user"],
                 status,
                 error,
             )
-        elif action == "dismiss":
+            _log_transition(
+                conn,
+                decision_id,
+                current_row["status"],
+                "completed",
+                "complete",
+                performed_by=performed_by,
+                performed_by_role=performed_by_role,
+                reason=payload.get("reason"),
+                notes=payload.get("notes"),
+                metadata={"actions_completed": sorted(selected_actions)},
+            )
+            return refresh()
+
+        def dismiss(current_row: dict[str, Any]) -> dict[str, Any]:
+            ensure_allowed(current_row, "dismiss")
             reason = str(payload.get("reason") or "").strip()
             if not reason:
                 raise ValueError("Dismiss reason is required")
-            new_state = "dismissed"
             conn.execute(
                 """
                 update decision.decision_queue
                 set status = %s, dismissed_at = now(), dismissed_reason = %s, updated_at = now()
                 where id = %s
                 """,
-                (new_state, reason, decision_id),
+                ("dismissed", reason, decision_id),
             )
+            _log_transition(
+                conn,
+                decision_id,
+                current_row["status"],
+                "dismissed",
+                "dismiss",
+                performed_by=performed_by,
+                performed_by_role=performed_by_role,
+                reason=reason,
+                notes=payload.get("notes"),
+            )
+            return refresh()
+
+        ensure_allowed(row, action)
+
+        if action == "assign":
+            updated = assign(row)
+        elif action == "start":
+            updated = start(row)
+        elif action == "complete":
+            updated = complete(row, list(payload.get("actions_completed") or []), default_to_all=False)
+        elif action == "dismiss":
+            updated = dismiss(row)
+        elif action == "execute_all":
+            current = row
+            if current["status"] == "recommended":
+                current = assign(current)
+            if current["status"] == "assigned":
+                current = start(current)
+            if current["status"] == "in_progress":
+                action_orders = payload.get("actions_completed") or [
+                    item.get("order")
+                    for item in (current["recommended_actions"] or [])
+                    if item.get("order") is not None
+                ]
+                current = complete(current, list(action_orders), default_to_all=True)
+            updated = current
         else:
             raise ValueError(f"Unsupported decision action: {action}")
-
-        _log_transition(
-            conn,
-            decision_id,
-            previous,
-            new_state,
-            action if action != "start" else "started",
-            performed_by=performed_by,
-            performed_by_role=performed_by_role,
-            reason=payload.get("reason"),
-            notes=payload.get("notes"),
-            metadata={"actions_completed": payload.get("actions_completed", [])},
-        )
-        updated = conn.execute("select * from decision.decision_queue where id = %s", (decision_id,)).fetchone()
     return _serialize_decision(updated)
 
 
@@ -927,7 +1027,7 @@ def measure_outcomes() -> dict[str, Any]:
             where q.status = 'completed'
               and q.completed_at < now() - interval '24 hours'
               and o.id is null
-            """
+            """,
         ).fetchall()
         for decision in rows:
             current = conn.execute(

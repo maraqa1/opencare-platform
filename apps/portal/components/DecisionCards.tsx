@@ -54,15 +54,20 @@ type DecisionCounts = {
 
 type ResolvedDecision = {
   id: number;
+  entity_id: string;
+  decision_type: string;
   title: string;
+  decision_summary: string;
+  rationale: string;
   entity_name: string;
   completed_at?: string | null;
   measured_at?: string | null;
-  expected_beds_released?: number | null;
+  measurement_status: "measured" | "pending";
+  measurement_method?: string | null;
   actual_beds_released?: number | null;
-  expected_occupancy_after?: number | null;
+  predicted_occupancy_after?: number | null;
   actual_occupancy_after?: number | null;
-  expected_risk_reduction?: string | null;
+  predicted_risk_after?: string | null;
   actual_risk_after?: string | null;
   prediction_accurate?: boolean | null;
   accuracy_notes?: string | null;
@@ -134,6 +139,8 @@ export function DecisionCards() {
   const [decisionLogs, setDecisionLogs] = useState<Record<number, DecisionLogItem[]>>({});
   const [logMessages, setLogMessages] = useState<Record<number, string>>({});
   const [generating, setGenerating] = useState(false);
+  const measuredResolved = resolved.filter((item) => item.measurement_status === "measured");
+  const pendingResolved = resolved.filter((item) => item.measurement_status === "pending");
 
   async function loadDecisions() {
     setLoading(true);
@@ -141,7 +148,7 @@ export function DecisionCards() {
       const [decisionsResponse, countsResponse, resolvedResponse] = await Promise.all([
         fetch("/api/portal/api/v1/decisions?use_case=bed_pressure&active_only=true&limit=50", { cache: "no-store" }),
         fetch("/api/portal/api/v1/decisions/count?use_case=bed_pressure", { cache: "no-store" }),
-        fetch("/api/portal/api/v1/decisions/resolved?use_case=bed_pressure&limit=7", { cache: "no-store" }),
+        fetch("/api/portal/api/v1/decisions/resolved?use_case=bed_pressure&limit=7&days=7&include_unmeasured=true", { cache: "no-store" }),
       ]);
 
       if (!decisionsResponse.ok || !countsResponse.ok || !resolvedResponse.ok) {
@@ -165,7 +172,7 @@ export function DecisionCards() {
       setResolved(resolvedPayload.items ?? []);
 
       if (decisionPayload.items?.length) {
-        setMessage("Live closed-loop decision queue loaded from decision.decision_queue.");
+        setMessage("Live decision queue loaded from decision.decision_queue.");
       } else {
         setMessage("No live bed-pressure decisions exist yet. Generate the queue from current forecast and anomaly evidence.");
       }
@@ -204,7 +211,10 @@ export function DecisionCards() {
     }
   }
 
-  async function transitionDecision(decision: ApiDecision, action: "assign" | "start" | "complete" | "dismiss") {
+  async function transitionDecision(
+    decision: ApiDecision,
+    action: "assign" | "start" | "complete" | "dismiss" | "execute-all",
+  ) {
     const body: Record<string, unknown> = {};
 
     if (action === "assign") {
@@ -225,6 +235,11 @@ export function DecisionCards() {
         .filter((item) => checkedActions[decision.id]?.[item.order] ?? Boolean(item.completed))
         .map((item) => item.order);
       body.notes = "Executed from OpenCare Decisions tab.";
+    }
+
+    if (action === "execute-all") {
+      body.actions_completed = decision.recommended_actions.map((item) => item.order);
+      body.notes = "Execute-all run from OpenCare Decisions tab.";
     }
 
     if (action === "dismiss") {
@@ -416,6 +431,14 @@ export function DecisionCards() {
                 <div className="button-row">
                   <button
                     className="button primary"
+                    disabled={state !== "recommended"}
+                    onClick={() => void transitionDecision(decision, "execute-all")}
+                    type="button"
+                  >
+                    Execute All
+                  </button>
+                  <button
+                    className="button primary"
                     disabled={state !== "assigned" && state !== "in_progress"}
                     onClick={() => void transitionDecision(decision, "complete")}
                     type="button"
@@ -491,7 +514,7 @@ export function DecisionCards() {
           <p className="eyebrow">No Active Decisions</p>
           <h3 className="section-heading">The queue is empty right now</h3>
           <p className="section-subtitle">
-            Generate the live queue from the latest occupancy, forecast, and anomaly evidence to seed the closed-loop workflow.
+            Generate the live queue from the latest occupancy, forecast, and anomaly evidence to seed the decision workflow.
           </p>
         </section>
       )}
@@ -502,34 +525,55 @@ export function DecisionCards() {
             <p className="eyebrow">Resolved - Last 7 Decisions</p>
             <h3 className="section-heading">Measured outcomes, not just completed tasks</h3>
           </div>
-          <span className="summary-badge normal">{resolved.length} latest resolved actions</span>
+          <span className="summary-badge normal">{measuredResolved.length} measured results</span>
         </div>
         <div className="compact-feed">
-          {resolved.length ? (
-            resolved.map((decision) => (
+          {measuredResolved.length ? (
+            measuredResolved.map((decision) => (
               <div className="compact-alert" key={decision.id}>
                 <span className="status-dot live" />
                 <div>
                   <strong>
-                    {decision.title} ({formatShortDate(decision.measured_at ?? decision.completed_at)})
+                    {decision.title} ({formatShortDate(decision.measured_at)})
                   </strong>
                   <p>
-                    Expected after {decision.expected_occupancy_after ?? "n/a"}% | Actual after {decision.actual_occupancy_after ?? "pending"}%
+                    Predicted after {decision.predicted_occupancy_after ?? "n/a"}% | Actual after {decision.actual_occupancy_after ?? "n/a"}%
                     {" | "}
                     {decision.prediction_accurate == null
-                      ? "Outcome pending"
+                      ? "Measured"
                       : decision.prediction_accurate
                         ? "Prediction accurate"
                         : "Prediction drift detected"}
+                  </p>
+                  <p>
+                    Risk after {decision.predicted_risk_after ?? "n/a"} | Observed risk {decision.actual_risk_after ?? "n/a"} | Beds released{" "}
+                    {decision.actual_beds_released ?? "n/a"}
                   </p>
                   {decision.accuracy_notes ? <p>{decision.accuracy_notes}</p> : null}
                 </div>
               </div>
             ))
           ) : (
-            <p className="section-subtitle">No measured outcomes yet. Completed decisions will appear here after the 24h outcome check runs.</p>
+            <p className="section-subtitle">No measured outcomes yet. Completed decisions will appear here once the 24h outcome check records them.</p>
           )}
         </div>
+        {pendingResolved.length ? (
+          <div className="compact-feed" style={{ marginTop: '1rem' }}>
+            <p className="eyebrow">Completed, awaiting measurement</p>
+            {pendingResolved.map((decision) => (
+              <div className="compact-alert" key={`pending-${decision.id}`}>
+                <span className="status-dot live" />
+                <div>
+                  <strong>
+                    {decision.title} ({formatShortDate(decision.completed_at)})
+                  </strong>
+                  <p>{decision.decision_summary}</p>
+                  <p>Completed, measurement pending. Impact will be checked after the observation window.</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
     </>
   );
