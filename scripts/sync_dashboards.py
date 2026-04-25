@@ -209,7 +209,17 @@ def ensure_database(client: SupersetClient) -> int:
         client.put(f"/api/v1/database/{existing['id']}", payload)
         return int(existing["id"])
 
-    created = client.post("/api/v1/database/", payload)
+    try:
+        created = client.post("/api/v1/database/", payload)
+    except RuntimeError as exc:
+        if "same name already exists" not in str(exc):
+            raise
+        result = client.get(f"/api/v1/database/?q={query}")
+        existing = find_existing(result, "database_name", database_name)
+        if existing:
+            client.put(f"/api/v1/database/{existing['id']}", payload)
+            return int(existing["id"])
+        raise
     created_id = response_id(created)
     if created_id is not None:
         return created_id
