@@ -11,6 +11,7 @@ TALISMAN_ENABLED = False
 HTML_SANITIZATION = True
 ENABLE_PROXY_FIX = True
 WTF_CSRF_ENABLED = False
+PUBLIC_ROLE_LIKE = "Gamma"
 
 _portal_host = os.getenv("PORTAL_HOST", "opencare.opendatalake.com")
 _analytics_url = os.getenv("SUPERSET_EMBED_URL", "")
