@@ -73,6 +73,40 @@ type ResolvedDecision = {
   accuracy_notes?: string | null;
 };
 
+type DailyLogSummary = {
+  total: number;
+  recommended: number;
+  assigned: number;
+  in_progress: number;
+  completed: number;
+  dismissed: number;
+  expired: number;
+  measured_outcomes: number;
+  pending_outcomes: number;
+};
+
+type DailyLogDecision = {
+  decision_id: number;
+  entity_name: string;
+  decision_summary: string;
+  rationale: string;
+  priority: string;
+  status: DecisionState;
+  owner_team?: string | null;
+  assignee?: string | null;
+  next_step: string;
+  outcome_status: "pending" | "measured" | "not_applicable";
+  last_updated_at?: string | null;
+};
+
+type DailyLogPayload = {
+  date: string;
+  use_case: string;
+  generated_at: string;
+  summary: DailyLogSummary;
+  decisions: DailyLogDecision[];
+};
+
 function statusLabel(state: DecisionState) {
   switch (state) {
     case "assigned":
@@ -122,9 +156,17 @@ function formatShortDate(value?: string | null) {
   }).format(parsed);
 }
 
+function formatDateInput(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
 export function DecisionCards() {
   const [apiDecisions, setApiDecisions] = useState<ApiDecision[]>([]);
   const [resolved, setResolved] = useState<ResolvedDecision[]>([]);
+  const [dailyLogDate, setDailyLogDate] = useState(formatDateInput(new Date()));
+  const [dailyLog, setDailyLog] = useState<DailyLogPayload | null>(null);
+  const [dailyLogLoading, setDailyLogLoading] = useState(true);
+  const [dailyLogError, setDailyLogError] = useState("");
   const [counts, setCounts] = useState<DecisionCounts>({
     recommended: 0,
     assigned: 0,
@@ -188,6 +230,33 @@ export function DecisionCards() {
   useEffect(() => {
     void loadDecisions();
   }, []);
+
+  async function loadDailyLog(selectedDate: string) {
+    setDailyLogLoading(true);
+    setDailyLogError("");
+    try {
+      const response = await fetch(
+        `/api/portal/api/v1/decisions/daily-log?use_case=bed_pressure&date=${encodeURIComponent(selectedDate)}`,
+        { cache: "no-store" },
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = (await response.json()) as DailyLogPayload;
+      setDailyLog(payload);
+    } catch (error) {
+      setDailyLog(null);
+      setDailyLogError(
+        error instanceof Error ? `Unable to load daily decision log: ${error.message}` : "Unable to load daily decision log.",
+      );
+    } finally {
+      setDailyLogLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadDailyLog(dailyLogDate);
+  }, [dailyLogDate]);
 
   async function generateQueue() {
     setGenerating(true);
@@ -518,6 +587,112 @@ export function DecisionCards() {
           </p>
         </section>
       )}
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Daily Decision Log</p>
+            <h3 className="section-heading">Operational log for a selected day</h3>
+            <p className="section-subtitle">
+              Live export of all decisions touched during the day, including active work, terminal states, audit activity, and outcome status.
+            </p>
+          </div>
+          <div className="button-row">
+            <input
+              aria-label="Daily decision log date"
+              onChange={(event) => setDailyLogDate(event.target.value)}
+              type="date"
+              value={dailyLogDate}
+            />
+            <a
+              className="button primary"
+              href={`/api/portal/api/v1/decisions/daily-log?use_case=bed_pressure&date=${encodeURIComponent(dailyLogDate)}&format=csv`}
+            >
+              Download CSV
+            </a>
+          </div>
+        </div>
+
+        {dailyLogError ? <p className="section-subtitle mono">{dailyLogError}</p> : null}
+
+        {dailyLog ? (
+          <>
+            <section className="decision-summary-grid" style={{ marginTop: "1rem" }}>
+              <article className="metric-card">
+                <span className="eyebrow">Total</span>
+                <strong>{dailyLog.summary.total}</strong>
+                <p>All decisions touched on {dailyLog.date}.</p>
+              </article>
+              <article className="metric-card">
+                <span className="eyebrow">Active</span>
+                <strong>{dailyLog.summary.recommended + dailyLog.summary.assigned + dailyLog.summary.in_progress}</strong>
+                <p>Recommended, assigned, and in-progress decisions.</p>
+              </article>
+              <article className="metric-card">
+                <span className="eyebrow">Completed</span>
+                <strong>{dailyLog.summary.completed}</strong>
+                <p>Completed decisions touched that day.</p>
+              </article>
+              <article className="metric-card">
+                <span className="eyebrow">Dismissed / Expired</span>
+                <strong>{dailyLog.summary.dismissed + dailyLog.summary.expired}</strong>
+                <p>Terminal decisions requiring operational review.</p>
+              </article>
+              <article className="metric-card">
+                <span className="eyebrow">Measured Outcomes</span>
+                <strong>{dailyLog.summary.measured_outcomes}</strong>
+                <p>Completed decisions with recorded outcome measurement.</p>
+              </article>
+              <article className="metric-card">
+                <span className="eyebrow">Pending Outcomes</span>
+                <strong>{dailyLog.summary.pending_outcomes}</strong>
+                <p>Completed decisions still awaiting measurement.</p>
+              </article>
+            </section>
+
+            <div style={{ marginTop: "1rem", overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th align="left">Ward</th>
+                    <th align="left">Decision</th>
+                    <th align="left">Reason</th>
+                    <th align="left">Priority</th>
+                    <th align="left">Status</th>
+                    <th align="left">Owner</th>
+                    <th align="left">Next step</th>
+                    <th align="left">Outcome status</th>
+                    <th align="left">Last update</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dailyLog.decisions.map((entry) => (
+                    <tr key={entry.decision_id}>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{entry.entity_name}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{entry.decision_summary}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{entry.rationale}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{entry.priority.toUpperCase()}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{statusLabel(entry.status)}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{entry.assignee ?? entry.owner_team ?? "Unassigned"}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{entry.next_step}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{entry.outcome_status.replace("_", " ")}</td>
+                      <td style={{ padding: "0.5rem 0.25rem" }}>{formatLogTime(entry.last_updated_at ?? dailyLog.generated_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {!dailyLog.decisions.length && !dailyLogLoading ? (
+              <p className="section-subtitle" style={{ marginTop: "1rem" }}>
+                No decisions were touched on {dailyLog.date}.
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {dailyLogLoading ? <p className="section-subtitle">Loading daily decision log...</p> : null}
+      </section>
 
       <section className="panel">
         <div className="panel-header">

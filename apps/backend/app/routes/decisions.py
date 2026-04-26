@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+import csv
+import io
+from datetime import date as date_cls
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.services.decision_service import (
+    DAILY_LOG_FIELD_ORDER,
     check_escalations,
     count_decisions,
+    daily_decision_log,
     decision_log,
     decision_outcome,
     generate_decisions,
@@ -73,6 +79,33 @@ def decisions_resolved(
             include_unmeasured=include_unmeasured,
         )
     }
+
+
+@router.get("/decisions/daily-log")
+def decisions_daily_log(
+    date: date_cls | None = Query(default=None),
+    use_case: str | None = Query(default="bed_pressure"),
+    format: str = Query(default="json", pattern="^(json|csv)$"),
+    include_terminal: bool = Query(default=True),
+) -> Any:
+    payload = daily_decision_log(
+        selected_date=date,
+        use_case=use_case,
+        include_terminal=include_terminal,
+    )
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=DAILY_LOG_FIELD_ORDER)
+        writer.writeheader()
+        for row in payload["decisions"]:
+            writer.writerow({key: row.get(key) for key in DAILY_LOG_FIELD_ORDER})
+        response = StreamingResponse(iter([output.getvalue()]), media_type="text/csv")
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="opencare_daily_decision_log_{payload["date"]}.csv"'
+        )
+        return response
+    return payload
+
 
 @router.post("/decisions/generate")
 def decisions_generate() -> dict[str, Any]:

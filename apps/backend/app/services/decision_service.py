@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date as date_cls
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -18,6 +19,49 @@ TERMINAL_STATUSES = ("completed", "dismissed", "expired")
 MEASURED_STATUS = "measured"
 PENDING_MEASUREMENT_STATUS = "pending"
 LATEST_WARD_SNAPSHOT_METHOD = "latest_ward_snapshot"
+DAILY_LOG_FIELD_ORDER = [
+    "decision_id",
+    "use_case",
+    "entity_id",
+    "entity_name",
+    "decision_type",
+    "decision_summary",
+    "signal_summary",
+    "rationale",
+    "priority",
+    "priority_score",
+    "urgency_score",
+    "impact_score",
+    "confidence_level",
+    "confidence_detail",
+    "status",
+    "owner_team",
+    "assignee",
+    "created_at",
+    "assigned_at",
+    "started_at",
+    "completed_at",
+    "dismissed_at",
+    "dismissed_reason",
+    "expired_at",
+    "last_updated_at",
+    "escalation_count",
+    "last_log_event",
+    "last_log_at",
+    "audit_event_count",
+    "sent_count",
+    "failed_count",
+    "skipped_count",
+    "outcome_status",
+    "predicted_occupancy_after",
+    "actual_occupancy_after",
+    "predicted_risk_after",
+    "actual_risk_after",
+    "actual_beds_released",
+    "prediction_accurate",
+    "accuracy_notes",
+    "next_step",
+]
 
 
 def _float(value: object, default: float = 0.0) -> float:
@@ -587,6 +631,35 @@ def _reconciliation_note(window_start: datetime, window_end: datetime, beds_rele
     )
 
 
+def _daily_log_date_bounds(selected_date: date_cls | None) -> tuple[date_cls, datetime, datetime]:
+    target_date = selected_date or datetime.utcnow().date()
+    start = datetime.combine(target_date, time.min)
+    end = start + timedelta(days=1)
+    return target_date, start, end
+
+
+def _daily_log_outcome_status(status: str, measured_at: object) -> str:
+    if status != "completed":
+        return "not_applicable"
+    return MEASURED_STATUS if measured_at else PENDING_MEASUREMENT_STATUS
+
+
+def _daily_log_next_step(status: str, outcome_status: str) -> str:
+    if status == "recommended":
+        return "Assign owner / start action"
+    if status == "assigned":
+        return "Start action"
+    if status == "in_progress":
+        return "Complete action or dismiss with reason"
+    if status == "completed":
+        return "Review measured outcome" if outcome_status == MEASURED_STATUS else "Await outcome measurement"
+    if status == "dismissed":
+        return "Review dismissal reason"
+    if status == "expired":
+        return "Review missed action and escalation history"
+    return "Review decision"
+
+
 def _actual_beds_released(
     conn: Any,
     decision: dict[str, Any],
@@ -893,6 +966,253 @@ def list_resolved_decisions(
             [PENDING_MEASUREMENT_STATUS, MEASURED_STATUS, *params, limit],
         ).fetchall()
     return [_serialize_decision(row) for row in rows]
+
+
+def daily_decision_log(
+    selected_date: date_cls | None = None,
+    use_case: str | None = "bed_pressure",
+    include_terminal: bool = True,
+) -> dict[str, Any]:
+    ensure_decision_schema()
+    target_date, window_start, window_end = _daily_log_date_bounds(selected_date)
+
+    filters = [
+        """
+        (
+          q.created_at >= %s and q.created_at < %s
+          or q.updated_at >= %s and q.updated_at < %s
+          or q.completed_at >= %s and q.completed_at < %s
+          or q.dismissed_at >= %s and q.dismissed_at < %s
+          or q.last_escalated_at >= %s and q.last_escalated_at < %s
+          or q.expires_at >= %s and q.expires_at < %s
+          or latest_outcome.measured_at >= %s and latest_outcome.measured_at < %s
+          or coalesce(audit_summary.event_count, 0) > 0
+        )
+        """
+    ]
+    params: list[Any] = [
+        window_start,
+        window_end,
+        window_start,
+        window_end,
+        window_start,
+        window_end,
+        window_start,
+        window_end,
+        window_start,
+        window_end,
+        window_start,
+        window_end,
+        window_start,
+        window_end,
+    ]
+    if use_case:
+        filters.append("q.use_case = %s")
+        params.append(use_case)
+    if not include_terminal:
+        filters.append("q.status = any(%s)")
+        params.append(list(ACTIVE_STATUSES))
+
+    where_sql = " where " + " and ".join(filters)
+    with connect() as conn:
+        rows = conn.execute(
+            f"""
+            select
+              q.id as decision_id,
+              q.use_case,
+              q.entity_id,
+              q.entity_name,
+              q.decision_type,
+              q.decision_summary,
+              q.signal_summary,
+              q.rationale,
+              q.priority,
+              q.priority_score,
+              q.urgency_score,
+              q.impact_score,
+              q.confidence_level,
+              q.confidence_detail,
+              q.status,
+              q.owner_team,
+              q.assignee_user,
+              q.assignee_email,
+              q.created_at,
+              q.assigned_at,
+              q.completed_at,
+              q.dismissed_at,
+              q.dismissed_reason,
+              q.updated_at as last_updated_at,
+              q.expires_at,
+              q.escalation_count,
+              started_log.started_at,
+              expired_log.expired_at,
+              audit_last.last_log_event,
+              audit_last.last_log_at,
+              coalesce(audit_summary.event_count, 0) as audit_event_count,
+              coalesce(notification_summary.sent_count, 0) as sent_count,
+              coalesce(notification_summary.failed_count, 0) as failed_count,
+              coalesce(notification_summary.skipped_count, 0) as skipped_count,
+              latest_outcome.measured_at,
+              latest_outcome.predicted_occupancy_after,
+              latest_outcome.actual_occupancy_after,
+              latest_outcome.predicted_risk_after,
+              latest_outcome.actual_risk_after,
+              latest_outcome.actual_beds_released,
+              latest_outcome.prediction_accurate,
+              latest_outcome.accuracy_notes
+            from decision.decision_queue q
+            left join lateral (
+              select
+                o.measured_at,
+                o.predicted_occupancy_after,
+                o.actual_occupancy_after,
+                o.predicted_risk_after,
+                o.actual_risk_after,
+                o.actual_beds_released,
+                o.prediction_accurate,
+                o.accuracy_notes
+              from decision.decision_outcomes o
+              where o.decision_id = q.id
+              order by o.measured_at desc nulls last, o.id desc
+              limit 1
+            ) latest_outcome on true
+            left join lateral (
+              select created_at as started_at
+              from decision.decision_log l
+              where l.decision_id = q.id and l.action = 'started'
+              order by created_at desc
+              limit 1
+            ) started_log on true
+            left join lateral (
+              select created_at as expired_at
+              from decision.decision_log l
+              where l.decision_id = q.id and l.action = 'expired'
+              order by created_at desc
+              limit 1
+            ) expired_log on true
+            left join lateral (
+              select action as last_log_event, created_at as last_log_at
+              from decision.decision_log l
+              where l.decision_id = q.id
+                and l.created_at >= %s
+                and l.created_at < %s
+              order by created_at desc
+              limit 1
+            ) audit_last on true
+            left join lateral (
+              select count(*) as event_count
+              from decision.decision_log l
+              where l.decision_id = q.id
+                and l.created_at >= %s
+                and l.created_at < %s
+            ) audit_summary on true
+            left join lateral (
+              select
+                count(*) filter (where delivery_status = 'sent') as sent_count,
+                count(*) filter (where delivery_status = 'failed') as failed_count,
+                count(*) filter (where delivery_status = 'skipped') as skipped_count
+              from decision.notification_log n
+              where n.decision_id = q.id
+                and n.sent_at >= %s
+                and n.sent_at < %s
+            ) notification_summary on true
+            {where_sql}
+            order by q.updated_at desc, q.id desc
+            """,
+            [
+                window_start,
+                window_end,
+                window_start,
+                window_end,
+                window_start,
+                window_end,
+                *params,
+            ],
+        ).fetchall()
+
+    decisions: list[dict[str, Any]] = []
+    summary = {
+        "total": 0,
+        "recommended": 0,
+        "assigned": 0,
+        "in_progress": 0,
+        "completed": 0,
+        "dismissed": 0,
+        "expired": 0,
+        "measured_outcomes": 0,
+        "pending_outcomes": 0,
+    }
+
+    for row in rows:
+        item = _serialize_decision(row)
+        outcome_status = _daily_log_outcome_status(str(item["status"]), item.get("measured_at"))
+        next_step = _daily_log_next_step(str(item["status"]), outcome_status)
+        assignee = item.get("assignee_user") or item.get("assignee_email")
+        notification_status = {
+            "sent_count": item.get("sent_count", 0),
+            "failed_count": item.get("failed_count", 0),
+            "skipped_count": item.get("skipped_count", 0),
+        }
+        decision = {
+            "decision_id": item["decision_id"],
+            "use_case": item["use_case"],
+            "entity_id": item["entity_id"],
+            "entity_name": item["entity_name"],
+            "decision_type": item["decision_type"],
+            "decision_summary": item["decision_summary"],
+            "signal_summary": item["signal_summary"],
+            "rationale": item["rationale"],
+            "priority": item["priority"],
+            "priority_score": item["priority_score"],
+            "urgency_score": item["urgency_score"],
+            "impact_score": item["impact_score"],
+            "confidence_level": item.get("confidence_level"),
+            "confidence_detail": item.get("confidence_detail"),
+            "status": item["status"],
+            "owner_team": item.get("owner_team"),
+            "assignee": assignee,
+            "created_at": item.get("created_at"),
+            "assigned_at": item.get("assigned_at"),
+            "started_at": item.get("started_at"),
+            "completed_at": item.get("completed_at"),
+            "dismissed_at": item.get("dismissed_at"),
+            "dismissed_reason": item.get("dismissed_reason"),
+            "expired_at": item.get("expired_at"),
+            "last_updated_at": item.get("last_updated_at"),
+            "escalation_count": item.get("escalation_count", 0),
+            "notification_status": notification_status,
+            "sent_count": notification_status["sent_count"],
+            "failed_count": notification_status["failed_count"],
+            "skipped_count": notification_status["skipped_count"],
+            "last_log_event": item.get("last_log_event"),
+            "last_log_at": item.get("last_log_at"),
+            "audit_event_count": item.get("audit_event_count", 0),
+            "outcome_status": outcome_status,
+            "predicted_occupancy_after": item.get("predicted_occupancy_after"),
+            "actual_occupancy_after": item.get("actual_occupancy_after"),
+            "predicted_risk_after": item.get("predicted_risk_after"),
+            "actual_risk_after": item.get("actual_risk_after"),
+            "actual_beds_released": item.get("actual_beds_released"),
+            "prediction_accurate": item.get("prediction_accurate"),
+            "accuracy_notes": item.get("accuracy_notes"),
+            "next_step": next_step,
+        }
+        decisions.append(decision)
+        summary["total"] += 1
+        if decision["status"] in summary:
+            summary[str(decision["status"])] += 1
+        if outcome_status == MEASURED_STATUS:
+            summary["measured_outcomes"] += 1
+        elif outcome_status == PENDING_MEASUREMENT_STATUS:
+            summary["pending_outcomes"] += 1
+
+    return {
+        "date": target_date.isoformat(),
+        "use_case": use_case or "all",
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "summary": summary,
+        "decisions": decisions,
+    }
 
 
 def transition_decision(

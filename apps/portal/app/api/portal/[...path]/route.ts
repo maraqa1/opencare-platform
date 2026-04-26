@@ -41,6 +41,9 @@ async function proxy(request: NextRequest, context: RouteContext) {
       status: response.status,
       headers: {
         "content-type": contentType,
+        ...(response.headers.get("content-disposition")
+          ? { "content-disposition": response.headers.get("content-disposition") as string }
+          : {}),
       },
     });
   } catch {
