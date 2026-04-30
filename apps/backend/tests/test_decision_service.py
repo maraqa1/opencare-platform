@@ -213,14 +213,13 @@ class DecisionServiceTests(unittest.TestCase):
         self.assertEqual(conn.insert_params[11], decision_service.LATEST_WARD_SNAPSHOT_METHOD)
 
     def test_accuracy_evaluation_uses_stricter_threshold_and_direction(self):
-        with patch.object(decision_service.settings, "decision_accuracy_threshold_pp", 5.0):
-            accurate, note = decision_service._evaluate_prediction_accuracy(100.0, 92.0, 97.5)
-            self.assertFalse(accurate)
-            self.assertIn("threshold 5.0pp", note)
+        accurate, note = decision_service._evaluate_prediction_accuracy(100.0, 92.0, 97.5, threshold_pp=5.0)
+        self.assertFalse(accurate)
+        self.assertIn("threshold 5.0pp", note)
 
-            accurate, note = decision_service._evaluate_prediction_accuracy(100.0, 95.0, 96.0)
-            self.assertTrue(accurate)
-            self.assertIn("Predicted direction down", note)
+        accurate, note = decision_service._evaluate_prediction_accuracy(100.0, 95.0, 96.0, threshold_pp=5.0)
+        self.assertTrue(accurate)
+        self.assertIn("Predicted direction down", note)
 
     def test_daily_log_includes_created_decisions_and_computes_next_step(self):
         row = {

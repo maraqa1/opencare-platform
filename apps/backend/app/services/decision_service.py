@@ -627,8 +627,9 @@ def _evaluate_prediction_accuracy(
     expected_before: float,
     predicted_after: float,
     actual_after: float,
+    threshold_pp: float | None = None,
 ) -> tuple[bool, str]:
-    threshold = settings.decision_accuracy_threshold_pp
+    threshold = settings.decision_accuracy_threshold_pp if threshold_pp is None else threshold_pp
     delta = abs(predicted_after - actual_after)
     predicted_direction = _movement_direction(expected_before, predicted_after)
     actual_direction = _movement_direction(expected_before, actual_after)

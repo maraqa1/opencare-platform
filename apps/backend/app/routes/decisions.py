@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import io
 from datetime import date as date_cls
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -40,13 +40,13 @@ class DecisionActionPayload(BaseModel):
 
 @router.get("/decisions")
 def decisions_index(
-    status: str | None = Query(default=None),
-    use_case: str | None = Query(default=None),
-    entity_id: str | None = Query(default=None),
-    priority: str | None = Query(default=None),
-    active_only: bool = Query(default=False),
-    limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
+    status: Annotated[str | None, Query()] = None,
+    use_case: Annotated[str | None, Query()] = None,
+    entity_id: Annotated[str | None, Query()] = None,
+    priority: Annotated[str | None, Query()] = None,
+    active_only: Annotated[bool, Query()] = False,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> dict[str, Any]:
     return list_decisions(
         status=status,
@@ -60,16 +60,16 @@ def decisions_index(
 
 
 @router.get("/decisions/count")
-def decisions_count(use_case: str | None = Query(default=None)) -> dict[str, Any]:
+def decisions_count(use_case: Annotated[str | None, Query()] = None) -> dict[str, Any]:
     return count_decisions(use_case=use_case)
 
 
 @router.get("/decisions/resolved")
 def decisions_resolved(
-    use_case: str | None = Query(default=None),
-    include_unmeasured: bool = Query(default=False),
-    days: int = Query(default=7, ge=1, le=30),
-    limit: int = Query(default=10, ge=1, le=50),
+    use_case: Annotated[str | None, Query()] = None,
+    include_unmeasured: Annotated[bool, Query()] = False,
+    days: Annotated[int, Query(ge=1, le=30)] = 7,
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> dict[str, Any]:
     return {
         "items": list_resolved_decisions(
@@ -83,10 +83,10 @@ def decisions_resolved(
 
 @router.get("/decisions/daily-log")
 def decisions_daily_log(
-    date: date_cls | None = Query(default=None),
-    use_case: str | None = Query(default="bed_pressure"),
-    format: str = Query(default="json", pattern="^(json|csv)$"),
-    include_terminal: bool = Query(default=True),
+    date: Annotated[date_cls | None, Query()] = None,
+    use_case: Annotated[str | None, Query()] = "bed_pressure",
+    format: Annotated[str, Query(pattern="^(json|csv)$")] = "json",
+    include_terminal: Annotated[bool, Query()] = True,
 ) -> Any:
     payload = daily_decision_log(
         selected_date=date,
