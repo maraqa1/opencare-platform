@@ -34,6 +34,73 @@ class Result:
 
 
 class RevenueCycleServiceTests(unittest.TestCase):
+    def test_cash_command_returns_ranked_actions_when_tables_exist(self):
+        summary_row = {
+            "as_of": None,
+            "recoverable_cash_7d": 25000.0,
+            "recoverable_cash_14d": 40000.0,
+            "cash_at_risk": 5000.0,
+            "expected_collections": 38000.0,
+        }
+        action_row = {
+            "opportunity_id": "RCM-001",
+            "issue_type": "payer_underpayment_review",
+            "claim_id": "CLAIM-001",
+            "payer_id": "PAYER-A",
+            "department_id": "DEP-01",
+            "recoverable_amount": 12000.0,
+            "expected_recovery_amount": 9000.0,
+            "due_date": None,
+            "priority_score": 2250.0,
+            "owner_team": "Revenue Integrity",
+            "owner_user_id": "rcm.manager",
+            "status": "assigned",
+            "evidence_summary": "Variance against contract schedule",
+        }
+        expiring_row = {
+            "opportunity_id": "RCM-002",
+            "issue_type": "late_submission_risk",
+            "claim_id": "CLAIM-002",
+            "payer_id": "PAYER-B",
+            "department_id": "DEP-02",
+            "due_date": None,
+            "expected_recovery_amount": 3000.0,
+            "owner_team": "Revenue Integrity",
+            "owner_user_id": "rcm.analyst",
+            "status": "open",
+        }
+
+        class Conn:
+            def __init__(self):
+                self.calls = 0
+
+            def execute(self, query, params=None):
+                self.calls += 1
+                if self.calls == 1:
+                    return Result(summary_row)
+                if self.calls == 2:
+                    self._assert_terminal_status_array(params)
+                    return Result([action_row])
+                self._assert_terminal_status_array(params)
+                return Result([expiring_row])
+
+            @staticmethod
+            def _assert_terminal_status_array(params):
+                assert params is not None
+                assert list(params[0]) == list(revenue_cycle_service.TERMINAL_RECOVERY_STATUSES)
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            payload = revenue_cycle_service.cash_command()
+
+        self.assertFalse(payload["meta"]["empty"])
+        self.assertEqual(payload["recoverable_cash_7d"], 25000.0)
+        self.assertEqual(payload["top_actions"][0]["next_step"], "Start action")
+        self.assertEqual(payload["expiring_opportunities"][0]["next_step"], "Review work item")
+
     def test_cash_command_returns_safe_empty_state_when_tables_are_absent(self):
         class Conn:
             def execute(self, query, params=None):

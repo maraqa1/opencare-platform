@@ -158,7 +158,7 @@ def cash_command() -> dict[str, Any]:
                         status,
                         evidence_summary
                     from {opportunity_table}
-                    where coalesce(status, 'open') not in %s
+                    where not (coalesce(status, 'open') = any(%s))
                     order by priority_score desc nulls last, expected_recovery_amount desc nulls last, due_date asc nulls last
                     limit 5
                     """
@@ -183,7 +183,7 @@ def cash_command() -> dict[str, Any]:
                     from {opportunity_table}
                     where due_date is not null
                       and due_date <= current_date + interval '7 days'
-                      and coalesce(status, 'open') not in %s
+                      and not (coalesce(status, 'open') = any(%s))
                     order by due_date asc, priority_score desc nulls last
                     limit 5
                     """
