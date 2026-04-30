@@ -198,6 +198,39 @@ class RevenueCycleServiceTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["total_underpayment"], 3000.0)
         self.assertEqual(payload["as_of"], "2026-04-01T00:00:00Z")
 
+    def test_team_performance_returns_latest_period_summary(self):
+        row = {
+            "owner_team": "Revenue Integrity",
+            "owner_user_id": "rcm.manager",
+            "period_start": "2026-04-01",
+            "period_end": "2026-04-30",
+            "assigned_count": 8,
+            "completed_count": 5,
+            "expected_recovery": 12000.0,
+            "actual_recovery": 9000.0,
+            "recovery_variance_pct": -0.25,
+            "avg_resolution_hours": 36.5,
+            "overdue_count": 2,
+        }
+
+        class Conn:
+            def execute(self, query, params=None):
+                return Result([row])
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            payload = revenue_cycle_service.team_performance()
+
+        self.assertFalse(payload["meta"]["empty"])
+        self.assertEqual(payload["summary"]["assigned"], 8)
+        self.assertEqual(payload["summary"]["completed"], 5)
+        self.assertEqual(payload["summary"]["expected_recovery"], 12000.0)
+        self.assertEqual(payload["summary"]["actual_recovery"], 9000.0)
+        self.assertEqual(payload["as_of"], "2026-04-30T00:00:00Z")
+
     def test_executive_narrative_uses_live_payloads(self):
         with (
             patch.object(

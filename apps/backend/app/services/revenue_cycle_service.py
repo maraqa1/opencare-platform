@@ -516,20 +516,21 @@ def team_performance() -> dict[str, Any]:
                         from {team_table}
                     )
                     select
-                        owner_team,
-                        owner_user_id,
-                        period_start,
-                        period_end,
-                        assigned_count,
-                        completed_count,
-                        expected_recovery,
-                        actual_recovery,
-                        recovery_variance_pct,
-                        avg_resolution_hours,
-                        overdue_count
-                    from {team_table}, latest_period
-                    where {team_table}.period_end = latest_period.period_end
-                    order by actual_recovery desc nulls last, expected_recovery desc nulls last
+                        t.owner_team,
+                        t.owner_user_id,
+                        t.period_start,
+                        t.period_end,
+                        t.assigned_count,
+                        t.completed_count,
+                        t.expected_recovery,
+                        t.actual_recovery,
+                        t.recovery_variance_pct,
+                        t.avg_resolution_hours,
+                        t.overdue_count
+                    from {team_table} t
+                    cross join latest_period
+                    where t.period_end = latest_period.period_end
+                    order by t.actual_recovery desc nulls last, t.expected_recovery desc nulls last
                     """
                 ).format(team_table=team_table)
             ).fetchall()
