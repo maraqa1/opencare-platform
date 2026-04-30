@@ -164,6 +164,40 @@ class RevenueCycleServiceTests(unittest.TestCase):
         self.assertEqual(payload["items"][0]["next_step"], "Complete action or dismiss with reason")
         self.assertEqual(payload["items"][0]["notification_status"]["sent_count"], 1)
 
+    def test_payer_control_returns_latest_month_summary(self):
+        row = {
+            "payer_id": "PAYER-A",
+            "month_key": "2026-04-01",
+            "gross_billed": 100000.0,
+            "contracted_amount": 90000.0,
+            "paid_amount": 87000.0,
+            "underpayment_amount": 3000.0,
+            "contract_rate_pct": 0.9,
+            "actual_collection_rate": 0.87,
+            "payment_sla_days": 30,
+            "actual_payment_days": 42,
+            "sla_breach_count": 2,
+            "contract_breach_flag": True,
+            "renegotiation_flag": True,
+        }
+
+        class Conn:
+            def execute(self, query, params=None):
+                return Result([row])
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            payload = revenue_cycle_service.payer_control()
+
+        self.assertFalse(payload["meta"]["empty"])
+        self.assertEqual(payload["summary"]["breach_flag_count"], 1)
+        self.assertEqual(payload["summary"]["sla_breaches"], 2)
+        self.assertEqual(payload["summary"]["total_underpayment"], 3000.0)
+        self.assertEqual(payload["as_of"], "2026-04-01T00:00:00Z")
+
     def test_executive_narrative_uses_live_payloads(self):
         with (
             patch.object(

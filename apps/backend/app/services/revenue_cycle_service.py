@@ -375,22 +375,23 @@ def payer_control() -> dict[str, Any]:
                         from {contract_table}
                     )
                     select
-                        payer_id,
-                        month_key,
-                        gross_billed,
-                        contracted_amount,
-                        paid_amount,
-                        underpayment_amount,
-                        contract_rate_pct,
-                        actual_collection_rate,
-                        payment_sla_days,
-                        actual_payment_days,
-                        sla_breach_count,
-                        contract_breach_flag,
-                        renegotiation_flag
-                    from {contract_table}, latest_month
-                    where {contract_table}.month_key = latest_month.month_key
-                    order by underpayment_amount desc nulls last, sla_breach_count desc nulls last
+                        p.payer_id,
+                        p.month_key,
+                        p.gross_billed,
+                        p.contracted_amount,
+                        p.paid_amount,
+                        p.underpayment_amount,
+                        p.contract_rate_pct,
+                        p.actual_collection_rate,
+                        p.payment_sla_days,
+                        p.actual_payment_days,
+                        p.sla_breach_count,
+                        p.contract_breach_flag,
+                        p.renegotiation_flag
+                    from {contract_table} p
+                    cross join latest_month
+                    where p.month_key = latest_month.month_key
+                    order by p.underpayment_amount desc nulls last, p.sla_breach_count desc nulls last
                     """
                 ).format(contract_table=contract_table)
             ).fetchall()
