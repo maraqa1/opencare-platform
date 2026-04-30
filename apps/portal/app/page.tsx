@@ -114,7 +114,7 @@ export default async function HomePage() {
                 key={useCase.id}
                 href={
                   useCase.status === "active"
-                    ? `/use-cases/${useCase.slug}/status`
+                    ? useCase.defaultHref ?? `/use-cases/${useCase.slug}/status`
                     : "/use-cases"
                 }
                 className={`use-case-card ${useCase.status === "active" ? "active" : "muted"}`}
