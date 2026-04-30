@@ -26,3 +26,10 @@ models:
     dictionary:
       +materialized: table
       +schema: dictionary
+    revenue_cycle:
+      staging:
+        +materialized: view
+        +schema: staging
+      marts:
+        +materialized: table
+        +schema: analytics
