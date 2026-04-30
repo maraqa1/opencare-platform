@@ -85,6 +85,43 @@ create table if not exists ${source_schema}.bed_events (
   staffed_beds integer,
   scenario_tag text
 );
+
+create table if not exists ${source_schema}.rcm_claims (
+  claim_id text primary key,
+  encounter_id text not null,
+  patient_id text,
+  payer_id text not null,
+  department_id text not null,
+  claim_date date not null,
+  submission_date date,
+  payment_date date,
+  claim_status text not null,
+  gross_billed_amount numeric(14,2),
+  contracted_amount numeric(14,2),
+  paid_amount numeric(14,2),
+  overpayment_flag boolean default false,
+  source_system text,
+  updated_at timestamp default now()
+);
+
+create table if not exists ${source_schema}.rcm_financial_postings (
+  posting_id text primary key,
+  claim_id text not null,
+  encounter_id text not null,
+  gl_account text,
+  posting_date date not null,
+  posting_type text not null,
+  posting_amount numeric(14,2),
+  source_system text
+);
+
+create table if not exists ${source_schema}.rcm_referrals (
+  referral_id text primary key,
+  encounter_id text not null,
+  acquisition_channel text not null,
+  referral_source text not null,
+  referral_date date not null
+);
 SQL
 }
 

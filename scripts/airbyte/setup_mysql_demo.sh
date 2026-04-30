@@ -373,11 +373,20 @@ verify_raw_tables() {
 select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards');
 select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients');
 select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events');
+select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_claims');
+select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_financial_postings');
+select to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_referrals');
 select 'wards' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards
 union all
 select 'patients' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients
 union all
-select 'bed_events' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events;
+select 'bed_events' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events
+union all
+select 'rcm_claims' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_claims
+union all
+select 'rcm_financial_postings' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_financial_postings
+union all
+select 'rcm_referrals' as table_name, count(*) as row_count from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_referrals;
 SQL"
 
   kubectl -n "$NAMESPACE" exec -i postgres-0 -- sh -c "psql -U '${POSTGRES_USER}' -d '${POSTGRES_DB}' -Atc \"
@@ -385,9 +394,15 @@ select
   coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards'
   and coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients'
   and coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events'
+  and coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_claims')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_claims'
+  and coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_financial_postings')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_financial_postings'
+  and coalesce(to_regclass('${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_referrals')::text, '') = '${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_referrals'
   and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.wards) > 0
   and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.patients) > 0
-  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events) > 0;
+  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.bed_events) > 0
+  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_claims) > 0
+  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_financial_postings) > 0
+  and (select count(*) from ${DEMO_AIRBYTE_DESTINATION_SCHEMA}.rcm_referrals) > 0;
 \" | grep -qx t"
 }
 

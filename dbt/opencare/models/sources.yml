@@ -84,3 +84,77 @@ sources:
             description: Event category such as admission, discharge, or midnight census.
             tests:
               - not_null
+      - name: rcm_claims
+        description: Raw revenue cycle claims used to drive recovery, payer, and cash-control marts.
+        loaded_at_field: updated_at
+        meta:
+          classification: financial
+          contains_pii: false
+          freshness_sla_hours: 8
+        columns:
+          - name: claim_id
+            tests:
+              - not_null
+          - name: encounter_id
+            tests:
+              - not_null
+          - name: payer_id
+            tests:
+              - not_null
+          - name: department_id
+            tests:
+              - not_null
+          - name: claim_date
+            tests:
+              - not_null
+          - name: claim_status
+            tests:
+              - not_null
+
+      - name: rcm_financial_postings
+        description: Raw ERP posting rows used as the financial truth anchor for revenue-cycle reconciliation.
+        loaded_at_field: posting_date
+        meta:
+          classification: financial
+          contains_pii: false
+          freshness_sla_hours: 8
+        columns:
+          - name: posting_id
+            tests:
+              - not_null
+          - name: claim_id
+            tests:
+              - not_null
+          - name: encounter_id
+            tests:
+              - not_null
+          - name: posting_date
+            tests:
+              - not_null
+          - name: posting_type
+            tests:
+              - not_null
+
+      - name: rcm_referrals
+        description: Raw referral and acquisition rows linking encounters to channel performance.
+        loaded_at_field: referral_date
+        meta:
+          classification: commercial
+          contains_pii: false
+          freshness_sla_hours: 24
+        columns:
+          - name: referral_id
+            tests:
+              - not_null
+          - name: encounter_id
+            tests:
+              - not_null
+          - name: acquisition_channel
+            tests:
+              - not_null
+          - name: referral_source
+            tests:
+              - not_null
+          - name: referral_date
+            tests:
+              - not_null

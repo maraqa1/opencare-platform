@@ -39,6 +39,14 @@ WARD_BLUEPRINTS = [
 EVENT_TYPES = ("midnight_census", "admission", "discharge", "transfer_in", "transfer_out")
 SEXES = ("F", "M")
 POSTCODES = ("OC1 1AA", "OC1 2DE", "OC2 3FG", "OC3 4HJ", "OC4 5KL", "OC5 6MN")
+PAYERS = (
+    {"payer_id": "PAYER-A", "contract_rate": 0.92},
+    {"payer_id": "PAYER-B", "contract_rate": 0.88},
+    {"payer_id": "PAYER-C", "contract_rate": 0.84},
+    {"payer_id": "PAYER-D", "contract_rate": 0.80},
+)
+ACQUISITION_CHANNELS = ("consultant_referral", "gp_network", "digital_campaign", "community_outreach")
+REFERRAL_SOURCES = ("primary_care", "consultant_network", "employer_contract", "self_referral")
 
 
 def parse_args() -> argparse.Namespace:
@@ -249,6 +257,122 @@ def build_bed_events(start_day: date, end_day: date, patients: list[dict[str, ob
     return events
 
 
+def build_rcm_claims(end_day: date, patients: list[dict[str, object]]) -> list[dict[str, object]]:
+    claims: list[dict[str, object]] = []
+    claim_total = len(WARD_BLUEPRINTS) * 18
+    status_cycle = (
+        "open",
+        "submitted",
+        "denied",
+        "appealed",
+        "paid",
+        "closed",
+        "paid",
+        "writeoff",
+        "submitted",
+        "paid",
+        "denied",
+        "paid",
+    )
+
+    for index in range(1, claim_total + 1):
+        ward = WARD_BLUEPRINTS[(index - 1) % len(WARD_BLUEPRINTS)]
+        patient = patients[(index * 7) % len(patients)]
+        payer = PAYERS[index % len(PAYERS)]
+        claim_date = end_day - timedelta(days=(index * 2) % 180)
+        submission_lag = index % 9
+        claim_status = status_cycle[index % len(status_cycle)]
+        submission_date = None if index % 11 == 0 else claim_date + timedelta(days=submission_lag)
+
+        gross_billed_amount = round(2200 + (index % 9) * 650 + ward.licensed_beds * 15, 2)
+        contracted_amount = round(gross_billed_amount * payer["contract_rate"], 2)
+        paid_amount = 0.0
+        payment_date = None
+
+        if claim_status in {"paid", "closed"}:
+            if index % 5 == 0:
+                paid_amount = round(contracted_amount * 0.90, 2)
+            elif index % 17 == 0:
+                paid_amount = round(contracted_amount * 1.02, 2)
+            else:
+                paid_amount = contracted_amount
+            payment_date = claim_date + timedelta(days=20 + (index % 30))
+            if submission_date is None:
+                submission_date = claim_date + timedelta(days=2)
+        elif claim_status == "appealed":
+            paid_amount = round(contracted_amount * 0.35, 2)
+            payment_date = claim_date + timedelta(days=45 + (index % 20))
+            if submission_date is None:
+                submission_date = claim_date + timedelta(days=4)
+        elif claim_status == "writeoff":
+            paid_amount = round(contracted_amount * 0.10, 2)
+            payment_date = claim_date + timedelta(days=50 + (index % 15))
+            if submission_date is None:
+                submission_date = claim_date + timedelta(days=3)
+
+        updated_at = datetime.combine(min(end_day, claim_date + timedelta(days=10)), time(9, 0)).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        claims.append(
+            {
+                "claim_id": f"CLM-{index:05d}",
+                "encounter_id": f"ENC-{index:05d}",
+                "patient_id": patient["patient_id"],
+                "payer_id": payer["payer_id"],
+                "department_id": ward.ward_id,
+                "claim_date": claim_date.isoformat(),
+                "submission_date": submission_date.isoformat() if submission_date else None,
+                "payment_date": payment_date.isoformat() if payment_date else None,
+                "claim_status": claim_status,
+                "gross_billed_amount": gross_billed_amount,
+                "contracted_amount": contracted_amount,
+                "paid_amount": paid_amount,
+                "overpayment_flag": paid_amount > contracted_amount,
+                "source_system": "his_erp_demo",
+                "updated_at": updated_at,
+            }
+        )
+
+    return claims
+
+
+def build_rcm_financial_postings(claims: list[dict[str, object]]) -> list[dict[str, object]]:
+    postings: list[dict[str, object]] = []
+    for index, claim in enumerate(claims, start=1):
+        if not claim["paid_amount"]:
+            continue
+        postings.append(
+            {
+                "posting_id": f"POST-{index:05d}",
+                "claim_id": claim["claim_id"],
+                "encounter_id": claim["encounter_id"],
+                "gl_account": "4110-PATIENT-CASH",
+                "posting_date": claim["payment_date"] or claim["claim_date"],
+                "posting_type": "cash_receipt",
+                "posting_amount": claim["paid_amount"],
+                "source_system": "erp_gl_demo",
+            }
+        )
+    return postings
+
+
+def build_rcm_referrals(claims: list[dict[str, object]]) -> list[dict[str, object]]:
+    referrals: list[dict[str, object]] = []
+    for index, claim in enumerate(claims, start=1):
+        claim_date = date.fromisoformat(str(claim["claim_date"]))
+        referrals.append(
+            {
+                "referral_id": f"REF-{index:05d}",
+                "encounter_id": claim["encounter_id"],
+                "acquisition_channel": ACQUISITION_CHANNELS[index % len(ACQUISITION_CHANNELS)],
+                "referral_source": REFERRAL_SOURCES[index % len(REFERRAL_SOURCES)],
+                "referral_date": (claim_date - timedelta(days=(index % 14))).isoformat(),
+            }
+        )
+    return referrals
+
+
 def insert_block(table_name: str, columns: list[str], rows: list[dict[str, object]]) -> str:
     lines = [f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES"]
     rendered_rows = []
@@ -258,7 +382,14 @@ def insert_block(table_name: str, columns: list[str], rows: list[dict[str, objec
     return "\n".join(lines)
 
 
-def build_sql(wards: list[WardBlueprint], patients: list[dict[str, object]], bed_events: list[dict[str, object]]) -> str:
+def build_sql(
+    wards: list[WardBlueprint],
+    patients: list[dict[str, object]],
+    bed_events: list[dict[str, object]],
+    rcm_claims: list[dict[str, object]],
+    rcm_financial_postings: list[dict[str, object]],
+    rcm_referrals: list[dict[str, object]],
+) -> str:
     ward_rows = [
         {
             "ward_id": ward.ward_id,
@@ -274,6 +405,9 @@ def build_sql(wards: list[WardBlueprint], patients: list[dict[str, object]], bed
     parts = [
         "-- OpenCare synthetic demo source data for MySQL",
         "SET FOREIGN_KEY_CHECKS = 0;",
+        "DROP TABLE IF EXISTS rcm_referrals;",
+        "DROP TABLE IF EXISTS rcm_financial_postings;",
+        "DROP TABLE IF EXISTS rcm_claims;",
         "DROP TABLE IF EXISTS bed_events;",
         "DROP TABLE IF EXISTS patients;",
         "DROP TABLE IF EXISTS wards;",
@@ -309,6 +443,46 @@ CREATE TABLE bed_events (
   scenario_tag VARCHAR(64) NULL
 );
 """.strip(),
+        """
+CREATE TABLE rcm_claims (
+  claim_id VARCHAR(32) PRIMARY KEY,
+  encounter_id VARCHAR(32) NOT NULL,
+  patient_id VARCHAR(32) NOT NULL,
+  payer_id VARCHAR(32) NOT NULL,
+  department_id VARCHAR(32) NOT NULL,
+  claim_date DATE NOT NULL,
+  submission_date DATE NULL,
+  payment_date DATE NULL,
+  claim_status VARCHAR(32) NOT NULL,
+  gross_billed_amount DECIMAL(14,2) NOT NULL,
+  contracted_amount DECIMAL(14,2) NOT NULL,
+  paid_amount DECIMAL(14,2) NOT NULL,
+  overpayment_flag BOOLEAN NOT NULL DEFAULT 0,
+  source_system VARCHAR(64) NOT NULL,
+  updated_at DATETIME NOT NULL
+);
+""".strip(),
+        """
+CREATE TABLE rcm_financial_postings (
+  posting_id VARCHAR(32) PRIMARY KEY,
+  claim_id VARCHAR(32) NOT NULL,
+  encounter_id VARCHAR(32) NOT NULL,
+  gl_account VARCHAR(64) NOT NULL,
+  posting_date DATE NOT NULL,
+  posting_type VARCHAR(32) NOT NULL,
+  posting_amount DECIMAL(14,2) NOT NULL,
+  source_system VARCHAR(64) NOT NULL
+);
+""".strip(),
+        """
+CREATE TABLE rcm_referrals (
+  referral_id VARCHAR(32) PRIMARY KEY,
+  encounter_id VARCHAR(32) NOT NULL,
+  acquisition_channel VARCHAR(64) NOT NULL,
+  referral_source VARCHAR(64) NOT NULL,
+  referral_date DATE NOT NULL
+);
+""".strip(),
         insert_block(
             "wards",
             ["ward_id", "ward_code", "ward_name", "service_line", "licensed_beds", "staffed_beds_baseline"],
@@ -323,6 +497,37 @@ CREATE TABLE bed_events (
             "bed_events",
             ["event_id", "event_timestamp", "ward_id", "patient_id", "event_type", "occupied_beds", "licensed_beds", "staffed_beds", "scenario_tag"],
             bed_events,
+        ),
+        insert_block(
+            "rcm_claims",
+            [
+                "claim_id",
+                "encounter_id",
+                "patient_id",
+                "payer_id",
+                "department_id",
+                "claim_date",
+                "submission_date",
+                "payment_date",
+                "claim_status",
+                "gross_billed_amount",
+                "contracted_amount",
+                "paid_amount",
+                "overpayment_flag",
+                "source_system",
+                "updated_at",
+            ],
+            rcm_claims,
+        ),
+        insert_block(
+            "rcm_financial_postings",
+            ["posting_id", "claim_id", "encounter_id", "gl_account", "posting_date", "posting_type", "posting_amount", "source_system"],
+            rcm_financial_postings,
+        ),
+        insert_block(
+            "rcm_referrals",
+            ["referral_id", "encounter_id", "acquisition_channel", "referral_source", "referral_date"],
+            rcm_referrals,
         ),
         "SET FOREIGN_KEY_CHECKS = 1;",
     ]
@@ -340,10 +545,24 @@ SELECT 'null_ward_id_rows' AS check_name, COUNT(*) AS result FROM bed_events WHE
 SELECT event_type, COUNT(*) AS event_count FROM bed_events GROUP BY event_type ORDER BY event_type;
 SELECT scenario_tag, COUNT(*) AS event_count FROM bed_events WHERE scenario_tag IS NOT NULL GROUP BY scenario_tag ORDER BY scenario_tag;
 SELECT 'phase2_pressure_signal_rows' AS check_name, COUNT(*) AS result FROM bed_events WHERE scenario_tag = 'phase2_pressure_signal';
+SELECT 'rcm_claims_row_count' AS check_name, COUNT(*) AS result FROM rcm_claims;
+SELECT 'rcm_financial_postings_row_count' AS check_name, COUNT(*) AS result FROM rcm_financial_postings;
+SELECT 'rcm_referrals_row_count' AS check_name, COUNT(*) AS result FROM rcm_referrals;
+SELECT claim_status, COUNT(*) AS claim_count FROM rcm_claims GROUP BY claim_status ORDER BY claim_status;
+SELECT payer_id, COUNT(*) AS claim_count FROM rcm_claims GROUP BY payer_id ORDER BY payer_id;
 """
 
 
-def build_summary(wards: list[WardBlueprint], patients: list[dict[str, object]], bed_events: list[dict[str, object]], start_day: date, end_day: date) -> dict[str, object]:
+def build_summary(
+    wards: list[WardBlueprint],
+    patients: list[dict[str, object]],
+    bed_events: list[dict[str, object]],
+    rcm_claims: list[dict[str, object]],
+    rcm_financial_postings: list[dict[str, object]],
+    rcm_referrals: list[dict[str, object]],
+    start_day: date,
+    end_day: date,
+) -> dict[str, object]:
     event_type_counts: dict[str, int] = {event_type: 0 for event_type in EVENT_TYPES}
     scenario_counts: dict[str, int] = {}
     for event in bed_events:
@@ -363,6 +582,9 @@ def build_summary(wards: list[WardBlueprint], patients: list[dict[str, object]],
         "scenario_event_distribution": scenario_counts,
         "phase2_expected_alert_wards": ["WARD-07", "WARD-08"],
         "phase2_expected_alert_range": {"min": 2, "max": 3},
+        "rcm_claims_row_count": len(rcm_claims),
+        "rcm_financial_postings_row_count": len(rcm_financial_postings),
+        "rcm_referrals_row_count": len(rcm_referrals),
     }
 
 
@@ -376,13 +598,35 @@ def main() -> None:
 
     patients = build_patients(args.patient_count)
     bed_events = build_bed_events(start_day, end_day, patients)
-    summary = build_summary(WARD_BLUEPRINTS, patients, bed_events, start_day, end_day)
+    rcm_claims = build_rcm_claims(end_day, patients)
+    rcm_financial_postings = build_rcm_financial_postings(rcm_claims)
+    rcm_referrals = build_rcm_referrals(rcm_claims)
+    summary = build_summary(
+        WARD_BLUEPRINTS,
+        patients,
+        bed_events,
+        rcm_claims,
+        rcm_financial_postings,
+        rcm_referrals,
+        start_day,
+        end_day,
+    )
 
     sql_path = output_dir / "opencare_demo_mysql.sql"
     validation_path = output_dir / "opencare_demo_validation.sql"
     summary_path = output_dir / "opencare_demo_summary.json"
 
-    sql_path.write_text(build_sql(WARD_BLUEPRINTS, patients, bed_events), encoding="utf-8")
+    sql_path.write_text(
+        build_sql(
+            WARD_BLUEPRINTS,
+            patients,
+            bed_events,
+            rcm_claims,
+            rcm_financial_postings,
+            rcm_referrals,
+        ),
+        encoding="utf-8",
+    )
     validation_path.write_text(build_validation_sql(), encoding="utf-8")
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 

@@ -152,6 +152,18 @@ validate_phase1_counts() {
   check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_bed_occupancy where pressure_flag is true;"
 }
 
+validate_revenue_cycle_demo_counts() {
+  log "Validating synthetic revenue cycle demo counts"
+  check_postgres_greater_than_zero "select count(*) from ${DEMO_RAW_SCHEMA}.rcm_claims;"
+  check_postgres_greater_than_zero "select count(*) from ${DEMO_RAW_SCHEMA}.rcm_financial_postings;"
+  check_postgres_greater_than_zero "select count(*) from ${DEMO_RAW_SCHEMA}.rcm_referrals;"
+  check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_cash_recovery_opportunity;"
+  check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_cash_forecast;"
+  check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_payer_contract_performance;"
+  check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_revenue_leakage;"
+  check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_team_recovery_performance;"
+}
+
 main() {
   local output_dir
   local sql_file
@@ -188,6 +200,7 @@ main() {
   run_with_demo_log demo-runtimes bash "$ROOT_DIR/scripts/runtime/apply_runtimes.sh"
 
   validate_phase1_counts
+  validate_revenue_cycle_demo_counts
   bash "$ROOT_DIR/scripts/demo/validate_phase2_loop.sh"
   log_success "Synthetic-data proof flow completed through Phase 2 analytics validation"
 }

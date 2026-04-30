@@ -35,6 +35,18 @@ run_cluster_http_check revenue-cycle-leakage "${BACKEND_URL}/api/v1/revenue-cycl
 run_cluster_http_check revenue-cycle-team-performance "${BACKEND_URL}/api/v1/revenue-cycle/team-performance"
 run_cluster_http_check revenue-cycle-executive-narrative "${BACKEND_URL}/api/v1/revenue-cycle/executive-narrative"
 
+if [[ "${DEMO_PROOF_FLOW_ENABLED:-false}" == "true" ]]; then
+  log "Checking revenue cycle demo marts are populated"
+  run_cluster_command revenue-cycle-demo-marts postgres:16-alpine sh -c "psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} -Atc \"
+select
+  (select count(*) from ${ANALYTICS_SCHEMA}.fct_cash_recovery_opportunity) > 0
+  and (select count(*) from ${ANALYTICS_SCHEMA}.fct_cash_forecast) > 0
+  and (select count(*) from ${ANALYTICS_SCHEMA}.fct_payer_contract_performance) > 0
+  and (select count(*) from ${ANALYTICS_SCHEMA}.fct_revenue_leakage) > 0
+  and (select count(*) from ${ANALYTICS_SCHEMA}.fct_team_recovery_performance) > 0;
+\" | grep -qx t"
+fi
+
 if [[ -n "$EXTERNAL_TLS_SECRET_NAME" ]]; then
   log "Checking TLS certificate secret"
   kubectl -n "$NAMESPACE" get secret "$EXTERNAL_TLS_SECRET_NAME" >/dev/null

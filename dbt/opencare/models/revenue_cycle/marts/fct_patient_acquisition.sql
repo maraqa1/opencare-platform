@@ -1,13 +1,15 @@
 {{ config(tags=["revenue-cycle", "finance", "cfo"], contract={"enforced": true}) }}
 
 select
-    cast(null as text) as acquisition_id,
-    cast(null as text) as encounter_id,
-    cast(null as text) as acquisition_channel,
-    cast(null as text) as referral_source,
-    cast(null as date) as period_start,
-    cast(null as date) as period_end,
-    cast(null as integer) as encounter_count,
-    cast(null as numeric(14, 2)) as gross_revenue,
-    cast(null as numeric(14, 2)) as collected_revenue
-where false
+    md5(concat(r.referral_id, '||', r.encounter_id)) as acquisition_id,
+    r.encounter_id,
+    r.acquisition_channel,
+    r.referral_source,
+    date_trunc('month', r.referral_date)::date as period_start,
+    (date_trunc('month', r.referral_date) + interval '1 month - 1 day')::date as period_end,
+    1::integer as encounter_count,
+    coalesce(c.gross_billed_amount, 0)::numeric(14, 2) as gross_revenue,
+    coalesce(c.paid_amount, 0)::numeric(14, 2) as collected_revenue
+from {{ ref('stg_rcm_referrals') }} r
+left join {{ ref('stg_rcm_claims') }} c
+    on c.encounter_id = r.encounter_id
