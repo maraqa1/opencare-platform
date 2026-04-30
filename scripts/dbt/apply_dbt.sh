@@ -80,4 +80,6 @@ else
   create_standalone_job_from_cronjob dbt-runner "$dbt_job_name" || exit 0
 fi
 
+bash "$ROOT_DIR/scripts/superset/sync_dashboards_bootstrap.sh"
+
 log_success "dbt bootstrap job completed"
