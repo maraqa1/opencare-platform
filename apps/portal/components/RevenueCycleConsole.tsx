@@ -50,6 +50,7 @@ type RecoveryQueueItem = ActionItem & {
   priority_score?: number | null;
   source_system?: string | null;
   owner?: string | null;
+  decision_status?: string | null;
   outcome_status?: string | null;
 };
 
