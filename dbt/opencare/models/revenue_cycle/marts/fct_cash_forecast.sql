@@ -48,7 +48,7 @@ select
     coalesce(o.recoverable_cash, 0)::numeric(14, 2) as recoverable_cash,
     0.8200::numeric(8, 4) as confidence_score,
     'deterministic_recovery_plan' as model_used,
-    current_timestamp as run_timestamp
+    current_timestamp::timestamp as run_timestamp
 from segments s
 cross join future_days d
 left join historical h

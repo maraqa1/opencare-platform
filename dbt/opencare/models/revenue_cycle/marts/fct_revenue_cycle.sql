@@ -30,7 +30,7 @@ select
         coalesce(c.payment_date, current_date) - c.claim_date,
         0
     )::numeric(10, 2) as ar_days,
-    current_timestamp as as_of_timestamp
+    current_timestamp::timestamp as as_of_timestamp
 from {{ ref('stg_rcm_claims') }} c
 left join posting_summary ps
     on ps.claim_id = c.claim_id
