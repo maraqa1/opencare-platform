@@ -12,6 +12,7 @@ from app.routes.health import router as health_router
 from app.routes.lineage import router as lineage_router
 from app.routes.occupancy import router as occupancy_router
 from app.routes.record_spec import router as record_spec_router
+from app.routes.revenue_cycle import router as revenue_cycle_router
 from app.routes.reports import router as reports_router
 from app.routes.status import router as status_router
 from app.routes.superset import router as superset_router
@@ -36,6 +37,7 @@ app.include_router(admin_router)
 app.include_router(status_router)
 app.include_router(reports_router)
 app.include_router(facts_router)
+app.include_router(revenue_cycle_router)
 
 
 @app.get("/")

@@ -297,6 +297,15 @@ def adhoc_metric(metric_name: str) -> dict[str, Any]:
         "admissions_total": ("occupied_beds", "SUM", "Occupied Beds"),
         "discharges_total": ("available_beds", "SUM", "Available Beds"),
         "staffing_pressure_index": ("staffing_pressure_index", "AVG", "Staffing Pressure Index"),
+        "recoverable_amount_sum": ("recoverable_amount", "SUM", "Recoverable Amount"),
+        "expected_recovery_amount_sum": ("expected_recovery_amount", "SUM", "Expected Recovery Amount"),
+        "priority_score_avg": ("priority_score", "AVG", "Average Priority Score"),
+        "leakage_amount_sum": ("leakage_amount", "SUM", "Leakage Amount"),
+        "outstanding_amount_sum": ("outstanding_amount", "SUM", "Outstanding Amount"),
+        "sla_breach_count_sum": ("sla_breach_count", "SUM", "SLA Breach Count"),
+        "underpayment_amount_sum": ("underpayment_amount", "SUM", "Underpayment Amount"),
+        "actual_recovery_sum": ("actual_recovery", "SUM", "Actual Recovery"),
+        "expected_recovery_sum": ("expected_recovery", "SUM", "Expected Recovery"),
     }
     column_name, aggregate, label = metric_map.get(metric_name, (metric_name, "AVG", metric_name.replace("_", " ").title()))
     return {

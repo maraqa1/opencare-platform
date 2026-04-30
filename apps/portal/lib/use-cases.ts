@@ -8,6 +8,7 @@ export type UseCaseModule = {
   description: string;
   status: UseCaseStatus;
   summary: string;
+  defaultHref?: string;
   kpis: Array<{ label: string; value: string; note: string }>;
 };
 
@@ -32,10 +33,26 @@ export const useCases: UseCaseModule[] = [
     description: "Real-time occupancy, breach forecasting, anomaly detection, and action tracking.",
     status: "active",
     summary: "3 critical wards, 87.3% average occupancy",
+    defaultHref: "/use-cases/bed-pressure/status",
     kpis: [
       { label: "Current Occupancy", value: "87.3%", note: "Across live ward footprint" },
       { label: "7-Day Forecast", value: "3", note: "Breach risks predicted" },
       { label: "Active Anomalies", value: "5", note: "Actionable signals" },
+    ],
+  },
+  {
+    id: "revenue_cycle_management",
+    slug: "revenue-cycle-management",
+    icon: "Cash",
+    name: "Revenue Cycle Management",
+    description: "A hospital revenue operating system for cash control, recovery execution, and payer accountability.",
+    status: "active",
+    summary: "Real-time cash control workspace",
+    defaultHref: "/use-cases/revenue-cycle-management/cfo-cash-command",
+    kpis: [
+      { label: "Recoverable Cash 7d", value: "Live", note: "From loaded recovery opportunities" },
+      { label: "Payer Control", value: "Live", note: "Contract breaches and underpayment flags" },
+      { label: "Execution Queue", value: "Live", note: "Owner-led recovery actions" },
     ],
   },
   {
@@ -74,6 +91,15 @@ export const bedPressureTabs = [
   { key: "predictions", label: "Predictions", href: "/use-cases/bed-pressure/predictions" },
   { key: "analysis", label: "Analysis", href: "/use-cases/bed-pressure/analysis" },
   { key: "decisions", label: "Decisions", href: "/use-cases/bed-pressure/decisions" },
+];
+
+export const revenueCycleTabs = [
+  { key: "cash-command", label: "Cash Command", href: "/use-cases/revenue-cycle-management/cfo-cash-command" },
+  { key: "recovery-queue", label: "Recovery Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },
+  { key: "payer-control", label: "Payer Control", href: "/use-cases/revenue-cycle-management/payer-control" },
+  { key: "revenue-leakage", label: "Leakage", href: "/use-cases/revenue-cycle-management/revenue-leakage" },
+  { key: "team-performance", label: "Team Performance", href: "/use-cases/revenue-cycle-management/team-performance" },
+  { key: "executive-narrative", label: "Executive Narrative", href: "/use-cases/revenue-cycle-management/executive-narrative" },
 ];
 
 export const decisionQueue: DecisionItem[] = [

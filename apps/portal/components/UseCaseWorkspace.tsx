@@ -5,9 +5,17 @@ import { bedPressureTabs } from "@/lib/use-cases";
 
 export function UseCaseWorkspace({
   activeTab,
+  title = "Bed Pressure Intelligence",
+  description = "A self-contained module for occupancy pressure, breach forecasting, trend evidence, operational decisions, and one-click provenance.",
+  trustItems = ["Pipeline 8m ago", "6/6 sources", "42/42 tests"],
+  tabs = bedPressureTabs,
   children,
 }: {
   activeTab: string;
+  title?: string;
+  description?: string;
+  trustItems?: string[];
+  tabs?: Array<{ key: string; label: string; href: string }>;
   children: ReactNode;
 }) {
   return (
@@ -15,20 +23,17 @@ export function UseCaseWorkspace({
       <section className="workspace-header">
         <div>
           <p className="eyebrow">Use Case Workspace</p>
-          <h2>Bed Pressure Intelligence</h2>
-          <p>
-            A self-contained module for occupancy pressure, breach forecasting, trend evidence,
-            operational decisions, and one-click provenance.
-          </p>
+          <h2>{title}</h2>
+          <p>{description}</p>
         </div>
         <div className="workspace-trust">
           <span className="status-dot live" />
-          <span>Pipeline 8m ago</span>
-          <span>6/6 sources</span>
-          <span>42/42 tests</span>
+          {trustItems.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
         </div>
       </section>
-      <TabNav items={bedPressureTabs} activeKey={activeTab} />
+      <TabNav items={tabs} activeKey={activeTab} />
       {children}
     </div>
   );

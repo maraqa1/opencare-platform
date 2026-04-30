@@ -8,7 +8,7 @@ export default function UseCasesPage() {
     <PageFrame
       eyebrow="Use Cases"
       title="A catalogue of operational product modules"
-      description="Every card is a self-contained workspace. Enabled use cases open into Overview, Current Status, Predictions, Analysis, and Decisions."
+      description="Every card is a self-contained workspace. Enabled use cases open into the operating surface that best fits the workflow, from bed pressure command to revenue cash control."
       chips={[
         { label: "Config-driven extensibility", tone: "primary" },
         { label: "Zero portal rebuild for new modules", tone: "accent" },
@@ -38,7 +38,7 @@ export default function UseCasesPage() {
             </div>
             <div className="button-row">
               {useCase.status === "active" ? (
-                <Link className="button primary" href={`/use-cases/${useCase.slug}/status`}>
+                <Link className="button primary" href={useCase.defaultHref ?? `/use-cases/${useCase.slug}/status`}>
                   Enter Workspace
                 </Link>
               ) : (

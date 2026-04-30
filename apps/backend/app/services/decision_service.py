@@ -118,8 +118,15 @@ def ensure_decision_schema() -> None:
                 expected_risk_reduction varchar(100),
                 status varchar(20) not null default 'recommended',
                 owner_team varchar(100),
+                owner_user_id varchar(100),
                 assignee_user varchar(100),
                 assignee_email varchar(255),
+                source_opportunity_id varchar(100),
+                claim_id varchar(100),
+                payer_id varchar(100),
+                department_id varchar(100),
+                expected_recovery numeric(14,2),
+                due_at timestamp,
                 assigned_at timestamp,
                 created_at timestamp not null default now(),
                 updated_at timestamp not null default now(),
@@ -159,6 +166,12 @@ def ensure_decision_schema() -> None:
                 actual_risk_after varchar(20),
                 prediction_accurate boolean,
                 accuracy_notes text,
+                actual_recovery numeric(14,2),
+                recovery_variance_pct numeric(10,4),
+                time_to_resolution_hours numeric(10,2),
+                success_flag boolean,
+                cash_collected_after_decision numeric(14,2),
+                leakage_resolved_flag boolean,
                 measured_at timestamp not null default now(),
                 measurement_window_hours integer default 24,
                 measurement_status varchar(20) not null default 'measured',
@@ -195,6 +208,19 @@ def ensure_decision_schema() -> None:
             alter table if exists decision.decision_outcomes add column if not exists measurement_method varchar(50);
             alter table if exists decision.decision_outcomes add column if not exists measured_window_start timestamp;
             alter table if exists decision.decision_outcomes add column if not exists measured_window_end timestamp;
+            alter table if exists decision.decision_queue add column if not exists owner_user_id varchar(100);
+            alter table if exists decision.decision_queue add column if not exists source_opportunity_id varchar(100);
+            alter table if exists decision.decision_queue add column if not exists claim_id varchar(100);
+            alter table if exists decision.decision_queue add column if not exists payer_id varchar(100);
+            alter table if exists decision.decision_queue add column if not exists department_id varchar(100);
+            alter table if exists decision.decision_queue add column if not exists expected_recovery numeric(14,2);
+            alter table if exists decision.decision_queue add column if not exists due_at timestamp;
+            alter table if exists decision.decision_outcomes add column if not exists actual_recovery numeric(14,2);
+            alter table if exists decision.decision_outcomes add column if not exists recovery_variance_pct numeric(10,4);
+            alter table if exists decision.decision_outcomes add column if not exists time_to_resolution_hours numeric(10,2);
+            alter table if exists decision.decision_outcomes add column if not exists success_flag boolean;
+            alter table if exists decision.decision_outcomes add column if not exists cash_collected_after_decision numeric(14,2);
+            alter table if exists decision.decision_outcomes add column if not exists leakage_resolved_flag boolean;
 
             """
         )

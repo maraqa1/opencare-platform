@@ -117,3 +117,134 @@ dashboards:
         metrics:
           - staffing_pressure_index
         time_column: date_day
+  revenue_cycle_management:
+    enabled: true
+    use_case: revenue_cycle_management
+    dashboard_id: revenue-cycle-management
+    title: Revenue Cycle Management
+    schema: analytics
+    datasets:
+      - analytics.fct_cash_recovery_opportunity
+      - analytics.fct_revenue_leakage
+      - analytics.fct_claim_aging
+      - analytics.fct_payer_contract_performance
+      - analytics.fct_team_recovery_performance
+    charts:
+      - key: cash_recovery_command
+        enabled: true
+        title: Cash Recovery Command
+        viz_type: table
+        layout:
+          x: 0
+          y: 0
+          w: 6
+          h: 12
+        dataset: analytics.fct_cash_recovery_opportunity
+        metrics:
+          - recoverable_amount_sum
+          - expected_recovery_amount_sum
+          - priority_score_avg
+        group_by:
+          - issue_type
+      - key: gross_to_net_waterfall
+        enabled: true
+        title: Gross to Net Revenue Waterfall
+        viz_type: echarts_bar
+        layout:
+          x: 6
+          y: 0
+          w: 6
+          h: 12
+        dataset: analytics.fct_revenue_leakage
+        metrics:
+          - leakage_amount_sum
+        group_by:
+          - leakage_type
+      - key: ar_aging_trend
+        enabled: true
+        title: AR Aging Trend
+        viz_type: echarts_timeseries_line
+        layout:
+          x: 0
+          y: 12
+          w: 6
+          h: 12
+        dataset: analytics.fct_claim_aging
+        metrics:
+          - outstanding_amount_sum
+        group_by:
+          - payer_id
+        time_column: snapshot_date
+      - key: payer_contract_breaches
+        enabled: true
+        title: Payer Contract Breaches
+        viz_type: echarts_bar
+        layout:
+          x: 6
+          y: 12
+          w: 6
+          h: 12
+        dataset: analytics.fct_payer_contract_performance
+        metrics:
+          - sla_breach_count_sum
+        group_by:
+          - payer_id
+      - key: underpayment_by_payer
+        enabled: true
+        title: Underpayment by Payer
+        viz_type: echarts_bar
+        layout:
+          x: 0
+          y: 24
+          w: 6
+          h: 12
+        dataset: analytics.fct_payer_contract_performance
+        metrics:
+          - underpayment_amount_sum
+        group_by:
+          - payer_id
+      - key: recovery_queue
+        enabled: true
+        title: Recovery Queue
+        viz_type: table
+        layout:
+          x: 6
+          y: 24
+          w: 6
+          h: 12
+        dataset: analytics.fct_cash_recovery_opportunity
+        metrics:
+          - expected_recovery_amount_sum
+          - priority_score_avg
+        group_by:
+          - issue_type
+          - owner_team
+      - key: team_recovery_performance
+        enabled: true
+        title: Team Recovery Performance
+        viz_type: echarts_bar
+        layout:
+          x: 0
+          y: 36
+          w: 6
+          h: 12
+        dataset: analytics.fct_team_recovery_performance
+        metrics:
+          - actual_recovery_sum
+          - expected_recovery_sum
+        group_by:
+          - owner_team
+      - key: revenue_leakage_by_type
+        enabled: true
+        title: Revenue Leakage by Type
+        viz_type: echarts_bar
+        layout:
+          x: 6
+          y: 36
+          w: 6
+          h: 12
+        dataset: analytics.fct_revenue_leakage
+        metrics:
+          - leakage_amount_sum
+        group_by:
+          - leakage_type

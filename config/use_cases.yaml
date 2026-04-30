@@ -100,3 +100,107 @@ use_cases:
       - name: "shift_forecast"
         schedule: "0 2 * * *"
         model: "arima_staffing"
+  revenue_cycle_management:
+    name: "Revenue Cycle Management"
+    description: "Real-time cash control, revenue recovery, payer accountability, and operational execution."
+    enabled: true
+    source_tables:
+      - claims
+      - financial_postings
+      - denials
+      - payer_contracts
+      - encounters
+      - referrals
+    portal_pages:
+      - slug: "cfo-cash-command"
+        label: "Cash Command"
+        icon: "banknote"
+        tab_order: 1
+      - slug: "recovery-queue"
+        label: "Recovery Queue"
+        icon: "list-checks"
+        tab_order: 2
+      - slug: "payer-control"
+        label: "Payer Control"
+        icon: "shield-alert"
+        tab_order: 3
+      - slug: "revenue-leakage"
+        label: "Leakage"
+        icon: "droplets"
+        tab_order: 4
+      - slug: "team-performance"
+        label: "Team Performance"
+        icon: "users"
+        tab_order: 5
+      - slug: "executive-narrative"
+        label: "Executive Narrative"
+        icon: "scroll-text"
+        tab_order: 6
+    superset_dashboard_id: "revenue-cycle-management"
+    api_prefix: "/api/v1/revenue-cycle"
+    api_endpoints:
+      - path: "/cash-command"
+        method: "GET"
+      - path: "/recovery-queue"
+        method: "GET"
+      - path: "/payer-control"
+        method: "GET"
+      - path: "/leakage"
+        method: "GET"
+      - path: "/team-performance"
+        method: "GET"
+      - path: "/executive-narrative"
+        method: "GET"
+      - path: "/summary"
+        method: "GET"
+    business_objectives:
+      - "Identify recoverable cash for the next 7, 14, and 30 days."
+      - "Reduce AR days."
+      - "Detect revenue leakage."
+      - "Prioritize high-value recovery actions."
+      - "Assign ownership to teams and users."
+      - "Track expected vs actual recovery."
+      - "Enforce payer contract compliance."
+      - "Reconcile HIS encounters to ERP financial postings."
+      - "Link CRM acquisition and referral channels to revenue."
+    decisions:
+      types:
+        - id: "recover_cash_this_week"
+          trigger: "recoverable_cash_next_7d > 0"
+        - id: "prioritize_high_value_denials"
+          trigger: "denials_value_rank in top 10"
+        - id: "payer_underpayment_review"
+          trigger: "underpayment_amount > 0"
+        - id: "late_submission_risk"
+          trigger: "days_to_deadline <= 3"
+        - id: "denial_appeal_priority"
+          trigger: "appeal_deadline_at_risk = true"
+        - id: "payer_contract_breach"
+          trigger: "contract_breach_flag = true"
+        - id: "target_patient_collections"
+          trigger: "patient_balance_segment = actionable"
+        - id: "coding_backlog_escalation"
+          trigger: "coding_backlog_hours > threshold"
+    record_specs:
+      - table: "analytics.fct_cash_recovery_opportunity"
+        grain: "One row per revenue recovery opportunity."
+      - table: "analytics.fct_cash_forecast"
+        grain: "One row per forecast date and payer or department segment."
+      - table: "analytics.fct_payer_contract_performance"
+        grain: "One row per payer per month."
+      - table: "analytics.fct_team_recovery_performance"
+        grain: "One row per owner or team per reporting period."
+      - table: "analytics.fct_revenue_cycle"
+        grain: "One row per claim and encounter revenue lifecycle state."
+      - table: "analytics.fct_financial_posting"
+        grain: "One row per ERP financial posting."
+      - table: "analytics.fct_claim_aging"
+        grain: "One row per claim aging snapshot."
+      - table: "analytics.fct_denials"
+        grain: "One row per denial event."
+      - table: "analytics.fct_revenue_leakage"
+        grain: "One row per leakage finding."
+      - table: "analytics.fct_payer_performance"
+        grain: "One row per payer and period performance summary."
+      - table: "analytics.fct_patient_acquisition"
+        grain: "One row per acquisition or referral channel and period."
