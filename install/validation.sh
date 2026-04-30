@@ -27,6 +27,14 @@ run_cluster_command decision-schema postgres:16-alpine sh -c "psql postgresql://
 log "Checking decision API"
 run_cluster_http_check decisions "${BACKEND_URL}/api/v1/decisions/count"
 
+log "Checking revenue cycle APIs"
+run_cluster_http_check revenue-cycle-cash-command "${BACKEND_URL}/api/v1/revenue-cycle/cash-command"
+run_cluster_http_check revenue-cycle-recovery-queue "${BACKEND_URL}/api/v1/revenue-cycle/recovery-queue"
+run_cluster_http_check revenue-cycle-payer-control "${BACKEND_URL}/api/v1/revenue-cycle/payer-control"
+run_cluster_http_check revenue-cycle-leakage "${BACKEND_URL}/api/v1/revenue-cycle/leakage"
+run_cluster_http_check revenue-cycle-team-performance "${BACKEND_URL}/api/v1/revenue-cycle/team-performance"
+run_cluster_http_check revenue-cycle-executive-narrative "${BACKEND_URL}/api/v1/revenue-cycle/executive-narrative"
+
 if [[ -n "$EXTERNAL_TLS_SECRET_NAME" ]]; then
   log "Checking TLS certificate secret"
   kubectl -n "$NAMESPACE" get secret "$EXTERNAL_TLS_SECRET_NAME" >/dev/null
@@ -34,6 +42,8 @@ fi
 
 log "Checking portal service"
 run_cluster_http_check portal "$PORTAL_URL"
+run_cluster_http_check portal-revenue-cycle-index "${PORTAL_URL}/use-cases/revenue-cycle-management"
+run_cluster_http_check portal-revenue-cycle-cash-command "${PORTAL_URL}/use-cases/revenue-cycle-management/cfo-cash-command"
 
 log "Checking Superset service"
 run_cluster_http_check superset "http://superset:8088/health"
