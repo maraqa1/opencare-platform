@@ -60,6 +60,8 @@ spec:
                     path: dbt_project.yml
                   - key: generate_schema_name.sql
                     path: macros/generate_schema_name.sql
+                  - key: test_expression_is_true.sql
+                    path: macros/test_expression_is_true.sql
                   - key: sources.yml
                     path: models/sources.yml
                   - key: schema.yml
@@ -88,6 +90,38 @@ spec:
                     path: models/marts/dim_time.sql
                   - key: dict_metrics.sql
                     path: models/dictionary/dict_metrics.sql
+                  - key: revenue_cycle_schema.yml
+                    path: models/revenue_cycle/schema.yml
+                  - key: stg_rcm_claims.sql
+                    path: models/revenue_cycle/staging/stg_rcm_claims.sql
+                  - key: stg_rcm_financial_postings.sql
+                    path: models/revenue_cycle/staging/stg_rcm_financial_postings.sql
+                  - key: stg_rcm_referrals.sql
+                    path: models/revenue_cycle/staging/stg_rcm_referrals.sql
+                  - key: fct_revenue_cycle.sql
+                    path: models/revenue_cycle/marts/fct_revenue_cycle.sql
+                  - key: fct_financial_posting.sql
+                    path: models/revenue_cycle/marts/fct_financial_posting.sql
+                  - key: fct_claim_aging.sql
+                    path: models/revenue_cycle/marts/fct_claim_aging.sql
+                  - key: fct_denials.sql
+                    path: models/revenue_cycle/marts/fct_denials.sql
+                  - key: fct_revenue_leakage.sql
+                    path: models/revenue_cycle/marts/fct_revenue_leakage.sql
+                  - key: fct_payer_performance.sql
+                    path: models/revenue_cycle/marts/fct_payer_performance.sql
+                  - key: fct_patient_acquisition.sql
+                    path: models/revenue_cycle/marts/fct_patient_acquisition.sql
+                  - key: fct_cash_recovery_opportunity.sql
+                    path: models/revenue_cycle/marts/fct_cash_recovery_opportunity.sql
+                  - key: fct_cash_forecast.sql
+                    path: models/revenue_cycle/marts/fct_cash_forecast.sql
+                  - key: fct_payer_contract_performance.sql
+                    path: models/revenue_cycle/marts/fct_payer_contract_performance.sql
+                  - key: fct_team_recovery_performance.sql
+                    path: models/revenue_cycle/marts/fct_team_recovery_performance.sql
+                  - key: revenue_cycle_gl_reconciliation.sql
+                    path: tests/revenue_cycle_gl_reconciliation.sql
             - name: dbt-workspace
               emptyDir: {}
             - name: dbt-profile

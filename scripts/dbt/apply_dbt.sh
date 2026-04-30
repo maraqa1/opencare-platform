@@ -6,6 +6,45 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
 
+sync_dbt_project_configmap() {
+  log "Refreshing dbt project config map from repo files"
+  kubectl -n "$NAMESPACE" create configmap dbt-project-files \
+    --from-file=dbt_project.yml="$ROOT_DIR/dbt/opencare/dbt_project.yml" \
+    --from-file=generate_schema_name.sql="$ROOT_DIR/dbt/opencare/macros/generate_schema_name.sql" \
+    --from-file=test_expression_is_true.sql="$ROOT_DIR/dbt/opencare/macros/test_expression_is_true.sql" \
+    --from-file=sources.yml="$ROOT_DIR/dbt/opencare/models/sources.yml" \
+    --from-file=schema.yml="$ROOT_DIR/dbt/opencare/models/schema.yml" \
+    --from-file=stg_wards.sql="$ROOT_DIR/dbt/opencare/models/staging/stg_wards.sql" \
+    --from-file=stg_patients.sql="$ROOT_DIR/dbt/opencare/models/staging/stg_patients.sql" \
+    --from-file=stg_bed_events.sql="$ROOT_DIR/dbt/opencare/models/staging/stg_bed_events.sql" \
+    --from-file=stg_departments.sql="$ROOT_DIR/dbt/opencare/models/staging/stg_departments.sql" \
+    --from-file=dim_ward.sql="$ROOT_DIR/dbt/opencare/models/marts/dim_ward.sql" \
+    --from-file=dim_date.sql="$ROOT_DIR/dbt/opencare/models/marts/dim_date.sql" \
+    --from-file=fct_bed_occupancy.sql="$ROOT_DIR/dbt/opencare/models/marts/fct_bed_occupancy.sql" \
+    --from-file=fact_bed_occupancy.sql="$ROOT_DIR/dbt/opencare/models/marts/fact_bed_occupancy.sql" \
+    --from-file=fact_capacity.sql="$ROOT_DIR/dbt/opencare/models/marts/fact_capacity.sql" \
+    --from-file=dim_department.sql="$ROOT_DIR/dbt/opencare/models/marts/dim_department.sql" \
+    --from-file=dim_time.sql="$ROOT_DIR/dbt/opencare/models/marts/dim_time.sql" \
+    --from-file=dict_metrics.sql="$ROOT_DIR/dbt/opencare/models/dictionary/dict_metrics.sql" \
+    --from-file=revenue_cycle_schema.yml="$ROOT_DIR/dbt/opencare/models/revenue_cycle/schema.yml" \
+    --from-file=stg_rcm_claims.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/staging/stg_rcm_claims.sql" \
+    --from-file=stg_rcm_financial_postings.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/staging/stg_rcm_financial_postings.sql" \
+    --from-file=stg_rcm_referrals.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/staging/stg_rcm_referrals.sql" \
+    --from-file=fct_revenue_cycle.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_revenue_cycle.sql" \
+    --from-file=fct_financial_posting.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_financial_posting.sql" \
+    --from-file=fct_claim_aging.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_claim_aging.sql" \
+    --from-file=fct_denials.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_denials.sql" \
+    --from-file=fct_revenue_leakage.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_revenue_leakage.sql" \
+    --from-file=fct_payer_performance.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_payer_performance.sql" \
+    --from-file=fct_patient_acquisition.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_patient_acquisition.sql" \
+    --from-file=fct_cash_recovery_opportunity.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_cash_recovery_opportunity.sql" \
+    --from-file=fct_cash_forecast.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_cash_forecast.sql" \
+    --from-file=fct_payer_contract_performance.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_payer_contract_performance.sql" \
+    --from-file=fct_team_recovery_performance.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_team_recovery_performance.sql" \
+    --from-file=revenue_cycle_gl_reconciliation.sql="$ROOT_DIR/dbt/opencare/tests/revenue_cycle_gl_reconciliation.sql" \
+    --dry-run=client -o yaml | kubectl apply -f -
+}
+
 ensure_dbt_source_schema_contract() {
   local source_schema="${DBT_SOURCE_SCHEMA:-${RAW_SCHEMA}}"
 
@@ -50,6 +89,7 @@ SQL
 }
 
 apply_file "$ROOT_DIR/manifests/dbt/cronjob.yaml"
+sync_dbt_project_configmap
 ensure_dbt_source_schema_contract
 log_skip "No dbt service readiness step implemented for cron-based execution"
 dbt_job_name="dbt-run-now-$(date +%s)"
