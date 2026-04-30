@@ -147,7 +147,7 @@ validate_phase1_counts() {
   check_postgres_equals "select count(*) from ${ANALYTICS_SCHEMA}.dim_ward;" "12"
   check_postgres_equals "select count(*) from ${ANALYTICS_SCHEMA}.dim_date;" "547"
   check_postgres_equals "select count(*) from ${ANALYTICS_SCHEMA}.fct_bed_occupancy;" "6564"
-  check_postgres_equals "select count(*) from ${DICTIONARY_SCHEMA}.dict_metrics;" "4"
+  check_postgres_equals "select count(*) from ${DICTIONARY_SCHEMA}.dict_metrics where metric_id in ('occupied_beds', 'available_beds', 'occupancy_rate', 'pressure_flag');" "4"
   check_postgres_equals "select min(date_day)::text || '|' || max(date_day)::text from ${ANALYTICS_SCHEMA}.dim_date;" "2024-10-01|2026-03-31"
   check_postgres_greater_than_zero "select count(*) from ${ANALYTICS_SCHEMA}.fct_bed_occupancy where pressure_flag is true;"
 }
