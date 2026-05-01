@@ -149,7 +149,7 @@ dashboards:
       - key: gross_to_net_waterfall
         enabled: true
         title: Gross to Net Revenue Waterfall
-        viz_type: echarts_bar
+        viz_type: dist_bar
         layout:
           x: 6
           y: 0
@@ -178,7 +178,7 @@ dashboards:
       - key: payer_contract_breaches
         enabled: true
         title: Payer Contract Breaches
-        viz_type: echarts_bar
+        viz_type: dist_bar
         layout:
           x: 6
           y: 12
@@ -192,7 +192,7 @@ dashboards:
       - key: underpayment_by_payer
         enabled: true
         title: Underpayment by Payer
-        viz_type: echarts_bar
+        viz_type: dist_bar
         layout:
           x: 0
           y: 24
@@ -222,7 +222,7 @@ dashboards:
       - key: team_recovery_performance
         enabled: true
         title: Team Recovery Performance
-        viz_type: echarts_bar
+        viz_type: dist_bar
         layout:
           x: 0
           y: 36
@@ -237,7 +237,7 @@ dashboards:
       - key: revenue_leakage_by_type
         enabled: true
         title: Revenue Leakage by Type
-        viz_type: echarts_bar
+        viz_type: dist_bar
         layout:
           x: 6
           y: 36
