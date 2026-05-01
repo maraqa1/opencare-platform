@@ -24,17 +24,18 @@ const UNIT_COLOURS: Record<string, string> = {
   score: "#fce4ec",
 };
 
-function sourceRecordHref(sourceTable: string) {
-  if (sourceTable === "output.forecast") {
-    return "/occupancy?tab=forecast#record-spec-output.forecast";
-  }
-  if (sourceTable === "output.anomaly") {
-    return "/occupancy?tab=alerts#record-spec-output.anomaly";
-  }
-  return `/occupancy?tab=governance#record-spec-${sourceTable}`;
+function sourceRecordHref(sourceTable: string, recordSpecBaseHref: string) {
+  const base = recordSpecBaseHref.replace(/#.*$/, "");
+  return `${base}#record-spec-${sourceTable}`;
 }
 
-export function DataDictionary({ useCase }: { useCase?: string }) {
+export function DataDictionary({
+  useCase,
+  recordSpecBaseHref = "/admin/governance",
+}: {
+  useCase?: string;
+  recordSpecBaseHref?: string;
+}) {
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [search, setSearch] = useState("");
   const [activeLineage, setActiveLineage] = useState<string | null>(null);
@@ -137,7 +138,7 @@ export function DataDictionary({ useCase }: { useCase?: string }) {
                       >
                         {isExpanded ? "Hide Lineage" : "View Lineage"}
                       </button>
-                      <a className="secondary-link" href={sourceRecordHref(metric.source_table)}>
+                      <a className="secondary-link" href={sourceRecordHref(metric.source_table, recordSpecBaseHref)}>
                         View Source Table
                       </a>
                     </div>

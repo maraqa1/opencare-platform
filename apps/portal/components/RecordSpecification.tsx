@@ -54,7 +54,15 @@ function typeTone(type: string) {
   return "purple";
 }
 
-export async function RecordSpecification({ table }: { table: string }) {
+export async function RecordSpecification({
+  table,
+  lineageHref = "/admin/governance",
+  dictionaryHref = "/admin/governance",
+}: {
+  table: string;
+  lineageHref?: string;
+  dictionaryHref?: string;
+}) {
   const spec = await getApiJson<{
     name?: string;
     sourceTable?: string;
@@ -172,10 +180,10 @@ export async function RecordSpecification({ table }: { table: string }) {
           </div>
         </div>
         <div className="record-spec-actions">
-          <a className="secondary-link" href={`/occupancy?tab=governance`}>
+          <a className="secondary-link" href={lineageHref}>
             View Full Lineage
           </a>
-          <a className="secondary-link" href={`/occupancy?tab=dictionary`}>
+          <a className="secondary-link" href={dictionaryHref}>
             Dictionary
           </a>
           <a className="button secondary" href={`/api/portal/api/v1/record-spec/${encodeURIComponent(table)}`}>

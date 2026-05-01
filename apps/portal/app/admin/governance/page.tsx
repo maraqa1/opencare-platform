@@ -3,6 +3,37 @@ import { GovernanceView } from "@/components/GovernanceView";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
 
+const governanceUseCases = [
+  {
+    id: "bed_pressure",
+    name: "Bed Pressure Intelligence",
+    description: "Occupancy, forecasting, anomaly detection, and discharge decision metadata.",
+    recordSpecs: [
+      "analytics.fct_bed_occupancy",
+      "output.forecast",
+      "output.anomaly",
+    ],
+  },
+  {
+    id: "revenue_cycle_management",
+    name: "Revenue Cycle Management",
+    description: "Cash control, recovery execution, payer accountability, and leakage metadata.",
+    recordSpecs: [
+      "analytics.fct_cash_recovery_opportunity",
+      "analytics.fct_cash_forecast",
+      "analytics.fct_payer_contract_performance",
+      "analytics.fct_team_recovery_performance",
+      "analytics.fct_revenue_cycle",
+      "analytics.fct_financial_posting",
+      "analytics.fct_claim_aging",
+      "analytics.fct_denials",
+      "analytics.fct_revenue_leakage",
+      "analytics.fct_payer_performance",
+      "analytics.fct_patient_acquisition",
+    ],
+  },
+];
+
 export default function AdminGovernancePage() {
   return (
     <PageFrame
@@ -20,7 +51,15 @@ export default function AdminGovernancePage() {
         <article className="panel">
           <p className="eyebrow">Section 1</p>
           <h3 className="section-heading">Data Dictionary and Business Definitions</h3>
-          <DictionaryView useCase="bed_pressure" />
+          <div className="compact-feed">
+            {governanceUseCases.map((useCase) => (
+              <div className="panel" key={useCase.id}>
+                <p className="eyebrow">{useCase.name}</p>
+                <p className="section-subtitle">{useCase.description}</p>
+                <DictionaryView useCase={useCase.id} recordSpecBaseHref="/admin/governance" />
+              </div>
+            ))}
+          </div>
         </article>
 
         <article className="panel">
@@ -32,9 +71,22 @@ export default function AdminGovernancePage() {
         <article className="panel">
           <p className="eyebrow">Section 3</p>
           <h3 className="section-heading">Record Specifications</h3>
-          <RecordSpecification table="analytics.fct_bed_occupancy" />
-          <RecordSpecification table="output.forecast" />
-          <RecordSpecification table="output.anomaly" />
+          <div className="compact-feed">
+            {governanceUseCases.map((useCase) => (
+              <div key={useCase.id}>
+                <p className="eyebrow">{useCase.name}</p>
+                <p className="section-subtitle">{useCase.description}</p>
+                {useCase.recordSpecs.map((table) => (
+                  <RecordSpecification
+                    key={table}
+                    table={table}
+                    lineageHref="/admin/governance"
+                    dictionaryHref="/admin/governance"
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </article>
 
         <article className="panel">
