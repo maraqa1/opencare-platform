@@ -184,15 +184,17 @@ export function GovernanceControlTower() {
     null;
 
   const matchingGlossaryTerms = useMemo(() => {
-    const terms = filteredUseCases.flatMap((useCase) => useCase.dictionaryTerms.map((term) => ({ ...term, useCaseName: useCase.name })));
+    const terms = (activeUseCase ? [activeUseCase] : []).flatMap((useCase) =>
+      useCase.dictionaryTerms.map((term) => ({ ...term, useCaseName: useCase.name })),
+    );
     if (!query) {
       return terms;
     }
     return terms.filter((term) => `${term.term} ${term.definition}`.toLowerCase().includes(query.toLowerCase()));
-  }, [filteredUseCases, query]);
+  }, [activeUseCase, query]);
 
   const matchingAssets = useMemo(() => {
-    const assets = filteredUseCases.flatMap((useCase) =>
+    const assets = (activeUseCase ? [activeUseCase] : []).flatMap((useCase) =>
       useCase.governedDatasets.map((dataset) => ({ ...dataset, useCaseName: useCase.name, useCaseId: useCase.id })),
     );
     if (!query) {
@@ -201,17 +203,7 @@ export function GovernanceControlTower() {
     return assets.filter((asset) =>
       `${asset.name} ${asset.schema}.${asset.table} ${asset.businessMeaning}`.toLowerCase().includes(query.toLowerCase()),
     );
-  }, [filteredUseCases, query]);
-
-  const glossaryGroups = useMemo(() => {
-    const grouped = new Map<string, typeof matchingGlossaryTerms>();
-    for (const term of matchingGlossaryTerms) {
-      const existing = grouped.get(term.useCaseName) ?? [];
-      existing.push(term);
-      grouped.set(term.useCaseName, existing);
-    }
-    return Array.from(grouped.entries());
-  }, [matchingGlossaryTerms]);
+  }, [activeUseCase, query]);
 
   const activeTabMeta = tabLabels.find((tab) => tab.key === activeTab);
   const selectedLineageModel = selectedAsset?.table ?? activeUseCase?.governedDatasets[0]?.table ?? null;
@@ -605,34 +597,22 @@ export function GovernanceControlTower() {
               <div className="governance-tab-panel">
                 <div className="governance-panel-head">
                   <div>
-                    <p className="eyebrow">Business Glossary</p>
-                    <h3>Grouped by use case and domain</h3>
+                    <p className="eyebrow">Selected Use Case</p>
+                    <h3>{activeUseCase.name}</h3>
                   </div>
+                  <span className="governance-mini-pill">{activeUseCase.domain}</span>
                 </div>
                 {matchingGlossaryTerms.length > 0 ? (
-                  <div className="governance-glossary-groups">
-                    {glossaryGroups.map(([useCaseName, terms]) => (
-                      <section className="governance-glossary-group" key={useCaseName}>
-                        <div className="governance-panel-head">
-                          <div>
-                            <p className="eyebrow">Use Case</p>
-                            <h4>{useCaseName}</h4>
-                          </div>
-                          <span className="governance-mini-pill">{terms[0]?.domain ?? "Unknown domain"}</span>
+                  <div className="governance-glossary-grid">
+                    {matchingGlossaryTerms.map((term) => (
+                      <article className="governance-glossary-card" key={term.id}>
+                        <div className="governance-card-topline">
+                          <span className="governance-mini-pill">{term.domain}</span>
+                          <span className={`governance-badge ${statusTone(term.status)}`}>{statusLabel(term.status)}</span>
                         </div>
-                        <div className="governance-glossary-grid">
-                          {terms.map((term) => (
-                            <article className="governance-glossary-card" key={term.id}>
-                              <div className="governance-card-topline">
-                                <span className="governance-mini-pill">{term.domain}</span>
-                                <span className={`governance-badge ${statusTone(term.status)}`}>{statusLabel(term.status)}</span>
-                              </div>
-                              <h4>{term.term}</h4>
-                              <p>{term.definition}</p>
-                            </article>
-                          ))}
-                        </div>
-                      </section>
+                        <h4>{term.term}</h4>
+                        <p>{term.definition}</p>
+                      </article>
                     ))}
                   </div>
                 ) : renderUnknown("Governance metadata not yet configured.")}

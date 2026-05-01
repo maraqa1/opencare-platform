@@ -10,6 +10,36 @@ type Props = {
   children: ReactNode;
 };
 
+function getTopbarContext(pathname: string) {
+  if (pathname.startsWith("/admin")) {
+    return {
+      label: "Administration",
+      title: "Governance and Platform Control",
+      badge: "Admin Context",
+      actionHref: "/admin",
+      actionLabel: "Admin",
+    };
+  }
+
+  if (pathname.startsWith("/use-cases/revenue-cycle-management")) {
+    return {
+      label: "Revenue Cycle Management",
+      title: "Executive Revenue Workspace",
+      badge: "Revenue Ops",
+      actionHref: "/admin/governance",
+      actionLabel: "Governance",
+    };
+  }
+
+  return {
+    label: "Phase 4b Enhanced",
+    title: "Use Case Workspace Architecture",
+    badge: "Bed Manager",
+    actionHref: "/admin",
+    actionLabel: "Admin",
+  };
+}
+
 function NavSection({
   title,
   items,
@@ -43,6 +73,8 @@ function NavSection({
 }
 
 export function NavigationShell({ pathname, navigation, children }: Props) {
+  const topbar = getTopbarContext(pathname);
+
   return (
     <div className="portal-shell">
       <aside className="sidebar">
@@ -74,13 +106,13 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
       <main className="main">
         <header className="main-topbar">
           <div>
-            <p className="topbar-label">Phase 4b Enhanced</p>
-            <h2 className="topbar-title">Use Case Workspace Architecture</h2>
+            <p className="topbar-label">{topbar.label}</p>
+            <h2 className="topbar-title">{topbar.title}</h2>
           </div>
           <div className="topbar-actions">
-            <span className="persona-badge">Bed Manager</span>
-            <Link className="settings-link" href="/admin">
-              Admin
+            <span className="persona-badge">{topbar.badge}</span>
+            <Link className="settings-link" href={topbar.actionHref}>
+              {topbar.actionLabel}
             </Link>
           </div>
         </header>
