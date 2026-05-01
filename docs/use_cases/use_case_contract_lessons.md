@@ -158,6 +158,40 @@ Better example:
 - required marts have rows
 - required dashboard charts render
 
+### 9. Administration and governance parity contract
+
+Future use-case prompts must require explicit review of the Administration surface, not only operational workspaces.
+
+That means every active use case should be checked for:
+
+- governance visibility
+- dictionary coverage
+- record-spec coverage
+- lineage entry points
+- configuration metadata visibility
+- parity with earlier flagship use cases
+
+Important lessons:
+
+- a use case is not complete if it is operationally visible but administratively invisible
+- governance should represent use cases as governed operational products, not as a flat metadata dump
+- equal visual weight across active use cases matters, otherwise the platform still feels single-use-case
+- Bed Pressure being the first flagship use case created hidden hardcoding that future prompts should explicitly guard against
+
+Future prompts should also allow a phase-1 governance pattern:
+
+- a centralized frontend governance registry is acceptable when live governance metadata services do not yet exist
+- that registry must normalize actual repo truth, not invent a parallel truth model
+- unknown or not-connected trust evidence is better than fake all-green statuses
+- discovery controls such as search, chips, and filters should do real work, not just decorate the page
+
+Governance should remain aligned to the OpenCare workspace model:
+
+- use cases grouped into their own operational workspaces
+- governance presented under Administration
+- governance views grouped by use case contract, glossary, assets, lineage, quality, and compliance
+- business-readable ownership, purpose, consumers, and compliance context shown alongside technical metadata
+
 ## Specific Revenue Cycle Management lessons
 
 From this implementation, future use-case prompts should explicitly guard against:
