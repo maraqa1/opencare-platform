@@ -19,6 +19,7 @@ export type GovernanceUseCase = {
   businessPurpose: string;
   owner: string;
   steward?: string;
+  sourceTables: string[];
   workspaceCoverage: WorkspaceCoverageItem[];
   governedDatasets: GovernedDataset[];
   dictionaryTerms: DictionaryTerm[];
@@ -104,6 +105,7 @@ const governanceUseCases: GovernanceUseCase[] = [
     businessPurpose: "Monitor ward pressure, forecast occupancy risk, surface anomalies, and support capacity decisions.",
     owner: "Clinical Operations Analytics",
     steward: "Capacity Planning Lead",
+    sourceTables: ["bed_events", "wards", "patients"],
     workspaceCoverage: [
       { label: "Overview", href: "/use-cases/bed-pressure/overview" },
       { label: "Status", href: "/use-cases/bed-pressure/status" },
@@ -300,6 +302,14 @@ const governanceUseCases: GovernanceUseCase[] = [
         impactTargets: ["Predictions", "Alerts", "Superset"],
         status: "partial",
       },
+      {
+        id: "bp-lineage-reference-and-patient-context",
+        label: "Reference and patient context inputs",
+        summary: "Shows how ward reference data and patient context contribute to downstream occupancy and decision products.",
+        path: ["wards + patients", "staging reference models", "analytics.dim_ward + occupancy support logic", "Status and Decisions pages"],
+        impactTargets: ["Status", "Analysis", "Decisions"],
+        status: "partial",
+      },
     ],
     qualitySummary: {
       freshness: "warning",
@@ -336,6 +346,7 @@ const governanceUseCases: GovernanceUseCase[] = [
     businessPurpose: "Track claim movement, identify denial and recovery opportunities, control payer performance, detect leakage, and support executive revenue narrative.",
     owner: "Revenue Operations Analytics",
     steward: "Revenue Integrity Lead",
+    sourceTables: ["claims", "financial_postings", "denials", "payer_contracts", "encounters", "referrals"],
     workspaceCoverage: [
       { label: "Cash Command", href: "/use-cases/revenue-cycle-management/cash-command" },
       { label: "Recovery Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },

@@ -2799,7 +2799,9 @@ code {
 }
 
 .governance-views-shell,
-.governance-tab-hero {
+.governance-tab-hero,
+.governance-lineage-toolbar,
+.governance-lineage-hero {
   display: grid;
   gap: 16px;
 }
@@ -2955,6 +2957,22 @@ code {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
+}
+
+.governance-lineage-toolbar {
+  align-items: start;
+}
+
+.governance-lineage-hero {
+  width: 100%;
+}
+
+.governance-lineage-summary-note {
+  border-radius: 18px;
+  border: 1px dashed rgba(31, 56, 100, 0.16);
+  padding: 16px 18px;
+  color: var(--oc-gray-600);
+  background: rgba(248, 250, 253, 0.78);
 }
 
 .governance-lineage-node {
