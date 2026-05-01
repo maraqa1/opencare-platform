@@ -712,48 +712,70 @@ export function GovernanceControlTower() {
                 </div>
                 {lineageMode === "full" && selectedLineageModel ? (
                   <section className="governance-lineage-hero">
-                    <LineageDAG modelName={selectedLineageModel} />
+                    <LineageDAG modelName={selectedLineageModel} layout="stacked" />
                   </section>
                 ) : null}
-                <article className="governance-lineage-card">
-                  <div className="governance-card-topline">
-                    <span className="governance-mini-pill">{activeUseCase.name}</span>
-                    <span className="governance-badge positive">Full source coverage</span>
-                  </div>
-                  <h4>Declared Raw Source Tables</h4>
-                  <p>These are the configured raw sources that underpin the selected use case contract.</p>
-                  <div className="governance-lineage-path">
-                    {activeUseCase.sourceTables.map((source, index) => (
-                      <div className="governance-lineage-node" key={`${activeUseCase.id}-${source}`}>
-                        <span>{source}</span>
-                        {index < activeUseCase.sourceTables.length - 1 ? <strong>+</strong> : null}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="governance-impact-note">Downstream governed assets: {activeUseCase.governedDatasets.length}</p>
-                </article>
-                <div className="governance-lineage-grid">
-                  {activeUseCase.lineageEntryPoints.map((entryPoint) => (
-                    <article className="governance-lineage-card" key={entryPoint.id}>
+                {lineageMode === "summary" ? (
+                  <>
+                    <article className="governance-lineage-card">
                       <div className="governance-card-topline">
                         <span className="governance-mini-pill">{activeUseCase.name}</span>
-                        <span className={`governance-badge ${statusTone(entryPoint.status)}`}>{statusLabel(entryPoint.status)}</span>
+                        <span className="governance-badge positive">Full source coverage</span>
                       </div>
-                      <h4>{entryPoint.label}</h4>
-                      <p>{entryPoint.summary}</p>
+                      <h4>Declared Raw Source Tables</h4>
+                      <p>These are the configured raw sources that underpin the selected use case contract.</p>
                       <div className="governance-lineage-path">
-                        {entryPoint.path.map((step, index) => (
-                          <div className="governance-lineage-node" key={`${entryPoint.id}-${step}`}>
-                            <span>{step}</span>
-                            {index < entryPoint.path.length - 1 ? <strong>-&gt;</strong> : null}
+                        {activeUseCase.sourceTables.map((source, index) => (
+                          <div className="governance-lineage-node" key={`${activeUseCase.id}-${source}`}>
+                            <span>{source}</span>
+                            {index < activeUseCase.sourceTables.length - 1 ? <strong>+</strong> : null}
                           </div>
                         ))}
                       </div>
-                      <p className="governance-impact-note">Impacts: {entryPoint.impactTargets.join(", ")}</p>
+                      <p className="governance-impact-note">Downstream governed assets: {activeUseCase.governedDatasets.length}</p>
                     </article>
-                  ))}
-                  {activeUseCase.lineageEntryPoints.length === 0 ? renderUnknown("Detailed lineage not yet connected.") : null}
-                </div>
+                    <div className="governance-lineage-grid">
+                      {activeUseCase.lineageEntryPoints.map((entryPoint) => (
+                        <article className="governance-lineage-card" key={entryPoint.id}>
+                          <div className="governance-card-topline">
+                            <span className="governance-mini-pill">{activeUseCase.name}</span>
+                            <span className={`governance-badge ${statusTone(entryPoint.status)}`}>{statusLabel(entryPoint.status)}</span>
+                          </div>
+                          <h4>{entryPoint.label}</h4>
+                          <p>{entryPoint.summary}</p>
+                          <div className="governance-lineage-path">
+                            {entryPoint.path.map((step, index) => (
+                              <div className="governance-lineage-node" key={`${entryPoint.id}-${step}`}>
+                                <span>{step}</span>
+                                {index < entryPoint.path.length - 1 ? <strong>-&gt;</strong> : null}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="governance-impact-note">Impacts: {entryPoint.impactTargets.join(", ")}</p>
+                        </article>
+                      ))}
+                      {activeUseCase.lineageEntryPoints.length === 0 ? renderUnknown("Detailed lineage not yet connected.") : null}
+                    </div>
+                  </>
+                ) : (
+                  <article className="governance-lineage-card">
+                    <div className="governance-card-topline">
+                      <span className="governance-mini-pill">{activeUseCase.name}</span>
+                      <span className="governance-badge positive">Full source coverage</span>
+                    </div>
+                    <h4>Declared Raw Source Tables</h4>
+                    <p>These are the configured raw sources that underpin the selected use case contract.</p>
+                    <div className="governance-lineage-path">
+                      {activeUseCase.sourceTables.map((source, index) => (
+                        <div className="governance-lineage-node" key={`${activeUseCase.id}-${source}`}>
+                          <span>{source}</span>
+                          {index < activeUseCase.sourceTables.length - 1 ? <strong>+</strong> : null}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="governance-impact-note">Downstream governed assets: {activeUseCase.governedDatasets.length}</p>
+                  </article>
+                )}
                 {lineageMode === "summary" && selectedLineageModel ? (
                   <div className="governance-lineage-summary-note">
                     Switch to <strong>Full Lineage</strong> to expand the flow-chart DAG for the selected governed asset.

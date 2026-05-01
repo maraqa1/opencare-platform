@@ -74,7 +74,13 @@ function niceLabel(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-export function LineageDAG({ modelName }: { modelName: string }) {
+export function LineageDAG({
+  modelName,
+  layout = "split",
+}: {
+  modelName: string;
+  layout?: "split" | "stacked";
+}) {
   const [payload, setPayload] = useState<LineagePayload | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
@@ -154,7 +160,7 @@ export function LineageDAG({ modelName }: { modelName: string }) {
   }
 
   return (
-    <section className="governance-card lineage-card">
+    <section className={layout === "stacked" ? "governance-card lineage-card lineage-card-full" : "governance-card lineage-card"}>
       <div className="governance-card-header">
         <div>
           <p className="eyebrow">Traceability</p>
@@ -173,7 +179,7 @@ export function LineageDAG({ modelName }: { modelName: string }) {
         </div>
       </div>
 
-      <div className="lineage-layout">
+      <div className={layout === "stacked" ? "lineage-layout lineage-layout-stacked" : "lineage-layout"}>
         <div className="lineage-canvas-shell">
           {nodes.length > 0 ? (
             <svg
@@ -258,18 +264,18 @@ export function LineageDAG({ modelName }: { modelName: string }) {
           )}
         </div>
 
-        {selectedNode ? <NodeDetailPanel node={selectedNode} /> : null}
+        {selectedNode ? <NodeDetailPanel node={selectedNode} fullWidth={layout === "stacked"} /> : null}
       </div>
     </section>
   );
 }
 
-function NodeDetailPanel({ node }: { node: LineageNode }) {
+function NodeDetailPanel({ node, fullWidth = false }: { node: LineageNode; fullWidth?: boolean }) {
   const colours = NODE_COLOURS[node.stage];
   const columns = Object.entries(node.columns ?? {});
 
   return (
-    <aside className="node-detail-panel" style={{ borderTopColor: colours.border }}>
+    <aside className={fullWidth ? "node-detail-panel node-detail-panel-full" : "node-detail-panel"} style={{ borderTopColor: colours.border }}>
       <div className="node-detail-header">
         <div>
           <p className="eyebrow">Selected Node</p>
