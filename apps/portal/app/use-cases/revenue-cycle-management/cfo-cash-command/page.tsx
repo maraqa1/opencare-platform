@@ -16,6 +16,16 @@ export default function RevenueCycleCashCommandPage() {
         description="A hospital revenue operating system focused on recoverable cash, payer accountability, owner-led execution, and expected versus actual recovery."
         trustItems={["Financial truth: ERP postings", "Execution: owner-level recovery queue", "Narrative: CFO-ready operating view"]}
         tabs={revenueCycleTabs}
+        headerActions={
+          <a
+            className="secondary-link"
+            href="https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Executive Dashboard
+          </a>
+        }
       >
         <RevenueCycleConsole view="cash-command" />
       </UseCaseWorkspace>

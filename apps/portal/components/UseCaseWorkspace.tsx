@@ -9,6 +9,7 @@ export function UseCaseWorkspace({
   description = "A self-contained module for occupancy pressure, breach forecasting, trend evidence, operational decisions, and one-click provenance.",
   trustItems = ["Pipeline 8m ago", "6/6 sources", "42/42 tests"],
   tabs = bedPressureTabs,
+  headerActions,
   children,
 }: {
   activeTab: string;
@@ -16,6 +17,7 @@ export function UseCaseWorkspace({
   description?: string;
   trustItems?: string[];
   tabs?: Array<{ key: string; label: string; href: string }>;
+  headerActions?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -26,11 +28,14 @@ export function UseCaseWorkspace({
           <h2>{title}</h2>
           <p>{description}</p>
         </div>
-        <div className="workspace-trust">
-          <span className="status-dot live" />
-          {trustItems.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.75rem" }}>
+          {headerActions ? <div className="button-row">{headerActions}</div> : null}
+          <div className="workspace-trust">
+            <span className="status-dot live" />
+            {trustItems.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
         </div>
       </section>
       <TabNav items={tabs} activeKey={activeTab} />

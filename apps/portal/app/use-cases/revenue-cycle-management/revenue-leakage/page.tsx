@@ -16,6 +16,16 @@ export default function RevenueCycleLeakagePage() {
         description="Leakage surfaced as a cash problem with named categories, not a retrospective finance report."
         trustItems={["Leakage: decomposed", "Cash impact: explicit", "Actionability: owner-ready"]}
         tabs={revenueCycleTabs}
+        headerActions={
+          <a
+            className="secondary-link"
+            href="https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Executive Dashboard
+          </a>
+        }
       >
         <RevenueCycleConsole view="revenue-leakage" />
       </UseCaseWorkspace>

@@ -16,6 +16,16 @@ export default function RevenueCycleTeamPerformancePage() {
         description="Recovery performance measured by output, variance to target, and speed to resolution."
         trustItems={["Owners: visible", "Variance: expected vs actual", "Load: overdue queue tracked"]}
         tabs={revenueCycleTabs}
+        headerActions={
+          <a
+            className="secondary-link"
+            href="https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Executive Dashboard
+          </a>
+        }
       >
         <RevenueCycleConsole view="team-performance" />
       </UseCaseWorkspace>

@@ -16,6 +16,16 @@ export default function RevenueCycleExecutiveNarrativePage() {
         description="An executive operating narrative grounded in live opportunities, payer breaches, and accountable recovery work."
         trustItems={["Narrative: backend-generated", "Cash impact: live only", "No hardcoded financial values"]}
         tabs={revenueCycleTabs}
+        headerActions={
+          <a
+            className="secondary-link"
+            href="https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Executive Dashboard
+          </a>
+        }
       >
         <RevenueCycleConsole view="executive-narrative" />
       </UseCaseWorkspace>

@@ -16,6 +16,16 @@ export default function RevenueCyclePayerControlPage() {
         description="Payer performance tied to cash timing, underpayment recovery, and contract enforcement."
         trustItems={["Contracts: monitored", "Underpayments: quantified", "SLA breaches: visible"]}
         tabs={revenueCycleTabs}
+        headerActions={
+          <a
+            className="secondary-link"
+            href="https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Executive Dashboard
+          </a>
+        }
       >
         <RevenueCycleConsole view="payer-control" />
       </UseCaseWorkspace>

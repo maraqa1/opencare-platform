@@ -16,6 +16,16 @@ export default function RevenueCycleRecoveryQueuePage() {
         description="Ranked recovery actions with clear owners, due dates, and expected cash impact."
         trustItems={["Queue: priority-scored", "Ownership: team and named owner", "Outcome loop: expected vs actual recovery"]}
         tabs={revenueCycleTabs}
+        headerActions={
+          <a
+            className="secondary-link"
+            href="https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Executive Dashboard
+          </a>
+        }
       >
         <RevenueCycleConsole view="recovery-queue" />
       </UseCaseWorkspace>
