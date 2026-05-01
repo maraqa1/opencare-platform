@@ -274,7 +274,7 @@ export function RCMDashboard() {
       <section className="rcm-kpi-grid">
         <article className="rcm-kpi-card">
           <span className="eyebrow">Total Cash Collected</span>
-          <strong>{moneyCompact(kpis?.total_cash_collected)}</strong>
+          <strong>{currencyCompact(kpis?.total_cash_collected)}</strong>
           <p className={`rcm-kpi-subtext ${cashDelta?.className ?? "neutral"}`}>{cashDelta?.text ?? "No prior comparison"} vs prior year</p>
         </article>
         <article className="rcm-kpi-card">
@@ -284,7 +284,7 @@ export function RCMDashboard() {
         </article>
         <article className="rcm-kpi-card">
           <span className="eyebrow">Leakage Recovered</span>
-          <strong>{moneyCompact(kpis?.leakage_recovered)}</strong>
+          <strong>{currencyCompact(kpis?.leakage_recovered)}</strong>
           <p className="rcm-kpi-subtext neutral">{percent(kpis?.leakage_recovered_pct_gross)} of gross charges</p>
         </article>
         <article className="rcm-kpi-card">
@@ -307,8 +307,8 @@ export function RCMDashboard() {
               <LineChart data={cashSeries}>
                 <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickFormatter={(value) => `£${value}M`} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value: number) => `£${value.toFixed(1)}M`} />
+                <YAxis tickFormatter={(value) => `GBP ${value}M`} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value: number) => `GBP ${value.toFixed(1)}M`} />
                 <Legend />
                 <Line type="monotone" dataKey="charges" name="Charges" stroke="var(--oc-gray-600)" strokeDasharray="6 6" strokeWidth={2.5} dot={false} />
                 <Line type="monotone" dataKey="collections" name="Collections" stroke="var(--oc-blue)" strokeWidth={3} dot={{ r: 3, fill: "var(--oc-blue)" }} />
@@ -329,8 +329,8 @@ export function RCMDashboard() {
               <BarChart data={agingBuckets}>
                 <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
                 <XAxis dataKey="bucket" tickLine={false} axisLine={false} />
-                <YAxis tickFormatter={(value) => `£${value}M`} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value: number) => `£${value.toFixed(1)}M`} />
+                <YAxis tickFormatter={(value) => `GBP ${value}M`} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value: number) => `GBP ${value.toFixed(1)}M`} />
                 <Bar dataKey="value" radius={[10, 10, 0, 0]}>
                   {agingBuckets.map((entry) => (
                     <Cell key={entry.bucket} fill={chartColour(entry.risk_band)} />
@@ -368,7 +368,7 @@ export function RCMDashboard() {
               <article className="rcm-action-card" key={card.label}>
                 <div>
                   <p className="eyebrow">{card.label}</p>
-                  <h4>{moneyCompact(card.amount)} at risk</h4>
+                  <h4>{currencyCompact(card.amount)} at risk</h4>
                   <p className="section-subtitle">{card.subtext}</p>
                 </div>
                 <Link className="button primary" href={card.href}>
