@@ -115,7 +115,9 @@ const fallbackLeakage = [
 ];
 
 function deltaLabel(value?: number | null, suffix = "%", invertPositive = false) {
-  if (value == null) return "No prior comparison";
+  if (value == null) {
+    return { text: "No prior comparison", className: "neutral", polarity: "flat" as const };
+  }
   const polarity = value > 0 ? "up" : value < 0 ? "down" : "flat";
   const effective = invertPositive ? -value : value;
   const arrow = effective > 0 ? "^" : effective < 0 ? "v" : "-";
