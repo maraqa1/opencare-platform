@@ -2711,6 +2711,7 @@ code {
 
 .governance-usecase-grid,
 .governance-view-nav,
+.governance-legacy-grid,
 .governance-contract-tiles,
 .governance-glossary-groups,
 .governance-glossary-grid,
@@ -2805,6 +2806,11 @@ code {
 
 .governance-view-nav {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.governance-legacy-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .governance-view-tile {
@@ -3017,6 +3023,7 @@ code {
 @media (max-width: 1200px) {
   .governance-summary-grid,
   .governance-view-nav,
+  .governance-legacy-grid,
   .governance-contract-tiles,
   .governance-glossary-grid,
   .governance-asset-grid,
@@ -3033,6 +3040,7 @@ code {
   .governance-summary-grid,
   .governance-usecase-grid,
   .governance-view-nav,
+  .governance-legacy-grid,
   .governance-contract-grid,
   .governance-compliance-grid {
     grid-template-columns: 1fr;

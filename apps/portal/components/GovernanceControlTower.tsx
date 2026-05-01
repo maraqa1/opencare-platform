@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { DataQualitySummary } from "@/components/DataQualitySummary";
+import { LineageDAG } from "@/components/LineageDAG";
+import { SourceFreshness } from "@/components/SourceFreshness";
 import {
   type GovernanceStatus,
   type GovernanceUseCase,
@@ -211,6 +214,7 @@ export function GovernanceControlTower() {
   }, [matchingGlossaryTerms]);
 
   const activeTabMeta = tabLabels.find((tab) => tab.key === activeTab);
+  const selectedLineageModel = selectedAsset?.table ?? activeUseCase?.governedDatasets[0]?.table ?? null;
 
   return (
     <div className="governance-control-tower">
@@ -680,6 +684,7 @@ export function GovernanceControlTower() {
 
             {activeTab === "lineage" ? (
               <div className="governance-tab-panel">
+                {selectedLineageModel ? <LineageDAG modelName={selectedLineageModel} /> : null}
                 <div className="governance-quality-grid">
                   <article className="governance-quality-card">
                     <p className="eyebrow">Coverage</p>
@@ -724,6 +729,10 @@ export function GovernanceControlTower() {
 
             {activeTab === "quality" ? (
               <div className="governance-tab-panel">
+                <div className="governance-legacy-grid">
+                  <DataQualitySummary />
+                  <SourceFreshness />
+                </div>
                 <div className="governance-quality-grid">
                   <article className="governance-quality-card">
                     <p className="eyebrow">Test Status</p>
