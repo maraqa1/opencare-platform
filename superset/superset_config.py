@@ -14,7 +14,12 @@ ENABLE_PROXY_FIX = True
 WTF_CSRF_ENABLED = False
 JWT_COOKIE_CSRF_PROTECT = False
 JWT_SECRET_KEY = SECRET_KEY
-PUBLIC_ROLE_LIKE = "Gamma"
+# Demo dashboards are opened directly from the portal using standalone routes
+# rather than guest tokens. Gamma is too restrictive for newly bootstrapped
+# dashboard objects and can surface as a generic "Unexpected error" page even
+# when datasets and charts exist. Default to Alpha for reliable read access,
+# while still allowing an env override if we later tighten embedding.
+PUBLIC_ROLE_LIKE = os.getenv("SUPERSET_PUBLIC_ROLE_LIKE", "Alpha")
 
 _portal_host = os.getenv("PORTAL_HOST", "opencare.opendatalake.com")
 _analytics_url = os.getenv("SUPERSET_EMBED_URL", "")
