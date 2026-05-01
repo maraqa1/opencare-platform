@@ -9,3 +9,4 @@ This directory holds operational and architecture documentation for the OpenCare
 - `phase2-analytics-loop.md`: Phase 2 analytics loop and repeat-cycle validation
 - `phase4-investor-dashboard.md`: investor-facing portal, analytics, and extensibility work for Phase 4
 - `phase4b-governance-trust-layer.md`: lineage, dictionary, freshness, quality, and compliance trust layer
+- `use_cases/use_case_contract_lessons.md`: lessons learned from Revenue Cycle Management to tighten future use-case contracts

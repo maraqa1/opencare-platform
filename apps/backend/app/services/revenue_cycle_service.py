@@ -76,6 +76,60 @@ def _currency_number(value: object) -> float | None:
     return float(value)
 
 
+def _percentage(value: float | None, digits: int = 1) -> float | None:
+    if value is None:
+        return None
+    return round(value, digits)
+
+
+def _month_label(value: object) -> str:
+    if isinstance(value, datetime):
+        return value.strftime("%b")
+    if isinstance(value, date):
+        return value.strftime("%b")
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).strftime("%b")
+        except ValueError:
+            return value
+    return ""
+
+
+def _risk_band_for_collection_rate(rate_pct: float | None) -> str:
+    if rate_pct is None:
+        return "unknown"
+    if rate_pct >= 95:
+        return "green"
+    if rate_pct >= 90:
+        return "blue"
+    if rate_pct >= 86:
+        return "amber"
+    return "red"
+
+
+def _risk_band_for_payment_days(days: float | None) -> str:
+    if days is None:
+        return "unknown"
+    if days <= 20:
+        return "green"
+    if days <= 30:
+        return "blue"
+    if days <= 38:
+        return "amber"
+    return "red"
+
+
+def _risk_band_for_aging_bucket(bucket_label: str) -> str:
+    mapping = {
+        "0-30": "green",
+        "31-60": "blue",
+        "61-90": "amber",
+        "91-120": "orange",
+        "120+": "red",
+    }
+    return mapping.get(bucket_label, "blue")
+
+
 def _next_step(status: str, outcome_status: str) -> str:
     if status == "recommended":
         return "Assign owner / start action"
@@ -107,6 +161,11 @@ def _recovery_outcome_status(status: str, measured_at: object) -> str:
 def cash_command() -> dict[str, Any]:
     forecast_table = qualified_table(settings.analytics_schema, "fct_cash_forecast")
     opportunity_table = qualified_table(settings.analytics_schema, "fct_cash_recovery_opportunity")
+    revenue_table = qualified_table(settings.analytics_schema, "fct_revenue_cycle")
+    posting_table = qualified_table(settings.analytics_schema, "fct_financial_posting")
+    aging_table = qualified_table(settings.analytics_schema, "fct_claim_aging")
+    denials_table = qualified_table(settings.analytics_schema, "fct_denials")
+    team_table = qualified_table(settings.analytics_schema, "fct_team_recovery_performance")
 
     try:
         with connect() as conn:
@@ -190,6 +249,172 @@ def cash_command() -> dict[str, Any]:
                 ).format(opportunity_table=opportunity_table),
                 (list(TERMINAL_RECOVERY_STATUSES),),
             ).fetchall()
+
+            active_opportunity_count = conn.execute(
+                sql.SQL(
+                    """
+                    select count(*)::integer as total_count
+                    from {opportunity_table}
+                    where not (coalesce(status, 'open') = any(%s))
+                    """
+                ).format(opportunity_table=opportunity_table),
+                (list(TERMINAL_RECOVERY_STATUSES),),
+            ).fetchone()
+
+            monthly_rows = conn.execute(
+                sql.SQL(
+                    """
+                    with latest_month as (
+                        select max(date_trunc('month', claim_date)::date) as month_key
+                        from {revenue_table}
+                    ),
+                    months as (
+                        select generate_series(
+                            (select month_key from latest_month) - interval '11 months',
+                            (select month_key from latest_month),
+                            interval '1 month'
+                        )::date as month_key
+                    ),
+                    charges as (
+                        select
+                            date_trunc('month', claim_date)::date as month_key,
+                            sum(gross_billed_amount)::numeric(14, 2) as charges_amount
+                        from {revenue_table}
+                        group by 1
+                    ),
+                    collections as (
+                        select
+                            date_trunc('month', posting_date)::date as month_key,
+                            sum(paid_amount)::numeric(14, 2) as collected_amount
+                        from {posting_table}
+                        group by 1
+                    )
+                    select
+                        months.month_key,
+                        coalesce(charges.charges_amount, 0)::numeric(14, 2) as charges_amount,
+                        coalesce(collections.collected_amount, 0)::numeric(14, 2) as collected_amount
+                    from months
+                    left join charges using (month_key)
+                    left join collections using (month_key)
+                    order by months.month_key asc
+                    """
+                ).format(
+                    revenue_table=revenue_table,
+                    posting_table=posting_table,
+                )
+            ).fetchall()
+
+            kpi_summary = conn.execute(
+                sql.SQL(
+                    """
+                    with latest_month as (
+                        select max(date_trunc('month', claim_date)::date) as month_key
+                        from {revenue_table}
+                    ),
+                    current_window as (
+                        select *
+                        from {revenue_table}, latest_month
+                        where date_trunc('month', claim_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
+                    ),
+                    prior_window as (
+                        select *
+                        from {revenue_table}, latest_month
+                        where date_trunc('month', claim_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
+                    ),
+                    current_cash as (
+                        select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
+                        from {posting_table}, latest_month
+                        where date_trunc('month', posting_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
+                    ),
+                    prior_cash as (
+                        select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
+                        from {posting_table}, latest_month
+                        where date_trunc('month', posting_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
+                    ),
+                    leakage_recovery as (
+                        select coalesce(sum(actual_recovery), 0)::numeric(14, 2) as leakage_recovered
+                        from {team_table}, latest_month
+                        where period_end between latest_month.month_key - interval '11 months' and latest_month.month_key + interval '31 days'
+                    ),
+                    ar_snapshot as (
+                        select coalesce(sum(outstanding_amount), 0)::numeric(14, 2) as ending_ar_balance
+                        from {aging_table}
+                    ),
+                    current_denials as (
+                        select
+                            count(*)::numeric as total_claims,
+                            count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
+                        from current_window
+                    ),
+                    prior_denials as (
+                        select
+                            count(*)::numeric as total_claims,
+                            count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
+                        from prior_window
+                    ),
+                    denial_counts as (
+                        select
+                            count(*)::numeric as denied_events
+                        from {denials_table}, latest_month
+                        where date_trunc('month', denial_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
+                    )
+                    select
+                        current_cash.total_cash_collected,
+                        prior_cash.total_cash_collected as prior_year_cash_collected,
+                        leakage_recovery.leakage_recovered,
+                        ar_snapshot.ending_ar_balance,
+                        current_denials.total_claims as claims_in_pipeline,
+                        denial_counts.denied_events as denied_claim_events,
+                        prior_denials.denied_claims as prior_denied_claims,
+                        prior_denials.total_claims as prior_total_claims,
+                        current_denials.denied_claims as current_denied_claims
+                    from current_cash
+                    cross join prior_cash
+                    cross join leakage_recovery
+                    cross join ar_snapshot
+                    cross join current_denials
+                    cross join prior_denials
+                    cross join denial_counts
+                    """
+                ).format(
+                    revenue_table=revenue_table,
+                    posting_table=posting_table,
+                    aging_table=aging_table,
+                    denials_table=denials_table,
+                    team_table=team_table,
+                )
+            ).fetchone()
+
+            aging_rows = conn.execute(
+                sql.SQL(
+                    """
+                    with bucketed as (
+                        select
+                            case
+                                when aging_bucket_days <= 30 then '0-30'
+                                when aging_bucket_days <= 60 then '31-60'
+                                when aging_bucket_days <= 90 then '61-90'
+                                when aging_bucket_days <= 120 then '91-120'
+                                else '120+'
+                            end as aging_bucket,
+                            outstanding_amount
+                        from {aging_table}
+                    )
+                    select
+                        aging_bucket,
+                        sum(outstanding_amount)::numeric(14, 2) as outstanding_amount
+                    from bucketed
+                    group by 1
+                    order by case aging_bucket
+                        when '0-30' then 1
+                        when '31-60' then 2
+                        when '61-90' then 3
+                        when '91-120' then 4
+                        else 5
+                    end
+                    """
+                ).format(aging_table=aging_table)
+            ).fetchall()
     except (UndefinedTable, UndefinedColumn):
         return _safe_empty(
             "cash-command",
@@ -200,6 +425,7 @@ def cash_command() -> dict[str, Any]:
             expected_collections=None,
             top_actions=[],
             expiring_opportunities=[],
+            dashboard=None,
         )
 
     as_of_dt = summary.get("as_of") if summary else None
@@ -214,6 +440,66 @@ def cash_command() -> dict[str, Any]:
         item = _serialize_row(row)
         item["next_step"] = _next_step(str(item.get("status") or "open"), "not_applicable")
         expiring.append(item)
+
+    latest_month_total_cash = float(kpi_summary.get("total_cash_collected") or 0) if kpi_summary else 0.0
+    prior_year_cash = float(kpi_summary.get("prior_year_cash_collected") or 0) if kpi_summary else 0.0
+    leakage_recovered = float(kpi_summary.get("leakage_recovered") or 0) if kpi_summary else 0.0
+    ending_ar_balance = float(kpi_summary.get("ending_ar_balance") or 0) if kpi_summary else 0.0
+    claims_in_pipeline = int(kpi_summary.get("claims_in_pipeline") or 0) if kpi_summary else 0
+    current_denied_claims = float(kpi_summary.get("current_denied_claims") or 0) if kpi_summary else 0.0
+    prior_denied_claims = float(kpi_summary.get("prior_denied_claims") or 0) if kpi_summary else 0.0
+    prior_total_claims = float(kpi_summary.get("prior_total_claims") or 0) if kpi_summary else 0.0
+    cash_growth_pct = ((latest_month_total_cash - prior_year_cash) / prior_year_cash * 100) if prior_year_cash else None
+    denial_rate_pct = (current_denied_claims / claims_in_pipeline * 100) if claims_in_pipeline else None
+    prior_denial_rate_pct = (prior_denied_claims / prior_total_claims * 100) if prior_total_claims else None
+    denial_delta_pp = (denial_rate_pct - prior_denial_rate_pct) if denial_rate_pct is not None and prior_denial_rate_pct is not None else None
+    leakage_recovered_pct_gross = (
+        leakage_recovered / sum(float(row.get("charges_amount") or 0) for row in monthly_rows) * 100
+        if monthly_rows and sum(float(row.get("charges_amount") or 0) for row in monthly_rows) > 0
+        else None
+    )
+    monthly_collections_avg = (
+        sum(float(row.get("collected_amount") or 0) for row in monthly_rows) / len(monthly_rows)
+        if monthly_rows
+        else 0
+    )
+    ar_days = (ending_ar_balance / monthly_collections_avg * 30) if monthly_collections_avg else None
+
+    dashboard = {
+        "subtitle": f"{_month_label(monthly_rows[-1].get('month_key'))} {str(monthly_rows[-1].get('month_key'))[:4]} - Rolling 12 months - All payers" if monthly_rows else "Rolling 12 months - All payers",
+        "status": {
+            "label": "AR Days",
+            "value": round(ar_days or 0),
+            "target": "<40",
+            "band": "amber" if ar_days and ar_days >= 36 else "green",
+        },
+        "kpis": {
+            "total_cash_collected": latest_month_total_cash,
+            "total_cash_collected_delta_pct": _percentage(cash_growth_pct),
+            "denial_rate_pct": _percentage(denial_rate_pct),
+            "denial_rate_delta_pp": _percentage(denial_delta_pp),
+            "leakage_recovered": leakage_recovered,
+            "leakage_recovered_pct_gross": _percentage(leakage_recovered_pct_gross),
+            "claims_in_pipeline": claims_in_pipeline,
+            "claims_require_action": int(active_opportunity_count.get("total_count") or 0) if active_opportunity_count else len(action_rows),
+        },
+        "cash_vs_charge_series": [
+            {
+                "month": _month_label(row.get("month_key")),
+                "charges": round(float(row.get("charges_amount") or 0) / 1_000_000, 1),
+                "collections": round(float(row.get("collected_amount") or 0) / 1_000_000, 1),
+            }
+            for row in monthly_rows
+        ],
+        "ar_aging_buckets": [
+            {
+                "bucket": row.get("aging_bucket"),
+                "value": round(float(row.get("outstanding_amount") or 0) / 1_000_000, 1),
+                "risk_band": _risk_band_for_aging_bucket(str(row.get("aging_bucket") or "")),
+            }
+            for row in aging_rows
+        ],
+    }
 
     return {
         "as_of": _serialize(as_of_dt),
@@ -230,11 +516,13 @@ def cash_command() -> dict[str, Any]:
         "expected_collections": _currency_number(summary.get("expected_collections") if summary else None),
         "top_actions": top_actions,
         "expiring_opportunities": expiring,
+        "dashboard": dashboard,
     }
 
 
 def recovery_queue() -> dict[str, Any]:
     opportunity_table = qualified_table(settings.analytics_schema, "fct_cash_recovery_opportunity")
+    denials_table = qualified_table(settings.analytics_schema, "fct_denials")
     decision_table = qualified_table(settings.decision_schema, "decision_queue")
     outcome_table = qualified_table(settings.decision_schema, "decision_outcomes")
     notification_table = qualified_table(settings.decision_schema, "notification_log")
@@ -314,12 +602,95 @@ def recovery_queue() -> dict[str, Any]:
                 ),
                 (USE_CASE_ID,),
             ).fetchall()
+
+            pipeline_rows = conn.execute(
+                sql.SQL(
+                    """
+                    with latest_month as (
+                        select max(date_trunc('month', denial_date)::date) as month_key
+                        from {denials_table}
+                    ),
+                    months as (
+                        select generate_series(
+                            (select month_key from latest_month) - interval '5 months',
+                            (select month_key from latest_month),
+                            interval '1 month'
+                        )::date as month_key
+                    ),
+                    categories as (
+                        select unnest(array['Clinical', 'Coding', 'Eligibility', 'Other']) as category
+                    ),
+                    denial_rollup as (
+                        select
+                            date_trunc('month', denial_date)::date as month_key,
+                            case
+                                when denial_reason = 'clinical_documentation_gap' then 'Clinical'
+                                when denial_reason = 'coding_query' then 'Coding'
+                                when denial_reason = 'authorization_missing' then 'Eligibility'
+                                else 'Other'
+                            end as category,
+                            count(*)::integer as total_count
+                        from {denials_table}
+                        group by 1, 2
+                    )
+                    select
+                        months.month_key,
+                        categories.category,
+                        coalesce(denial_rollup.total_count, 0)::integer as total_count
+                    from months
+                    cross join categories
+                    left join denial_rollup
+                        on denial_rollup.month_key = months.month_key
+                       and denial_rollup.category = categories.category
+                    order by months.month_key asc, categories.category asc
+                    """
+                ).format(denials_table=denials_table)
+            ).fetchall()
+
+            high_value_denials = conn.execute(
+                sql.SQL(
+                    """
+                    select
+                        count(*)::integer as claim_count,
+                        sum(denied_amount)::numeric(14, 2) as amount_at_risk,
+                        (
+                            select array_agg(payer_id order by payer_total desc, payer_id)
+                            from (
+                                select
+                                    payer_id,
+                                    sum(denied_amount)::numeric(14, 2) as payer_total
+                                from {denials_table}
+                                where appeal_status in ('not_started', 'in_review')
+                                group by payer_id
+                                order by payer_total desc, payer_id
+                                limit 2
+                            ) ranked_payers
+                        ) as top_payers
+                    from {denials_table}
+                    where appeal_status in ('not_started', 'in_review')
+                    """
+                ).format(denials_table=denials_table)
+            ).fetchone()
+
+            timely_filing = conn.execute(
+                sql.SQL(
+                    """
+                    select
+                        count(*)::integer as claim_count,
+                        sum(expected_recovery_amount)::numeric(14, 2) as exposure_amount,
+                        min(due_date) as nearest_due_date
+                    from {opportunity_table}
+                    where issue_type = 'late_submission_risk'
+                    """
+                ).format(opportunity_table=opportunity_table)
+            ).fetchone()
     except (UndefinedTable, UndefinedColumn):
         return _safe_empty(
             "recovery-queue",
             "No revenue cycle data loaded yet",
             items=[],
             total=0,
+            dashboard=None,
         )
 
     serialized_rows = [_serialize_row(row) for row in rows]
@@ -348,6 +719,45 @@ def recovery_queue() -> dict[str, Any]:
             as_of = _now_iso()
             break
 
+    pipeline_by_month: dict[str, dict[str, Any]] = {}
+    for row in pipeline_rows:
+        month_label = _month_label(row.get("month_key"))
+        month_entry = pipeline_by_month.setdefault(
+            month_label,
+            {"month": month_label, "Clinical": 0, "Coding": 0, "Eligibility": 0, "Other": 0},
+        )
+        month_entry[str(row.get("category"))] = int(row.get("total_count") or 0)
+
+    top_payers = high_value_denials.get("top_payers") if high_value_denials else []
+    if not isinstance(top_payers, list):
+        top_payers = list(top_payers or [])
+
+    timely_due = timely_filing.get("nearest_due_date") if timely_filing else None
+    days_until_due = max((timely_due - date.today()).days, 0) if isinstance(timely_due, date) else 14
+
+    dashboard = {
+        "denial_pipeline": list(pipeline_by_month.values()),
+        "action_cards": [
+            {
+                "label": "High-value denials",
+                "amount": float(high_value_denials.get("amount_at_risk") or 0) if high_value_denials else 0.0,
+                "subtext": f"{int(high_value_denials.get('claim_count') or 0)} claims - {', '.join(top_payers) if top_payers else 'Payer mix pending'} - coding errors",
+                "button_label": "Review",
+                "href": "/use-cases/revenue-cycle-management/recovery-queue",
+            },
+            {
+                "label": "Approaching timely filing",
+                "amount": float(timely_filing.get("exposure_amount") or 0) if timely_filing else 0.0,
+                "subtext": (
+                    f"{int(timely_filing.get('claim_count') or 0)} claims - "
+                    f"Deadline within {days_until_due} days"
+                ),
+                "button_label": "Act",
+                "href": "/use-cases/revenue-cycle-management/leakage",
+            },
+        ],
+    }
+
     return {
         "as_of": as_of or _now_iso(),
         "data_freshness": {"seconds": 0 if items else None, "status": "fresh" if items else "unknown"},
@@ -359,11 +769,13 @@ def recovery_queue() -> dict[str, Any]:
         },
         "total": len(items),
         "items": items,
+        "dashboard": dashboard,
     }
 
 
 def payer_control() -> dict[str, Any]:
     contract_table = qualified_table(settings.analytics_schema, "fct_payer_contract_performance")
+    leakage_table = qualified_table(settings.analytics_schema, "fct_revenue_leakage")
 
     try:
         with connect() as conn:
@@ -395,12 +807,42 @@ def payer_control() -> dict[str, Any]:
                     """
                 ).format(contract_table=contract_table)
             ).fetchall()
+
+            leakage_rows = conn.execute(
+                sql.SQL(
+                    """
+                    with payer_rollup as (
+                        select
+                            payer_id,
+                            sum(leakage_amount)::numeric(14, 2) as leakage_amount
+                        from {leakage_table}
+                        group by 1
+                    ),
+                    ranked as (
+                        select
+                            payer_id,
+                            leakage_amount,
+                            row_number() over (order by leakage_amount desc nulls last) as rn,
+                            sum(leakage_amount) over () as total_leakage
+                        from payer_rollup
+                    )
+                    select
+                        case when rn <= 4 then payer_id else 'Other' end as payer_group,
+                        sum(leakage_amount)::numeric(14, 2) as leakage_amount,
+                        max(total_leakage)::numeric(14, 2) as total_leakage
+                    from ranked
+                    group by 1
+                    order by sum(leakage_amount) desc nulls last
+                    """
+                ).format(leakage_table=leakage_table)
+            ).fetchall()
     except (UndefinedTable, UndefinedColumn):
         return _safe_empty(
             "payer-control",
             "No revenue cycle data loaded yet",
             items=[],
             summary={"total_underpayment": None, "sla_breaches": 0, "breach_flag_count": 0},
+            dashboard=None,
         )
 
     items = [_serialize_row(row) for row in rows]
@@ -414,6 +856,28 @@ def payer_control() -> dict[str, Any]:
     if month_keys:
         as_of = f"{max(month_keys)}T00:00:00Z"
 
+    dashboard = {
+        "payer_performance": [
+            {
+                "payer": row.get("payer_id"),
+                "collection_rate_pct": round(float(row.get("actual_collection_rate") or 0) * 100, 1),
+                "avg_days_to_pay": int(row.get("actual_payment_days") or 0),
+                "collection_rate_band": _risk_band_for_collection_rate(round(float(row.get("actual_collection_rate") or 0) * 100, 1)),
+                "days_to_pay_band": _risk_band_for_payment_days(float(row.get("actual_payment_days") or 0)),
+            }
+            for row in items
+        ],
+        "leakage_by_payer": [
+            {
+                "label": row.get("payer_group"),
+                "value_pct": round((float(row.get("leakage_amount") or 0) / float(row.get("total_leakage") or 1)) * 100, 1),
+                "leakage_amount": float(row.get("leakage_amount") or 0),
+            }
+            for row in [_serialize_row(row) for row in leakage_rows]
+            if float(row.get("leakage_amount") or 0) > 0
+        ],
+    }
+
     return {
         "as_of": as_of,
         "data_freshness": {"seconds": None, "status": "periodic"},
@@ -425,6 +889,7 @@ def payer_control() -> dict[str, Any]:
         },
         "summary": summary,
         "items": items,
+        "dashboard": dashboard,
     }
 
 

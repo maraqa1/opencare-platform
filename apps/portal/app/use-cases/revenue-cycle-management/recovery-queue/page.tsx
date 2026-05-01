@@ -1,4 +1,5 @@
 import { PageFrame } from "@/components/page-frame";
+import { RevenueCycleDashboardLink } from "@/components/RevenueCycleDashboardLink";
 import { RevenueCycleConsole } from "@/components/RevenueCycleConsole";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
 import { revenueCycleTabs } from "@/lib/use-cases";
@@ -16,16 +17,7 @@ export default function RevenueCycleRecoveryQueuePage() {
         description="Ranked recovery actions with clear owners, due dates, and expected cash impact."
         trustItems={["Queue: priority-scored", "Ownership: team and named owner", "Outcome loop: expected vs actual recovery"]}
         tabs={revenueCycleTabs}
-        headerActions={
-          <a
-            className="secondary-link"
-            href="https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open Executive Dashboard
-          </a>
-        }
+        headerActions={<RevenueCycleDashboardLink />}
       >
         <RevenueCycleConsole view="recovery-queue" />
       </UseCaseWorkspace>

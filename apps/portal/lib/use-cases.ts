@@ -48,7 +48,7 @@ export const useCases: UseCaseModule[] = [
     description: "A hospital revenue operating system for cash control, recovery execution, and payer accountability.",
     status: "active",
     summary: "Real-time cash control workspace",
-    defaultHref: "/use-cases/revenue-cycle-management/cfo-cash-command",
+    defaultHref: "/use-cases/revenue-cycle-management/cash-command",
     kpis: [
       { label: "Recoverable Cash 7d", value: "Live", note: "From loaded recovery opportunities" },
       { label: "Payer Control", value: "Live", note: "Contract breaches and underpayment flags" },
@@ -94,7 +94,7 @@ export const bedPressureTabs = [
 ];
 
 export const revenueCycleTabs = [
-  { key: "cash-command", label: "Cash Command", href: "/use-cases/revenue-cycle-management/cfo-cash-command" },
+  { key: "cash-command", label: "Cash Command", href: "/use-cases/revenue-cycle-management/cash-command" },
   { key: "recovery-queue", label: "Recovery Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },
   { key: "payer-control", label: "Payer Control", href: "/use-cases/revenue-cycle-management/payer-control" },
   { key: "revenue-leakage", label: "Leakage", href: "/use-cases/revenue-cycle-management/revenue-leakage" },

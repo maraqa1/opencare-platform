@@ -121,7 +121,7 @@ dashboards:
     enabled: true
     use_case: revenue_cycle_management
     dashboard_id: revenue-cycle-management
-    title: Revenue Cycle Management
+    title: Revenue Cycle Executive Command
     schema: analytics
     datasets:
       - analytics.fct_cash_recovery_opportunity
@@ -132,12 +132,12 @@ dashboards:
     charts:
       - key: cash_recovery_command
         enabled: true
-        title: Cash Recovery Command
+        title: CFO Cash Command
         viz_type: table
         layout:
           x: 0
           y: 0
-          w: 6
+          w: 12
           h: 12
         dataset: analytics.fct_cash_recovery_opportunity
         metrics:
@@ -146,38 +146,23 @@ dashboards:
           - priority_score_avg
         group_by:
           - issue_type
-      - key: gross_to_net_waterfall
+      - key: underpayment_by_payer
         enabled: true
-        title: Gross to Net Revenue Waterfall
+        title: Underpayment Exposure by Payer
         viz_type: dist_bar
-        layout:
-          x: 6
-          y: 0
-          w: 6
-          h: 12
-        dataset: analytics.fct_revenue_leakage
-        metrics:
-          - leakage_amount_sum
-        group_by:
-          - leakage_type
-      - key: ar_aging_trend
-        enabled: true
-        title: AR Aging Trend
-        viz_type: echarts_timeseries_line
         layout:
           x: 0
           y: 12
           w: 6
           h: 12
-        dataset: analytics.fct_claim_aging
+        dataset: analytics.fct_payer_contract_performance
         metrics:
-          - outstanding_amount_sum
+          - underpayment_amount_sum
         group_by:
           - payer_id
-        time_column: snapshot_date
       - key: payer_contract_breaches
         enabled: true
-        title: Payer Contract Breaches
+        title: Payer SLA Breaches
         viz_type: dist_bar
         layout:
           x: 6
@@ -189,28 +174,42 @@ dashboards:
           - sla_breach_count_sum
         group_by:
           - payer_id
-      - key: underpayment_by_payer
+      - key: revenue_leakage_concentration
         enabled: true
-        title: Underpayment by Payer
+        title: Revenue Leakage Concentration
         viz_type: dist_bar
         layout:
           x: 0
           y: 24
           w: 6
           h: 12
-        dataset: analytics.fct_payer_contract_performance
+        dataset: analytics.fct_revenue_leakage
         metrics:
-          - underpayment_amount_sum
+          - leakage_amount_sum
         group_by:
-          - payer_id
-      - key: recovery_queue
+          - leakage_type
+      - key: ar_exposure_snapshot
         enabled: true
-        title: Recovery Queue
-        viz_type: table
+        title: AR Exposure by Payer Snapshot
+        viz_type: dist_bar
         layout:
           x: 6
           y: 24
           w: 6
+          h: 12
+        dataset: analytics.fct_claim_aging
+        metrics:
+          - outstanding_amount_sum
+        group_by:
+          - payer_id
+      - key: recovery_queue
+        enabled: true
+        title: Recovery Queue and Owners
+        viz_type: table
+        layout:
+          x: 0
+          y: 36
+          w: 12
           h: 12
         dataset: analytics.fct_cash_recovery_opportunity
         metrics:
@@ -221,11 +220,11 @@ dashboards:
           - owner_team
       - key: team_recovery_performance
         enabled: true
-        title: Team Recovery Performance
+        title: Team Recovery vs Target
         viz_type: dist_bar
         layout:
           x: 0
-          y: 36
+          y: 48
           w: 6
           h: 12
         dataset: analytics.fct_team_recovery_performance
@@ -234,17 +233,17 @@ dashboards:
           - expected_recovery_sum
         group_by:
           - owner_team
-      - key: revenue_leakage_by_type
+      - key: recoverable_cash_by_issue_type
         enabled: true
-        title: Revenue Leakage by Type
+        title: Recoverable Cash by Issue Type
         viz_type: dist_bar
         layout:
           x: 6
-          y: 36
+          y: 48
           w: 6
           h: 12
-        dataset: analytics.fct_revenue_leakage
+        dataset: analytics.fct_cash_recovery_opportunity
         metrics:
-          - leakage_amount_sum
+          - expected_recovery_amount_sum
         group_by:
-          - leakage_type
+          - issue_type

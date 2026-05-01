@@ -1,6 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  departmentLabel,
+  genericLabel,
+  issueTypeLabel,
+  leakageGuidance,
+  leakageRecoverability,
+  ownerLabel,
+  payerLabel,
+  statusLabel,
+} from "@/lib/displayNames";
+import { currency, decimal, hours, percentFromRatio, shortDate, timestamp } from "@/lib/format";
+import { scoreBand } from "@/lib/scoring";
 
 type View =
   | "cash-command"
@@ -146,58 +158,6 @@ type NarrativePayload = {
   next_steps?: string[];
 };
 
-function money(value?: number | null) {
-  if (value == null) {
-    return "No revenue cycle data loaded yet";
-  }
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function number(value?: number | null, digits = 1) {
-  if (value == null) {
-    return "-";
-  }
-  return value.toFixed(digits);
-}
-
-function shortDate(value?: string | null) {
-  if (!value) {
-    return "No due date";
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-  }).format(parsed);
-}
-
-function timestamp(value?: string | null) {
-  if (!value) {
-    return "Unavailable";
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(parsed);
-}
-
-function label(text?: string | null) {
-  return (text ?? "").replaceAll("_", " ");
-}
-
 function EmptyState({ message }: { message: string }) {
   return (
     <section className="panel empty-state-panel">
@@ -300,22 +260,22 @@ export function RevenueCycleConsole({ view }: { view: View }) {
         <section className="decision-summary-grid">
           <article className="metric-card">
             <span className="eyebrow">Recoverable Cash 7 Days</span>
-            <strong>{money(cashCommand.recoverable_cash_7d)}</strong>
+            <strong>{currency(cashCommand.recoverable_cash_7d)}</strong>
             <p>Cash recovery that can still be actively controlled this week.</p>
           </article>
           <article className="metric-card">
             <span className="eyebrow">Recoverable Cash 14 Days</span>
-            <strong>{money(cashCommand.recoverable_cash_14d)}</strong>
+            <strong>{currency(cashCommand.recoverable_cash_14d)}</strong>
             <p>Extended recovery window for the next operational sprint.</p>
           </article>
           <article className="metric-card">
             <span className="eyebrow">Cash at Risk</span>
-            <strong>{money(cashCommand.cash_at_risk)}</strong>
+            <strong>{currency(cashCommand.cash_at_risk)}</strong>
             <p>Expected cash still exposed to denials, delays, or leakage.</p>
           </article>
           <article className="metric-card">
             <span className="eyebrow">Expected Collections</span>
-            <strong>{money(cashCommand.expected_collections)}</strong>
+            <strong>{currency(cashCommand.expected_collections)}</strong>
             <p>Expected collections in the next 7 days from the forecast anchor.</p>
           </article>
         </section>
@@ -344,22 +304,22 @@ export function RevenueCycleConsole({ view }: { view: View }) {
                 <article className="decision-card critical" key={item.opportunity_id ?? `${item.issue_type}-${item.claim_id}`}>
                   <div className="panel-header">
                     <div>
-                      <p className="eyebrow">{label(item.issue_type)}</p>
+                      <p className="eyebrow">{issueTypeLabel(item.issue_type)}</p>
                       <h3>{item.claim_id ?? item.opportunity_id ?? "Recovery opportunity"}</h3>
                       <p className="section-subtitle">
-                        {item.payer_id ?? "Payer pending"} | {item.department_id ?? "Department pending"}
+                        {payerLabel(item.payer_id)} | {departmentLabel(item.department_id)}
                       </p>
                     </div>
-                    <span className="summary-badge critical">{label(item.status).toUpperCase()}</span>
+                    <span className="summary-badge critical">{statusLabel(item.status).toUpperCase()}</span>
                   </div>
                   <div className="decision-grid">
                     <div>
                       <p className="eyebrow">Recoverable Amount</p>
-                      <p>{money(item.recoverable_amount)}</p>
+                      <p>{currency(item.recoverable_amount)}</p>
                     </div>
                     <div>
                       <p className="eyebrow">Expected Recovery</p>
-                      <p>{money(item.expected_recovery_amount)}</p>
+                      <p>{currency(item.expected_recovery_amount)}</p>
                     </div>
                     <div>
                       <p className="eyebrow">Due Date</p>
@@ -367,7 +327,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
                     </div>
                     <div>
                       <p className="eyebrow">Owner</p>
-                      <p>{item.owner_user_id ?? item.owner_team ?? "Unassigned"}</p>
+                      <p>{ownerLabel(item.owner_user_id ?? item.owner_team)}</p>
                     </div>
                   </div>
                   <p className="section-subtitle">{item.evidence_summary ?? "Evidence summary pending."}</p>
@@ -387,8 +347,8 @@ export function RevenueCycleConsole({ view }: { view: View }) {
                   <span className="status-dot live" />
                   <div>
                     <strong>{item.claim_id ?? item.opportunity_id}</strong>
-                    <p>{label(item.issue_type)} due {shortDate(item.due_date)}</p>
-                    <p>{money(item.expected_recovery_amount)} owned by {item.owner_user_id ?? item.owner_team ?? "Unassigned"}</p>
+                    <p>{issueTypeLabel(item.issue_type)} due {shortDate(item.due_date)}</p>
+                    <p>{currency(item.expected_recovery_amount)} owned by {ownerLabel(item.owner_user_id ?? item.owner_team)}</p>
                   </div>
                 </div>
               ))}
@@ -431,23 +391,23 @@ export function RevenueCycleConsole({ view }: { view: View }) {
           <div className="button-row" style={{ flexWrap: "wrap" }}>
             <select value={filters.issueType} onChange={(event) => setFilters((current) => ({ ...current, issueType: event.target.value }))}>
               <option value="">All issue types</option>
-              {issueTypes.map((option) => <option key={option} value={option ?? ""}>{label(option)}</option>)}
+              {issueTypes.map((option) => <option key={option} value={option ?? ""}>{issueTypeLabel(option)}</option>)}
             </select>
             <select value={filters.payer} onChange={(event) => setFilters((current) => ({ ...current, payer: event.target.value }))}>
               <option value="">All payers</option>
-              {payers.map((option) => <option key={option} value={option ?? ""}>{option}</option>)}
+              {payers.map((option) => <option key={option} value={option ?? ""}>{payerLabel(option)}</option>)}
             </select>
             <select value={filters.department} onChange={(event) => setFilters((current) => ({ ...current, department: event.target.value }))}>
               <option value="">All departments</option>
-              {departments.map((option) => <option key={option} value={option ?? ""}>{option}</option>)}
+              {departments.map((option) => <option key={option} value={option ?? ""}>{departmentLabel(option)}</option>)}
             </select>
             <select value={filters.owner} onChange={(event) => setFilters((current) => ({ ...current, owner: event.target.value }))}>
               <option value="">All owners</option>
-              {owners.map((option) => <option key={option} value={option ?? ""}>{option}</option>)}
+              {owners.map((option) => <option key={option} value={option ?? ""}>{ownerLabel(option)}</option>)}
             </select>
             <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}>
               <option value="">All statuses</option>
-              {statuses.map((option) => <option key={option} value={option ?? ""}>{label(option)}</option>)}
+              {statuses.map((option) => <option key={option} value={option ?? ""}>{statusLabel(option)}</option>)}
             </select>
           </div>
           <div style={{ marginTop: "1rem", overflowX: "auto" }}>
@@ -469,13 +429,13 @@ export function RevenueCycleConsole({ view }: { view: View }) {
                 {filteredQueue.map((item) => (
                   <tr key={item.opportunity_id ?? item.claim_id}>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.opportunity_id ?? item.claim_id}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{label(item.issue_type)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{money(item.expected_recovery_amount ?? item.recoverable_amount)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{number(item.effort_hours)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{number(item.priority_score, 2)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{item.owner ?? "Unassigned"}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{issueTypeLabel(item.issue_type)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{currency(item.expected_recovery_amount ?? item.recoverable_amount)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{decimal(item.effort_hours)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{decimal(item.priority_score, 2)} ({scoreBand(item.priority_score)})</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{ownerLabel(item.owner)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{shortDate(item.due_date)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{label(item.decision_status ?? item.status)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{statusLabel(item.decision_status ?? item.status)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.next_step}</td>
                   </tr>
                 ))}
@@ -496,7 +456,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
         <section className="decision-summary-grid">
           <article className="metric-card">
             <span className="eyebrow">Underpayment</span>
-            <strong>{money(payer.summary?.total_underpayment ?? null)}</strong>
+            <strong>{currency(payer.summary?.total_underpayment ?? null)}</strong>
             <p>Visible contract underpayment across the latest payer period.</p>
           </article>
           <article className="metric-card">
@@ -529,10 +489,10 @@ export function RevenueCycleConsole({ view }: { view: View }) {
               <tbody>
                 {(payer.items ?? []).map((item) => (
                   <tr key={item.payer_id ?? "payer"}>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{item.payer_id}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{money(item.underpayment_amount)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{number((item.contract_rate_pct ?? 0) * 100, 1)}%</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{number((item.actual_collection_rate ?? 0) * 100, 1)}%</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{payerLabel(item.payer_id)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{currency(item.underpayment_amount)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{percentFromRatio(item.contract_rate_pct)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{percentFromRatio(item.actual_collection_rate)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.sla_breach_count ?? 0}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.actual_payment_days ?? "-"}d vs SLA {item.payment_sla_days ?? "-"}d</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.renegotiation_flag ? "Flagged" : "No"}</td>
@@ -564,8 +524,8 @@ export function RevenueCycleConsole({ view }: { view: View }) {
           ].map(([labelText, value]) => (
             <article className="metric-card" key={labelText}>
               <span className="eyebrow">{labelText}</span>
-              <strong>{money(typeof value === "number" ? value : null)}</strong>
-              <p>Visible leakage in this category.</p>
+              <strong>{currency(typeof value === "number" ? value : null)}</strong>
+              <p>{leakageGuidance(String(labelText).toLowerCase().replaceAll(" ", "_")) || "Visible leakage in this category."}</p>
             </article>
           ))}
         </section>
@@ -579,15 +539,17 @@ export function RevenueCycleConsole({ view }: { view: View }) {
                   <th align="left">Leakage Type</th>
                   <th align="left">Items</th>
                   <th align="left">Leakage Amount</th>
+                  <th align="left">Recoverability</th>
                   <th align="left">Last Detected</th>
                 </tr>
               </thead>
               <tbody>
                 {(leakage.breakdown ?? []).map((item) => (
                   <tr key={item.leakage_type ?? "leakage"}>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{label(item.leakage_type)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{genericLabel(item.leakage_type)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.item_count ?? 0}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{money(item.leakage_amount)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{currency(item.leakage_amount)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{leakageRecoverability(item.leakage_type) || "-"}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{timestamp(item.last_detected_at)}</td>
                   </tr>
                 ))}
@@ -618,12 +580,12 @@ export function RevenueCycleConsole({ view }: { view: View }) {
           </article>
           <article className="metric-card">
             <span className="eyebrow">Expected Recovery</span>
-            <strong>{money(team.summary?.expected_recovery ?? null)}</strong>
+            <strong>{currency(team.summary?.expected_recovery ?? null)}</strong>
             <p>Expected recovery committed by the active teams.</p>
           </article>
           <article className="metric-card">
             <span className="eyebrow">Actual Recovery</span>
-            <strong>{money(team.summary?.actual_recovery ?? null)}</strong>
+            <strong>{currency(team.summary?.actual_recovery ?? null)}</strong>
             <p>Actual cash recovered in the current reporting period.</p>
           </article>
         </section>
@@ -646,12 +608,12 @@ export function RevenueCycleConsole({ view }: { view: View }) {
               <tbody>
                 {(team.items ?? []).map((item) => (
                   <tr key={`${item.owner_team}-${item.owner_user_id}`}>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{item.owner_user_id ?? item.owner_team}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{ownerLabel(item.owner_user_id ?? item.owner_team)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.assigned_count ?? 0}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.completed_count ?? 0}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{money(item.actual_recovery)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{money(item.expected_recovery)} vs {money(item.actual_recovery)}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{number(item.avg_resolution_hours)}h</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{currency(item.actual_recovery)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{currency(item.expected_recovery)} vs {currency(item.actual_recovery)}</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{hours(item.avg_resolution_hours)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.overdue_count ?? 0}</td>
                   </tr>
                 ))}
@@ -695,10 +657,10 @@ export function RevenueCycleConsole({ view }: { view: View }) {
           <article className="panel span-6">
             <p className="eyebrow">Cash Impact</p>
             <ul className="list">
-              <li>Recoverable cash 7 days: {money(narrative.cash_impact?.recoverable_cash_7d ?? null)}</li>
-              <li>Recoverable cash 14 days: {money(narrative.cash_impact?.recoverable_cash_14d ?? null)}</li>
-              <li>Cash at risk: {money(narrative.cash_impact?.cash_at_risk ?? null)}</li>
-              <li>Expected collections: {money(narrative.cash_impact?.expected_collections ?? null)}</li>
+              <li>Recoverable cash 7 days: {currency(narrative.cash_impact?.recoverable_cash_7d ?? null)}</li>
+              <li>Recoverable cash 14 days: {currency(narrative.cash_impact?.recoverable_cash_14d ?? null)}</li>
+              <li>Cash at risk: {currency(narrative.cash_impact?.cash_at_risk ?? null)}</li>
+              <li>Expected collections: {currency(narrative.cash_impact?.expected_collections ?? null)}</li>
             </ul>
           </article>
         </section>
@@ -708,7 +670,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
             <p className="eyebrow">Recommended Actions</p>
             <ul className="list">
               {(narrative.recommended_actions ?? []).map((item) => (
-                <li key={`${item.opportunity_id}-${item.owner}`}>{item.action} | {item.owner} | {money(item.expected_recovery ?? null)}</li>
+                <li key={`${item.opportunity_id}-${item.owner}`}>{item.action} | {ownerLabel(item.owner)} | {currency(item.expected_recovery ?? null)}</li>
               ))}
             </ul>
           </article>
@@ -716,7 +678,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
             <p className="eyebrow">Risks</p>
             <ul className="list">
               {(narrative.risks ?? []).map((risk) => (
-                <li key={`${risk.risk}-${risk.cash_impact}`}>{risk.risk} | {money(risk.cash_impact ?? null)}</li>
+                <li key={`${risk.risk}-${risk.cash_impact}`}>{risk.risk} | {currency(risk.cash_impact ?? null)}</li>
               ))}
             </ul>
           </article>

@@ -28,7 +28,7 @@ export function UseCaseWorkspace({
           <h2>{title}</h2>
           <p>{description}</p>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.75rem" }}>
+        <div className="workspace-header-side">
           {headerActions ? <div className="button-row">{headerActions}</div> : null}
           <div className="workspace-trust">
             <span className="status-dot live" />
