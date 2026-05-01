@@ -38,13 +38,13 @@ const scopeLabels: Array<{ key: ScopeFilter; label: string }> = [
   { key: "quality-issues", label: "Quality Issues" },
 ];
 
-const tabLabels: Array<{ key: GovernanceTab; label: string }> = [
-  { key: "contracts", label: "Use Case Contracts" },
-  { key: "glossary", label: "Business Glossary" },
-  { key: "assets", label: "Governed Assets" },
-  { key: "lineage", label: "Lineage & Impact" },
-  { key: "quality", label: "Quality & Freshness" },
-  { key: "compliance", label: "Compliance Evidence" },
+const tabLabels: Array<{ key: GovernanceTab; label: string; description: string }> = [
+  { key: "contracts", label: "Use Case Contracts", description: "Business purpose, workspace coverage, consumers, and contract context." },
+  { key: "assets", label: "Governed Assets", description: "Trusted datasets, outputs, record specs, and asset-level trust detail." },
+  { key: "glossary", label: "Business Glossary", description: "Business-readable definitions grouped by governed operational product." },
+  { key: "lineage", label: "Lineage", description: "Upstream sources, transformation paths, and downstream operational impact." },
+  { key: "quality", label: "Tests & Data Quality", description: "Freshness, test evidence, spec coverage, and trust gaps surfaced honestly." },
+  { key: "compliance", label: "Compliance", description: "Evidence, posture, and unresolved governance gaps by use case." },
 ];
 
 function statusTone(status: GovernanceStatus | string) {
@@ -210,6 +210,8 @@ export function GovernanceControlTower() {
     return Array.from(grouped.entries());
   }, [matchingGlossaryTerms]);
 
+  const activeTabMeta = tabLabels.find((tab) => tab.key === activeTab);
+
   return (
     <div className="governance-control-tower">
       <section className="governance-summary-grid">
@@ -348,208 +350,236 @@ export function GovernanceControlTower() {
 
       {activeUseCase ? (
         <>
-          <section className="governance-contract-layout">
-            <article className="governance-contract-panel">
-              <div className="governance-panel-head">
-                <div>
-                  <p className="eyebrow">Selected Use Case Contract</p>
-                  <h3>{activeUseCase.name}</h3>
-                  <p className="section-subtitle">{activeUseCase.description}</p>
-                </div>
-                <Link className="button secondary" href={activeUseCase.workspacePath}>
-                  Open Workspace
-                </Link>
+          <section className="governance-views-shell">
+            <div className="governance-panel-head">
+              <div>
+                <p className="eyebrow">Governance Views</p>
+                <h3>{activeUseCase.name}</h3>
+                <p className="section-subtitle">
+                  Make lineage, tests, data quality, assets, glossary, and compliance obvious for the selected governed product.
+                </p>
               </div>
-              <div className="governance-contract-grid">
-                <div className="governance-contract-block">
-                  <h4>Business Purpose</h4>
-                  <p>{activeUseCase.businessPurpose}</p>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Operational Workspace Coverage</h4>
-                  <div className="governance-link-cloud">
-                    {activeUseCase.workspaceCoverage.map((item) => (
-                      <Link key={item.href} className="governance-link-pill" href={item.href}>
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Quality &amp; Freshness Evidence</h4>
-                  <ul className="governance-bullet-list">
-                    <li>Quality: {statusLabel(activeUseCase.qualitySummary.quality)}</li>
-                    <li>Freshness: {statusLabel(activeUseCase.qualitySummary.freshness)}</li>
-                    <li>Record specs: {statusLabel(activeUseCase.qualitySummary.recordSpecs)}</li>
-                    <li>{activeUseCase.qualitySummary.note}</li>
-                  </ul>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Governed Data Assets</h4>
-                  <div className="governance-inline-list">
-                    {activeUseCase.governedDatasets.map((dataset) => (
-                      <button
-                        key={dataset.id}
-                        type="button"
-                        className="governance-link-pill"
-                        onClick={() => setSelectedAssetId(dataset.id)}
-                      >
-                        {dataset.schema}.{dataset.table}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Business Glossary Terms</h4>
-                  <div className="governance-inline-list">
-                    {activeUseCase.dictionaryTerms.map((term) => (
-                      <span className="governance-mini-pill" key={term.id}>{term.term}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Compliance Context</h4>
-                  <p>{activeUseCase.complianceContext.summary}</p>
-                  <div className="governance-inline-status">
-                    <span className={`governance-badge ${statusTone(activeUseCase.complianceContext.posture)}`}>
-                      {statusLabel(activeUseCase.complianceContext.posture)}
-                    </span>
-                  </div>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Lineage Entry Points</h4>
-                  <div className="governance-inline-list">
-                    {activeUseCase.lineageEntryPoints.map((entryPoint) => (
-                      <div className="governance-lineage-entry" key={entryPoint.id}>
-                        <strong>{entryPoint.label}</strong>
-                        <p>{entryPoint.summary}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Record Specifications</h4>
-                  <ul className="governance-bullet-list">
-                    <li>{recordCoverage(activeUseCase)} assets currently show complete record-spec coverage.</li>
-                    <li>Phase 1 previews are registry-backed and business-readable.</li>
-                    <li>Detailed spec APIs remain available elsewhere in the admin surface.</li>
-                  </ul>
-                </div>
-                <div className="governance-contract-block">
-                  <h4>Downstream Consumers</h4>
-                  <div className="governance-inline-list">
-                    {activeUseCase.downstreamConsumers.map((consumer) => (
-                      <span className="governance-mini-pill" key={consumer}>{consumer}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </article>
+              <span className="governance-mini-pill">{activeUseCase.domain}</span>
+            </div>
+            <div className="governance-view-nav">
+              {tabLabels.map((tab) => (
+                <button
+                  key={tab.key}
+                  className={`governance-view-tile ${activeTab === tab.key ? "active" : ""}`}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  <span className="eyebrow">{tab.label}</span>
+                  <strong>{tab.label}</strong>
+                  <p>{tab.description}</p>
+                </button>
+              ))}
+            </div>
+          </section>
 
-            <aside className="governance-trust-drawer">
-              {selectedAsset ? (
-                <>
+          <section className="governance-tabs-shell">
+            <div className="governance-tab-hero">
+              <div>
+                <p className="eyebrow">Selected View</p>
+                <h3>{activeTabMeta?.label}</h3>
+                <p className="section-subtitle">{activeTabMeta?.description}</p>
+              </div>
+              <div className="governance-inline-list">
+                <span className={`governance-status-pill ${statusTone(activeUseCase.qualitySummary.lineage)}`}>
+                  Lineage: {statusLabel(activeUseCase.qualitySummary.lineage)}
+                </span>
+                <span className={`governance-status-pill ${statusTone(activeUseCase.qualitySummary.quality)}`}>
+                  Tests: {activeUseCase.qualitySummary.quality === "not_connected" ? "Not connected" : statusLabel(activeUseCase.qualitySummary.quality)}
+                </span>
+                <span className={`governance-status-pill ${statusTone(activeUseCase.qualitySummary.freshness)}`}>
+                  Freshness: {activeUseCase.qualitySummary.freshness === "not_connected" ? "Not connected" : statusLabel(activeUseCase.qualitySummary.freshness)}
+                </span>
+              </div>
+            </div>
+
+            {activeTab === "contracts" ? (
+              <section className="governance-contract-layout">
+                <article className="governance-contract-panel">
                   <div className="governance-panel-head">
                     <div>
-                      <p className="eyebrow">Dataset Trust Drawer</p>
-                      <h3>{selectedAsset.name}</h3>
-                      <p className="section-subtitle">{selectedAsset.schema}.{selectedAsset.table}</p>
+                      <p className="eyebrow">Selected Use Case Contract</p>
+                      <h3>{activeUseCase.name}</h3>
+                      <p className="section-subtitle">{activeUseCase.description}</p>
                     </div>
-                    <span className={`governance-badge ${statusTone(selectedAsset.certificationStatus)}`}>{statusLabel(selectedAsset.certificationStatus)}</span>
+                    <Link className="button secondary" href={activeUseCase.workspacePath}>
+                      Open Workspace
+                    </Link>
                   </div>
-                  <div className="governance-drawer-grid">
-                    <div className="governance-drawer-block">
-                      <h4>Asset Overview</h4>
-                      <p>{selectedAsset.businessMeaning}</p>
+                  <div className="governance-contract-grid">
+                    <div className="governance-contract-block">
+                      <h4>Business Purpose</h4>
+                      <p>{activeUseCase.businessPurpose}</p>
                     </div>
-                    <div className="governance-drawer-block">
-                      <h4>Business Meaning</h4>
-                      <p>{selectedAsset.businessMeaning}</p>
-                    </div>
-                    <div className="governance-drawer-block">
-                      <h4>Grain</h4>
-                      <p>{selectedAsset.grain ?? "Governance metadata not yet configured."}</p>
-                    </div>
-                    <div className="governance-drawer-block">
-                      <h4>Owner / Steward</h4>
-                      <p>{selectedAsset.owner ?? "Unknown"} / {selectedAsset.steward ?? "Unknown"}</p>
-                    </div>
-                    <div className="governance-drawer-block">
-                      <h4>Related Business Terms</h4>
-                      <div className="governance-inline-list">
-                        {(selectedAsset.relatedTerms ?? []).length > 0
-                          ? selectedAsset.relatedTerms?.map((term) => <span className="governance-mini-pill" key={term}>{term}</span>)
-                          : renderUnknown("Governance metadata not yet configured.")}
+                    <div className="governance-contract-block">
+                      <h4>Operational Workspace Coverage</h4>
+                      <div className="governance-link-cloud">
+                        {activeUseCase.workspaceCoverage.map((item) => (
+                          <Link key={item.href} className="governance-link-pill" href={item.href}>
+                            {item.label}
+                          </Link>
+                        ))}
                       </div>
                     </div>
-                    <div className="governance-drawer-block">
-                      <h4>Record Specification Preview</h4>
-                      <p>{selectedAsset.recordSpecStatus === "complete" ? "Record specification preview available in registry." : "Governance metadata not yet configured."}</p>
+                    <div className="governance-contract-block">
+                      <h4>Quality &amp; Freshness Evidence</h4>
+                      <ul className="governance-bullet-list">
+                        <li>Quality: {statusLabel(activeUseCase.qualitySummary.quality)}</li>
+                        <li>Freshness: {statusLabel(activeUseCase.qualitySummary.freshness)}</li>
+                        <li>Record specs: {statusLabel(activeUseCase.qualitySummary.recordSpecs)}</li>
+                        <li>{activeUseCase.qualitySummary.note}</li>
+                      </ul>
                     </div>
-                    <div className="governance-drawer-block">
-                      <h4>Quality Tests</h4>
-                      <p>{selectedAsset.testStatus === "not_connected" ? "Quality evidence not connected." : statusLabel(selectedAsset.testStatus)}</p>
+                    <div className="governance-contract-block">
+                      <h4>Governed Data Assets</h4>
+                      <div className="governance-inline-list">
+                        {activeUseCase.governedDatasets.map((dataset) => (
+                          <button
+                            key={dataset.id}
+                            type="button"
+                            className="governance-link-pill"
+                            onClick={() => setSelectedAssetId(dataset.id)}
+                          >
+                            {dataset.schema}.{dataset.table}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="governance-drawer-block">
-                      <h4>Freshness</h4>
-                      <p>{selectedAsset.freshnessStatus === "not_connected" ? "Freshness not connected." : statusLabel(selectedAsset.freshnessStatus)}</p>
+                    <div className="governance-contract-block">
+                      <h4>Business Glossary Terms</h4>
+                      <div className="governance-inline-list">
+                        {activeUseCase.dictionaryTerms.map((term) => (
+                          <span className="governance-mini-pill" key={term.id}>{term.term}</span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="governance-drawer-block">
-                      <h4>Lineage Summary</h4>
-                      {(selectedAsset.lineageSummary ?? []).length > 0 ? (
-                        <ul className="governance-bullet-list">
-                          {selectedAsset.lineageSummary?.map((item) => <li key={item}>{item}</li>)}
-                        </ul>
-                      ) : (
-                        <p>Detailed lineage not yet connected.</p>
-                      )}
+                    <div className="governance-contract-block">
+                      <h4>Compliance Context</h4>
+                      <p>{activeUseCase.complianceContext.summary}</p>
+                      <div className="governance-inline-status">
+                        <span className={`governance-badge ${statusTone(activeUseCase.complianceContext.posture)}`}>
+                          {statusLabel(activeUseCase.complianceContext.posture)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="governance-drawer-block">
+                    <div className="governance-contract-block">
+                      <h4>Lineage Entry Points</h4>
+                      <div className="governance-inline-list">
+                        {activeUseCase.lineageEntryPoints.map((entryPoint) => (
+                          <div className="governance-lineage-entry" key={entryPoint.id}>
+                            <strong>{entryPoint.label}</strong>
+                            <p>{entryPoint.summary}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="governance-contract-block">
+                      <h4>Record Specifications</h4>
+                      <ul className="governance-bullet-list">
+                        <li>{recordCoverage(activeUseCase)} assets currently show complete record-spec coverage.</li>
+                        <li>Phase 1 previews are registry-backed and business-readable.</li>
+                        <li>Detailed spec APIs remain available elsewhere in the admin surface.</li>
+                      </ul>
+                    </div>
+                    <div className="governance-contract-block">
                       <h4>Downstream Consumers</h4>
                       <div className="governance-inline-list">
-                        {selectedAsset.consumers.map((consumer) => (
+                        {activeUseCase.downstreamConsumers.map((consumer) => (
                           <span className="governance-mini-pill" key={consumer}>{consumer}</span>
                         ))}
                       </div>
                     </div>
-                    <div className="governance-drawer-block">
-                      <h4>Compliance Notes</h4>
-                      {(selectedAsset.complianceNotes ?? []).length > 0 ? (
-                        <ul className="governance-bullet-list">
-                          {selectedAsset.complianceNotes?.map((note) => <li key={note}>{note}</li>)}
-                        </ul>
-                      ) : (
-                        <p>Governance metadata not yet configured.</p>
-                      )}
-                    </div>
                   </div>
-                </>
-              ) : renderUnknown("Governed asset metadata not yet configured.")}
-            </aside>
-          </section>
+                </article>
 
-          <section className="governance-tabs-shell">
-            <div className="governance-tab-row">
-              {tabLabels.map((tab) => (
-                <button
-                  key={tab.key}
-                  className={`governance-tab ${activeTab === tab.key ? "active" : ""}`}
-                  type="button"
-                  onClick={() => setActiveTab(tab.key)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
+                <aside className="governance-trust-drawer">
+                  {selectedAsset ? (
+                    <>
+                      <div className="governance-panel-head">
+                        <div>
+                          <p className="eyebrow">Dataset Trust Drawer</p>
+                          <h3>{selectedAsset.name}</h3>
+                          <p className="section-subtitle">{selectedAsset.schema}.{selectedAsset.table}</p>
+                        </div>
+                        <span className={`governance-badge ${statusTone(selectedAsset.certificationStatus)}`}>{statusLabel(selectedAsset.certificationStatus)}</span>
+                      </div>
+                      <div className="governance-drawer-grid">
+                        <div className="governance-drawer-block">
+                          <h4>Asset Overview</h4>
+                          <p>{selectedAsset.businessMeaning}</p>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Business Meaning</h4>
+                          <p>{selectedAsset.businessMeaning}</p>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Grain</h4>
+                          <p>{selectedAsset.grain ?? "Governance metadata not yet configured."}</p>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Owner / Steward</h4>
+                          <p>{selectedAsset.owner ?? "Unknown"} / {selectedAsset.steward ?? "Unknown"}</p>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Related Business Terms</h4>
+                          <div className="governance-inline-list">
+                            {(selectedAsset.relatedTerms ?? []).length > 0
+                              ? selectedAsset.relatedTerms?.map((term) => <span className="governance-mini-pill" key={term}>{term}</span>)
+                              : renderUnknown("Governance metadata not yet configured.")}
+                          </div>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Record Specification Preview</h4>
+                          <p>{selectedAsset.recordSpecStatus === "complete" ? "Record specification preview available in registry." : "Governance metadata not yet configured."}</p>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Quality Tests</h4>
+                          <p>{selectedAsset.testStatus === "not_connected" ? "Quality evidence not connected." : statusLabel(selectedAsset.testStatus)}</p>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Freshness</h4>
+                          <p>{selectedAsset.freshnessStatus === "not_connected" ? "Freshness not connected." : statusLabel(selectedAsset.freshnessStatus)}</p>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Lineage Summary</h4>
+                          {(selectedAsset.lineageSummary ?? []).length > 0 ? (
+                            <ul className="governance-bullet-list">
+                              {selectedAsset.lineageSummary?.map((item) => <li key={item}>{item}</li>)}
+                            </ul>
+                          ) : (
+                            <p>Detailed lineage not yet connected.</p>
+                          )}
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Downstream Consumers</h4>
+                          <div className="governance-inline-list">
+                            {selectedAsset.consumers.map((consumer) => (
+                              <span className="governance-mini-pill" key={consumer}>{consumer}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="governance-drawer-block">
+                          <h4>Compliance Notes</h4>
+                          {(selectedAsset.complianceNotes ?? []).length > 0 ? (
+                            <ul className="governance-bullet-list">
+                              {selectedAsset.complianceNotes?.map((note) => <li key={note}>{note}</li>)}
+                            </ul>
+                          ) : (
+                            <p>Governance metadata not yet configured.</p>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : renderUnknown("Governed asset metadata not yet configured.")}
+                </aside>
+              </section>
+            ) : null}
             {activeTab === "contracts" ? (
               <div className="governance-tab-panel">
-                <div className="governance-panel-head">
-                  <div>
-                    <p className="eyebrow">Use Case Contracts</p>
-                    <h3>Governed operational products</h3>
-                  </div>
-                </div>
                 <div className="governance-contract-tiles">
                   {filteredUseCases.map((useCase) => (
                     <article className="governance-contract-tile" key={useCase.id}>
@@ -650,11 +680,22 @@ export function GovernanceControlTower() {
 
             {activeTab === "lineage" ? (
               <div className="governance-tab-panel">
-                <div className="governance-panel-head">
-                  <div>
-                    <p className="eyebrow">Lineage &amp; Impact</p>
-                    <h3>Simplified product lineage</h3>
-                  </div>
+                <div className="governance-quality-grid">
+                  <article className="governance-quality-card">
+                    <p className="eyebrow">Coverage</p>
+                    <h4>{activeUseCase.lineageEntryPoints.length} mapped entry points</h4>
+                    <p>Lineage is shown as simplified product paths from source to workspace impact.</p>
+                  </article>
+                  <article className="governance-quality-card">
+                    <p className="eyebrow">Upstream systems</p>
+                    <h4>{new Set(activeUseCase.lineageEntryPoints.flatMap((entryPoint) => entryPoint.path.slice(0, 1))).size}</h4>
+                    <p>Distinct upstream anchors currently represented for the selected use case.</p>
+                  </article>
+                  <article className="governance-quality-card">
+                    <p className="eyebrow">Downstream consumers</p>
+                    <h4>{activeUseCase.downstreamConsumers.length}</h4>
+                    <p>Operational and analytical consumers impacted by lineage changes.</p>
+                  </article>
                 </div>
                 <div className="governance-lineage-grid">
                   {activeUseCase.lineageEntryPoints.map((entryPoint) => (
@@ -683,11 +724,22 @@ export function GovernanceControlTower() {
 
             {activeTab === "quality" ? (
               <div className="governance-tab-panel">
-                <div className="governance-panel-head">
-                  <div>
-                    <p className="eyebrow">Quality &amp; Freshness</p>
-                    <h3>Trust signals by data product</h3>
-                  </div>
+                <div className="governance-quality-grid">
+                  <article className="governance-quality-card">
+                    <p className="eyebrow">Test Status</p>
+                    <h4>{activeUseCase.qualitySummary.quality === "not_connected" ? "Not connected" : statusLabel(activeUseCase.qualitySummary.quality)}</h4>
+                    <p>No fake passing state is shown when live governance telemetry is unavailable.</p>
+                  </article>
+                  <article className="governance-quality-card">
+                    <p className="eyebrow">Freshness</p>
+                    <h4>{activeUseCase.qualitySummary.freshness === "not_connected" ? "Not connected" : statusLabel(activeUseCase.qualitySummary.freshness)}</h4>
+                    <p>Freshness remains an honest Phase 1 registry signal until runtime evidence is connected.</p>
+                  </article>
+                  <article className="governance-quality-card">
+                    <p className="eyebrow">Spec Coverage</p>
+                    <h4>{recordCoverage(activeUseCase)}</h4>
+                    <p>Shows the current level of record-spec visibility for this governed product.</p>
+                  </article>
                 </div>
                 <div className="governance-quality-grid">
                   {activeUseCase.governedDatasets.map((dataset) => (

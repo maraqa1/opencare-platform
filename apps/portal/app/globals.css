@@ -2710,6 +2710,7 @@ code {
 }
 
 .governance-usecase-grid,
+.governance-view-nav,
 .governance-contract-tiles,
 .governance-glossary-groups,
 .governance-glossary-grid,
@@ -2794,6 +2795,49 @@ code {
 
 .governance-card-actions .button.secondary {
   min-height: 38px;
+}
+
+.governance-views-shell,
+.governance-tab-hero {
+  display: grid;
+  gap: 16px;
+}
+
+.governance-view-nav {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.governance-view-tile {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--surface-shadow);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.governance-view-tile strong {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.governance-view-tile p {
+  margin: 10px 0 0;
+  color: var(--oc-gray-600);
+  line-height: 1.6;
+}
+
+.governance-view-tile:hover,
+.governance-view-tile.active {
+  transform: translateY(-2px);
+  box-shadow: var(--surface-shadow-strong);
+  border-color: rgba(46, 117, 182, 0.22);
+  background: linear-gradient(180deg, rgba(247, 251, 255, 0.98), rgba(255, 255, 255, 0.98));
 }
 
 .governance-usecase-footer,
@@ -2924,6 +2968,8 @@ code {
 }
 
 .governance-link-pill {
+  appearance: none;
+  font: inherit;
   text-decoration: none;
   cursor: pointer;
 }
@@ -2970,6 +3016,7 @@ code {
 
 @media (max-width: 1200px) {
   .governance-summary-grid,
+  .governance-view-nav,
   .governance-contract-tiles,
   .governance-glossary-grid,
   .governance-asset-grid,
@@ -2985,6 +3032,7 @@ code {
 @media (max-width: 920px) {
   .governance-summary-grid,
   .governance-usecase-grid,
+  .governance-view-nav,
   .governance-contract-grid,
   .governance-compliance-grid {
     grid-template-columns: 1fr;
@@ -3015,12 +3063,14 @@ code {
   .governance-contract-tiles,
   .governance-glossary-grid,
   .governance-asset-grid,
-  .governance-quality-grid {
+  .governance-quality-grid,
+  .governance-view-nav {
     grid-template-columns: 1fr;
   }
 
   .governance-tab,
-  .governance-chip {
+  .governance-chip,
+  .governance-view-tile {
     width: 100%;
     justify-content: center;
   }
