@@ -730,8 +730,8 @@ export function GovernanceControlTower() {
             {activeTab === "quality" ? (
               <div className="governance-tab-panel">
                 <div className="governance-legacy-grid">
-                  <DataQualitySummary />
-                  <SourceFreshness />
+                  <DataQualitySummary modelFilters={activeUseCase.diagnosticsScope?.qualityModels} />
+                  <SourceFreshness sourceFilters={activeUseCase.diagnosticsScope?.freshnessSources} />
                 </div>
                 <div className="governance-quality-grid">
                   <article className="governance-quality-card">

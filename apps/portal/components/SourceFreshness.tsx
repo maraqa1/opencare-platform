@@ -13,6 +13,10 @@ type FreshnessItem = {
   status: "fresh" | "stale" | "expired";
 };
 
+type SourceFreshnessProps = {
+  sourceFilters?: string[];
+};
+
 function relativeTime(value?: string | null) {
   if (!value) {
     return "unknown";
@@ -29,7 +33,12 @@ function relativeTime(value?: string | null) {
   return `${hours}h ago`;
 }
 
-export function SourceFreshness() {
+function matchesSource(item: FreshnessItem, filters: string[]) {
+  const haystack = `${item.source_name}.${item.table_name}`.toLowerCase();
+  return filters.some((filter) => haystack.includes(filter.toLowerCase()));
+}
+
+export function SourceFreshness({ sourceFilters = [] }: SourceFreshnessProps) {
   const [payload, setPayload] = useState<{ items?: FreshnessItem[] } | null>(null);
 
   useEffect(() => {
@@ -53,6 +62,11 @@ export function SourceFreshness() {
     };
   }, []);
 
+  const filteredItems =
+    sourceFilters.length > 0
+      ? (payload?.items ?? []).filter((item) => matchesSource(item, sourceFilters))
+      : (payload?.items ?? []);
+
   return (
     <section className="governance-card">
       <div className="governance-card-header">
@@ -63,7 +77,7 @@ export function SourceFreshness() {
         </div>
       </div>
       <div className="freshness-stack">
-        {(payload?.items ?? []).map((item) => {
+        {filteredItems.map((item) => {
           const threshold = item.error_after_minutes ?? item.warn_after_minutes ?? 1;
           const usage = item.freshness_minutes ? Math.min(160, Math.round((item.freshness_minutes / threshold) * 100)) : 0;
           return (
@@ -86,6 +100,7 @@ export function SourceFreshness() {
             </article>
           );
         })}
+        {filteredItems.length === 0 ? <div className="empty-state">No use-case-specific freshness sources are connected for this governance view yet.</div> : null}
       </div>
     </section>
   );

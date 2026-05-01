@@ -13,7 +13,16 @@ type QualityPayload = {
   }>;
 };
 
-export function DataQualitySummary() {
+type DataQualitySummaryProps = {
+  modelFilters?: string[];
+};
+
+function matchesModel(modelName: string, filters: string[]) {
+  const normalized = modelName.toLowerCase();
+  return filters.some((filter) => normalized.includes(filter.toLowerCase()));
+}
+
+export function DataQualitySummary({ modelFilters = [] }: DataQualitySummaryProps) {
   const [payload, setPayload] = useState<QualityPayload | null>(null);
 
   useEffect(() => {
@@ -37,6 +46,12 @@ export function DataQualitySummary() {
     };
   }, []);
 
+  const filteredModels =
+    modelFilters.length > 0
+      ? (payload?.models ?? []).filter((model) => matchesModel(model.name, modelFilters))
+      : (payload?.models ?? []);
+  const filteredTotalTests = filteredModels.reduce((sum, model) => sum + model.total_tests, 0);
+
   return (
     <section className="governance-card">
       <div className="governance-card-header">
@@ -45,11 +60,11 @@ export function DataQualitySummary() {
           <h3>Data Quality Coverage</h3>
           <p className="section-subtitle">dbt tests are surfaced alongside the live data product so every metric carries visible validation coverage.</p>
         </div>
-        <div className="quality-pill">{payload?.total_tests ?? 0} tests tracked</div>
+        <div className="quality-pill">{filteredTotalTests} tests tracked</div>
       </div>
 
       <div className="quality-grid">
-        {(payload?.models ?? []).map((model) => (
+        {filteredModels.map((model) => (
           <article className="quality-card" key={model.id}>
             <div className="quality-card-header">
               <div>
@@ -69,6 +84,7 @@ export function DataQualitySummary() {
             <p className="subtle">All registered tests are passing in the current governance snapshot.</p>
           </article>
         ))}
+        {filteredModels.length === 0 ? <div className="empty-state">No use-case-specific test coverage is connected for this governance view yet.</div> : null}
       </div>
     </section>
   );
