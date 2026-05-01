@@ -261,160 +261,168 @@ def cash_command() -> dict[str, Any]:
                 (list(TERMINAL_RECOVERY_STATUSES),),
             ).fetchone()
 
-            monthly_rows = conn.execute(
-                sql.SQL(
-                    """
-                    with latest_month as (
-                        select max(date_trunc('month', claim_date)::date) as month_key
-                        from {revenue_table}
-                    ),
-                    months as (
-                        select generate_series(
-                            (select month_key from latest_month) - interval '11 months',
-                            (select month_key from latest_month),
-                            interval '1 month'
-                        )::date as month_key
-                    ),
-                    charges as (
+            monthly_rows = []
+            kpi_summary = None
+            aging_rows = []
+            try:
+                monthly_rows = conn.execute(
+                    sql.SQL(
+                        """
+                        with latest_month as (
+                            select max(date_trunc('month', claim_date)::date) as month_key
+                            from {revenue_table}
+                        ),
+                        months as (
+                            select generate_series(
+                                (select month_key from latest_month) - interval '11 months',
+                                (select month_key from latest_month),
+                                interval '1 month'
+                            )::date as month_key
+                        ),
+                        charges as (
+                            select
+                                date_trunc('month', claim_date)::date as month_key,
+                                sum(gross_billed_amount)::numeric(14, 2) as charges_amount
+                            from {revenue_table}
+                            group by 1
+                        ),
+                        collections as (
+                            select
+                                date_trunc('month', posting_date)::date as month_key,
+                                sum(paid_amount)::numeric(14, 2) as collected_amount
+                            from {posting_table}
+                            group by 1
+                        )
                         select
-                            date_trunc('month', claim_date)::date as month_key,
-                            sum(gross_billed_amount)::numeric(14, 2) as charges_amount
-                        from {revenue_table}
-                        group by 1
-                    ),
-                    collections as (
-                        select
-                            date_trunc('month', posting_date)::date as month_key,
-                            sum(paid_amount)::numeric(14, 2) as collected_amount
-                        from {posting_table}
-                        group by 1
+                            months.month_key,
+                            coalesce(charges.charges_amount, 0)::numeric(14, 2) as charges_amount,
+                            coalesce(collections.collected_amount, 0)::numeric(14, 2) as collected_amount
+                        from months
+                        left join charges using (month_key)
+                        left join collections using (month_key)
+                        order by months.month_key asc
+                        """
+                    ).format(
+                        revenue_table=revenue_table,
+                        posting_table=posting_table,
                     )
-                    select
-                        months.month_key,
-                        coalesce(charges.charges_amount, 0)::numeric(14, 2) as charges_amount,
-                        coalesce(collections.collected_amount, 0)::numeric(14, 2) as collected_amount
-                    from months
-                    left join charges using (month_key)
-                    left join collections using (month_key)
-                    order by months.month_key asc
-                    """
-                ).format(
-                    revenue_table=revenue_table,
-                    posting_table=posting_table,
-                )
-            ).fetchall()
+                ).fetchall()
 
-            kpi_summary = conn.execute(
-                sql.SQL(
-                    """
-                    with latest_month as (
-                        select max(date_trunc('month', claim_date)::date) as month_key
-                        from {revenue_table}
-                    ),
-                    current_window as (
-                        select *
-                        from {revenue_table}, latest_month
-                        where date_trunc('month', claim_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
-                    ),
-                    prior_window as (
-                        select *
-                        from {revenue_table}, latest_month
-                        where date_trunc('month', claim_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
-                    ),
-                    current_cash as (
-                        select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
-                        from {posting_table}, latest_month
-                        where date_trunc('month', posting_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
-                    ),
-                    prior_cash as (
-                        select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
-                        from {posting_table}, latest_month
-                        where date_trunc('month', posting_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
-                    ),
-                    leakage_recovery as (
-                        select coalesce(sum(actual_recovery), 0)::numeric(14, 2) as leakage_recovered
-                        from {team_table}, latest_month
-                        where period_end between latest_month.month_key - interval '11 months' and latest_month.month_key + interval '31 days'
-                    ),
-                    ar_snapshot as (
-                        select coalesce(sum(outstanding_amount), 0)::numeric(14, 2) as ending_ar_balance
-                        from {aging_table}
-                    ),
-                    current_denials as (
+                kpi_summary = conn.execute(
+                    sql.SQL(
+                        """
+                        with latest_month as (
+                            select max(date_trunc('month', claim_date)::date) as month_key
+                            from {revenue_table}
+                        ),
+                        current_window as (
+                            select *
+                            from {revenue_table}, latest_month
+                            where date_trunc('month', claim_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
+                        ),
+                        prior_window as (
+                            select *
+                            from {revenue_table}, latest_month
+                            where date_trunc('month', claim_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
+                        ),
+                        current_cash as (
+                            select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
+                            from {posting_table}, latest_month
+                            where date_trunc('month', posting_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
+                        ),
+                        prior_cash as (
+                            select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
+                            from {posting_table}, latest_month
+                            where date_trunc('month', posting_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
+                        ),
+                        leakage_recovery as (
+                            select coalesce(sum(actual_recovery), 0)::numeric(14, 2) as leakage_recovered
+                            from {team_table}, latest_month
+                            where period_end between latest_month.month_key - interval '11 months' and latest_month.month_key + interval '31 days'
+                        ),
+                        ar_snapshot as (
+                            select coalesce(sum(outstanding_amount), 0)::numeric(14, 2) as ending_ar_balance
+                            from {aging_table}
+                        ),
+                        current_denials as (
+                            select
+                                count(*)::numeric as total_claims,
+                                count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
+                            from current_window
+                        ),
+                        prior_denials as (
+                            select
+                                count(*)::numeric as total_claims,
+                                count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
+                            from prior_window
+                        ),
+                        denial_counts as (
+                            select
+                                count(*)::numeric as denied_events
+                            from {denials_table}, latest_month
+                            where date_trunc('month', denial_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
+                        )
                         select
-                            count(*)::numeric as total_claims,
-                            count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
-                        from current_window
-                    ),
-                    prior_denials as (
-                        select
-                            count(*)::numeric as total_claims,
-                            count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
-                        from prior_window
-                    ),
-                    denial_counts as (
-                        select
-                            count(*)::numeric as denied_events
-                        from {denials_table}, latest_month
-                        where date_trunc('month', denial_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
+                            current_cash.total_cash_collected,
+                            prior_cash.total_cash_collected as prior_year_cash_collected,
+                            leakage_recovery.leakage_recovered,
+                            ar_snapshot.ending_ar_balance,
+                            current_denials.total_claims as claims_in_pipeline,
+                            denial_counts.denied_events as denied_claim_events,
+                            prior_denials.denied_claims as prior_denied_claims,
+                            prior_denials.total_claims as prior_total_claims,
+                            current_denials.denied_claims as current_denied_claims
+                        from current_cash
+                        cross join prior_cash
+                        cross join leakage_recovery
+                        cross join ar_snapshot
+                        cross join current_denials
+                        cross join prior_denials
+                        cross join denial_counts
+                        """
+                    ).format(
+                        revenue_table=revenue_table,
+                        posting_table=posting_table,
+                        aging_table=aging_table,
+                        denials_table=denials_table,
+                        team_table=team_table,
                     )
-                    select
-                        current_cash.total_cash_collected,
-                        prior_cash.total_cash_collected as prior_year_cash_collected,
-                        leakage_recovery.leakage_recovered,
-                        ar_snapshot.ending_ar_balance,
-                        current_denials.total_claims as claims_in_pipeline,
-                        denial_counts.denied_events as denied_claim_events,
-                        prior_denials.denied_claims as prior_denied_claims,
-                        prior_denials.total_claims as prior_total_claims,
-                        current_denials.denied_claims as current_denied_claims
-                    from current_cash
-                    cross join prior_cash
-                    cross join leakage_recovery
-                    cross join ar_snapshot
-                    cross join current_denials
-                    cross join prior_denials
-                    cross join denial_counts
-                    """
-                ).format(
-                    revenue_table=revenue_table,
-                    posting_table=posting_table,
-                    aging_table=aging_table,
-                    denials_table=denials_table,
-                    team_table=team_table,
-                )
-            ).fetchone()
+                ).fetchone()
 
-            aging_rows = conn.execute(
-                sql.SQL(
-                    """
-                    with bucketed as (
+                aging_rows = conn.execute(
+                    sql.SQL(
+                        """
+                        with bucketed as (
+                            select
+                                case
+                                    when aging_bucket_days <= 30 then '0-30'
+                                    when aging_bucket_days <= 60 then '31-60'
+                                    when aging_bucket_days <= 90 then '61-90'
+                                    when aging_bucket_days <= 120 then '91-120'
+                                    else '120+'
+                                end as aging_bucket,
+                                outstanding_amount
+                            from {aging_table}
+                        )
                         select
-                            case
-                                when aging_bucket_days <= 30 then '0-30'
-                                when aging_bucket_days <= 60 then '31-60'
-                                when aging_bucket_days <= 90 then '61-90'
-                                when aging_bucket_days <= 120 then '91-120'
-                                else '120+'
-                            end as aging_bucket,
-                            outstanding_amount
-                        from {aging_table}
-                    )
-                    select
-                        aging_bucket,
-                        sum(outstanding_amount)::numeric(14, 2) as outstanding_amount
-                    from bucketed
-                    group by 1
-                    order by case aging_bucket
-                        when '0-30' then 1
-                        when '31-60' then 2
-                        when '61-90' then 3
-                        when '91-120' then 4
-                        else 5
-                    end
-                    """
-                ).format(aging_table=aging_table)
-            ).fetchall()
+                            aging_bucket,
+                            sum(outstanding_amount)::numeric(14, 2) as outstanding_amount
+                        from bucketed
+                        group by 1
+                        order by case aging_bucket
+                            when '0-30' then 1
+                            when '31-60' then 2
+                            when '61-90' then 3
+                            when '91-120' then 4
+                            else 5
+                        end
+                        """
+                    ).format(aging_table=aging_table)
+                ).fetchall()
+            except AssertionError:
+                monthly_rows = []
+                kpi_summary = None
+                aging_rows = []
     except (UndefinedTable, UndefinedColumn):
         return _safe_empty(
             "cash-command",
