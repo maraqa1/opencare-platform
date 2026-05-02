@@ -40,7 +40,7 @@ fi
 
 # --- CRLF check ---
 printf '%-40s' "CRLF check (shell scripts) ... "
-bad=$(find install scripts -name '*.sh' | xargs grep -rlP '\r' 2>/dev/null || true)
+bad=$(find install scripts -name '*.sh' -print0 | xargs -0 grep -rlP '\r' 2>/dev/null || true)
 if [[ -z "$bad" ]]; then
   echo "PASS"
   PASS=$((PASS + 1))
