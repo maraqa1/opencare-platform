@@ -712,7 +712,11 @@ export function GovernanceControlTower() {
                 </div>
                 {lineageMode === "full" && selectedLineageModel ? (
                   <section className="governance-lineage-hero">
-                    <LineageDAG modelName={selectedLineageModel} layout="stacked" />
+                    <LineageDAG
+                      modelName={selectedLineageModel}
+                      layout="stacked"
+                      declaredSources={activeUseCase.sourceTables}
+                    />
                   </section>
                 ) : null}
                 {lineageMode === "summary" ? (

@@ -74,12 +74,35 @@ function niceLabel(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function normalizeSchema(value?: string) {
+  if (!value) {
+    return "n/a";
+  }
+  if (value.includes("DBT_SOURCE_SCHEMA") || value.includes("RAW_SCHEMA")) {
+    return "raw";
+  }
+  return value;
+}
+
+function normalizeQualifiedName(value?: string, fallback?: string) {
+  if (!value) {
+    return fallback ?? "n/a";
+  }
+  if (value.includes("DBT_SOURCE_SCHEMA") || value.includes("RAW_SCHEMA")) {
+    const tail = value.split("}}.").pop() ?? fallback ?? "n/a";
+    return `raw.${tail.replace(/^raw\./, "")}`;
+  }
+  return value;
+}
+
 export function LineageDAG({
   modelName,
   layout = "split",
+  declaredSources = [],
 }: {
   modelName: string;
   layout?: "split" | "stacked";
+  declaredSources?: string[];
 }) {
   const [payload, setPayload] = useState<LineagePayload | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -115,8 +138,50 @@ export function LineageDAG({
   }, [modelName]);
 
   const { nodes, edges, positions, width, height } = useMemo(() => {
-    const graphNodes = payload?.nodes ?? [];
-    const graphEdges = payload?.edges ?? [];
+    const graphNodes = [...(payload?.nodes ?? [])];
+    const graphEdges = [...(payload?.edges ?? [])];
+    const existingSourceNames = new Set(
+      graphNodes
+        .filter((node) => node.stage === "source")
+        .flatMap((node) => [node.label, node.name, node.qualified_name])
+        .filter(Boolean)
+        .map((value) => String(value).toLowerCase()),
+    );
+    const firstDownstreamNode =
+      graphNodes.find((node) => node.stage === "staging") ??
+      graphNodes.find((node) => node.stage === "analytics") ??
+      graphNodes.find((node) => node.stage === "output") ??
+      null;
+
+    for (const source of declaredSources) {
+      const sourceKey = source.toLowerCase();
+      const alreadyPresent = Array.from(existingSourceNames).some(
+        (value) => value === sourceKey || value.endsWith(`.${sourceKey}`),
+      );
+      if (alreadyPresent) {
+        continue;
+      }
+
+      const syntheticNodeId = `declared-source-${source}`;
+      graphNodes.push({
+        id: syntheticNodeId,
+        name: source,
+        label: `raw.${source}`,
+        stage: "source",
+        schema: "raw",
+        qualified_name: `raw.${source}`,
+        description: "Declared raw source table for the selected use-case contract. Detailed transformation metadata is not yet connected for this source path.",
+        columns: {},
+        tests: [],
+      });
+      if (firstDownstreamNode) {
+        graphEdges.push({
+          from: syntheticNodeId,
+          to: firstDownstreamNode.id,
+        });
+      }
+    }
+
     const grouped = new Map<Stage, LineageNode[]>();
     (Object.keys(NODE_COLOURS) as Stage[]).forEach((stage) => grouped.set(stage, []));
     graphNodes.forEach((node) => grouped.get(node.stage)?.push(node));
@@ -151,7 +216,7 @@ export function LineageDAG({
       width: paddingX * 2 + nodeWidth + stageGap * (stages.length - 1),
       height: paddingY * 2 + Math.max(maxRows * rowGap, nodeHeight),
     };
-  }, [payload]);
+  }, [declaredSources, payload]);
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
 
@@ -291,11 +356,11 @@ function NodeDetailPanel({ node, fullWidth = false }: { node: LineageNode; fullW
       <div className="node-detail-meta">
         <div>
           <dt>Qualified Name</dt>
-          <dd className="mono">{node.qualified_name ?? node.label}</dd>
+          <dd className="mono">{normalizeQualifiedName(node.qualified_name, node.label)}</dd>
         </div>
         <div>
           <dt>Schema</dt>
-          <dd>{node.schema ?? "n/a"}</dd>
+          <dd>{normalizeSchema(node.schema)}</dd>
         </div>
       </div>
 
