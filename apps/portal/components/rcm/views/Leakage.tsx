@@ -165,3 +165,84 @@ export function Leakage() {
               </thead>
               <tbody>
          
+                {sorted.map((row, i) => {
+                  const key = row.leakage_type ?? "";
+                  const label = categoryLabel(row.leakage_type);
+                  const action = ACTION_LABELS[key] ?? "Review";
+                  const recoverability = recoverabilityLevel(row.leakage_type);
+
+                  const rowRecord = row as LeakageRow & Record<string, unknown>;
+                  const lastDetected =
+                    rowRecord.last_detected_at ??
+                    rowRecord.last_detected ??
+                    rowRecord.latest_detected_at ??
+                    rowRecord.latest_date ??
+                    rowRecord.last_seen_at ??
+                    null;
+
+                  return (
+                    <tr
+                      key={`${key}-${i}`}
+                      style={{
+                        borderBottom: i < sorted.length - 1 ? "0.5px solid #f0ede6" : "none",
+                      }}
+                    >
+                      <td style={{ padding: "10px 12px", fontWeight: 500 }}>
+                        {label}
+                      </td>
+                      <td style={{ padding: "10px 12px", color: "#555" }}>
+                        {row.item_count ?? 0}
+                      </td>
+                      <td style={{ padding: "10px 12px", fontWeight: 500 }}>
+                        {currency(row.leakage_amount ?? 0)}
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <RecoverabilityPill level={recoverability} />
+                      </td>
+                      <td style={{ padding: "10px 12px", color: "#555" }}>
+                        {lastDetected ? shortDate(String(lastDetected)) : "—"}
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        <button
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: 6,
+                            border: "0.5px solid #ddd",
+                            fontSize: 11,
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            background: "#ffffff",
+                            color: "#1a1a1a",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {action}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {sorted.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      style={{
+                        padding: "18px 12px",
+                        color: "#777",
+                        textAlign: "center",
+                      }}
+                    >
+                      No leakage decomposition records available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

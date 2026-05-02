@@ -133,3 +133,19 @@ export function PayerControl() {
                           {actionLabel}
                         </button>
                      
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <p style={{ fontSize: 11, color: "#888", margin: "10px 0 0" }}>
+            † Statutory payer contracts may have constrained appeal windows, payment terms, and recovery routes.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
