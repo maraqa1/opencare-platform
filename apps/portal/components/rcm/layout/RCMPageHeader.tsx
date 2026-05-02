@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 
 type Badge = { label: string; color?: "green" | "amber" | "blue" | "gray" };
 
@@ -12,6 +14,8 @@ export function RCMPageHeader({
   arTarget = 40,
   showCFOButton = false,
   onCFOClick,
+  cfoHref,
+  cfoLabel = "CFO View",
 }: {
   eyebrow?: string;
   title?: string;
@@ -21,6 +25,8 @@ export function RCMPageHeader({
   arTarget?: number;
   showCFOButton?: boolean;
   onCFOClick?: () => void;
+  cfoHref?: string;
+  cfoLabel?: string;
 }) {
   const arBreached = arDays != null && arDays > arTarget;
 
@@ -97,7 +103,24 @@ export function RCMPageHeader({
               AR Days: {arDays}d {arBreached ? "⚠" : "✓"} (target {arTarget}d)
             </span>
           )}
-          {showCFOButton && (
+          {showCFOButton && cfoHref ? (
+            <Link
+              href={cfoHref}
+              style={{
+                background: "var(--oc-navy)",
+                color: "rgba(255,255,255,0.88)",
+                border: "none",
+                borderRadius: 10,
+                padding: "6px 14px",
+                fontSize: 12,
+                fontWeight: 500,
+                textDecoration: "none",
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {cfoLabel}
+            </Link>
+          ) : showCFOButton && onCFOClick ? (
             <button
               onClick={onCFOClick}
               style={{
@@ -112,9 +135,9 @@ export function RCMPageHeader({
                 fontFamily: "var(--font-body)",
               }}
             >
-              CFO View
+              {cfoLabel}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

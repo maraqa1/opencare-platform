@@ -136,10 +136,12 @@ export type TeamPerformanceRow = {
   owner_user_id?: string | null;
   assigned_count?: number | null;
   completed_count?: number | null;
+  in_progress_count?: number | null;
   expected_recovery?: number | null;
   actual_recovery?: number | null;
   recovery_variance_pct?: number | null;
   avg_resolution_hours?: number | null;
+  sla_target_hours?: number | null;
   overdue_count?: number | null;
 };
 

@@ -33,6 +33,7 @@ export function CashCommand() {
       <RCMPageHeader
         subtitle="The CFO landing view for real-time cash control, recovery execution, and revenue accountability."
         showCFOButton
+        cfoHref="/use-cases/revenue-cycle-management/executive-narrative"
         badges={[
           { label: "Financial truth: ERP postings", color: "blue" },
           ...(data?.data_freshness?.status
