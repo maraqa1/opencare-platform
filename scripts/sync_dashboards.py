@@ -457,7 +457,8 @@ def ensure_dataset_orm(dataset_name: str, database_id: int, owner_id: int | None
             if owner is not None:
                 existing.owners.append(owner)
                 db.session.add(existing)
-                db.session.flush()
+        refresh_dataset_metadata(existing, db.session)
+        db.session.flush()
         return int(existing.id)
 
     dataset = SqlaTable(table_name=table_name, schema=schema_name, database_id=database_id)
@@ -467,7 +468,29 @@ def ensure_dataset_orm(dataset_name: str, database_id: int, owner_id: int | None
             dataset.owners = [owner]
     db.session.add(dataset)
     db.session.flush()
+    refresh_dataset_metadata(dataset, db.session)
+    db.session.flush()
     return int(dataset.id)
+
+
+def refresh_dataset_metadata(dataset: Any, session: Any) -> None:
+    refresh_methods = (
+        "fetch_metadata",
+        "fetch_metadata_sync",
+        "fetch_metadata_and_metrics",
+    )
+    for method_name in refresh_methods:
+        method = getattr(dataset, method_name, None)
+        if not callable(method):
+            continue
+        result = method()
+        if isinstance(result, tuple):
+            for item in result:
+                if isinstance(item, list):
+                    for child in item:
+                        session.add(child)
+        session.add(dataset)
+        return
 
 
 def ensure_chart_orm(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
