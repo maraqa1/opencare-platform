@@ -1,6 +1,5 @@
 "use client";
 
-import { currencyCompact } from "@/lib/format";
 
 type Badge = { label: string; color?: "green" | "amber" | "blue" | "gray" };
 

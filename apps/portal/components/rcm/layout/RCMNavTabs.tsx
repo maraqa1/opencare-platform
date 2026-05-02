@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 const TABS = [
   { key: "cash-command",        label: "Cash command",       href: "/use-cases/revenue-cycle-management/cash-command" },
