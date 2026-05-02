@@ -110,7 +110,8 @@ class SupersetClient:
             try:
                 return self._request(method, path, payload=payload, use_auth=use_auth)
             except RuntimeError as exc:
-                if " failed with 404:" in str(exc):
+                error_text = str(exc)
+                if " failed with 404:" in error_text or " failed with 308:" in error_text:
                     last_exc = exc
                     continue
                 raise
