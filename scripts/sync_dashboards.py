@@ -43,13 +43,23 @@ class SupersetClient:
         )
         self.access_token = api_response.get("access_token")
 
+        try:
+            csrf_response = self._request("GET", "/api/v1/security/csrf_token/")
+            self.csrf_token = (
+                csrf_response.get("result")
+                if isinstance(csrf_response, dict)
+                else None
+            )
+        except RuntimeError:
+            self.csrf_token = None
+
         login_page = self._open_raw("GET", "/login/", use_auth=False)
         try:
             csrf_token = extract_csrf_token(login_page)
         except RuntimeError:
-            # Demo environments may disable CSRF entirely. In that case the
-            # bearer token from the API login is sufficient for write calls.
-            self.csrf_token = None
+            # Some Superset builds do not expose the login-page csrf field in a
+            # stable way. Keep the API csrf token if we already obtained one
+            # instead of bailing out of authentication entirely.
             return
         form_payload = parse.urlencode(
             {
@@ -70,7 +80,7 @@ class SupersetClient:
         try:
             self.csrf_token = extract_app_csrf_token(welcome_page)
         except RuntimeError:
-            self.csrf_token = None
+            pass
 
     def get(self, path: str) -> dict[str, Any]:
         return self._request("GET", path)
@@ -141,7 +151,17 @@ class SupersetClient:
 
 
 def extract_csrf_token(html: str) -> str:
-    match = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', html)
+    patterns = (
+        r'name="csrf_token"[^>]*value="([^"]+)"',
+        r"name='csrf_token'[^>]*value='([^']+)'",
+        r'value="([^"]+)"[^>]*name="csrf_token"',
+        r"value='([^']+)'[^>]*name='csrf_token'",
+    )
+    match = None
+    for pattern in patterns:
+        match = re.search(pattern, html)
+        if match:
+            break
     if not match:
         raise RuntimeError("Superset login page did not include a csrf_token field")
     return match.group(1)
