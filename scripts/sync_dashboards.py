@@ -27,7 +27,6 @@ class SupersetClient:
         self.csrf_token: str | None = None
         self.cookie_jar = CookieJar()
         self.opener = request.build_opener(request.HTTPCookieProcessor(self.cookie_jar))
-        self.api_opener = request.build_opener()
 
     def authenticate(self) -> None:
         api_payload = {
@@ -132,7 +131,11 @@ class SupersetClient:
             data=payload,
             headers=request_headers,
         )
-        opener = self.api_opener if use_auth and self.access_token else self.opener
+        # Superset dataset creation relies on the authenticated web session as
+        # well as the API token. If we bypass the cookie jar here, some write
+        # endpoints resolve the user as anonymous and fail during ownership
+        # assignment for new objects.
+        opener = self.opener
         with opener.open(http_request, timeout=30) as response:
             return response.read().decode("utf-8")
 
