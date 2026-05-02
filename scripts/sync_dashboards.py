@@ -8,7 +8,6 @@ import sys
 import uuid
 from pathlib import Path
 from typing import Any
-from http.cookiejar import CookieJar
 from urllib import error, parse, request
 
 import yaml
@@ -25,8 +24,7 @@ class SupersetClient:
         self.password = password
         self.access_token: str | None = None
         self.csrf_token: str | None = None
-        self.cookie_jar = CookieJar()
-        self.opener = request.build_opener(request.HTTPCookieProcessor(self.cookie_jar))
+        self.opener = request.build_opener()
 
     def authenticate(self) -> None:
         api_payload = {
@@ -37,50 +35,27 @@ class SupersetClient:
         }
         api_response = self._request(
             "POST",
-            "/api/v1/security/login",
+            "/api/v1/security/login/",
             payload=api_payload,
             use_auth=False,
         )
         self.access_token = api_response.get("access_token")
+        if not self.access_token:
+            raise RuntimeError("Superset login did not return an access token")
 
-        try:
-            csrf_response = self._request("GET", "/api/v1/security/csrf_token/")
-            self.csrf_token = (
-                csrf_response.get("result")
-                if isinstance(csrf_response, dict)
-                else None
-            )
-        except RuntimeError:
-            self.csrf_token = None
+        csrf_response = self._request("GET", "/api/v1/security/csrf_token/")
+        self.csrf_token = csrf_response.get("result") if isinstance(csrf_response, dict) else None
+        if not self.csrf_token:
+            raise RuntimeError("Superset csrf token request did not return a token")
 
-        login_page = self._open_raw("GET", "/login/", use_auth=False)
-        try:
-            csrf_token = extract_csrf_token(login_page)
-        except RuntimeError:
-            # Some Superset builds do not expose the login-page csrf field in a
-            # stable way. Keep the API csrf token if we already obtained one
-            # instead of bailing out of authentication entirely.
-            return
-        form_payload = parse.urlencode(
-            {
-                "username": self.username,
-                "password": self.password,
-                "csrf_token": csrf_token,
-            }
-        ).encode("utf-8")
-        self._open_raw(
-            "POST",
-            "/login/",
-            payload=form_payload,
-            use_auth=False,
-            content_type="application/x-www-form-urlencoded",
-            referer=f"{self.base_url}/login/",
+        me_response = self._request("GET", "/api/v1/me/")
+        username = (
+            me_response.get("result", {}).get("username")
+            if isinstance(me_response, dict)
+            else None
         )
-        welcome_page = self._open_raw("GET", "/superset/welcome/", use_auth=False)
-        try:
-            self.csrf_token = extract_app_csrf_token(welcome_page)
-        except RuntimeError:
-            pass
+        if not username:
+            raise RuntimeError(f"Superset auth self-check failed: {me_response}")
 
     def get(self, path: str) -> dict[str, Any]:
         return self._request("GET", path)
@@ -130,6 +105,7 @@ class SupersetClient:
         request_headers = dict(headers or {})
         if use_auth and self.access_token:
             request_headers.setdefault("Authorization", f"Bearer {self.access_token}")
+            request_headers.setdefault("Referer", self.base_url)
         if content_type:
             request_headers["Content-Type"] = content_type
         if referer:
@@ -141,46 +117,8 @@ class SupersetClient:
             data=payload,
             headers=request_headers,
         )
-        # Superset dataset creation relies on the authenticated web session as
-        # well as the API token. If we bypass the cookie jar here, some write
-        # endpoints resolve the user as anonymous and fail during ownership
-        # assignment for new objects.
-        opener = self.opener
-        with opener.open(http_request, timeout=30) as response:
+        with self.opener.open(http_request, timeout=30) as response:
             return response.read().decode("utf-8")
-
-
-def extract_csrf_token(html: str) -> str:
-    patterns = (
-        r'name="csrf_token"[^>]*value="([^"]+)"',
-        r"name='csrf_token'[^>]*value='([^']+)'",
-        r'value="([^"]+)"[^>]*name="csrf_token"',
-        r"value='([^']+)'[^>]*name='csrf_token'",
-    )
-    match = None
-    for pattern in patterns:
-        match = re.search(pattern, html)
-        if match:
-            break
-    if not match:
-        raise RuntimeError("Superset login page did not include a csrf_token field")
-    return match.group(1)
-
-
-def extract_app_csrf_token(html: str) -> str:
-    patterns = (
-        r'"csrfToken":"([^"]+)"',
-        r'"csrf_token":"([^"]+)"',
-        r"'csrfToken':'([^']+)'",
-        r"'csrf_token':'([^']+)'",
-    )
-    for pattern in patterns:
-        match = re.search(pattern, html)
-        if match:
-            return match.group(1)
-    if 'name="csrf_token"' in html:
-        return extract_csrf_token(html)
-    raise RuntimeError("Superset welcome page did not expose an application csrf token")
 
 
 def load_dashboard_config(config_path: Path) -> dict[str, Any]:
