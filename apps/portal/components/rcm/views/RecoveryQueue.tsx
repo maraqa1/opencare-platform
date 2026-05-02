@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { RCMNavTabs }    from "../layout/RCMNavTabs";
@@ -125,7 +125,7 @@ export function RecoveryQueue() {
         { label: "TOTAL QUEUE VALUE",   value: currencyCompact(totalQueueValue || null) },
         { label: "OVERDUE ITEMS",       value: String(overdueCount),   sub: "Require immediate action" },
         { label: "DUE THIS WEEK",       value: String(dueThisWeek),    sub: "Items due within 7 days" },
-        { label: "HIGH PRIORITY",       value: String(highPriority),   sub: "Score ≥ 3,000" },
+        { label: "HIGH PRIORITY",       value: String(highPriority),   sub: "Score â‰¥ 3,000" },
       ]} />
 
       {loading && <LoadingView />}
@@ -136,7 +136,7 @@ export function RecoveryQueue() {
 
       {!loading && !error && !data?.meta?.empty && (
         <>
-          {/* Filter bar — options derived from live data */}
+          {/* Filter bar â€” options derived from live data */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
             <FilterSelect label="All issue types" options={issueOptions}  value={filterIssue}  onChange={setFilterIssue} />
             <FilterSelect label="All payers"      options={payerOptions}  value={filterPayer}  onChange={setFilterPayer} />
@@ -164,8 +164,8 @@ export function RecoveryQueue() {
                     { label: "Value" },
                     { label: "Effort" },
                     {
-                      label: "Score ⓘ",
-                      title: "Score = (Expected Recovery ÷ Effort) × Urgency Multiplier\nUrgency: overdue=2.5× / ≤2d=2.0× / ≤7d=1.5× / ≤14d=1.2× / else=1.0×",
+                      label: "Score â“˜",
+                      title: "Score = (Expected Recovery Ã· Effort) Ã— Urgency Multiplier\nUrgency: overdue=2.5Ã— / â‰¤2d=2.0Ã— / â‰¤7d=1.5Ã— / â‰¤14d=1.2Ã— / else=1.0Ã—",
                     },
                     { label: "Owner" },
                     { label: "Due" },
@@ -188,7 +188,7 @@ export function RecoveryQueue() {
               </thead>
               <tbody>
                 {filteredAndScored.map((item, i) => {
-                  const ref     = item.claim_id ?? item.opportunity_id ?? `—`;
+                  const ref     = item.claim_id ?? item.opportunity_id ?? `â€”`;
                   const overdue = isOverdue(item.due_date);
                   const status  = item.decision_status ?? item.status ?? "open";
                   const nextStep = NEXT_STEPS[item.issue_type ?? ""] ?? item.next_step ?? "Review and action";
@@ -223,16 +223,16 @@ export function RecoveryQueue() {
                         {currency(item.expected_recovery_amount ?? item.recoverable_amount ?? 0)}
                       </td>
                       <td style={{ padding: "10px 12px", color: "#555", whiteSpace: "nowrap" }}>
-                        {item.effort_hours != null ? `${item.effort_hours}h` : "—"}
+                        {item.effort_hours != null ? `${item.effort_hours}h` : "â€”"}
                       </td>
                       <td style={{ padding: "10px 12px" }}>
-                        <ScorePill score={item._score} band={scoreBand(item._score)} />
+                        <ScorePill score={item._score} />
                       </td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
                         {ownerLabel(item.owner ?? item.owner_user_id)}
                       </td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap", color: overdue ? "#c0392b" : "#555" }}>
-                        {item.due_date ? shortDate(item.due_date) : "—"}
+                        {item.due_date ? shortDate(item.due_date) : "â€”"}
                       </td>
                       <td style={{ padding: "10px 12px" }}>
                         <StatusPill status={status} />
