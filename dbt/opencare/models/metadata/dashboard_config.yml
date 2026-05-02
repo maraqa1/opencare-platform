@@ -124,19 +124,189 @@ dashboards:
     title: Revenue Cycle Executive Command
     schema: analytics
     datasets:
+      - analytics.fct_cash_forecast
+      - analytics.fct_revenue_cycle
+      - analytics.fct_denials
       - analytics.fct_cash_recovery_opportunity
       - analytics.fct_revenue_leakage
       - analytics.fct_claim_aging
       - analytics.fct_payer_contract_performance
       - analytics.fct_team_recovery_performance
+    filters:
+      - key: payer
+        type: native_filter
+        label: Payer
+        target_dataset: analytics.fct_revenue_cycle
+        column: payer_id
+        control: multi_select
+        searchable: true
+      - key: department
+        type: native_filter
+        label: Department
+        target_dataset: analytics.fct_revenue_cycle
+        column: department_id
+        control: multi_select
+        searchable: true
+      - key: date_range
+        type: native_filter
+        label: Date Range
+        target_dataset: analytics.fct_revenue_cycle
+        column: claim_date
+        control: date_range
+        default: Last 90 days
+        presets:
+          - 30d
+          - 90d
+          - 180d
+      - key: owner_team
+        type: native_filter
+        label: Owner Team
+        target_dataset: analytics.fct_cash_recovery_opportunity
+        column: owner_team
+        control: multi_select
+        searchable: true
     charts:
-      - key: cash_recovery_command
+      - key: executive_cash_position
         enabled: true
-        title: CFO Cash Command
+        title: Executive Cash Position
         viz_type: table
         layout:
           x: 0
           y: 0
+          w: 12
+          h: 8
+        dataset: analytics.fct_cash_forecast
+        metrics:
+          - expected_cash_sum
+          - recoverable_cash_sum
+          - cash_at_risk_sum
+          - confidence_score_avg
+      - key: cash_forecast_and_risk
+        enabled: true
+        title: Expected Cash and Risk Outlook
+        viz_type: echarts_area
+        layout:
+          x: 0
+          y: 8
+          w: 8
+          h: 12
+        dataset: analytics.fct_cash_forecast
+        metrics:
+          - expected_cash_sum
+          - recoverable_cash_sum
+          - cash_at_risk_sum
+        time_column: forecast_date
+        row_limit: 180
+      - key: ar_exposure_by_claim_status
+        enabled: true
+        title: Open A/R Exposure by Claim Status
+        viz_type: dist_bar
+        layout:
+          x: 8
+          y: 8
+          w: 4
+          h: 12
+        dataset: analytics.fct_claim_aging
+        metrics:
+          - outstanding_amount_sum
+        group_by:
+          - claim_status
+      - key: billed_vs_collected_trend
+        enabled: true
+        title: Gross Charges vs Posted Cash
+        viz_type: echarts_timeseries_line
+        layout:
+          x: 0
+          y: 20
+          w: 8
+          h: 12
+        dataset: analytics.fct_revenue_cycle
+        metrics:
+          - gross_billed_amount_sum
+          - posted_cash_amount_sum
+        time_column: claim_date
+        row_limit: 180
+      - key: denial_pressure_over_time
+        enabled: true
+        title: Denial Pressure Over Time
+        viz_type: echarts_timeseries_bar
+        layout:
+          x: 8
+          y: 20
+          w: 4
+          h: 12
+        dataset: analytics.fct_denials
+        metrics:
+          - denied_amount_sum
+        group_by:
+          - denial_reason
+        time_column: denial_date
+        row_limit: 180
+      - key: underpayment_exposure_by_payer
+        enabled: true
+        title: Underpayment Exposure by Payer
+        viz_type: dist_bar
+        layout:
+          x: 0
+          y: 32
+          w: 6
+          h: 12
+        dataset: analytics.fct_payer_contract_performance
+        metrics:
+          - underpayment_amount_sum
+        group_by:
+          - payer_id
+      - key: payer_collection_vs_contract
+        enabled: true
+        title: Payer Collection Rate vs Contract
+        viz_type: dist_bar
+        layout:
+          x: 6
+          y: 32
+          w: 6
+          h: 12
+        dataset: analytics.fct_payer_contract_performance
+        metrics:
+          - actual_collection_rate_avg
+          - contract_rate_pct_avg
+        group_by:
+          - payer_id
+      - key: leakage_concentration_by_type
+        enabled: true
+        title: Revenue Leakage Concentration
+        viz_type: dist_bar
+        layout:
+          x: 0
+          y: 44
+          w: 6
+          h: 12
+        dataset: analytics.fct_revenue_leakage
+        metrics:
+          - leakage_amount_sum
+        group_by:
+          - leakage_type
+      - key: team_recovery_vs_target
+        enabled: true
+        title: Team Recovery vs Expected Value
+        viz_type: dist_bar
+        layout:
+          x: 6
+          y: 44
+          w: 6
+          h: 12
+        dataset: analytics.fct_team_recovery_performance
+        metrics:
+          - actual_recovery_sum
+          - expected_recovery_sum
+        group_by:
+          - owner_team
+      - key: executive_recovery_actions
+        enabled: true
+        title: Executive Recovery Actions This Week
+        viz_type: table
+        layout:
+          x: 0
+          y: 56
           w: 12
           h: 12
         dataset: analytics.fct_cash_recovery_opportunity
@@ -146,104 +316,4 @@ dashboards:
           - priority_score_avg
         group_by:
           - issue_type
-      - key: underpayment_by_payer
-        enabled: true
-        title: Underpayment Exposure by Payer
-        viz_type: dist_bar
-        layout:
-          x: 0
-          y: 12
-          w: 6
-          h: 12
-        dataset: analytics.fct_payer_contract_performance
-        metrics:
-          - underpayment_amount_sum
-        group_by:
-          - payer_id
-      - key: payer_contract_breaches
-        enabled: true
-        title: Payer SLA Breaches
-        viz_type: dist_bar
-        layout:
-          x: 6
-          y: 12
-          w: 6
-          h: 12
-        dataset: analytics.fct_payer_contract_performance
-        metrics:
-          - sla_breach_count_sum
-        group_by:
-          - payer_id
-      - key: revenue_leakage_concentration
-        enabled: true
-        title: Revenue Leakage Concentration
-        viz_type: dist_bar
-        layout:
-          x: 0
-          y: 24
-          w: 6
-          h: 12
-        dataset: analytics.fct_revenue_leakage
-        metrics:
-          - leakage_amount_sum
-        group_by:
-          - leakage_type
-      - key: ar_exposure_snapshot
-        enabled: true
-        title: AR Exposure by Payer Snapshot
-        viz_type: dist_bar
-        layout:
-          x: 6
-          y: 24
-          w: 6
-          h: 12
-        dataset: analytics.fct_claim_aging
-        metrics:
-          - outstanding_amount_sum
-        group_by:
-          - payer_id
-      - key: recovery_queue
-        enabled: true
-        title: Recovery Queue and Owners
-        viz_type: table
-        layout:
-          x: 0
-          y: 36
-          w: 12
-          h: 12
-        dataset: analytics.fct_cash_recovery_opportunity
-        metrics:
-          - expected_recovery_amount_sum
-          - priority_score_avg
-        group_by:
-          - issue_type
           - owner_team
-      - key: team_recovery_performance
-        enabled: true
-        title: Team Recovery vs Target
-        viz_type: dist_bar
-        layout:
-          x: 0
-          y: 48
-          w: 6
-          h: 12
-        dataset: analytics.fct_team_recovery_performance
-        metrics:
-          - actual_recovery_sum
-          - expected_recovery_sum
-        group_by:
-          - owner_team
-      - key: recoverable_cash_by_issue_type
-        enabled: true
-        title: Recoverable Cash by Issue Type
-        viz_type: dist_bar
-        layout:
-          x: 6
-          y: 48
-          w: 6
-          h: 12
-        dataset: analytics.fct_cash_recovery_opportunity
-        metrics:
-          - expected_recovery_amount_sum
-        group_by:
-          - issue_type
