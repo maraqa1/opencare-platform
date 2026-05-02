@@ -90,6 +90,19 @@ const RECOVERABILITY: Record<string, string> = {
   undercoding: "Medium",
 };
 
+const NEXT_STEPS: Record<string, string> = {
+  late_submission_risk:  "Submit claim before filing deadline",
+  denial_coding_error:   "Correct CPT/ICD code and resubmit",
+  denial_clinical:       "Obtain clinical documentation and appeal",
+  underpayment:          "Request EOB and log underpayment dispute",
+  denial_eligibility:    "Verify eligibility and resubmit",
+  missing_authorization: "Obtain retroactive authorisation",
+  unbilled_encounter:    "Route to charge capture for billing",
+};
+
+// Direct object exports for component-level use
+export { ISSUE_TYPE_LABELS, OWNER_LABELS, LEAKAGE_GUIDANCE, RECOVERABILITY, NEXT_STEPS };
+
 function prettifyToken(value?: string | null) {
   return (value ?? "")
     .replaceAll("_", " ")
