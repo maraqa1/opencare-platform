@@ -52,16 +52,26 @@ class SupersetClient:
         if not self.csrf_token:
             raise RuntimeError("Superset csrf token request did not return a token")
 
-        me_response = self._request_first(
-            "GET",
-            ["/api/v1/me", "/api/v1/me/"],
-        )
-        me_result = me_response.get("result", {}) if isinstance(me_response, dict) else {}
-        username = me_result.get("username")
-        user_id = me_result.get("id")
-        if not username or username != self.username or not isinstance(user_id, int):
-            raise RuntimeError(f"Superset auth self-check failed: {me_response}")
-        self.user_id = user_id
+        try:
+            me_response = self._request_first(
+                "GET",
+                ["/api/v1/me", "/api/v1/me/"],
+            )
+            me_result = me_response.get("result", {}) if isinstance(me_response, dict) else {}
+            username = me_result.get("username")
+            user_id = me_result.get("id")
+            if not username or username != self.username or not isinstance(user_id, int):
+                raise RuntimeError(f"Superset auth self-check failed: {me_response}")
+            self.user_id = user_id
+        except RuntimeError as exc:
+            if " failed with 401:" not in str(exc):
+                raise
+            fallback_user_id = _lookup_user_in_metadata(self.username)
+            if fallback_user_id is None:
+                raise RuntimeError(
+                    f"Superset /me auth check failed and metadata fallback could not resolve user '{self.username}'"
+                ) from exc
+            self.user_id = fallback_user_id
 
     def get(self, path: str) -> dict[str, Any]:
         return self._request("GET", path)
@@ -219,6 +229,10 @@ def _lookup_chart_in_metadata(slice_name: str) -> int | None:
 
 def _lookup_dashboard_in_metadata(slug: str) -> int | None:
     return _lookup_in_metadata("dashboards", "slug", slug)
+
+
+def _lookup_user_in_metadata(username: str) -> int | None:
+    return _lookup_in_metadata("ab_user", "username", username)
 
 
 def ensure_database(client: SupersetClient) -> int:
