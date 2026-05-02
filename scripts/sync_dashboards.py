@@ -403,9 +403,9 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     owner_ids = [client.user_id] if client.user_id is not None else []
     payload = dataset_payload(dataset_name, database_id, owner_ids=owner_ids)
     if existing:
-        # Superset accepts the database field when a dataset is created, but not
-        # on every update path. Existing datasets are safe to reuse by id.
-        return int(existing["id"])
+        dataset_id = ensure_dataset_orm(dataset_name, database_id, client.user_id)
+        print(f"  [ok] refreshed dataset '{dataset_name}' via ORM sync (id={dataset_id})")
+        return dataset_id
 
     try:
         created = client.post("/api/v1/dataset/", payload)
