@@ -132,7 +132,6 @@ export function PayerControl() {
                         >
                           {actionLabel}
                         </button>
-                     
                       </td>
                     </tr>
                   );
@@ -141,11 +140,17 @@ export function PayerControl() {
             </table>
           </div>
 
-          <p style={{ fontSize: 11, color: "#888", margin: "10px 0 0" }}>
-            † Statutory payer contracts may have constrained appeal windows, payment terms, and recovery routes.
+          <p style={{ fontSize: 11, color: "#888", marginTop: 10 }}>
+            † Medicare reimbursement follows federal fee schedules. Gap reflects sequestration adjustments only.
           </p>
         </>
       )}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+        <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "#f0f7e8", color: "#4a7c1f", border: "0.5px solid #c3e6a8" }}>
+          AR Days: 38d ✓ (target 40d)
+        </span>
+      </div>
     </div>
   );
 }

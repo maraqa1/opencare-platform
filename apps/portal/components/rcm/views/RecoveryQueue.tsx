@@ -202,67 +202,34 @@ export function RecoveryQueue() {
                         borderLeft: overdue ? "3px solid #c0392b" : "3px solid transparent",
                       }}
                     >
-                      <td style={{ padding: "10px 12px",
-                        fontWeight: 500,
-                        whiteSpace: "nowrap",
-                      }}>
-                        {ref}
-                      </td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        {payerLabel(item.payer_id)}
-                      </td>
-                      <td style={{ padding: "10px 12px", minWidth: 150 }}>
-                        {issueTypeLabel(item.issue_type)}
-                        {item.department_id && (
-                          <div style={{ fontSize: 10, color: "#888", marginTop: 2 }}>
-                            {departmentLabel(item.department_id)}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: "10px 12px", fontWeight: 500 }}>
-                        {currency(item.expected_recovery_amount ?? item.recoverable_amount ?? 0)}
-                      </td>
-                      <td style={{ padding: "10px 12px", color: "#555", whiteSpace: "nowrap" }}>
-                        {item.effort_hours != null ? `${item.effort_hours}h` : "â€”"}
-                      </td>
+                      <td style={{ padding: "10px 12px", fontFamily: "monospace", fontSize: 11, color: "#1a3050", whiteSpace: "nowrap" }}>{ref}</td>
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{payerLabel(item.payer_id)}</td>
+                      <td style={{ padding: "10px 12px" }}>{issueTypeLabel(item.issue_type)}</td>
+                      <td style={{ padding: "10px 12px", fontWeight: 500 }}>{currency(item.expected_recovery_amount ?? item.recoverable_amount)}</td>
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{item.effort_hours != null ? `${item.effort_hours}h` : "—"}</td>
                       <td style={{ padding: "10px 12px" }}>
                         <ScorePill score={item._score} />
                       </td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        {ownerLabel(item.owner ?? item.owner_user_id)}
-                      </td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap", color: overdue ? "#c0392b" : "#555" }}>
-                        {item.due_date ? shortDate(item.due_date) : "â€”"}
-                      </td>
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{ownerLabel(item.owner ?? item.owner_user_id)}</td>
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap", color: overdue ? "#c0392b" : "#888" }}>{shortDate(item.due_date)}</td>
                       <td style={{ padding: "10px 12px" }}>
-                        <StatusPill status={status} />
+                        <StatusPill status={item.decision_status ?? item.status ?? "open"} />
                       </td>
-                      <td style={{ padding: "10px 12px", minWidth: 180 }}>
-                        {nextStep}
-                      </td>
+                      <td style={{ padding: "10px 12px", fontSize: 11, color: "#555", maxWidth: 180 }}>{nextStep}</td>
                     </tr>
                   );
                 })}
-
-                {filteredAndScored.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={10}
-                      style={{
-                        padding: "18px 12px",
-                        color: "#777",
-                        textAlign: "center",
-                      }}
-                    >
-                      No recovery queue items match the selected filters.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
         </>
       )}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+        <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "#f0f7e8", color: "#4a7c1f", border: "0.5px solid #c3e6a8" }}>
+          AR Days: 38d ✓ (target 40d)
+        </span>
+      </div>
     </div>
   );
 }
