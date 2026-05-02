@@ -5,9 +5,9 @@ import { scoreBand } from "@/lib/scoring";
 export function ScorePill({ score }: { score: number }) {
   const band = scoreBand(score);
   const cfg =
-    band === "High"   ? { bg: "#f0f7e8", color: "#4a7c1f" } :
-    band === "Medium" ? { bg: "#fef5e4", color: "#b7600a" } :
-                        { bg: "#fdecea", color: "#c0392b" };
+    band === "High"   ? { bg: "var(--oc-normal-bg)", color: "var(--oc-normal)" } :
+    band === "Medium" ? { bg: "var(--oc-warning-bg)", color: "var(--oc-warning)" } :
+                        { bg: "var(--oc-critical-bg)", color: "var(--oc-critical)" };
 
   return (
     <span
@@ -16,7 +16,7 @@ export function ScorePill({ score }: { score: number }) {
         alignItems: "center",
         gap: 4,
         padding: "2px 8px",
-        borderRadius: 12,
+        borderRadius: 999,
         fontSize: 10,
         fontWeight: 500,
         background: cfg.bg,

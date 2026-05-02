@@ -1,31 +1,31 @@
 "use client";
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  open:           { label: "Open",           bg: "#f5f4f0", color: "#888888" },
-  in_appeal:      { label: "In Appeal",      bg: "#e8f0f9", color: "#1a3050" },
-  submitted:      { label: "Submitted",      bg: "#e1f5ee", color: "#0f6e56" },
-  in_progress:    { label: "In Progress",    bg: "#fef5e4", color: "#b7600a" },
-  escalated:      { label: "Escalated",      bg: "#fef5e4", color: "#b7600a" },
-  write_off_risk: { label: "Write-off Risk", bg: "#fdecea", color: "#c0392b" },
-  assigned:       { label: "Assigned",       bg: "#e8f0f9", color: "#1a3050" },
-  appeal_pending: { label: "Appeal Pending", bg: "#e8f0f9", color: "#1a3050" },
-  under_review:   { label: "Under Review",   bg: "#fef5e4", color: "#b7600a" },
-  completed:      { label: "Completed",      bg: "#e1f5ee", color: "#0f6e56" },
-  resolved:       { label: "Resolved",       bg: "#e1f5ee", color: "#0f6e56" },
-  dismissed:      { label: "Dismissed",      bg: "#f5f4f0", color: "#888888" },
-  expired:        { label: "Expired",        bg: "#fdecea", color: "#c0392b" },
-  closed:         { label: "Closed",         bg: "#f5f4f0", color: "#888888" },
+  open:           { label: "Open",           bg: "var(--oc-gray-100)", color: "var(--oc-gray-600)" },
+  in_appeal:      { label: "In Appeal",      bg: "var(--oc-blue-light)", color: "var(--oc-navy)" },
+  submitted:      { label: "Submitted",      bg: "rgba(0,105,92,0.10)", color: "var(--oc-teal)" },
+  in_progress:    { label: "In Progress",    bg: "var(--oc-warning-bg)", color: "var(--oc-warning)" },
+  escalated:      { label: "Escalated",      bg: "var(--oc-warning-bg)", color: "var(--oc-warning)" },
+  write_off_risk: { label: "Write-off Risk", bg: "var(--oc-critical-bg)", color: "var(--oc-critical)" },
+  assigned:       { label: "Assigned",       bg: "var(--oc-blue-light)", color: "var(--oc-navy)" },
+  appeal_pending: { label: "Appeal Pending", bg: "var(--oc-blue-light)", color: "var(--oc-navy)" },
+  under_review:   { label: "Under Review",   bg: "var(--oc-warning-bg)", color: "var(--oc-warning)" },
+  completed:      { label: "Completed",      bg: "rgba(0,105,92,0.10)", color: "var(--oc-teal)" },
+  resolved:       { label: "Resolved",       bg: "rgba(0,105,92,0.10)", color: "var(--oc-teal)" },
+  dismissed:      { label: "Dismissed",      bg: "var(--oc-gray-100)", color: "var(--oc-gray-600)" },
+  expired:        { label: "Expired",        bg: "var(--oc-critical-bg)", color: "var(--oc-critical)" },
+  closed:         { label: "Closed",         bg: "var(--oc-gray-100)", color: "var(--oc-gray-600)" },
 };
 
 export function StatusPill({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status] ?? { label: status, bg: "#f5f4f0", color: "#888888" };
+  const cfg = STATUS_CONFIG[status] ?? { label: status, bg: "var(--oc-gray-100)", color: "var(--oc-gray-600)" };
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
         padding: "2px 8px",
-        borderRadius: 12,
+        borderRadius: 999,
         fontSize: 10,
         fontWeight: 500,
         background: cfg.bg,

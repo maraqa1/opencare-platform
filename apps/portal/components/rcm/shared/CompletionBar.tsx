@@ -2,9 +2,9 @@
 
 export function CompletionBar({ pct }: { pct: number }) {
   const color =
-    pct >= 75 ? "#4a7c1f" :
-    pct >= 50 ? "#b7600a" :
-                "#c0392b";
+    pct >= 75 ? "var(--oc-normal)" :
+    pct >= 50 ? "var(--oc-warning)" :
+                "var(--oc-critical)";
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -13,7 +13,7 @@ export function CompletionBar({ pct }: { pct: number }) {
           flex: 1,
           height: 4,
           borderRadius: 2,
-          background: "#f0ede6",
+          background: "rgba(31, 56, 100, 0.06)",
           overflow: "hidden",
           minWidth: 48,
         }}

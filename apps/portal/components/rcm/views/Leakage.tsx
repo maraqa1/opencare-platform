@@ -77,7 +77,7 @@ export function Leakage() {
   const bottomCards = sorted.slice(4);
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", color: "#1a1a1a" }}>
+    <div style={{ fontFamily: "var(--font-body)", color: "var(--oc-gray-900)" }}>
       <RCMPageHeader subtitle="Revenue leakage decomposition — categories, recoverability, and recommended actions." />
       <RCMNavTabs active="revenue-leakage" />
 
@@ -92,16 +92,16 @@ export function Leakage() {
       {!loading && !error && !data?.meta?.empty && (
         <>
           {/* Hero KPI */}
-          <div style={{ background: "#f5f4f0", borderRadius: 6, padding: "14px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ background: "var(--oc-gray-100)", borderRadius: 10, padding: "14px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
             <div>
-              <p style={{ fontSize: 10, fontWeight: 400, letterSpacing: "0.07em", textTransform: "uppercase", color: "#999", margin: "0 0 4px" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--oc-gray-600)", margin: "0 0 4px" }}>
                 TOTAL REVENUE LEAKAGE
               </p>
-              <p style={{ fontSize: 22, fontWeight: 500, color: "#1a1a1a", margin: 0 }}>
+              <p style={{ fontSize: 22, fontWeight: 500, color: "var(--oc-gray-900)", margin: 0 }}>
                 {currencyCompact(totalLeakage)}
               </p>
             </div>
-            <p style={{ fontSize: 13, color: "#555", margin: 0 }}>
+            <p style={{ fontSize: 13, color: "var(--oc-gray-600)", margin: 0 }}>
               {currency(totalLeakage)} total · {totalItems} items ·{" "}
               <strong>{currency(highRecoverable)} recoverable</strong>{" "}
               {totalLeakage > 0 ? `(${((highRecoverable / totalLeakage) * 100).toFixed(0)}%)` : ""}
@@ -117,11 +117,11 @@ export function Leakage() {
                 const guidance = leakageGuidance(key);
                 const action  = ACTION_LABELS[key] ?? "Review";
                 return (
-                  <div key={key} style={{ background: "#ffffff", border: "0.5px solid #e5e3dc", borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <p style={{ fontSize: 10, fontWeight: 400, letterSpacing: "0.07em", textTransform: "uppercase", color: "#999", margin: 0 }}>{label}</p>
-                    <p style={{ fontSize: 20, fontWeight: 500, color: "#1a1a1a", margin: 0 }}>{currencyCompact(row.leakage_amount)}</p>
-                    <p style={{ fontSize: 11, color: "#888", margin: 0, flexGrow: 1 }}>{guidance || "Review this leakage category."}</p>
-                    <button style={{ padding: "5px 10px", borderRadius: 6, border: "none", fontSize: 11, fontWeight: 500, background: "#1a3050", color: "#b8d4f0", cursor: "pointer", fontFamily: "inherit", alignSelf: "flex-start" }}>
+                  <div key={key} style={{ background: "rgba(255, 255, 255, 0.92)", border: "1px solid rgba(31, 56, 100, 0.08)", borderRadius: 20, padding: 22, boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--oc-gray-600)", margin: 0 }}>{label}</p>
+                    <p style={{ fontSize: 20, fontWeight: 500, color: "var(--oc-gray-900)", margin: 0 }}>{currencyCompact(row.leakage_amount)}</p>
+                    <p style={{ fontSize: 13, color: "var(--oc-gray-600)", margin: 0, flexGrow: 1 }}>{guidance || "Review this leakage category."}</p>
+                    <button style={{ padding: "5px 10px", borderRadius: 10, border: "none", fontSize: 12, fontWeight: 500, background: "var(--oc-navy)", color: "rgba(255,255,255,0.88)", cursor: "pointer", fontFamily: "var(--font-body)", alignSelf: "flex-start" }}>
                       {action}
                     </button>
                   </div>
@@ -138,10 +138,10 @@ export function Leakage() {
                 const label   = categoryLabel(row.leakage_type);
                 const guidance = leakageGuidance(key);
                 return (
-                  <div key={key} style={{ background: "#ffffff", border: "0.5px solid #e5e3dc", borderRadius: 10, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-                    <p style={{ fontSize: 10, fontWeight: 400, letterSpacing: "0.07em", textTransform: "uppercase", color: "#999", margin: 0 }}>{label}</p>
-                    <p style={{ fontSize: 20, fontWeight: 500, color: "#1a1a1a", margin: 0 }}>{currencyCompact(row.leakage_amount)}</p>
-                    <p style={{ fontSize: 11, color: "#888", margin: 0 }}>{guidance || "Review this leakage category."}</p>
+                  <div key={key} style={{ background: "rgba(255, 255, 255, 0.92)", border: "1px solid rgba(31, 56, 100, 0.08)", borderRadius: 20, padding: 22, boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--oc-gray-600)", margin: 0 }}>{label}</p>
+                    <p style={{ fontSize: 20, fontWeight: 500, color: "var(--oc-gray-900)", margin: 0 }}>{currencyCompact(row.leakage_amount)}</p>
+                    <p style={{ fontSize: 13, color: "var(--oc-gray-600)", margin: 0 }}>{guidance || "Review this leakage category."}</p>
                   </div>
                 );
               })}
@@ -149,15 +149,15 @@ export function Leakage() {
           )}
 
           {/* Decomposition table */}
-          <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", color: "#999", margin: "0 0 10px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--oc-gray-600)", margin: "0 0 10px" }}>
             LEAKAGE DECOMPOSITION
           </p>
-          <div style={{ background: "#ffffff", border: "0.5px solid #e5e3dc", borderRadius: 10, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <div style={{ background: "rgba(255, 255, 255, 0.92)", border: "1px solid rgba(31, 56, 100, 0.08)", borderRadius: 20, overflow: "hidden", boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: "0.5px solid #f0ede6" }}>
+                <tr style={{ borderBottom: "1px solid rgba(31, 56, 100, 0.06)" }}>
                   {["Leakage Type", "Items", "Amount", "Recoverability", "Last Detected", "Action"].map((h) => (
-                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 500, textTransform: "uppercase", color: "#999", letterSpacing: "0.05em" }}>
+                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 500, textTransform: "uppercase", color: "var(--oc-gray-600)", letterSpacing: "0.05em" }}>
                       {h}
                     </th>
                   ))}
@@ -165,18 +165,18 @@ export function Leakage() {
               </thead>
               <tbody>
                 {sorted.map((row, i) => (
-                  <tr key={row.leakage_type ?? i} style={{ borderBottom: i < sorted.length - 1 ? "0.5px solid #f0ede6" : "none" }}>
+                  <tr key={row.leakage_type ?? i} style={{ borderBottom: i < sorted.length - 1 ? "1px solid rgba(31, 56, 100, 0.06)" : "none" }}>
                     <td style={{ padding: "10px 12px", fontWeight: 500 }}>{categoryLabel(row.leakage_type)}</td>
                     <td style={{ padding: "10px 12px" }}>{row.item_count ?? 0}</td>
                     <td style={{ padding: "10px 12px", fontWeight: 500 }}>{currency(row.leakage_amount)}</td>
                     <td style={{ padding: "10px 12px" }}>
                       <RecoverabilityPill level={recoverabilityLevel(row.leakage_type)} />
                     </td>
-                    <td style={{ padding: "10px 12px", color: "#888" }}>
+                    <td style={{ padding: "10px 12px", color: "var(--oc-gray-600)" }}>
                       {shortDate(row.last_detected_at)}
                     </td>
                     <td style={{ padding: "10px 12px" }}>
-                      <button style={{ padding: "3px 8px", borderRadius: 6, border: "0.5px solid #ddd", fontSize: 11, fontWeight: 500, background: "#ffffff", color: "#1a1a1a", cursor: "pointer", fontFamily: "inherit" }}>
+                      <button style={{ padding: "3px 10px", borderRadius: 999, border: "1px solid rgba(31, 56, 100, 0.14)", fontSize: 12, fontWeight: 500, background: "var(--oc-white)", color: "var(--oc-gray-900)", cursor: "pointer", fontFamily: "var(--font-body)" }}>
                         {ACTION_LABELS[row.leakage_type ?? ""] ?? "Review"}
                       </button>
                     </td>
@@ -187,7 +187,7 @@ export function Leakage() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-            <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "#f0f7e8", color: "#4a7c1f", border: "0.5px solid #c3e6a8" }}>
+            <span style={{ padding: "4px 10px", borderRadius: 10, fontSize: 12, fontWeight: 500, background: "var(--oc-normal-bg)", color: "var(--oc-normal)", border: "1px solid rgba(46, 125, 50, 0.22)" }}>
               AR Days: 38d ✓ (target 40d)
             </span>
           </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { RCMNavTabs }    from "../layout/RCMNavTabs";
@@ -48,9 +48,9 @@ function FilterSelect({
       onChange={(e) => onChange(e.target.value)}
       aria-label={label}
       style={{
-        padding: "5px 10px", borderRadius: 6, border: "0.5px solid #ddd",
-        fontSize: 12, color: "#1a1a1a", background: "#ffffff",
-        cursor: "pointer", fontFamily: "inherit",
+        padding: "5px 10px", borderRadius: 10, border: "1px solid rgba(31, 56, 100, 0.08)",
+        fontSize: 13, color: "var(--oc-gray-900)", background: "rgba(255,255,255,0.92)",
+        cursor: "pointer", fontFamily: "var(--font-body)",
       }}
     >
       <option value="">{label}</option>
@@ -113,7 +113,7 @@ export function RecoveryQueue() {
   const totalQueueValue = items.reduce((s, i) => s + (i.expected_recovery_amount ?? i.recoverable_amount ?? 0), 0);
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", color: "#1a1a1a" }}>
+    <div style={{ fontFamily: "var(--font-body)", color: "var(--oc-gray-900)" }}>
       <RCMPageHeader
         subtitle="Ranked operating queue for revenue recovery actions, prioritised by expected cash per effort hour."
       />
@@ -145,7 +145,7 @@ export function RecoveryQueue() {
             {(filterIssue || filterPayer || filterOwner || filterStatus) && (
               <button
                 onClick={() => { setFilterIssue(""); setFilterPayer(""); setFilterOwner(""); setFilterStatus(""); }}
-                style={{ padding: "5px 10px", borderRadius: 6, border: "0.5px solid #ddd", fontSize: 12, background: "#fff", cursor: "pointer", fontFamily: "inherit", color: "#888" }}
+                style={{ padding: "5px 14px", borderRadius: 999, border: "1px solid rgba(31, 56, 100, 0.14)", fontSize: 13, fontWeight: 500, background: "var(--oc-white)", cursor: "pointer", fontFamily: "var(--font-body)", color: "var(--oc-gray-600)" }}
               >
                 Clear filters
               </button>
@@ -153,10 +153,10 @@ export function RecoveryQueue() {
           </div>
 
           {/* Table */}
-          <div style={{ background: "#ffffff", border: "0.5px solid #e5e3dc", borderRadius: 10, overflow: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <div style={{ background: "rgba(255, 255, 255, 0.92)", border: "1px solid rgba(31, 56, 100, 0.08)", borderRadius: 20, overflow: "auto", boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: "0.5px solid #f0ede6" }}>
+                <tr style={{ borderBottom: "1px solid rgba(31, 56, 100, 0.06)" }}>
                   {[
                     { label: "Claim Ref" },
                     { label: "Payer" },
@@ -177,7 +177,7 @@ export function RecoveryQueue() {
                       title={col.title}
                       style={{
                         padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 500,
-                        textTransform: "uppercase", color: "#999", letterSpacing: "0.05em",
+                        textTransform: "uppercase", color: "var(--oc-gray-600)", letterSpacing: "0.05em",
                         whiteSpace: "nowrap", cursor: col.title ? "help" : "default",
                       }}
                     >
@@ -197,12 +197,12 @@ export function RecoveryQueue() {
                     <tr
                       key={ref + i}
                       style={{
-                        borderBottom: i < filteredAndScored.length - 1 ? "0.5px solid #f0ede6" : "none",
-                        background: overdue ? "#fff8f8" : "transparent",
-                        borderLeft: overdue ? "3px solid #c0392b" : "3px solid transparent",
+                        borderBottom: i < filteredAndScored.length - 1 ? "1px solid rgba(31, 56, 100, 0.06)" : "none",
+                        background: overdue ? "var(--oc-critical-bg)" : "transparent",
+                        borderLeft: overdue ? "3px solid var(--oc-critical)" : "3px solid transparent",
                       }}
                     >
-                      <td style={{ padding: "10px 12px", fontFamily: "monospace", fontSize: 11, color: "#1a3050", whiteSpace: "nowrap" }}>{ref}</td>
+                      <td style={{ padding: "10px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--oc-navy)", whiteSpace: "nowrap" }}>{ref}</td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{payerLabel(item.payer_id)}</td>
                       <td style={{ padding: "10px 12px" }}>{issueTypeLabel(item.issue_type)}</td>
                       <td style={{ padding: "10px 12px", fontWeight: 500 }}>{currency(item.expected_recovery_amount ?? item.recoverable_amount)}</td>
@@ -211,11 +211,11 @@ export function RecoveryQueue() {
                         <ScorePill score={item._score} />
                       </td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{ownerLabel(item.owner ?? item.owner_user_id)}</td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap", color: overdue ? "#c0392b" : "#888" }}>{shortDate(item.due_date)}</td>
+                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap", color: overdue ? "var(--oc-critical)" : "var(--oc-gray-600)" }}>{shortDate(item.due_date)}</td>
                       <td style={{ padding: "10px 12px" }}>
                         <StatusPill status={item.decision_status ?? item.status ?? "open"} />
                       </td>
-                      <td style={{ padding: "10px 12px", fontSize: 11, color: "#555", maxWidth: 180 }}>{nextStep}</td>
+                      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--oc-gray-600)", maxWidth: 180 }}>{nextStep}</td>
                     </tr>
                   );
                 })}
@@ -226,7 +226,7 @@ export function RecoveryQueue() {
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-        <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "#f0f7e8", color: "#4a7c1f", border: "0.5px solid #c3e6a8" }}>
+        <span style={{ padding: "4px 10px", borderRadius: 10, fontSize: 12, fontWeight: 500, background: "var(--oc-normal-bg)", color: "var(--oc-normal)", border: "1px solid rgba(46, 125, 50, 0.22)" }}>
           AR Days: 38d ✓ (target 40d)
         </span>
       </div>

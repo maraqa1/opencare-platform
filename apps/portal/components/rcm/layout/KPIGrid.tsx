@@ -21,17 +21,17 @@ export function KPIGrid({ items }: { items: KPIItem[] }) {
       {items.map((item) => {
         const deltaColor =
           item.deltaType === "up-good" || item.deltaType === "down-good"
-            ? "#4a7c1f"
+            ? "var(--oc-normal)"
             : item.deltaType === "up-bad" || item.deltaType === "down-bad"
-            ? "#c0392b"
-            : "#888888";
+            ? "var(--oc-critical)"
+            : "var(--oc-gray-600)";
 
         return (
           <div
             key={item.label}
             style={{
-              background: "#f5f4f0",
-              borderRadius: 6,
+              background: "var(--oc-gray-100)",
+              borderRadius: 10,
               padding: "14px 16px",
               display: "flex",
               flexDirection: "column",
@@ -44,7 +44,7 @@ export function KPIGrid({ items }: { items: KPIItem[] }) {
                 fontWeight: 400,
                 letterSpacing: "0.07em",
                 textTransform: "uppercase",
-                color: "#999999",
+                color: "var(--oc-gray-600)",
                 margin: 0,
               }}
             >
@@ -52,9 +52,9 @@ export function KPIGrid({ items }: { items: KPIItem[] }) {
             </p>
             <p
               style={{
-                fontSize: 22,
+                fontSize: 24,
                 fontWeight: 500,
-                color: "#1a1a1a",
+                color: "var(--oc-gray-900)",
                 margin: 0,
                 lineHeight: 1.2,
               }}
@@ -62,12 +62,12 @@ export function KPIGrid({ items }: { items: KPIItem[] }) {
               {item.value}
             </p>
             {item.delta && (
-              <p style={{ fontSize: 11, color: deltaColor, margin: 0 }}>
+              <p style={{ fontSize: 12, color: deltaColor, margin: 0 }}>
                 {item.delta}
               </p>
             )}
             {item.sub && (
-              <p style={{ fontSize: 11, color: "#888888", margin: 0 }}>
+              <p style={{ fontSize: 12, color: "var(--oc-gray-600)", margin: 0 }}>
                 {item.sub}
               </p>
             )}

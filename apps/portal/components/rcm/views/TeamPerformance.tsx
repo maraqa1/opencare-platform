@@ -28,8 +28,8 @@ function getInitials(id?: string | null): string {
 }
 
 function Avatar({ id, completionPct }: { id?: string | null; completionPct: number }) {
-  const bg    = completionPct < 50 ? "#fdecea" : "#e8f0f9";
-  const color = completionPct < 50 ? "#c0392b" : "#1a3050";
+  const bg    = completionPct < 50 ? "var(--oc-critical-bg)" : "var(--oc-blue-light)";
+  const color = completionPct < 50 ? "var(--oc-critical)" : "var(--oc-navy)";
   return (
     <div style={{ width: 28, height: 28, borderRadius: "50%", background: bg, color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
       {getInitials(id)}
@@ -76,7 +76,7 @@ export function TeamPerformance() {
     ? ((summary.actual_recovery ?? 0) / summary.expected_recovery) * 100 : 0;
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", color: "#1a1a1a" }}>
+    <div style={{ fontFamily: "var(--font-body)", color: "var(--oc-gray-900)" }}>
       <RCMPageHeader subtitle="Owner-level recovery execution tracking — completion, yield, and SLA performance." />
       <RCMNavTabs active="team-performance" />
 
@@ -90,11 +90,11 @@ export function TeamPerformance() {
             onClick={() => setPeriod(p.key)}
             style={{
               padding: "5px 14px", borderRadius: 20,
-              border: `0.5px solid ${period === p.key ? "#1a3050" : "#ddd"}`,
+              border: `1px solid ${period === p.key ? "var(--oc-navy)" : "rgba(31,56,100,0.14)"}`,
               fontSize: 12, fontWeight: period === p.key ? 500 : 400,
-              background: period === p.key ? "#1a3050" : "#ffffff",
-              color: period === p.key ? "#ffffff" : "#1a1a1a",
-              cursor: "pointer", fontFamily: "inherit",
+              background: period === p.key ? "var(--oc-navy)" : "rgba(255,255,255,0.92)",
+              color: period === p.key ? "#fff" : "var(--oc-gray-900)",
+              cursor: "pointer", fontFamily: "var(--font-body)",
             }}
           >
             {p.label}
@@ -126,12 +126,12 @@ export function TeamPerformance() {
 
       {!loading && !error && !data?.meta?.empty && (
         <>
-          <div style={{ background: "#ffffff", border: "0.5px solid #e5e3dc", borderRadius: 10, overflow: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <div style={{ background: "rgba(255, 255, 255, 0.92)", border: "1px solid rgba(31, 56, 100, 0.08)", borderRadius: 20, overflow: "auto", boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: "0.5px solid #f0ede6" }}>
+                <tr style={{ borderBottom: "1px solid rgba(31, 56, 100, 0.06)" }}>
                   {["Owner", "Assigned", "Completed", "Overdue", "Completion %", "Recovered", "Expected vs Actual", "Avg Resolution", "vs SLA"].map((h) => (
-                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 500, textTransform: "uppercase", color: "#999", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 500, textTransform: "uppercase", color: "var(--oc-gray-600)", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                       {h}
                     </th>
                   ))}
@@ -150,28 +150,28 @@ export function TeamPerformance() {
                   const slaBreach = avgH > DEFAULT_SLA_H;
 
                   return (
-                    <tr key={`${ownerId}-${i}`} style={{ borderBottom: i < items.length - 1 ? "0.5px solid #f0ede6" : "none" }}>
+                    <tr key={`${ownerId}-${i}`} style={{ borderBottom: i < items.length - 1 ? "1px solid rgba(31, 56, 100, 0.06)" : "none" }}>
                       <td style={{ padding: "10px 12px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <Avatar id={ownerId} completionPct={rowCompletion} />
                           <div>
-                            <p style={{ margin: 0, fontWeight: 500, fontSize: 12 }}>{ownerLabel(ownerId)}</p>
+                            <p style={{ margin: 0, fontWeight: 500, fontSize: 14 }}>{ownerLabel(ownerId)}</p>
                             {m.owner_team && m.owner_user_id && (
-                              <p style={{ margin: 0, fontSize: 10, color: "#888" }}>{m.owner_team}</p>
+                              <p style={{ margin: 0, fontSize: 11, color: "var(--oc-gray-600)" }}>{m.owner_team}</p>
                             )}
                           </div>
                         </div>
                       </td>
                       <td style={{ padding: "10px 12px" }}>{assigned}</td>
                       <td style={{ padding: "10px 12px" }}>{completed}</td>
-                      <td style={{ padding: "10px 12px", color: overdue > 0 ? "#c0392b" : "#1a1a1a", fontWeight: overdue > 0 ? 600 : 400 }}>
+                      <td style={{ padding: "10px 12px", color: overdue > 0 ? "var(--oc-critical)" : "var(--oc-gray-900)", fontWeight: overdue > 0 ? 600 : 400 }}>
                         {overdue}
                       </td>
                       <td style={{ padding: "10px 12px", minWidth: 120 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{
                             fontWeight: 500, minWidth: 36,
-                            color: rowCompletion >= 75 ? "#4a7c1f" : rowCompletion >= 50 ? "#b7600a" : "#c0392b",
+                            color: rowCompletion >= 75 ? "var(--oc-normal)" : rowCompletion >= 50 ? "var(--oc-warning)" : "var(--oc-critical)",
                           }}>
                             {rowCompletion.toFixed(0)}%
                           </span>
@@ -180,13 +180,13 @@ export function TeamPerformance() {
                       </td>
                       <td style={{ padding: "10px 12px" }}>{currency(m.actual_recovery)}</td>
                       <td style={{ padding: "10px 12px" }}>
-                        <span style={{ color: rowYield < 70 ? "#c0392b" : "#1a1a1a", fontSize: 11 }}>
+                        <span style={{ color: rowYield < 70 ? "var(--oc-critical)" : "var(--oc-gray-900)", fontSize: 12 }}>
                           {currency(m.actual_recovery)} / {currency(m.expected_recovery)}
                         </span>
                       </td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{hours(avgH)}</td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        <span style={{ color: slaBreach ? "#c0392b" : "#4a7c1f", fontWeight: 500 }}>
+                        <span style={{ color: slaBreach ? "var(--oc-critical)" : "var(--oc-normal)", fontWeight: 500 }}>
                           {hours(avgH)} vs {DEFAULT_SLA_H}h {slaBreach ? "!" : "✓"}
                         </span>
                       </td>
@@ -196,11 +196,11 @@ export function TeamPerformance() {
 
                 {/* Totals row */}
                 {items.length > 0 && (
-                  <tr style={{ background: "#f5f4f0", fontWeight: 600 }}>
+                  <tr style={{ background: "var(--oc-gray-100)", fontWeight: 600 }}>
                     <td style={{ padding: "10px 12px" }}>Total</td>
                     <td style={{ padding: "10px 12px" }}>{totals.assigned}</td>
                     <td style={{ padding: "10px 12px" }}>{totals.completed}</td>
-                    <td style={{ padding: "10px 12px", color: totals.overdue > 0 ? "#c0392b" : "#1a1a1a" }}>{totals.overdue}</td>
+                    <td style={{ padding: "10px 12px", color: totals.overdue > 0 ? "var(--oc-critical)" : "var(--oc-gray-900)" }}>{totals.overdue}</td>
                     <td style={{ padding: "10px 12px" }}>
                       {totals.assigned > 0 ? ((totals.completed / totals.assigned) * 100).toFixed(0) : 0}%
                     </td>
@@ -216,17 +216,17 @@ export function TeamPerformance() {
 
           {/* Flagged alert footer */}
           {flagged.length > 0 && (
-            <div style={{ marginTop: 12, padding: "10px 16px", background: "#fdecea", borderRadius: 6, border: "0.5px solid #f5c8c8" }}>
+            <div style={{ marginTop: 12, padding: "10px 16px", background: "var(--oc-critical-bg)", borderRadius: 10, border: "1px solid rgba(183, 28, 28, 0.18)" }}>
               {flagged.map((m) => {
                 const ownerId = m.owner_user_id ?? m.owner_team;
                 const pct = (m.assigned_count ?? 0) > 0
                   ? Math.round(((m.completed_count ?? 0) / (m.assigned_count ?? 1)) * 100) : 0;
                 return (
                   <div key={ownerId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <p style={{ fontSize: 12, color: "#c0392b", margin: 0 }}>
+                    <p style={{ fontSize: 13, color: "var(--oc-critical)", margin: 0 }}>
                       {ownerLabel(ownerId)} flagged — {m.overdue_count ?? 0} overdue, {pct}% completion rate
                     </p>
-                    <button style={{ padding: "3px 8px", borderRadius: 6, border: "0.5px solid #c0392b", fontSize: 11, background: "transparent", color: "#c0392b", cursor: "pointer", fontFamily: "inherit" }}>
+                    <button style={{ padding: "3px 8px", borderRadius: 10, border: "1px solid var(--oc-critical)", fontSize: 12, background: "transparent", color: "var(--oc-critical)", cursor: "pointer", fontFamily: "var(--font-body)" }}>
                       Review {ownerLabel(ownerId)} ↗
                     </button>
                   </div>
@@ -238,7 +238,7 @@ export function TeamPerformance() {
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-        <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "#f0f7e8", color: "#4a7c1f", border: "0.5px solid #c3e6a8" }}>
+        <span style={{ padding: "4px 10px", borderRadius: 10, fontSize: 12, fontWeight: 500, background: "var(--oc-normal-bg)", color: "var(--oc-normal)", border: "1px solid rgba(46, 125, 50, 0.22)" }}>
           AR Days: 38d ✓ (target 40d)
         </span>
       </div>

@@ -13,18 +13,18 @@ export function ActionButton({
 }) {
   const styles: Record<string, React.CSSProperties> = {
     default: {
-      background: "#ffffff",
-      color: "#1a1a1a",
-      border: "0.5px solid #ddd",
+      background: "var(--oc-white)",
+      color: "var(--oc-gray-900)",
+      border: "1px solid rgba(31, 56, 100, 0.08)",
     },
     primary: {
-      background: "#1a3050",
-      color: "#b8d4f0",
+      background: "var(--oc-navy)",
+      color: "rgba(255,255,255,0.88)",
       border: "none",
     },
     cfo: {
-      background: "#1a3050",
-      color: "#b8d4f0",
+      background: "var(--oc-navy)",
+      color: "rgba(255,255,255,0.88)",
       border: "none",
     },
   };
@@ -36,11 +36,11 @@ export function ActionButton({
         display: "inline-flex",
         alignItems: "center",
         padding: small ? "4px 10px" : "6px 14px",
-        borderRadius: 6,
-        fontSize: small ? 11 : 12,
+        borderRadius: 10,
+        fontSize: small ? 12 : 13,
         fontWeight: 500,
         cursor: "pointer",
-        fontFamily: "inherit",
+        fontFamily: "var(--font-body)",
         whiteSpace: "nowrap",
         ...styles[variant],
       }}

@@ -31,16 +31,16 @@ export function RCMNavTabs({ active }: { active: string }) {
               display: "inline-flex",
               alignItems: "center",
               padding: "5px 14px",
-              borderRadius: 20,
-              border: `0.5px solid ${isActive ? "#1a3050" : "#ddd"}`,
-              fontSize: 12,
+              borderRadius: 999,
+              border: `1px solid ${isActive ? "var(--oc-navy)" : "rgba(31,56,100,0.08)"}`,
+              fontSize: 13,
               fontWeight: isActive ? 500 : 400,
-              background: isActive ? "#1a3050" : "#ffffff",
-              color: isActive ? "#ffffff" : "#1a1a1a",
+              background: isActive ? "var(--oc-navy)" : "rgba(255,255,255,0.92)",
+              color: isActive ? "var(--oc-white)" : "var(--oc-gray-900)",
               textDecoration: "none",
               whiteSpace: "nowrap",
               cursor: "pointer",
-              transition: "all 0.15s ease",
+              transition: "background 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
             }}
           >
             {tab.label}

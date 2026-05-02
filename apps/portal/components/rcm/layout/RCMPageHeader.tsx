@@ -28,7 +28,7 @@ export function RCMPageHeader({
     <div
       style={{
         padding: "20px 0 16px",
-        borderBottom: "0.5px solid #e5e3dc",
+        borderBottom: "1px solid rgba(31, 56, 100, 0.08)",
         marginBottom: 20,
       }}
     >
@@ -40,26 +40,26 @@ export function RCMPageHeader({
               fontWeight: 400,
               letterSpacing: "0.07em",
               textTransform: "uppercase",
-              color: "#999999",
+              color: "var(--oc-gray-600)",
               margin: "0 0 4px",
             }}
           >
             {eyebrow}
           </p>
-          <h2 style={{ fontSize: 20, fontWeight: 500, color: "#1a1a1a", margin: "0 0 4px" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 500, color: "var(--oc-gray-900)", margin: "0 0 4px" }}>
             {title}
           </h2>
           {subtitle && (
-            <p style={{ fontSize: 12, color: "#888888", margin: 0 }}>{subtitle}</p>
+            <p style={{ fontSize: 12, color: "var(--oc-gray-600)", margin: 0 }}>{subtitle}</p>
           )}
           {badges.length > 0 && (
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
               {badges.map((b) => {
                 const badgeColors = {
-                  green:  { bg: "#f0f7e8", color: "#4a7c1f" },
-                  amber:  { bg: "#fef5e4", color: "#b7600a" },
-                  blue:   { bg: "#e8f0f9", color: "#1a3050" },
-                  gray:   { bg: "#f5f4f0", color: "#888888" },
+                  green:  { bg: "var(--oc-normal-bg)", color: "var(--oc-normal)" },
+                  amber:  { bg: "var(--oc-warning-bg)", color: "var(--oc-warning)" },
+                  blue:   { bg: "var(--oc-blue-light)", color: "var(--oc-navy)" },
+                  gray:   { bg: "var(--oc-gray-100)", color: "var(--oc-gray-600)" },
                 };
                 const cfg = badgeColors[b.color ?? "gray"];
                 return (
@@ -67,7 +67,7 @@ export function RCMPageHeader({
                     key={b.label}
                     style={{
                       padding: "2px 8px",
-                      borderRadius: 12,
+                      borderRadius: 999,
                       fontSize: 10,
                       fontWeight: 500,
                       background: cfg.bg,
@@ -86,12 +86,12 @@ export function RCMPageHeader({
             <span
               style={{
                 padding: "4px 10px",
-                borderRadius: 6,
+                borderRadius: 10,
                 fontSize: 11,
                 fontWeight: 500,
-                background: arBreached ? "#fdecea" : "#f0f7e8",
-                color: arBreached ? "#c0392b" : "#4a7c1f",
-                border: `0.5px solid ${arBreached ? "#f5c8c8" : "#c3e6a8"}`,
+                background: arBreached ? "var(--oc-critical-bg)" : "var(--oc-normal-bg)",
+                color: arBreached ? "var(--oc-critical)" : "var(--oc-normal)",
+                border: `1px solid ${arBreached ? "rgba(183,28,28,0.2)" : "rgba(46,125,50,0.2)"}`,
               }}
             >
               AR Days: {arDays}d {arBreached ? "⚠" : "✓"} (target {arTarget}d)
@@ -101,15 +101,15 @@ export function RCMPageHeader({
             <button
               onClick={onCFOClick}
               style={{
-                background: "#1a3050",
-                color: "#b8d4f0",
+                background: "var(--oc-navy)",
+                color: "rgba(255,255,255,0.88)",
                 border: "none",
-                borderRadius: 6,
+                borderRadius: 10,
                 padding: "6px 14px",
                 fontSize: 12,
                 fontWeight: 500,
                 cursor: "pointer",
-                fontFamily: "inherit",
+                fontFamily: "var(--font-body)",
               }}
             >
               CFO View

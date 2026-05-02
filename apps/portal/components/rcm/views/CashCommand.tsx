@@ -29,7 +29,7 @@ export function CashCommand() {
   const expiring        = data?.expiring_opportunities ?? [];
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", color: "#1a1a1a" }}>
+    <div style={{ fontFamily: "var(--font-body)", color: "var(--oc-gray-900)" }}>
       <RCMPageHeader
         subtitle="The CFO landing view for real-time cash control, recovery execution, and revenue accountability."
         showCFOButton
@@ -68,16 +68,16 @@ export function CashCommand() {
         <>
           {/* Section header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "24px 0 12px" }}>
-            <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", color: "#999", margin: 0 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--oc-gray-600)", margin: 0 }}>
               TODAY&apos;S RECOVERY ACTIONS — TOP 5
             </p>
             <div style={{ display: "flex", gap: 8 }}>
               {data?.as_of && (
-                <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, background: "#e1f5ee", color: "#0f6e56", fontWeight: 500 }}>
+                <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 10, background: "rgba(0, 105, 92, 0.10)", color: "var(--oc-teal)", fontWeight: 500 }}>
                   As of {new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(data.as_of))}
                 </span>
               )}
-              <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, background: "#e8f0f9", color: "#1a3050", fontWeight: 500 }}>
+              <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 10, background: "var(--oc-blue-light)", color: "var(--oc-navy)", fontWeight: 500 }}>
                 ERP postings
               </span>
             </div>
@@ -93,30 +93,33 @@ export function CashCommand() {
                   <div
                     key={ref}
                     style={{
-                      background: "#ffffff",
-                      border: "0.5px solid #e5e3dc",
-                      borderRadius: 10,
-                      borderLeft: overdue ? "3px solid #c0392b" : "3px solid #e5e3dc",
+                      background: "rgba(255, 255, 255, 0.92)",
+                      backdropFilter: "blur(16px)",
+                      WebkitBackdropFilter: "blur(16px)",
+                      border: "1px solid rgba(31, 56, 100, 0.08)",
+                      borderRadius: 20,
+                      borderLeft: overdue ? "3px solid var(--oc-critical)" : "3px solid rgba(31, 56, 100, 0.08)",
+                      boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)",
                       padding: "14px 16px",
                     }}
                   >
                     {/* Header row */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: overdue ? "#c0392b" : "#1a1a1a" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: overdue ? "var(--oc-critical)" : "var(--oc-gray-900)" }}>
                         {issueTypeLabel(item.issue_type)}
                         {overdue && (
-                          <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 4, fontSize: 10, background: "#fdecea", color: "#c0392b", fontWeight: 500 }}>
+                          <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 4, fontSize: 10, background: "var(--oc-critical-bg)", color: "var(--oc-critical)", fontWeight: 500 }}>
                             OVERDUE
                           </span>
                         )}
                       </span>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 11, color: "#888", fontFamily: "monospace" }}>{ref}</span>
+                        <span style={{ fontSize: 12, color: "var(--oc-gray-600)", fontFamily: "var(--font-mono)" }}>{ref}</span>
                         <StatusPill status={item.status ?? "open"} />
                       </div>
                     </div>
 
-                    <p style={{ fontSize: 11, color: "#888888", margin: "0 0 10px" }}>
+                    <p style={{ fontSize: 13, color: "var(--oc-gray-600)", margin: "0 0 10px" }}>
                       {payerLabel(item.payer_id)} · {departmentLabel(item.department_id)}
                     </p>
 
@@ -128,15 +131,15 @@ export function CashCommand() {
                         { label: "Due date",           value: shortDate(item.due_date) },
                         { label: "Owner",              value: ownerLabel(item.owner_user_id ?? item.owner_team) },
                       ].map((cell) => (
-                        <div key={cell.label} style={{ background: "#f5f4f0", borderRadius: 6, padding: "8px 10px" }}>
-                          <p style={{ fontSize: 10, color: "#999", margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{cell.label}</p>
-                          <p style={{ fontSize: 12, fontWeight: 500, color: "#1a1a1a", margin: 0 }}>{cell.value}</p>
+                        <div key={cell.label} style={{ background: "var(--oc-gray-100)", borderRadius: 12, padding: "8px 10px" }}>
+                          <p style={{ fontSize: 10, color: "var(--oc-gray-600)", margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{cell.label}</p>
+                          <p style={{ fontSize: 13, fontWeight: 500, color: "var(--oc-gray-900)", margin: 0 }}>{cell.value}</p>
                         </div>
                       ))}
                     </div>
 
                     {item.evidence_summary && (
-                      <p style={{ fontSize: 12, color: "#555", margin: "0 0 10px", lineHeight: 1.5 }}>{item.evidence_summary}</p>
+                      <p style={{ fontSize: 13, color: "var(--oc-gray-600)", margin: "0 0 10px", lineHeight: 1.5 }}>{item.evidence_summary}</p>
                     )}
 
                     <ActionButton label={item.next_step ?? "Review work item →"} small />
@@ -147,39 +150,39 @@ export function CashCommand() {
 
             {/* Right: deadlines at risk */}
             <div>
-              <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", color: "#999", margin: "0 0 10px" }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--oc-gray-600)", margin: "0 0 10px" }}>
                 DEADLINES AT RISK
               </p>
-              <div style={{ background: "#ffffff", border: "0.5px solid #e5e3dc", borderRadius: 10, padding: "4px 0" }}>
+              <div style={{ background: "rgba(255, 255, 255, 0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(31, 56, 100, 0.08)", borderRadius: 20, boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)", padding: "4px 0" }}>
                 {expiring.length === 0 ? (
-                  <p style={{ padding: "16px", fontSize: 12, color: "#888", margin: 0 }}>No imminent deadlines</p>
+                  <p style={{ padding: "16px", fontSize: 13, color: "var(--oc-gray-600)", margin: 0 }}>No imminent deadlines</p>
                 ) : (
                   expiring.map((item, i) => {
                     const overdue = isOverdue(item.due_date);
-                    const dotColor = overdue ? "#c0392b" : "#b7600a";
+                    const dotColor = overdue ? "var(--oc-critical)" : "var(--oc-warning)";
                     return (
                       <div
                         key={item.claim_id ?? item.opportunity_id ?? i}
                         style={{
                           padding: "12px 16px",
-                          borderBottom: i < expiring.length - 1 ? "0.5px solid #f0ede6" : "none",
+                          borderBottom: i < expiring.length - 1 ? "1px solid rgba(31, 56, 100, 0.06)" : "none",
                           display: "flex", gap: 10, alignItems: "flex-start",
                         }}
                       >
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, marginTop: 4, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                            <span style={{ fontSize: 11, fontWeight: 500, fontFamily: "monospace", color: "#1a3050" }}>
+                            <span style={{ fontSize: 12, fontWeight: 500, fontFamily: "var(--font-mono)", color: "var(--oc-navy)" }}>
                               {item.claim_id ?? item.opportunity_id}
                             </span>
-                            <span style={{ fontSize: 11, fontWeight: 500, flexShrink: 0, marginLeft: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>
                               {currency(item.expected_recovery_amount)}
                             </span>
                           </div>
-                          <p style={{ fontSize: 11, color: "#1a1a1a", margin: "2px 0" }}>
+                          <p style={{ fontSize: 13, color: "var(--oc-gray-900)", margin: "2px 0" }}>
                             {issueTypeLabel(item.issue_type)}
                           </p>
-                          <p style={{ fontSize: 10, color: "#888", margin: 0 }}>
+                          <p style={{ fontSize: 10, color: "var(--oc-gray-600)", margin: 0 }}>
                             Due {shortDate(item.due_date)} · {ownerLabel(item.owner_user_id ?? item.owner_team)}
                           </p>
                         </div>
@@ -195,7 +198,7 @@ export function CashCommand() {
 
       {/* AR Days footer badge */}
       <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
-        <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "#f0f7e8", color: "#4a7c1f", border: "0.5px solid #c3e6a8" }}>
+        <span style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 500, background: "var(--oc-normal-bg)", color: "var(--oc-normal)", border: "1px solid rgba(46, 125, 50, 0.22)" }}>
           AR Days: 38d ✓ (target 40d)
         </span>
       </div>

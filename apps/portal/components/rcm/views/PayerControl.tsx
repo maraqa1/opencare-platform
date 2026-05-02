@@ -21,15 +21,15 @@ function getCompliance(item: PayerControlItem): Compliance {
 }
 
 function ActualVsBar({ item, compliance }: { item: PayerControlItem; compliance: Compliance }) {
-  const barColor = compliance === "Flagged" ? "#c0392b" : compliance === "Watch" ? "#b7600a" : "#4a7c1f";
+  const barColor = compliance === "Flagged" ? "var(--oc-critical)" : compliance === "Watch" ? "var(--oc-warning)" : "var(--oc-normal)";
   const actual   = (item.actual_collection_rate ?? 0) * 100;
   const contract = (item.contract_rate_pct ?? 1) * 100;
   const pct      = Math.min(100, (actual / contract) * 100);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <span style={{ fontSize: 12 }}>{actual.toFixed(1)}%</span>
-      <div style={{ height: 3, borderRadius: 2, background: "#f0ede6", width: 56 }}>
+      <span style={{ fontSize: 13 }}>{actual.toFixed(1)}%</span>
+      <div style={{ height: 3, borderRadius: 2, background: "rgba(31, 56, 100, 0.06)", width: 56 }}>
         <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 2 }} />
       </div>
     </div>
@@ -38,7 +38,7 @@ function ActualVsBar({ item, compliance }: { item: PayerControlItem; compliance:
 
 function GapCell({ item }: { item: PayerControlItem }) {
   const gap = ((item.contract_rate_pct ?? 0) - (item.actual_collection_rate ?? 0)) * 100;
-  const color = gap > 5 ? "#c0392b" : gap >= 3 ? "#b7600a" : "#4a7c1f";
+  const color = gap > 5 ? "var(--oc-critical)" : gap >= 3 ? "var(--oc-warning)" : "var(--oc-normal)";
   return <span style={{ color, fontWeight: 500 }}>−{gap.toFixed(1)}pp</span>;
 }
 
@@ -54,7 +54,7 @@ export function PayerControl() {
   const medicarePayer  = (id?: string | null) => (id ?? "").toLowerCase().includes("mcr") || (id ?? "").toLowerCase().includes("medicare");
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", color: "#1a1a1a" }}>
+    <div style={{ fontFamily: "var(--font-body)", color: "var(--oc-gray-900)" }}>
       <RCMPageHeader subtitle="Payer contract compliance, underpayment tracking, and SLA breach monitoring." />
       <RCMNavTabs active="payer-control" />
 
@@ -74,12 +74,12 @@ export function PayerControl() {
 
       {!loading && !error && !data?.meta?.empty && items.length > 0 && (
         <>
-          <div style={{ background: "#ffffff", border: "0.5px solid #e5e3dc", borderRadius: 10, overflow: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <div style={{ background: "rgba(255, 255, 255, 0.92)", border: "1px solid rgba(31, 56, 100, 0.08)", borderRadius: 20, overflow: "auto", boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: "0.5px solid #f0ede6" }}>
+                <tr style={{ borderBottom: "1px solid rgba(31, 56, 100, 0.06)" }}>
                   {["Payer", "Underpayment", "Contract Rate", "Actual vs Contract", "Gap", "SLA Breaches", "Payment Delay", "Compliance", "Action"].map((h) => (
-                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 500, textTransform: "uppercase", color: "#999", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+                    <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 10, fontWeight: 500, textTransform: "uppercase", color: "var(--oc-gray-600)", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
                       {h}
                     </th>
                   ))}
@@ -95,10 +95,10 @@ export function PayerControl() {
                     compliance === "Watch"   ? "Schedule review"   : "View contract";
 
                   return (
-                    <tr key={item.payer_id ?? i} style={{ borderBottom: i < items.length - 1 ? "0.5px solid #f0ede6" : "none" }}>
+                    <tr key={item.payer_id ?? i} style={{ borderBottom: i < items.length - 1 ? "1px solid rgba(31, 56, 100, 0.06)" : "none" }}>
                       <td style={{ padding: "10px 12px", fontWeight: 500, whiteSpace: "nowrap" }}>
                         {payerLabel(item.payer_id)}
-                        {isMedicare && <sup style={{ color: "#888", fontSize: 9 }}>†</sup>}
+                        {isMedicare && <sup style={{ color: "var(--oc-gray-600)", fontSize: 9 }}>†</sup>}
                       </td>
                       <td style={{ padding: "10px 12px" }}>{currency(item.underpayment_amount)}</td>
                       <td style={{ padding: "10px 12px" }}>{percentFromRatio(item.contract_rate_pct)}</td>
@@ -108,11 +108,11 @@ export function PayerControl() {
                       <td style={{ padding: "10px 12px" }}>
                         <GapCell item={item} />
                       </td>
-                      <td style={{ padding: "10px 12px", color: (item.sla_breach_count ?? 0) > 0 ? "#c0392b" : "#4a7c1f", fontWeight: (item.sla_breach_count ?? 0) > 0 ? 600 : 400 }}>
+                      <td style={{ padding: "10px 12px", color: (item.sla_breach_count ?? 0) > 0 ? "var(--oc-critical)" : "var(--oc-normal)", fontWeight: (item.sla_breach_count ?? 0) > 0 ? 600 : 400 }}>
                         {item.sla_breach_count ?? 0}
                       </td>
                       <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        <span style={{ color: slaBreach ? "#c0392b" : "#1a1a1a" }}>
+                        <span style={{ color: slaBreach ? "var(--oc-critical)" : "var(--oc-gray-900)" }}>
                           {item.actual_payment_days ?? "—"}d vs SLA {item.payment_sla_days ?? "—"}d{slaBreach ? " ⚠" : " ✓"}
                         </span>
                       </td>
@@ -122,11 +122,11 @@ export function PayerControl() {
                       <td style={{ padding: "10px 12px" }}>
                         <button
                           style={{
-                            padding: "4px 10px", borderRadius: 6,
-                            border: compliance === "Flagged" ? "none" : "0.5px solid #ddd",
-                            fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
-                            background: compliance === "Flagged" ? "#1a3050" : "#ffffff",
-                            color: compliance === "Flagged" ? "#b8d4f0" : "#1a1a1a",
+                            padding: "4px 10px", borderRadius: 10,
+                            border: compliance === "Flagged" ? "none" : "1px solid rgba(31, 56, 100, 0.08)",
+                            fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-body)",
+                            background: compliance === "Flagged" ? "var(--oc-navy)" : "rgba(255,255,255,0.92)",
+                            color: compliance === "Flagged" ? "var(--oc-blue-light)" : "var(--oc-gray-900)",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -140,14 +140,14 @@ export function PayerControl() {
             </table>
           </div>
 
-          <p style={{ fontSize: 11, color: "#888", marginTop: 10 }}>
+          <p style={{ fontSize: 12, color: "var(--oc-gray-600)", marginTop: 10 }}>
             † Medicare reimbursement follows federal fee schedules. Gap reflects sequestration adjustments only.
           </p>
         </>
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-        <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "#f0f7e8", color: "#4a7c1f", border: "0.5px solid #c3e6a8" }}>
+        <span style={{ padding: "4px 10px", borderRadius: 10, fontSize: 12, fontWeight: 500, background: "var(--oc-normal-bg)", color: "var(--oc-normal)", border: "1px solid rgba(46, 125, 50, 0.22)" }}>
           AR Days: 38d ✓ (target 40d)
         </span>
       </div>

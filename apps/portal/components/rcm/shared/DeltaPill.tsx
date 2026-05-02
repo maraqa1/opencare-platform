@@ -9,18 +9,18 @@ export function DeltaPill({
   value: string;
   positive?: boolean;
 }) {
-  let bg = "#f5f4f0";
-  let color = "#888888";
+  let bg = "var(--oc-gray-100)";
+  let color = "var(--oc-gray-600)";
 
   if (direction === "flat") {
-    bg = "#f5f4f0";
-    color = "#888888";
+    bg = "var(--oc-gray-100)";
+    color = "var(--oc-gray-600)";
   } else if (direction === "up") {
-    bg = positive ? "#f0f7e8" : "#fdecea";
-    color = positive ? "#4a7c1f" : "#c0392b";
+    bg = positive ? "var(--oc-normal-bg)" : "var(--oc-critical-bg)";
+    color = positive ? "var(--oc-normal)" : "var(--oc-critical)";
   } else {
-    bg = positive ? "#fdecea" : "#f0f7e8";
-    color = positive ? "#c0392b" : "#4a7c1f";
+    bg = positive ? "var(--oc-critical-bg)" : "var(--oc-normal-bg)";
+    color = positive ? "var(--oc-critical)" : "var(--oc-normal)";
   }
 
   const arrow = direction === "flat" ? "—" : direction === "up" ? "↑" : "↓";
@@ -32,7 +32,7 @@ export function DeltaPill({
         alignItems: "center",
         gap: 2,
         padding: "2px 8px",
-        borderRadius: 12,
+        borderRadius: 999,
         fontSize: 10,
         fontWeight: 500,
         background: bg,
