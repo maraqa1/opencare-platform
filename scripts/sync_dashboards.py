@@ -410,7 +410,12 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     try:
         created = client.post("/api/v1/dataset/", payload)
     except RuntimeError as exc:
-        if "already exists" not in str(exc).lower():
+        error_text = str(exc)
+        if " failed with 500:" in error_text:
+            dataset_id = ensure_dataset_orm(dataset_name, database_id, client.user_id)
+            print(f"  [ok] created dataset '{dataset_name}' via ORM fallback (id={dataset_id})")
+            return dataset_id
+        if "already exists" not in error_text.lower():
             raise
         dataset_id = _lookup_dataset_in_metadata(table_name)
         if dataset_id is not None:
@@ -430,6 +435,39 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
         print(f"  [ok] found dataset '{dataset_name}' via metadata (id={dataset_id})")
         return dataset_id
     raise RuntimeError(f"Superset created dataset {dataset_name} but did not return an id")
+
+
+def ensure_dataset_orm(dataset_name: str, database_id: int, owner_id: int | None) -> int:
+    try:
+        from flask_appbuilder.security.sqla.models import User
+        from superset import db
+        from superset.connectors.sqla.models import SqlaTable
+    except Exception as exc:
+        raise RuntimeError("Superset ORM dataset sync must run inside the Superset pod.") from exc
+
+    schema_name, table_name = dataset_name.split(".", 1)
+    existing = (
+        db.session.query(SqlaTable)
+        .filter_by(database_id=database_id, schema=schema_name, table_name=table_name)
+        .one_or_none()
+    )
+    if existing:
+        if owner_id is not None and not any(int(owner.id) == owner_id for owner in existing.owners):
+            owner = db.session.query(User).filter_by(id=owner_id).one_or_none()
+            if owner is not None:
+                existing.owners.append(owner)
+                db.session.add(existing)
+                db.session.flush()
+        return int(existing.id)
+
+    dataset = SqlaTable(table_name=table_name, schema=schema_name, database_id=database_id)
+    if owner_id is not None:
+        owner = db.session.query(User).filter_by(id=owner_id).one_or_none()
+        if owner is not None:
+            dataset.owners = [owner]
+    db.session.add(dataset)
+    db.session.flush()
+    return int(dataset.id)
 
 
 def ensure_chart_orm(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
