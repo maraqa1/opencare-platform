@@ -24,6 +24,7 @@ class SupersetClient:
         self.password = password
         self.access_token: str | None = None
         self.csrf_token: str | None = None
+        self.user_id: int | None = None
         self.opener = request.build_opener()
 
     def authenticate(self) -> None:
@@ -33,9 +34,9 @@ class SupersetClient:
             "provider": "db",
             "refresh": True,
         }
-        api_response = self._request(
+        api_response = self._request_first(
             "POST",
-            "/api/v1/security/login/",
+            ["/api/v1/security/login", "/api/v1/security/login/"],
             payload=api_payload,
             use_auth=False,
         )
@@ -43,19 +44,24 @@ class SupersetClient:
         if not self.access_token:
             raise RuntimeError("Superset login did not return an access token")
 
-        csrf_response = self._request("GET", "/api/v1/security/csrf_token/")
+        csrf_response = self._request_first(
+            "GET",
+            ["/api/v1/security/csrf_token", "/api/v1/security/csrf_token/"],
+        )
         self.csrf_token = csrf_response.get("result") if isinstance(csrf_response, dict) else None
         if not self.csrf_token:
             raise RuntimeError("Superset csrf token request did not return a token")
 
-        me_response = self._request("GET", "/api/v1/me/")
-        username = (
-            me_response.get("result", {}).get("username")
-            if isinstance(me_response, dict)
-            else None
+        me_response = self._request_first(
+            "GET",
+            ["/api/v1/me", "/api/v1/me/"],
         )
-        if not username:
+        me_result = me_response.get("result", {}) if isinstance(me_response, dict) else {}
+        username = me_result.get("username")
+        user_id = me_result.get("id")
+        if not username or username != self.username or not isinstance(user_id, int):
             raise RuntimeError(f"Superset auth self-check failed: {me_response}")
+        self.user_id = user_id
 
     def get(self, path: str) -> dict[str, Any]:
         return self._request("GET", path)
@@ -91,6 +97,26 @@ class SupersetClient:
         except error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="ignore")
             raise RuntimeError(f"{method} {path} failed with {exc.code}: {detail}") from exc
+
+    def _request_first(
+        self,
+        method: str,
+        paths: list[str],
+        payload: dict[str, Any] | None = None,
+        use_auth: bool = True,
+    ) -> dict[str, Any]:
+        last_exc: RuntimeError | None = None
+        for path in paths:
+            try:
+                return self._request(method, path, payload=payload, use_auth=use_auth)
+            except RuntimeError as exc:
+                if " failed with 404:" in str(exc):
+                    last_exc = exc
+                    continue
+                raise
+        if last_exc is not None:
+            raise last_exc
+        raise RuntimeError(f"{method} request did not include any candidate paths")
 
     def _open_raw(
         self,
@@ -242,17 +268,13 @@ def ensure_database(client: SupersetClient) -> int:
     raise RuntimeError(f"Superset created database {database_name} but did not return an id")
 
 
-def dataset_payload(dataset_name: str, database_id: int) -> dict[str, Any]:
+def dataset_payload(dataset_name: str, database_id: int, owner_ids: list[int] | None = None) -> dict[str, Any]:
     schema_name, table_name = dataset_name.split(".", 1)
     return {
         "database": database_id,
         "schema": schema_name,
         "table_name": table_name,
-        # Some Superset builds attempt to populate owners from the current
-        # request user during dataset creation. When the API resolves that user
-        # incorrectly, sending an explicit empty owners collection avoids
-        # attaching an AnonymousUser object and lets the dataset be created.
-        "owners": [],
+        "owners": owner_ids or [],
     }
 
 
@@ -363,7 +385,8 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     )
     result = client.get(f"/api/v1/dataset/?q={query}")
     existing = find_existing(result, "table_name", table_name)
-    payload = dataset_payload(dataset_name, database_id)
+    owner_ids = [client.user_id] if client.user_id is not None else []
+    payload = dataset_payload(dataset_name, database_id, owner_ids=owner_ids)
     if existing:
         # Superset accepts the database field when a dataset is created, but not
         # on every update path. Existing datasets are safe to reuse by id.
