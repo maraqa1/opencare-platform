@@ -310,6 +310,11 @@ def dataset_payload(dataset_name: str, database_id: int) -> dict[str, Any]:
         "database": database_id,
         "schema": schema_name,
         "table_name": table_name,
+        # Some Superset builds attempt to populate owners from the current
+        # request user during dataset creation. When the API resolves that user
+        # incorrectly, sending an explicit empty owners collection avoids
+        # attaching an AnonymousUser object and lets the dataset be created.
+        "owners": [],
     }
 
 
