@@ -12,13 +12,53 @@ type Props = {
 };
 
 function getTopbarContext(pathname: string) {
-  if (pathname.startsWith("/governance")) {
+  if (pathname === "/governance") {
+    return {
+      label: "Governance",
+      title: "KPI entry",
+      badge: "Trust mode",
+      actionHref: "/governance/health",
+      actionLabel: "Health",
+    };
+  }
+
+  if (pathname.startsWith("/governance/kpi/") && pathname.endsWith("/trace")) {
+    return {
+      label: "Governance",
+      title: "Technical trace",
+      badge: "Proof view",
+      actionHref: "/governance",
+      actionLabel: "Back",
+    };
+  }
+
+  if (pathname.startsWith("/governance/kpi/")) {
     return {
       label: "Governance",
       title: "KPI trust journey",
       badge: "Trust mode",
       actionHref: "/governance/health",
       actionLabel: "Health",
+    };
+  }
+
+  if (pathname.startsWith("/governance/asset/")) {
+    return {
+      label: "Governance",
+      title: "Asset detail",
+      badge: "Steward view",
+      actionHref: "/governance",
+      actionLabel: "Back",
+    };
+  }
+
+  if (pathname.startsWith("/governance/health")) {
+    return {
+      label: "Governance",
+      title: "Governance health",
+      badge: "Program view",
+      actionHref: "/governance",
+      actionLabel: "Entry",
     };
   }
 
