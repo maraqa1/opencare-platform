@@ -252,6 +252,13 @@ type GovernanceOverview = {
   highRiskAssets: string;
 };
 
+export type GovernanceHealthDetails = {
+  unmappedKpis: GovernanceKpi[];
+  missingOwners: Array<{ assetId: string; name: string; useCaseId: string }>;
+  staleAssets: Array<{ assetId: string; name: string; useCaseId: string }>;
+  uncertifiedAssets: Array<{ assetId: string; name: string; useCaseId: string; status: string }>;
+};
+
 function datasetColumn(
   name: string,
   dataType: string,
@@ -1737,5 +1744,42 @@ export function getGovernanceOverview(): GovernanceOverview {
     glossaryCoverage: `${glossaryTerms.length} terms across ${glossaryCoveredCount(useCases)} use cases`,
     lineageCoverage: `${lineageCoveredCount(datasets)} / ${datasets.length}`,
     highRiskAssets: `${highRiskAssetCount(datasets)} / ${datasets.length}`,
+  };
+}
+
+export function getGovernanceHealthDetails(): GovernanceHealthDetails {
+  const useCases = getGovernanceUseCases();
+  const kpis = getGovernanceKpis();
+
+  return {
+    unmappedKpis: kpis.filter((kpi) => kpi.trustState === "unmapped"),
+    missingOwners: useCases.flatMap((useCase) =>
+      useCase.governedDatasets
+        .filter((dataset) => !dataset.owner)
+        .map((dataset) => ({
+          assetId: dataset.id,
+          name: dataset.name,
+          useCaseId: useCase.id,
+        })),
+    ),
+    staleAssets: useCases.flatMap((useCase) =>
+      useCase.governedDatasets
+        .filter((dataset) => dataset.freshnessStatus === "stale")
+        .map((dataset) => ({
+          assetId: dataset.id,
+          name: dataset.name,
+          useCaseId: useCase.id,
+        })),
+    ),
+    uncertifiedAssets: useCases.flatMap((useCase) =>
+      useCase.governedDatasets
+        .filter((dataset) => dataset.certification?.status !== "certified")
+        .map((dataset) => ({
+          assetId: dataset.id,
+          name: dataset.name,
+          useCaseId: useCase.id,
+          status: dataset.certification?.status ?? dataset.certificationStatus,
+        })),
+    ),
   };
 }

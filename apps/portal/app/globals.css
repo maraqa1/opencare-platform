@@ -3909,6 +3909,15 @@ code {
   letter-spacing: -0.04em;
 }
 
+.governance-health-list {
+  display: grid;
+  gap: 8px;
+}
+
+.governance-health-list .secondary-link {
+  width: fit-content;
+}
+
 @media (max-width: 1200px) {
   .governance-kpi-hero,
   .governance-entry-grid,

@@ -38,6 +38,13 @@ type LineageRow = {
   source: "Curated" | "Discovered";
 };
 
+type StageSignal = {
+  label: string;
+  value: string;
+  positiveWhen?: string[];
+  warningWhen?: string[];
+};
+
 function signalValue(value?: string | null) {
   if (!value) return "Not instrumented";
   return value
@@ -94,27 +101,69 @@ function firstNodeValue(node?: BusinessTrustNode, fallback = "Not instrumented")
   return node?.label ?? fallback;
 }
 
+function isInstrumented(value?: string | null) {
+  return Boolean(value) && value !== "Not instrumented";
+}
+
+function compactSignalReason(signal: StageSignal) {
+  if (!isInstrumented(signal.value)) {
+    return `${signal.label.toLowerCase()} not instrumented`;
+  }
+  const normalized = signal.value.toLowerCase();
+  if (signal.positiveWhen?.includes(normalized) || signal.warningWhen?.includes(normalized)) {
+    return `${signal.label.toLowerCase()} ${normalized}`;
+  }
+  return `${signal.label.toLowerCase()} available`;
+}
+
 function stageReason(
   stage: JourneyStage,
   asset: GovernedDataset | null,
   useCase: GovernanceUseCase,
 ) {
+  const node = stage.nodes[0];
+  const signals: StageSignal[] =
+    stage.id === "source"
+      ? [
+          { label: "Owner", value: node?.owner ?? "Not instrumented" },
+          { label: "Freshness", value: signalValue(node?.freshnessStatus), positiveWhen: ["fresh"], warningWhen: ["warning"] },
+          { label: "Certification", value: signalValue(node?.certificationStatus), positiveWhen: ["certified", "reviewed"], warningWhen: ["draft"] },
+        ]
+      : stage.id === "transform"
+        ? [
+            { label: "Owner", value: asset?.owner ?? "Not instrumented" },
+            { label: "Freshness", value: signalValue(asset?.freshnessStatus), positiveWhen: ["fresh"], warningWhen: ["warning"] },
+            { label: "Quality", value: signalValue(asset?.testStatus), positiveWhen: ["passing"], warningWhen: ["warning"] },
+          ]
+        : stage.id === "quality"
+          ? [
+              { label: "Freshness", value: signalValue(asset?.freshnessStatus), positiveWhen: ["fresh"], warningWhen: ["warning"] },
+              { label: "Tests", value: signalValue(asset?.testStatus), positiveWhen: ["passing"], warningWhen: ["warning"] },
+              { label: "SLA", value: "Not instrumented" },
+            ]
+          : stage.id === "analytics"
+            ? [
+                { label: "Dashboard", value: asset?.relatedDashboards?.[0] ?? "Not instrumented" },
+                { label: "Owner", value: node?.owner ?? asset?.owner ?? "Not instrumented" },
+                { label: "Certification", value: signalValue(node?.certificationStatus ?? asset?.certification?.status), positiveWhen: ["certified", "reviewed"], warningWhen: ["draft"] },
+              ]
+            : [
+                { label: "Action path", value: asset?.downstreamConsumers?.[0] ?? useCase.downstreamConsumers[0] ?? "Not instrumented" },
+                { label: "Policy", value: useCase.complianceContext.policies.length > 0 ? "Policy mapped" : "Not instrumented" },
+                { label: "Risk", value: asset?.openRisks?.[0] ?? "No active decision-path risk." },
+              ];
+
+  const topReasons = signals.slice(0, 3).map(compactSignalReason).join(", ");
   if (stage.trustState === "trusted") {
-    if (stage.id === "source") {
-      return "Trusted because the source is identified, an owner is assigned, and raw landing is mapped.";
-    }
-    if (stage.id === "quality") {
-      return "Trusted because freshness and tests are currently passing for the governed asset.";
-    }
-    return "Trusted because the mapped evidence for this stage is complete enough to support the KPI journey.";
+    return `Trusted because ${topReasons}.`;
   }
   if (stage.trustState === "degraded") {
-    return "Degraded because one or more trust signals are warning or only partially instrumented.";
+    return `Degraded because ${topReasons}.`;
   }
   if (stage.trustState === "untrusted") {
-    return "Untrusted because at least one critical trust signal has failed or gone stale.";
+    return `Untrusted because ${topReasons}.`;
   }
-  return asset || useCase ? "Not instrumented because this stage is only partially mapped today." : "Not instrumented.";
+  return `Not instrumented because ${topReasons}.`;
 }
 
 function stageEvidence(
