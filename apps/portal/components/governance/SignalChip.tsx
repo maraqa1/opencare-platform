@@ -20,11 +20,15 @@ export function SignalChip({
 
   if (href) {
     return (
-      <Link className={`signal-chip ${tone}`} href={href}>
+      <Link className={`signal-chip ${tone}`} href={href} title={`${label}: ${value}`}>
         {content}
       </Link>
     );
   }
 
-  return <span className={`signal-chip ${tone}`}>{content}</span>;
+  return (
+    <span className={`signal-chip ${tone}`} title={`${label}: ${value}`}>
+      {content}
+    </span>
+  );
 }

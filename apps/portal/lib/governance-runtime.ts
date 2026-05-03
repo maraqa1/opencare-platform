@@ -1,5 +1,5 @@
 import { getApiJson } from "@/lib/api";
-import { currencyCompact, percentFromRatio } from "@/lib/format";
+import { currencyCompact } from "@/lib/format";
 import type { GovernanceKpi } from "@/lib/governance-registry";
 
 type OccupancyResponse = {
@@ -34,6 +34,16 @@ export type GovernanceKpiRuntime = {
   summary: string;
 };
 
+function occupancyPercent(value?: number | null, digits = 1) {
+  if (value == null || Number.isNaN(value)) {
+    return "Not instrumented";
+  }
+
+  const normalized = value <= 1 ? value * 100 : value;
+  const bounded = Math.max(0, Math.min(normalized, 999.9));
+  return `${bounded.toFixed(digits)}%`;
+}
+
 export async function getGovernanceKpiRuntime(kpi: GovernanceKpi): Promise<GovernanceKpiRuntime> {
   if (kpi.useCaseId === "bed_pressure") {
     const occupancy = await getApiJson<OccupancyResponse>({
@@ -59,8 +69,8 @@ export async function getGovernanceKpiRuntime(kpi: GovernanceKpi): Promise<Gover
     const wardName = worstWard?.department_name ?? worstWard?.ward_name ?? "No live ward";
     const value =
       worstWard?.occupancy_rate != null
-        ? percentFromRatio(worstWard.occupancy_rate)
-        : "Not yet instrumented";
+        ? occupancyPercent(worstWard.occupancy_rate)
+        : "Not instrumented";
 
     return {
       value,
