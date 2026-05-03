@@ -112,6 +112,7 @@ class DbtLineageService:
         node_key = self._find_node_key(model_name)
         if not node_key:
             return None
+        node_key = self._canonical_node_key(node_key)
 
         graph = self.graph
         current = graph["nodes"].get(node_key, {})
@@ -124,12 +125,13 @@ class DbtLineageService:
                 "tests": graph["tests_by_node"].get(key, []),
             }
             for key in [node_key, *upstream, *downstream]
-            if key in graph["nodes"]
+            if key in graph["nodes"] and not self._is_compatibility_alias(graph["nodes"][key])
         ]
+        visible_node_ids = {node["id"] for node in nodes}
         edges = [
             edge
             for edge in graph["edges"]
-            if edge["from"] in {node["id"] for node in nodes} and edge["to"] in {node["id"] for node in nodes}
+            if edge["from"] in visible_node_ids and edge["to"] in visible_node_ids
         ]
 
         return {
@@ -150,13 +152,23 @@ class DbtLineageService:
         key = self._find_node_key(model_name)
         if not key:
             return []
-        return [self.graph["nodes"][item] for item in self._walk(key, self.graph["parent_map"]) if item in self.graph["nodes"]]
+        key = self._canonical_node_key(key)
+        return [
+            self.graph["nodes"][item]
+            for item in self._walk(key, self.graph["parent_map"])
+            if item in self.graph["nodes"] and not self._is_compatibility_alias(self.graph["nodes"][item])
+        ]
 
     def get_downstream_models(self, model_name: str) -> list[dict[str, Any]]:
         key = self._find_node_key(model_name)
         if not key:
             return []
-        return [self.graph["nodes"][item] for item in self._walk(key, self.graph["child_map"]) if item in self.graph["nodes"]]
+        key = self._canonical_node_key(key)
+        return [
+            self.graph["nodes"][item]
+            for item in self._walk(key, self.graph["child_map"])
+            if item in self.graph["nodes"] and not self._is_compatibility_alias(self.graph["nodes"][item])
+        ]
 
     def get_impact_analysis(self, source_name: str) -> dict[str, Any]:
         key = self._find_node_key(source_name)
@@ -627,6 +639,24 @@ class DbtLineageService:
             if name in candidates:
                 return key
         return None
+
+    def _is_compatibility_alias(self, node: dict[str, Any]) -> bool:
+        description = str(node.get("description", ""))
+        return description.startswith("Compatibility alias")
+
+    def _canonical_node_key(self, key: str) -> str:
+        node = self.graph["nodes"].get(key)
+        if not node or not self._is_compatibility_alias(node):
+            return key
+
+        parents = [
+            parent
+            for parent in self.graph["parent_map"].get(key, [])
+            if parent in self.graph["nodes"] and not self._is_compatibility_alias(self.graph["nodes"][parent])
+        ]
+        if len(parents) == 1:
+            return parents[0]
+        return key
 
     def _latest_source_timestamp(self, source: dict[str, Any]) -> Any:
         schema = source.get("schema") or settings.dbt_source_schema

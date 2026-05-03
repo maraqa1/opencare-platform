@@ -98,10 +98,11 @@ def dictionary() -> dict[str, object]:
             "metric_description": row["metric_description"],
             "calculation_note": catalog_entry.get("calculation_note", row["metric_description"]),
             "unit": catalog_entry.get("unit", "ratio"),
+            "backing_dataset": row["metric_schema"],
             "source_table": row["metric_schema"],
             "category": catalog_entry.get("category", "occupancy"),
             "use_case": "bed_pressure",
-            "lineage_model": row["metric_schema"].split(".")[-1],
+            "lineage_model": "fct_bed_occupancy" if row["metric_schema"].split(".")[-1] == "fact_bed_occupancy" else row["metric_schema"].split(".")[-1],
         }
 
     for metric_id, catalog_entry in METRIC_CATALOG.items():
@@ -113,6 +114,9 @@ def dictionary() -> dict[str, object]:
             "metric_description": catalog_entry["calculation_note"].capitalize(),
             "calculation_note": catalog_entry["calculation_note"],
             "unit": catalog_entry["unit"],
+            "backing_dataset": "analytics.fct_bed_occupancy" if catalog_entry["category"] == "occupancy" else (
+                "output.forecast" if catalog_entry["category"] == "forecast" else "output.anomaly"
+            ),
             "source_table": "analytics.fct_bed_occupancy" if catalog_entry["category"] == "occupancy" else (
                 "output.forecast" if catalog_entry["category"] == "forecast" else "output.anomaly"
             ),

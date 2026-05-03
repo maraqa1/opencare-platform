@@ -415,10 +415,10 @@ const bedPressureTrustMap: BusinessTrustMap = {
     },
     {
       id: "bp-kpi-pressure",
-      label: "Portal KPI: Pressure Strip",
+      label: "Portal KPI: Bed Occupancy",
       type: "kpi",
       assetId: "bed-fct-occupancy",
-      description: "Executive pressure headline used in the workspace shell.",
+      description: "Executive occupancy headline used in the workspace shell.",
       freshnessStatus: "warning",
       qualityStatus: "passing",
       certificationStatus: "reviewed",

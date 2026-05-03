@@ -11,7 +11,8 @@ type Metric = {
   calculation_note: string;
   unit: string;
   category: string;
-  source_table: string;
+  source_table?: string;
+  backing_dataset: string;
   use_case?: string;
   lineage_model?: string;
 };
@@ -24,14 +25,24 @@ const UNIT_COLOURS: Record<string, string> = {
   score: "#fce4ec",
 };
 
-function sourceRecordHref(sourceTable: string, recordSpecBaseHref: string) {
-  const base = recordSpecBaseHref.replace(/#.*$/, "");
-  return `${base}#record-spec-${sourceTable}`;
+function recordSpecHref(metric: Metric, recordSpecBaseHref?: string) {
+  if (recordSpecBaseHref) {
+    const base = recordSpecBaseHref.replace(/#.*$/, "");
+    return `${base}#record-spec-${metric.backing_dataset}`;
+  }
+
+  if (metric.category === "forecast") {
+    return `/occupancy?tab=forecast#record-spec-${metric.backing_dataset}`;
+  }
+  if (metric.category === "anomaly") {
+    return `/occupancy?tab=alerts#record-spec-${metric.backing_dataset}`;
+  }
+  return `/occupancy?tab=occupancy#record-spec-${metric.backing_dataset}`;
 }
 
 export function DataDictionary({
   useCase,
-  recordSpecBaseHref = "/admin/governance",
+  recordSpecBaseHref,
 }: {
   useCase?: string;
   recordSpecBaseHref?: string;
@@ -104,7 +115,7 @@ export function DataDictionary({
             </div>
             <div className="metric-grid">
               {categoryMetrics.map((metric, index) => {
-                const lineageModel = metric.lineage_model ?? metric.source_table.split(".").pop() ?? "";
+                const lineageModel = metric.lineage_model ?? metric.backing_dataset.split(".").pop() ?? "";
                 const isExpanded = activeLineage === metric.metric_id;
                 return (
                   <article key={metric.metric_id} className="metric-card" style={{ animationDelay: `${index * 50}ms` }}>
@@ -126,7 +137,7 @@ export function DataDictionary({
                       <span className="calc-label">Calculation</span>
                       <code>{metric.calculation_note}</code>
                       <span className="source-link">
-                        Source: <code>{metric.source_table}</code>
+                        Backing dataset: <code>{metric.backing_dataset}</code>
                       </span>
                     </div>
 
@@ -136,10 +147,10 @@ export function DataDictionary({
                         type="button"
                         onClick={() => setActiveLineage(isExpanded ? null : metric.metric_id)}
                       >
-                        {isExpanded ? "Hide Lineage" : "View Lineage"}
+                        {isExpanded ? "Hide dataset lineage" : "View dataset lineage"}
                       </button>
-                      <a className="secondary-link" href={sourceRecordHref(metric.source_table, recordSpecBaseHref)}>
-                        View Source Table
+                      <a className="secondary-link" href={recordSpecHref(metric, recordSpecBaseHref)}>
+                        View record specification
                       </a>
                     </div>
 
