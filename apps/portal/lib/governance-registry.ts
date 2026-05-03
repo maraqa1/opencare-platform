@@ -21,6 +21,8 @@ export type GovernanceStatus =
   | "internal"
   | "public";
 
+export type TrustState = "trusted" | "degraded" | "untrusted" | "unmapped";
+
 export type GovernanceDomain =
   | "Clinical Operations"
   | "Financial Operations"
@@ -223,6 +225,20 @@ export type GovernanceUseCase = {
   };
 };
 
+export type GovernanceKpi = {
+  slug: string;
+  id: string;
+  label: string;
+  description: string;
+  useCaseId: string;
+  useCaseName: string;
+  domain: GovernanceDomain;
+  trustState: TrustState;
+  assetId?: string;
+  technicalModel?: string;
+  glossaryTerms: DictionaryTerm[];
+};
+
 type GovernanceOverview = {
   activeUseCases: number;
   governedAssets: number;
@@ -401,6 +417,7 @@ const bedPressureTrustMap: BusinessTrustMap = {
       id: "bp-kpi-pressure",
       label: "Portal KPI: Pressure Strip",
       type: "kpi",
+      assetId: "bed-fct-occupancy",
       description: "Executive pressure headline used in the workspace shell.",
       freshnessStatus: "warning",
       qualityStatus: "passing",
@@ -527,6 +544,7 @@ const revenueCycleTrustMap: BusinessTrustMap = {
       id: "rcm-kpi-command",
       label: "Portal KPI: Cash Command",
       type: "kpi",
+      assetId: "rcm-cash-forecast",
       description: "Executive cash and risk KPIs rendered in the workspace.",
       freshnessStatus: "warning",
       certificationStatus: "reviewed",
@@ -1548,6 +1566,123 @@ export function getGovernanceUseCases() {
 
 export function getClassificationRules() {
   return classificationRules;
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function trustStateForSignal(status?: string): TrustState {
+  switch (status) {
+    case "trusted":
+    case "approved":
+    case "reviewed":
+    case "certified":
+    case "fresh":
+    case "passing":
+    case "complete":
+    case "compliant":
+      return "trusted";
+    case "draft":
+    case "partial":
+    case "warning":
+    case "needs_review":
+    case "unknown":
+    case "not_connected":
+    case "not_assessed":
+      return "degraded";
+    case "missing":
+    case "failing":
+    case "stale":
+    case "restricted":
+    case "gap":
+    case "deprecated":
+      return "untrusted";
+    default:
+      return "unmapped";
+  }
+}
+
+function combineTrustStates(states: TrustState[]): TrustState {
+  if (states.includes("untrusted")) {
+    return "untrusted";
+  }
+  if (states.includes("degraded")) {
+    return "degraded";
+  }
+  if (states.includes("trusted")) {
+    return "trusted";
+  }
+  return "unmapped";
+}
+
+export function getTrustStateForAsset(asset: GovernedDataset): TrustState {
+  return combineTrustStates([
+    trustStateForSignal(asset.freshnessStatus),
+    trustStateForSignal(asset.testStatus),
+    trustStateForSignal(asset.lineageStatus),
+    trustStateForSignal(asset.certification?.status ?? asset.certificationStatus),
+  ]);
+}
+
+export function getTrustStateForUseCase(useCase: GovernanceUseCase): TrustState {
+  return combineTrustStates([
+    trustStateForSignal(useCase.qualitySummary.freshness),
+    trustStateForSignal(useCase.qualitySummary.quality),
+    trustStateForSignal(useCase.qualitySummary.lineage),
+    trustStateForSignal(useCase.complianceContext.posture),
+  ]);
+}
+
+export function getGovernanceAssetById(assetId: string) {
+  for (const useCase of governanceUseCases) {
+    const asset = useCase.governedDatasets.find((dataset) => dataset.id === assetId);
+    if (asset) {
+      return { asset, useCase };
+    }
+  }
+  return null;
+}
+
+export function getGovernanceKpis(): GovernanceKpi[] {
+  return governanceUseCases.flatMap((useCase) => {
+    const technicalModel = useCase.lineageEntryPoints[0]?.technicalModel;
+    return useCase.trustMap.nodes
+      .filter((node) => node.type === "kpi")
+      .map((node) => {
+        const glossaryTerms = useCase.dictionaryTerms.filter((term) =>
+          term.relatedDatasets?.some((datasetId) => datasetId === node.assetId) ||
+          (node.assetId ? term.sourceMetric?.includes(node.assetId.replace(/-/g, "_")) : false),
+        );
+        const asset = node.assetId ? useCase.governedDatasets.find((dataset) => dataset.id === node.assetId) : undefined;
+        const slug = slugify(`${useCase.id}-${node.label.replace(/^Portal KPI:\s*/i, "")}`);
+        return {
+          slug,
+          id: node.id,
+          label: node.label.replace(/^Portal KPI:\s*/i, ""),
+          description: node.description ?? useCase.businessPurpose,
+          useCaseId: useCase.id,
+          useCaseName: useCase.name,
+          domain: useCase.domain,
+          trustState: combineTrustStates([
+            trustStateForSignal(node.freshnessStatus),
+            trustStateForSignal(node.qualityStatus),
+            trustStateForSignal(node.certificationStatus),
+            asset ? getTrustStateForAsset(asset) : "unmapped",
+          ]),
+          assetId: node.assetId,
+          technicalModel,
+          glossaryTerms,
+        } satisfies GovernanceKpi;
+      });
+  });
+}
+
+export function getGovernanceKpiBySlug(slug: string) {
+  return getGovernanceKpis().find((kpi) => kpi.slug === slug) ?? null;
 }
 
 function classifiedColumnCount(datasets: GovernedDataset[]) {

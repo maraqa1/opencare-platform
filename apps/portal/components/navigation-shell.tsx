@@ -12,6 +12,16 @@ type Props = {
 };
 
 function getTopbarContext(pathname: string) {
+  if (pathname.startsWith("/governance")) {
+    return {
+      label: "Governance",
+      title: "KPI trust journey",
+      badge: "Trust mode",
+      actionHref: "/governance/health",
+      actionLabel: "Health",
+    };
+  }
+
   if (pathname.startsWith("/admin")) {
     return {
       label: "Administration",
