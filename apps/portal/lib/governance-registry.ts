@@ -997,7 +997,7 @@ const governanceUseCases: GovernanceUseCase[] = [
       "Track claim movement, identify denial and recovery opportunities, control payer performance, detect leakage, and support executive revenue narrative.",
     owner: "Revenue Operations Analytics",
     steward: "Revenue Integrity Lead",
-    sourceTables: ["claims", "financial_postings", "denials", "payer_contracts", "encounters", "referrals"],
+    sourceTables: ["rcm_claims", "rcm_financial_postings", "rcm_referrals"],
     workspaceCoverage: [
       { label: "Cash Command", href: "/use-cases/revenue-cycle-management/cash-command" },
       { label: "Recovery Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },
@@ -1562,7 +1562,7 @@ const governanceUseCases: GovernanceUseCase[] = [
         "fct_payer_performance",
         "fct_patient_acquisition",
       ],
-      freshnessSources: ["claims", "denials", "postings", "payer_contracts", "payments", "encounters"],
+      freshnessSources: ["rcm_claims", "rcm_financial_postings", "rcm_referrals"],
     },
   },
 ];
