@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageFrame } from "@/components/page-frame";
@@ -24,6 +25,10 @@ const adminSections = [
     description: "Access logs, data access trail, configuration changes, and exportable audit history.",
   },
 ];
+
+export const metadata: Metadata = {
+  title: "Administration - OpenCare Portal",
+};
 
 export default function AdminPage() {
   return (

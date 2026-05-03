@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { EmbeddedDashboard } from "@/components/EmbeddedDashboard";
 import { GovernanceView } from "@/components/GovernanceView";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
@@ -14,6 +15,10 @@ type SearchParams = Promise<{
   ward?: string;
   severity?: string;
 }>;
+
+export const metadata: Metadata = {
+  title: "Bed Pressure Intelligence - OpenCare Portal",
+};
 
 export default async function BedPressureDashboard({
   searchParams,

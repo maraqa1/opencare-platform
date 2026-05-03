@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/page-frame";
 import { useCases } from "@/lib/use-cases";
 
@@ -34,6 +35,10 @@ const useCaseDetails: Record<string, {
       "analytics.fct_patient_acquisition",
     ],
   },
+};
+
+export const metadata: Metadata = {
+  title: "Configuration - OpenCare Portal",
 };
 
 export default function AdminConfigurationPage() {

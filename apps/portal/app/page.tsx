@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
 import { useCases } from "@/lib/use-cases";
+
+export const metadata: Metadata = {
+  title: "Home - OpenCare Portal",
+};
 
 export default async function HomePage() {
   const [runtime, health, alerts, occupancy] = await Promise.all([

@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
+
+export const metadata: Metadata = {
+  title: "Operations - OpenCare Portal",
+};
 
 export default async function AdminOperationsPage() {
   const [runtime, health] = await Promise.all([

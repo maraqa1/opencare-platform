@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageFrame } from "@/components/page-frame";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
+
+export const metadata: Metadata = {
+  title: "Bed Pressure Overview - OpenCare Portal",
+};
 
 export default function BedPressureOverviewPage() {
   return (

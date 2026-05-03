@@ -129,7 +129,7 @@ code {
   text-transform: uppercase;
 }
 
-.brand h1 {
+.brand-title {
   margin: 14px 0 10px;
   font-family: var(--font-heading);
   font-size: 28px;
@@ -137,7 +137,7 @@ code {
   letter-spacing: -0.03em;
 }
 
-.brand p {
+.brand > p:not(.brand-title) {
   margin: 0;
   color: rgba(255, 255, 255, 0.72);
   font-size: 14px;
@@ -146,6 +146,12 @@ code {
 
 .nav-section {
   margin-top: 24px;
+}
+
+.nav-section + .nav-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 18px;
+  margin-top: 8px;
 }
 
 .nav-section-title {
@@ -313,7 +319,7 @@ code {
   max-width: 760px;
 }
 
-.hero h2 {
+.hero h1 {
   margin: 0 0 12px;
   font-family: var(--font-heading);
   font-size: clamp(34px, 5vw, 58px);
@@ -483,9 +489,12 @@ code {
   background: #f44336;
 }
 
-.report-grid,
-.dictionary-grid,
-.status-grid,
+.status-dot.degraded {
+  background: #dc2626;
+  box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.12);
+}
+
+.item-grid,
 .card-grid,
 .preview-grid,
 .kpi-cards,
@@ -497,9 +506,7 @@ code {
   gap: 16px;
 }
 
-.status-grid,
-.report-grid,
-.dictionary-grid,
+.item-grid,
 .preview-grid,
 .operations-grid {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -2521,9 +2528,7 @@ code {
 @media (max-width: 720px) {
   .kpi-cards,
   .card-grid,
-  .status-grid,
-  .report-grid,
-  .dictionary-grid,
+  .item-grid,
   .preview-grid,
   .operations-grid,
   .record-spec-meta-grid,

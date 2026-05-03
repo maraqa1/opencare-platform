@@ -83,7 +83,7 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
             />
           </div>
           <span className="brand-kicker">OpenCare</span>
-          <h1>Hospital Operations Intelligence</h1>
+          <p className="brand-title">Hospital Operations Intelligence</p>
           <p>
             Use case workspaces keep daily operations, decision support, and deep governance
             in the right place.

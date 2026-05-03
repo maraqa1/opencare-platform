@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
+
+export const metadata: Metadata = {
+  title: "Ingestion Status - OpenCare Portal",
+};
 
 export default async function AdminIngestionPage() {
   const ingestion = await getApiJson<{

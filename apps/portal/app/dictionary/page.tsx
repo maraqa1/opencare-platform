@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { DictionaryView } from "@/components/DictionaryView";
 import { PageFrame } from "@/components/page-frame";
+
+export const metadata: Metadata = {
+  title: "Dictionary - OpenCare Portal",
+};
 
 export default function DictionaryPage() {
   return (

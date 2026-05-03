@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { AnomalyAlerts } from "@/components/bed-pressure/AnomalyAlerts";
 import { OccupancyGrid } from "@/components/bed-pressure/OccupancyGrid";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
+
+export const metadata: Metadata = {
+  title: "Bed Pressure Status - OpenCare Portal",
+};
 
 export default function BedPressureStatusPage() {
   return (

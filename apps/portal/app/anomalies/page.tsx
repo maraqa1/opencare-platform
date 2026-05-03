@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
 import { AnomalyAlerts } from "@/components/bed-pressure/AnomalyAlerts";
 
 type SearchParams = Promise<{ severity?: string }>;
+
+export const metadata: Metadata = {
+  title: "Alerts - OpenCare Portal",
+};
 
 export default async function AnomaliesPage({
   searchParams,

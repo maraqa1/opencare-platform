@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { GovernanceControlTower } from "@/components/GovernanceControlTower";
 import { PageFrame } from "@/components/page-frame";
+
+export const metadata: Metadata = {
+  title: "Governance Control Tower - OpenCare Portal",
+};
 
 export default function AdminGovernancePage() {
   return (

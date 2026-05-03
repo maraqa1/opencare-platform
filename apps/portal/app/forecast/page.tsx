@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
 import { ForecastView } from "@/components/bed-pressure/ForecastView";
 
 type SearchParams = Promise<{ ward?: string }>;
+
+export const metadata: Metadata = {
+  title: "Forecast - OpenCare Portal",
+};
 
 export default async function ForecastPage({
   searchParams,

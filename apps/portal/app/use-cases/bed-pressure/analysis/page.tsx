@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { EmbeddedDashboard } from "@/components/EmbeddedDashboard";
 import { PageFrame } from "@/components/page-frame";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
+
+export const metadata: Metadata = {
+  title: "Bed Pressure Analysis - OpenCare Portal",
+};
 
 export default function BedPressureAnalysisPage() {
   return (

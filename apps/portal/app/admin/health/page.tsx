@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
+
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
+
+export const metadata: Metadata = {
+  title: "Platform Health - OpenCare Portal",
+};
 
 export default async function AdminHealthPage() {
   const health = await getApiJson<{
@@ -19,17 +25,22 @@ export default async function AdminHealthPage() {
         { label: "Ops-ready", tone: "accent" },
       ]}
     >
-      <section className="status-grid">
+      <section className="item-grid">
         {(health.checks ?? []).map((service) => (
           <article className="status-card" key={service.name}>
             <div className="status">
-              <span className="status-dot" />
+              <span className={`status-dot${service.healthy ? "" : " degraded"}`} />
               {service.healthy ? "Healthy" : "Degraded"}
             </div>
             <h3>{service.name}</h3>
             <p className="subtle">{service.endpoint}</p>
           </article>
         ))}
+        {(health.checks ?? []).length === 0 ? (
+          <p className="subtle" style={{ textAlign: "center", padding: "16px 0" }}>
+            Health data unavailable.
+          </p>
+        ) : null}
       </section>
     </PageFrame>
   );

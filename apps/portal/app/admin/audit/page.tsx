@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/page-frame";
 
 const auditRows = [
@@ -6,6 +7,10 @@ const auditRows = [
   ["2026-04-21 09:10", "bed_manager", "Viewed forecast", "ICU-01"],
   ["2026-04-21 08:55", "ops_director", "Exported board pack", "Ward summary"],
 ];
+
+export const metadata: Metadata = {
+  title: "Audit - OpenCare Portal",
+};
 
 export default function AdminAuditPage() {
   return (

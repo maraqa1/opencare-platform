@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { ForecastView } from "@/components/bed-pressure/ForecastView";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
 
 type SearchParams = Promise<{ ward?: string }>;
+
+export const metadata: Metadata = {
+  title: "Bed Pressure Predictions - OpenCare Portal",
+};
 
 export default async function BedPressurePredictionsPage({
   searchParams,

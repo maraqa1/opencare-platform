@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { DecisionCards } from "@/components/DecisionCards";
 import { PageFrame } from "@/components/page-frame";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
+
+export const metadata: Metadata = {
+  title: "Bed Pressure Decisions - OpenCare Portal",
+};
 
 export default function BedPressureDecisionsPage() {
   return (

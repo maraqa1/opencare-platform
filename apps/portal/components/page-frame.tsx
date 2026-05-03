@@ -28,7 +28,7 @@ export function PageFrame({
         <div className="hero-header">
           <div className="hero-copy">
             <p className="eyebrow">{eyebrow}</p>
-            <h2>{title}</h2>
+            <h1>{title}</h1>
             <p>{description}</p>
           </div>
           {actions ? <div className="hero-actions">{actions}</div> : null}

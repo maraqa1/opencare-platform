@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PageFrame } from "@/components/page-frame";
 import { useCases } from "@/lib/use-cases";
+
+export const metadata: Metadata = {
+  title: "Use Cases - OpenCare Portal",
+};
 
 export default function UseCasesPage() {
   return (

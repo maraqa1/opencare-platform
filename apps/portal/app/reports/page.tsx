@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
+
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
 import { getApiJson } from "@/lib/api";
+
+export const metadata: Metadata = {
+  title: "Reports - OpenCare Portal",
+};
 
 export default async function ReportsPage() {
   const reports = await getApiJson<{
@@ -18,7 +24,8 @@ export default async function ReportsPage() {
     ]).map((report) => ({
       name: report.title,
       format: report.format.toUpperCase(),
-      updated: report.path,
+      href: report.path,
+      updated: report.path.startsWith("/api/") ? "Download available" : report.path,
     })) || [];
 
   return (
@@ -37,7 +44,7 @@ export default async function ReportsPage() {
           Download buttons use the governed reports API and preserve record specifications below.
         </p>
       </section>
-      <section className="report-grid">
+      <section className="item-grid">
         {rows.map((report) => (
           <article className="report-card" key={report.name}>
             <p className="eyebrow">{report.format}</p>
@@ -45,7 +52,7 @@ export default async function ReportsPage() {
             <p className="subtle">{report.updated}</p>
             <a
               className="button primary"
-              href={report.updated}
+              href={report.href}
             >
               Download {report.format}
             </a>
