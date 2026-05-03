@@ -43,6 +43,10 @@ def _read_yaml(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _yaml_paths(root: Path) -> list[Path]:
+    return sorted([*root.rglob("*.yml"), *root.rglob("*.yaml")])
+
+
 def _stage_for_name(name: str, schema: str | None = None) -> str:
     if schema in {settings.raw_schema, settings.dbt_source_schema}:
         return "source"
@@ -98,6 +102,32 @@ class DbtLineageService:
 
     def reload(self) -> None:
         self._graph_cache = None
+
+    def _load_project_docs(self) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+        model_docs: dict[str, dict[str, Any]] = {}
+        source_docs: dict[str, dict[str, Any]] = {}
+
+        for yaml_path in _yaml_paths(self.models_dir):
+            payload = _read_yaml(yaml_path)
+
+            for item in payload.get("models", []):
+                if isinstance(item, dict) and item.get("name"):
+                    model_docs[item["name"]] = item
+
+            for item in payload.get("sources", []):
+                if not isinstance(item, dict) or not item.get("name"):
+                    continue
+                source_name = item["name"]
+                existing = source_docs.get(source_name, {})
+                existing_tables = existing.get("tables", []) if isinstance(existing.get("tables", []), list) else []
+                next_tables = item.get("tables", []) if isinstance(item.get("tables", []), list) else []
+                source_docs[source_name] = {
+                    **existing,
+                    **item,
+                    "tables": [*existing_tables, *next_tables],
+                }
+
+        return model_docs, source_docs
 
     @property
     def graph(self) -> dict[str, Any]:
@@ -303,6 +333,7 @@ class DbtLineageService:
         models: dict[str, dict[str, Any]] = {}
         sources: dict[str, dict[str, Any]] = {}
         tests_by_node: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        model_docs, source_docs = self._load_project_docs()
 
         for key, node in payload.get("nodes", {}).items():
             resource_type = node.get("resource_type")
@@ -326,6 +357,20 @@ class DbtLineageService:
             item = self._normalise_manifest_source(key, node)
             nodes[key] = item
             sources[key] = item
+
+        for model_name, doc in model_docs.items():
+            key = f"model.opencare.{model_name}"
+            if key in nodes and not tests_by_node[key]:
+                tests_by_node[key].extend(self._tests_from_schema(doc))
+
+        for source_name, source_doc in source_docs.items():
+            for table in source_doc.get("tables", []):
+                table_name = table.get("name")
+                if not table_name:
+                    continue
+                key = f"source.{source_name}.{table_name}"
+                if key in nodes and not tests_by_node[key]:
+                    tests_by_node[key].extend(self._tests_from_schema(table))
 
         parent_map = {
             key: [item for item in values if item in nodes]
@@ -354,13 +399,6 @@ class DbtLineageService:
         }
 
     def _load_project_graph(self) -> dict[str, Any]:
-        schema_payload = _read_yaml(self.models_dir.parent / "models" / "schema.yml")
-        if not schema_payload:
-            schema_payload = _read_yaml(self.models_dir / "schema.yml")
-        sources_payload = _read_yaml(self.models_dir.parent / "models" / "sources.yml")
-        if not sources_payload:
-            sources_payload = _read_yaml(self.models_dir / "sources.yml")
-
         nodes: dict[str, dict[str, Any]] = {}
         models: dict[str, dict[str, Any]] = {}
         sources: dict[str, dict[str, Any]] = {}
@@ -369,8 +407,7 @@ class DbtLineageService:
         child_map: dict[str, list[str]] = defaultdict(list)
         edges: list[dict[str, str]] = []
 
-        model_docs = {item["name"]: item for item in schema_payload.get("models", []) if isinstance(item, dict)}
-        source_docs = {item["name"]: item for item in sources_payload.get("sources", []) if isinstance(item, dict)}
+        model_docs, source_docs = self._load_project_docs()
 
         for sql_path in sorted(self.models_dir.rglob("*.sql")):
             model_name = sql_path.stem

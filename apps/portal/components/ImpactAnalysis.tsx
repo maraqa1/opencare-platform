@@ -8,9 +8,25 @@ type ImpactPayload = {
   affected_models: Array<{ id: string; label: string; stage: string }>;
 };
 
-export function ImpactAnalysis() {
-  const [sourceName, setSourceName] = useState("bed_events");
+type ImpactAnalysisProps = {
+  sourceOptions?: string[];
+  initialSource?: string;
+};
+
+const DEFAULT_SOURCE_OPTIONS = ["bed_events", "wards", "patients"];
+
+export function ImpactAnalysis({ sourceOptions, initialSource }: ImpactAnalysisProps) {
+  const resolvedOptions = sourceOptions && sourceOptions.length > 0 ? sourceOptions : DEFAULT_SOURCE_OPTIONS;
+  const defaultSource =
+    initialSource && resolvedOptions.includes(initialSource) ? initialSource : resolvedOptions[0] ?? "bed_events";
+  const [sourceName, setSourceName] = useState(defaultSource);
   const [payload, setPayload] = useState<ImpactPayload | null>(null);
+
+  useEffect(() => {
+    if (!resolvedOptions.includes(sourceName)) {
+      setSourceName(defaultSource);
+    }
+  }, [defaultSource, resolvedOptions, sourceName]);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,9 +62,11 @@ export function ImpactAnalysis() {
         <label className="selector-form">
           <span className="subtle">Source table</span>
           <select value={sourceName} onChange={(event) => setSourceName(event.target.value)}>
-            <option value="bed_events">bed_events</option>
-            <option value="wards">wards</option>
-            <option value="patients">patients</option>
+            {resolvedOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
           </select>
         </label>
       </div>

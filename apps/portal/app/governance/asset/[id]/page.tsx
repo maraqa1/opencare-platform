@@ -51,7 +51,7 @@ export default async function GovernanceAssetPage({ params }: PageProps) {
         <LineageDAG modelName={asset.table} layout="stacked" declaredSources={useCase.sourceTables} />
         <div className="governance-proof-grid">
           <SourceFreshness sourceFilters={useCase.diagnosticsScope?.freshnessSources} />
-          <ImpactAnalysis />
+          <ImpactAnalysis sourceOptions={useCase.sourceTables} initialSource={useCase.sourceTables?.[0]} />
         </div>
         <DataQualitySummary modelFilters={useCase.diagnosticsScope?.qualityModels} />
         <ComplianceSummary />
