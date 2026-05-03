@@ -10,6 +10,13 @@ export type UseCaseModule = {
   summary: string;
   defaultHref?: string;
   kpis: Array<{ label: string; value: string; note: string }>;
+  shell: {
+    label: string;
+    title: string;
+    badge: string;
+    actionHref: string;
+    actionLabel: string;
+  };
 };
 
 export type DecisionItem = {
@@ -39,6 +46,13 @@ export const useCases: UseCaseModule[] = [
       { label: "7-Day Forecast", value: "3", note: "Breach risks predicted" },
       { label: "Active Anomalies", value: "5", note: "Actionable signals" },
     ],
+    shell: {
+      label: "Bed Pressure Intelligence",
+      title: "Bed Pressure Workspace",
+      badge: "Operations",
+      actionHref: "/admin/governance",
+      actionLabel: "Governance",
+    },
   },
   {
     id: "revenue_cycle_management",
@@ -54,6 +68,13 @@ export const useCases: UseCaseModule[] = [
       { label: "Payer Control", value: "Live", note: "Contract breaches and underpayment flags" },
       { label: "Execution Queue", value: "Live", note: "Owner-led recovery actions" },
     ],
+    shell: {
+      label: "Revenue Cycle Management",
+      title: "Revenue Cycle Workspace",
+      badge: "Revenue Ops",
+      actionHref: "/admin/governance",
+      actionLabel: "Governance",
+    },
   },
   {
     id: "staff_scheduling",
@@ -68,6 +89,13 @@ export const useCases: UseCaseModule[] = [
       { label: "Skill Mix", value: "-", note: "Awaiting data layer" },
       { label: "Escalations", value: "-", note: "Awaiting rules" },
     ],
+    shell: {
+      label: "Staff Scheduling",
+      title: "Staff Scheduling Workspace",
+      badge: "Coming Soon",
+      actionHref: "/admin/configuration",
+      actionLabel: "Configuration",
+    },
   },
   {
     id: "patient_flow",
@@ -82,6 +110,13 @@ export const useCases: UseCaseModule[] = [
       { label: "Transfer Delays", value: "-", note: "Awaiting data layer" },
       { label: "Actions", value: "-", note: "Awaiting rules" },
     ],
+    shell: {
+      label: "Patient Flow",
+      title: "Patient Flow Workspace",
+      badge: "Coming Soon",
+      actionHref: "/admin/configuration",
+      actionLabel: "Configuration",
+    },
   },
 ];
 
@@ -97,10 +132,26 @@ export const revenueCycleTabs = [
   { key: "cash-command", label: "Cash Command", href: "/use-cases/revenue-cycle-management/cash-command" },
   { key: "recovery-queue", label: "Recovery Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },
   { key: "payer-control", label: "Payer Control", href: "/use-cases/revenue-cycle-management/payer-control" },
-  { key: "revenue-leakage", label: "Leakage", href: "/use-cases/revenue-cycle-management/revenue-leakage" },
+  { key: "revenue-leakage", label: "Revenue Leakage", href: "/use-cases/revenue-cycle-management/revenue-leakage" },
   { key: "team-performance", label: "Team Performance", href: "/use-cases/revenue-cycle-management/team-performance" },
   { key: "executive-narrative", label: "Executive Narrative", href: "/use-cases/revenue-cycle-management/executive-narrative" },
 ];
+
+export function getUseCaseByPath(pathname: string): UseCaseModule | null {
+  if (pathname.startsWith("/occupancy") || pathname.startsWith("/use-cases/bed-pressure")) {
+    return useCases.find((item) => item.id === "bed_pressure") ?? null;
+  }
+  if (pathname.startsWith("/use-cases/revenue-cycle-management")) {
+    return useCases.find((item) => item.id === "revenue_cycle_management") ?? null;
+  }
+  if (pathname.startsWith("/use-cases/staff-scheduling")) {
+    return useCases.find((item) => item.id === "staff_scheduling") ?? null;
+  }
+  if (pathname.startsWith("/use-cases/patient-flow")) {
+    return useCases.find((item) => item.id === "patient_flow") ?? null;
+  }
+  return null;
+}
 
 export const decisionQueue: DecisionItem[] = [
   {

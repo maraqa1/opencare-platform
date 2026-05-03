@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import type { NavItem } from "@/config/navigation";
+import { getUseCaseByPath } from "@/lib/use-cases";
 
 type Props = {
   pathname: string;
@@ -21,20 +22,15 @@ function getTopbarContext(pathname: string) {
     };
   }
 
-  if (pathname.startsWith("/use-cases/revenue-cycle-management")) {
-    return {
-      label: "Revenue Cycle Management",
-      title: "Executive Revenue Workspace",
-      badge: "Revenue Ops",
-      actionHref: "/admin/governance",
-      actionLabel: "Governance",
-    };
+  const useCase = getUseCaseByPath(pathname);
+  if (useCase) {
+    return useCase.shell;
   }
 
   return {
-    label: "Phase 4b Enhanced",
-    title: "Use Case Workspace Architecture",
-    badge: "Bed Manager",
+    label: "OpenCare",
+    title: "Hospital Operations Intelligence",
+    badge: "Platform",
     actionHref: "/admin",
     actionLabel: "Admin",
   };
