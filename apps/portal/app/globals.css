@@ -3464,6 +3464,9 @@ code {
   align-items: center;
   justify-content: center;
   min-height: 28px;
+  width: fit-content;
+  max-width: 100%;
+  align-self: start;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
@@ -3690,7 +3693,7 @@ code {
   border-radius: 26px;
   padding: 22px;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 18px;
   overflow: auto;
 }
