@@ -1,8 +1,9 @@
 "use client";
 
 import { RCMDashboard } from "@/components/RCMDashboard";
+import { RevenueCycleDashboardLink } from "@/components/RevenueCycleDashboardLink";
 import { RCMNavTabs }   from "../layout/RCMNavTabs";
-import { RCMPageHeader } from "../layout/RCMPageHeader";
+import { CFO_DASHBOARD_URL, RCMPageHeader } from "../layout/RCMPageHeader";
 import { KPIGrid }       from "../layout/KPIGrid";
 import { StatusPill }    from "../shared/StatusPill";
 import { ActionButton }  from "../shared/ActionButton";
@@ -33,7 +34,8 @@ export function CashCommand() {
       <RCMPageHeader
         subtitle="The CFO landing view for real-time cash control, recovery execution, and revenue accountability."
         showCFOButton
-        cfoHref="/use-cases/revenue-cycle-management/executive-narrative"
+        cfoHref={CFO_DASHBOARD_URL}
+        cfoLabel="Open CFO Dashboard"
         badges={[
           { label: "Financial truth: ERP postings", color: "blue" },
           ...(data?.data_freshness?.status
@@ -54,6 +56,10 @@ export function CashCommand() {
           { label: "EXPECTED COLLECTIONS",   value: currencyCompact(data.expected_collections) },
         ]} />
       )}
+
+      <div style={{ marginBottom: 16 }}>
+        <RevenueCycleDashboardLink />
+      </div>
 
       {/* Executive dashboard with charts (uses its own fetch internally) */}
       <RCMDashboard />

@@ -342,6 +342,7 @@ def adhoc_metric(metric_name: str) -> dict[str, Any]:
 def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
     metrics = [adhoc_metric(metric_name) for metric_name in chart_config.get("metrics", [])]
     group_by = chart_config.get("group_by", [])
+    time_range = chart_config.get("time_range", "No filter")
     params = {
         "datasource": f"{dataset_id}__table",
         "viz_type": chart_config["viz_type"],
@@ -351,7 +352,31 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "row_limit": chart_config.get("row_limit", 500),
         "adhoc_filters": [],
         "orderby": [],
-        "time_range": "Last 30 days",
+        "time_range": time_range,
+    }
+    query_context = {
+        "datasource": {"id": dataset_id, "type": "table"},
+        "force": False,
+        "queries": [
+            {
+                "time_range": time_range,
+                "granularity": chart_config.get("time_column"),
+                "granularity_sqla": chart_config.get("time_column"),
+                "columns": group_by,
+                "metrics": metrics,
+                "orderby": [],
+                "annotation_layers": [],
+                "row_limit": chart_config.get("row_limit", 500),
+                "series_limit": 0,
+                "series_limit_metric": None,
+                "order_desc": True,
+                "url_params": {},
+                "custom_params": {},
+                "custom_form_data": {},
+            }
+        ],
+        "result_format": "json",
+        "result_type": "full",
     }
     return {
         "slice_name": chart_config["title"],
@@ -359,6 +384,7 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "datasource_id": dataset_id,
         "datasource_type": "table",
         "params": json.dumps(params),
+        "query_context": json.dumps(query_context),
     }
 
 

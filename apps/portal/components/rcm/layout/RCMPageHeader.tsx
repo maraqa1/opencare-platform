@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 
-
 type Badge = { label: string; color?: "green" | "amber" | "blue" | "gray" };
+
+export const CFO_DASHBOARD_URL =
+  "https://analytics.opencare.opendatalake.com/superset/dashboard/revenue-cycle-management/";
 
 export function RCMPageHeader({
   eyebrow = "USE CASE WORKSPACE",
@@ -62,10 +64,10 @@ export function RCMPageHeader({
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
               {badges.map((b) => {
                 const badgeColors = {
-                  green:  { bg: "var(--oc-normal-bg)", color: "var(--oc-normal)" },
-                  amber:  { bg: "var(--oc-warning-bg)", color: "var(--oc-warning)" },
-                  blue:   { bg: "var(--oc-blue-light)", color: "var(--oc-navy)" },
-                  gray:   { bg: "var(--oc-gray-100)", color: "var(--oc-gray-600)" },
+                  green: { bg: "var(--oc-normal-bg)", color: "var(--oc-normal)" },
+                  amber: { bg: "var(--oc-warning-bg)", color: "var(--oc-warning)" },
+                  blue: { bg: "var(--oc-blue-light)", color: "var(--oc-navy)" },
+                  gray: { bg: "var(--oc-gray-100)", color: "var(--oc-gray-600)" },
                 };
                 const cfg = badgeColors[b.color ?? "gray"];
                 return (
@@ -100,26 +102,47 @@ export function RCMPageHeader({
                 border: `1px solid ${arBreached ? "rgba(183,28,28,0.2)" : "rgba(46,125,50,0.2)"}`,
               }}
             >
-              AR Days: {arDays}d {arBreached ? "⚠" : "✓"} (target {arTarget}d)
+              AR Days: {arDays}d {arBreached ? "!" : "OK"} (target {arTarget}d)
             </span>
           )}
           {showCFOButton && cfoHref ? (
-            <Link
-              href={cfoHref}
-              style={{
-                background: "var(--oc-navy)",
-                color: "rgba(255,255,255,0.88)",
-                border: "none",
-                borderRadius: 10,
-                padding: "6px 14px",
-                fontSize: 12,
-                fontWeight: 500,
-                textDecoration: "none",
-                fontFamily: "var(--font-body)",
-              }}
-            >
-              {cfoLabel}
-            </Link>
+            cfoHref.startsWith("http") ? (
+              <a
+                href={cfoHref}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  background: "var(--oc-navy)",
+                  color: "rgba(255,255,255,0.88)",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                {cfoLabel}
+              </a>
+            ) : (
+              <Link
+                href={cfoHref}
+                style={{
+                  background: "var(--oc-navy)",
+                  color: "rgba(255,255,255,0.88)",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                {cfoLabel}
+              </Link>
+            )
           ) : showCFOButton && onCFOClick ? (
             <button
               onClick={onCFOClick}

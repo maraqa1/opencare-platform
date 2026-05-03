@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRCMFetch } from "../useRCMFetch";
 import { RCMNavTabs } from "../layout/RCMNavTabs";
-import { RCMPageHeader } from "../layout/RCMPageHeader";
+import { CFO_DASHBOARD_URL, RCMPageHeader } from "../layout/RCMPageHeader";
 import { KPIGrid } from "../layout/KPIGrid";
 import { DeltaPill } from "../shared/DeltaPill";
 import { LoadingView, ErrorView, EmptyView, StaleBanner } from "../shared/ViewStates";
@@ -68,8 +68,8 @@ export function ExecutiveNarrative() {
       <RCMPageHeader
         subtitle="CFO-ready operating narrative generated from live recovery data."
         showCFOButton
-        cfoHref="/use-cases/revenue-cycle-management/executive-narrative"
-        cfoLabel="Executive Narrative"
+        cfoHref={CFO_DASHBOARD_URL}
+        cfoLabel="Open CFO Dashboard"
         badges={[
           { label: "Narrative: backend-generated", color: "green" },
           { label: "Cash impact: live only", color: "blue" },
