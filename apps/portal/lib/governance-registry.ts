@@ -1355,7 +1355,7 @@ const governanceUseCases: GovernanceUseCase[] = [
           datasetColumn("encounter_count", "integer", "internal", "Volume of encounters acquired."),
           datasetColumn("gross_revenue", "numeric", "internal", "Attributed gross revenue."),
         ],
-        qualityDimensions: dims("stale", "warning", "warning", "missing"),
+        qualityDimensions: dims("warning", "warning", "warning", "unknown"),
         rowCount: 18,
         lastUpdated: "2026-04-21T08:00:00Z",
         openRisks: ["CRM lineage missing.", "Freshness is stale for the latest acquisition period."],
