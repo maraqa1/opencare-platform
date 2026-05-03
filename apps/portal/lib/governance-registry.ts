@@ -613,7 +613,7 @@ const governanceUseCases: GovernanceUseCase[] = [
       "Monitor ward pressure, forecast occupancy risk, surface anomalies, and support capacity decisions.",
     owner: "Clinical Operations Analytics",
     steward: "Capacity Planning Lead",
-    sourceTables: ["bed_events", "wards", "patients"],
+    sourceTables: ["bed_events"],
     workspaceCoverage: [
       { label: "Overview", href: "/use-cases/bed-pressure/overview" },
       { label: "Status", href: "/use-cases/bed-pressure/status" },
@@ -984,7 +984,7 @@ const governanceUseCases: GovernanceUseCase[] = [
     trustMap: bedPressureTrustMap,
     diagnosticsScope: {
       qualityModels: ["fct_bed_occupancy", "dim_ward", "forecast", "anomaly", "decision_queue"],
-      freshnessSources: ["bed_events", "wards", "patients"],
+      freshnessSources: ["bed_events"],
     },
   },
   {
