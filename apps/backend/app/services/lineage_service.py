@@ -178,6 +178,14 @@ class DbtLineageService:
             "edges": edges,
         }
 
+    def get_source_detail(self, source_name: str) -> dict[str, Any] | None:
+        key = self._find_node_key(source_name)
+        if not key:
+            key = self._find_node_key(f"raw.{source_name}")
+        if not key or not key.startswith("source."):
+            return None
+        return self.graph["nodes"].get(key)
+
     def get_upstream_models(self, model_name: str) -> list[dict[str, Any]]:
         key = self._find_node_key(model_name)
         if not key:

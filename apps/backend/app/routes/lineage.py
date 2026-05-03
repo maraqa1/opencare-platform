@@ -20,6 +20,14 @@ def get_model_lineage(model_name: str) -> dict[str, object]:
     return payload
 
 
+@router.get("/sources/{source_name}")
+def get_source_detail(source_name: str) -> dict[str, object]:
+    payload = get_lineage_service().get_source_detail(source_name)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="Lineage source not found")
+    return payload
+
+
 @router.get("/models/{model_name}/upstream")
 def get_upstream(model_name: str) -> dict[str, object]:
     return {

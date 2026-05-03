@@ -95,6 +95,10 @@ function normalizeQualifiedName(value?: string, fallback?: string) {
   return value;
 }
 
+function isDeclaredSource(node: LineageNode) {
+  return node.id.startsWith("declared-source-") || node.meta?.declared_source === true;
+}
+
 export function LineageDAG({
   modelName,
   layout = "split",
@@ -106,11 +110,13 @@ export function LineageDAG({
 }) {
   const [payload, setPayload] = useState<LineagePayload | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [hydratedDeclaredSources, setHydratedDeclaredSources] = useState<Record<string, LineageNode>>({});
 
   useEffect(() => {
     let cancelled = false;
     setPayload(null);
     setSelectedNodeId(null);
+    setHydratedDeclaredSources({});
 
     async function loadLineage() {
       const response = await fetch(`/api/portal/api/v1/lineage/models/${encodeURIComponent(modelName)}`, {
@@ -123,6 +129,45 @@ export function LineageDAG({
       if (!cancelled) {
         setPayload(nextPayload);
         setSelectedNodeId(nextPayload.nodes?.[0]?.id ?? null);
+      }
+
+      const existingSourceNames = new Set(
+        (nextPayload.nodes ?? [])
+          .filter((node) => node.stage === "source")
+          .flatMap((node) => [node.label, node.name, node.qualified_name])
+          .filter(Boolean)
+          .map((value) => String(value).toLowerCase()),
+      );
+      const missingDeclaredSources = declaredSources.filter((source) => {
+        const sourceKey = source.toLowerCase();
+        return !Array.from(existingSourceNames).some((value) => value === sourceKey || value.endsWith(`.${sourceKey}`));
+      });
+
+      if (missingDeclaredSources.length > 0) {
+        const resolved = await Promise.all(
+          missingDeclaredSources.map(async (source) => {
+            try {
+              const detailResponse = await fetch(`/api/portal/api/v1/lineage/sources/${encodeURIComponent(source)}`, {
+                cache: "no-store",
+              });
+              if (!detailResponse.ok) {
+                return null;
+              }
+              const detail = (await detailResponse.json()) as LineageNode;
+              return [source, detail] as const;
+            } catch {
+              return null;
+            }
+          }),
+        );
+
+        if (!cancelled) {
+          setHydratedDeclaredSources(
+            Object.fromEntries(
+              resolved.filter((item): item is readonly [string, LineageNode] => item !== null),
+            ),
+          );
+        }
       }
     }
 
@@ -162,6 +207,21 @@ export function LineageDAG({
         continue;
       }
 
+      const hydratedSource = hydratedDeclaredSources[source];
+      if (hydratedSource) {
+        graphNodes.push({
+          ...hydratedSource,
+          meta: { ...hydratedSource.meta, declared_source: true },
+        });
+        if (firstDownstreamNode) {
+          graphEdges.push({
+            from: hydratedSource.id,
+            to: firstDownstreamNode.id,
+          });
+        }
+        continue;
+      }
+
       const syntheticNodeId = `declared-source-${source}`;
       graphNodes.push({
         id: syntheticNodeId,
@@ -173,6 +233,7 @@ export function LineageDAG({
         description: "Declared raw source table for the selected use-case contract. Detailed transformation metadata is not yet connected for this source path.",
         columns: {},
         tests: [],
+        meta: { declared_source: true },
       });
       if (firstDownstreamNode) {
         graphEdges.push({
@@ -216,7 +277,7 @@ export function LineageDAG({
       width: paddingX * 2 + nodeWidth + stageGap * (stages.length - 1),
       height: paddingY * 2 + Math.max(maxRows * rowGap, nodeHeight),
     };
-  }, [declaredSources, payload]);
+  }, [declaredSources, hydratedDeclaredSources, payload]);
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
 
@@ -279,6 +340,7 @@ export function LineageDAG({
                 }
                 const colours = NODE_COLOURS[node.stage];
                 const isSelected = node.id === selectedNodeId;
+                const isDeclared = isDeclaredSource(node);
                 return (
                   <g
                     key={node.id}
@@ -302,6 +364,7 @@ export function LineageDAG({
                       fill={colours.bg}
                       stroke={colours.border}
                       strokeWidth={isSelected ? 3 : 1.5}
+                      strokeDasharray={isDeclared ? "8 5" : undefined}
                     />
                     <rect
                       x={position.x}
@@ -315,10 +378,10 @@ export function LineageDAG({
                       {node.label}
                     </text>
                     <text x={position.x + 18} y={position.y + 48} className="lineage-node-subtitle" fill="#5f6b7a">
-                      {node.schema ?? colours.label}
+                      {normalizeSchema(node.schema)}
                     </text>
                     <text x={position.x + 18} y={position.y + 64} className="lineage-node-meta" fill="#7d8793">
-                      {(node.tests ?? []).length > 0 ? `${(node.tests ?? []).length} tests` : colours.label}
+                      {isDeclared ? "Declared source" : (node.tests ?? []).length > 0 ? `${(node.tests ?? []).length} tests` : colours.label}
                     </text>
                   </g>
                 );
@@ -338,6 +401,7 @@ export function LineageDAG({
 function NodeDetailPanel({ node, fullWidth = false }: { node: LineageNode; fullWidth?: boolean }) {
   const colours = NODE_COLOURS[node.stage];
   const columns = Object.entries(node.columns ?? {});
+  const declared = isDeclaredSource(node);
 
   return (
     <aside className={fullWidth ? "node-detail-panel node-detail-panel-full" : "node-detail-panel"} style={{ borderTopColor: colours.border }}>
@@ -352,6 +416,7 @@ function NodeDetailPanel({ node, fullWidth = false }: { node: LineageNode; fullW
       </div>
 
       {node.description ? <p className="node-description">{node.description}</p> : null}
+      {declared ? <p className="subtle">This source is declared in the use-case contract and may not be directly traversed in the discovered dbt lineage for this fact path.</p> : null}
 
       <div className="node-detail-meta">
         <div>
