@@ -48,7 +48,7 @@ export default async function GovernanceKpiTracePage({ params }: PageProps) {
       ]}
     >
       <section className="governance-proof-stack">
-        <LineageDAG modelName={modelName} layout="stacked" />
+        <LineageDAG modelName={modelName} layout="stacked" declaredSources={assetMatch?.useCase.sourceTables ?? []} />
         <div className="governance-proof-grid">
           <SourceFreshness sourceFilters={assetMatch?.useCase.diagnosticsScope?.freshnessSources} />
           <ImpactAnalysis
