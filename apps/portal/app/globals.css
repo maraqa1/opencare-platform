@@ -3051,6 +3051,240 @@ code {
   background: rgba(248, 250, 253, 0.78);
 }
 
+.governance-master-detail {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.governance-usecase-list {
+  display: grid;
+  gap: 8px;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.governance-usecase-list-item {
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 14px 16px;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.governance-usecase-list-item:hover,
+.governance-usecase-list-item.selected,
+.governance-asset-card.selected,
+.governance-trust-node.selected {
+  transform: translateX(2px);
+  border-color: rgba(46, 117, 182, 0.22);
+  background: linear-gradient(180deg, rgba(247, 251, 255, 0.98), rgba(255, 255, 255, 0.98));
+  box-shadow: var(--surface-shadow-strong);
+}
+
+.governance-usecase-list-item h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.governance-detail-shell,
+.governance-detail-main,
+.governance-overview-grid,
+.governance-trust-map-shell,
+.governance-trust-map,
+.governance-trust-column,
+.governance-trust-column-body,
+.governance-trust-flow {
+  display: grid;
+  gap: 16px;
+}
+
+.governance-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.42fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.governance-overview-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.governance-trust-sidebar {
+  position: sticky;
+  top: 24px;
+}
+
+.governance-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--oc-gray-600);
+  font-size: 13px;
+  padding: 4px 0 12px;
+}
+
+.governance-breadcrumb-sep {
+  color: rgba(31, 56, 100, 0.3);
+}
+
+.governance-trust-map {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
+}
+
+.governance-trust-column {
+  border-radius: 20px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(248, 250, 253, 0.88);
+  padding: 14px;
+}
+
+.governance-trust-column-head {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.06);
+}
+
+.governance-trust-node {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.governance-trust-node strong {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  letter-spacing: -0.03em;
+}
+
+.governance-trust-node p,
+.governance-trust-flow-item em {
+  margin: 0;
+  color: var(--oc-gray-600);
+  line-height: 1.55;
+}
+
+.governance-trust-flow {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.governance-trust-flow-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  border-radius: 16px;
+  border: 1px dashed rgba(31, 56, 100, 0.14);
+  background: rgba(248, 250, 253, 0.9);
+  padding: 12px 14px;
+}
+
+.governance-column-table,
+.governance-policy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.governance-column-table th,
+.governance-policy-table th {
+  text-align: left;
+  padding: 8px 10px 8px 0;
+  color: var(--oc-gray-600);
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.governance-column-table td,
+.governance-policy-table td {
+  padding: 10px 10px 10px 0;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.06);
+  vertical-align: top;
+}
+
+.governance-column-table tr:last-child td,
+.governance-policy-table tr:last-child td {
+  border-bottom: none;
+}
+
+.governance-classification-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.governance-classification-badge.restricted {
+  background: var(--oc-critical-bg);
+  color: var(--oc-critical);
+  border: 1px solid rgba(183, 28, 28, 0.14);
+}
+
+.governance-classification-badge.sensitive {
+  background: var(--oc-warning-bg);
+  color: var(--oc-warning);
+  border: 1px solid rgba(230, 81, 0, 0.12);
+}
+
+.governance-classification-badge.internal {
+  background: rgba(227, 242, 253, 0.6);
+  color: var(--oc-blue);
+  border: 1px solid rgba(46, 117, 182, 0.12);
+}
+
+.governance-classification-badge.public {
+  background: var(--oc-normal-bg);
+  color: var(--oc-normal);
+  border: 1px solid rgba(46, 125, 50, 0.12);
+}
+
+.governance-dq-scorecard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(248, 250, 253, 0.9);
+}
+
+.governance-dq-cell {
+  display: grid;
+  gap: 8px;
+}
+
+.governance-term-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 10px;
+  color: var(--oc-gray-600);
+  font-size: 13px;
+}
+
 @media (max-width: 1200px) {
   .governance-summary-grid,
   .governance-view-nav,
@@ -3064,6 +3298,23 @@ code {
 
   .governance-contract-layout {
     grid-template-columns: 1fr;
+  }
+
+  .governance-master-detail,
+  .governance-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .governance-usecase-list,
+  .governance-trust-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .governance-trust-map,
+  .governance-trust-flow,
+  .governance-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -3080,6 +3331,10 @@ code {
   .governance-discovery-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .governance-dq-scorecard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -3103,7 +3358,11 @@ code {
   .governance-glossary-grid,
   .governance-asset-grid,
   .governance-quality-grid,
-  .governance-view-nav {
+  .governance-view-nav,
+  .governance-trust-map,
+  .governance-trust-flow,
+  .governance-overview-grid,
+  .governance-dq-scorecard {
     grid-template-columns: 1fr;
   }
 
