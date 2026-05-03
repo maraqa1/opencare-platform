@@ -1,7 +1,6 @@
 "use client";
 
 import { RCMDashboard } from "@/components/RCMDashboard";
-import { RevenueCycleDashboardLink } from "@/components/RevenueCycleDashboardLink";
 import { RCMNavTabs }   from "../layout/RCMNavTabs";
 import { CFO_DASHBOARD_URL, RCMPageHeader } from "../layout/RCMPageHeader";
 import { KPIGrid }       from "../layout/KPIGrid";
@@ -56,10 +55,6 @@ export function CashCommand() {
           { label: "EXPECTED COLLECTIONS",   value: currencyCompact(data.expected_collections) },
         ]} />
       )}
-
-      <div style={{ marginBottom: 16 }}>
-        <RevenueCycleDashboardLink />
-      </div>
 
       {/* Executive dashboard with charts (uses its own fetch internally) */}
       <RCMDashboard />
