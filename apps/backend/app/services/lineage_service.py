@@ -179,12 +179,13 @@ class DbtLineageService:
         }
 
     def get_source_detail(self, source_name: str) -> dict[str, Any] | None:
-        key = self._find_node_key(source_name)
-        if not key:
-            key = self._find_node_key(f"raw.{source_name}")
-        if not key or not key.startswith("source."):
-            return None
-        return self.graph["nodes"].get(key)
+        for candidate in self._source_lookup_candidates(source_name):
+            key = self._find_node_key(candidate)
+            if not key:
+                key = self._find_node_key(f"raw.{candidate}")
+            if key and key.startswith("source."):
+                return self.graph["nodes"].get(key)
+        return None
 
     def get_upstream_models(self, model_name: str) -> list[dict[str, Any]]:
         key = self._find_node_key(model_name)
@@ -684,6 +685,15 @@ class DbtLineageService:
             if name in candidates:
                 return key
         return None
+
+    def _source_lookup_candidates(self, source_name: str) -> list[str]:
+        source_name = source_name.replace("raw.", "")
+        alias_map = {
+            "claims": ["claims", "rcm_claims"],
+            "financial_postings": ["financial_postings", "rcm_financial_postings"],
+            "referrals": ["referrals", "rcm_referrals"],
+        }
+        return alias_map.get(source_name, [source_name])
 
     def _is_compatibility_alias(self, node: dict[str, Any]) -> bool:
         description = str(node.get("description", ""))

@@ -7,7 +7,7 @@ import { ImpactAnalysis } from "@/components/ImpactAnalysis";
 import { LineageDAG } from "@/components/LineageDAG";
 import { SourceFreshness } from "@/components/SourceFreshness";
 import { PageFrame } from "@/components/page-frame";
-import { getGovernanceAssetById, getGovernanceKpiBySlug } from "@/lib/governance-registry";
+import { getGovernanceAssetById, getGovernanceKpiBySlug, getGovernanceLineageSources } from "@/lib/governance-registry";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -48,7 +48,11 @@ export default async function GovernanceKpiTracePage({ params }: PageProps) {
       ]}
     >
       <section className="governance-proof-stack">
-        <LineageDAG modelName={modelName} layout="stacked" declaredSources={assetMatch?.useCase.sourceTables ?? []} />
+        <LineageDAG
+          modelName={modelName}
+          layout="stacked"
+          declaredSources={assetMatch ? getGovernanceLineageSources(assetMatch.useCase) : []}
+        />
         <div className="governance-proof-grid">
           <SourceFreshness sourceFilters={assetMatch?.useCase.diagnosticsScope?.freshnessSources} />
           <ImpactAnalysis

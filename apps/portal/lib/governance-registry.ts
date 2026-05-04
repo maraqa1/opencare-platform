@@ -613,7 +613,7 @@ const governanceUseCases: GovernanceUseCase[] = [
       "Monitor ward pressure, forecast occupancy risk, surface anomalies, and support capacity decisions.",
     owner: "Clinical Operations Analytics",
     steward: "Capacity Planning Lead",
-    sourceTables: ["bed_events"],
+    sourceTables: ["bed_events", "wards", "patients"],
     workspaceCoverage: [
       { label: "Overview", href: "/use-cases/bed-pressure/overview" },
       { label: "Status", href: "/use-cases/bed-pressure/status" },
@@ -984,7 +984,7 @@ const governanceUseCases: GovernanceUseCase[] = [
     trustMap: bedPressureTrustMap,
     diagnosticsScope: {
       qualityModels: ["fct_bed_occupancy", "dim_ward", "forecast", "anomaly", "decision_queue"],
-      freshnessSources: ["bed_events"],
+      freshnessSources: ["bed_events", "wards", "patients"],
     },
   },
   {
@@ -1652,6 +1652,16 @@ export function getGovernanceAssetById(assetId: string) {
     }
   }
   return null;
+}
+
+export function getGovernanceLineageSources(useCase: GovernanceUseCase) {
+  const rawUpstreams = useCase.governedDatasets.flatMap((dataset) =>
+    (dataset.upstreamSources ?? [])
+      .filter((source) => source.startsWith("raw."))
+      .map((source) => source.replace(/^raw\./, "")),
+  );
+
+  return Array.from(new Set([...useCase.sourceTables, ...rawUpstreams]));
 }
 
 export function getGovernanceKpis(): GovernanceKpi[] {
