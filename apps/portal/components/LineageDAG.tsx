@@ -95,6 +95,19 @@ function normalizeQualifiedName(value?: string, fallback?: string) {
   return value;
 }
 
+function columnClassification(column: LineageColumn) {
+  const meta = column.meta ?? {};
+  if (meta.contains_pii === true) {
+    const level = typeof meta.pii_level === "string" ? meta.pii_level : "UNSPECIFIED";
+    return `Personally Identifiable Data (${level})`;
+  }
+  const classification = typeof meta.classification === "string" ? meta.classification : "";
+  if (classification) {
+    return niceLabel(classification);
+  }
+  return "Not classified";
+}
+
 function isDeclaredSource(node: LineageNode) {
   return node.id.startsWith("declared-source-") || node.meta?.declared_source === true;
 }
@@ -437,6 +450,7 @@ function NodeDetailPanel({ node, fullWidth = false }: { node: LineageNode; fullW
               <tr>
                 <th>Name</th>
                 <th>Type</th>
+                <th>Classification</th>
                 <th>Description</th>
               </tr>
             </thead>
@@ -447,6 +461,7 @@ function NodeDetailPanel({ node, fullWidth = false }: { node: LineageNode; fullW
                     <code>{name}</code>
                   </td>
                   <td>{column.type || "derived"}</td>
+                  <td>{columnClassification(column)}</td>
                   <td>{column.description || "No column description provided."}</td>
                 </tr>
               ))}
