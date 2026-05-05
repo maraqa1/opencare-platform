@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { ClassificationInventory } from "@/components/ClassificationInventory";
 import { DataQualitySummary } from "@/components/DataQualitySummary";
 import { LineageDAG } from "@/components/LineageDAG";
 import { SourceFreshness } from "@/components/SourceFreshness";
@@ -1181,36 +1182,50 @@ export function GovernanceControlTower() {
                 ) : null}
 
                 {activeTab === "classification" ? (
-                  <table className="governance-policy-table">
-                    <thead>
-                      <tr>
-                        <th>Rule</th>
-                        <th>Matches</th>
-                        <th>Classification</th>
-                        <th>Scope</th>
-                        <th>Rationale</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {classificationRules.map((rule: ClassificationRule) => (
-                        <tr key={rule.id}>
-                          <td>
-                            <strong>{rule.name}</strong>
-                          </td>
-                          <td>
-                            <code>{rule.matchPattern}</code>
-                          </td>
-                          <td>
-                            <span className={`governance-classification-badge ${rule.classification}`}>
-                              {rule.classification}
-                            </span>
-                          </td>
-                          <td className="subtle">{statusLabel(rule.scope)}</td>
-                          <td className="subtle">{rule.rationale}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <>
+                    <ClassificationInventory />
+                    <div className="classification-rule-panel">
+                      <div className="governance-panel-head">
+                        <div>
+                          <p className="eyebrow">Legacy Rules</p>
+                          <h3>Curated Registry Rules</h3>
+                          <p className="section-subtitle">
+                            Existing frontend rules remain visible while the backend classification module becomes the resolved inventory source.
+                          </p>
+                        </div>
+                      </div>
+                      <table className="governance-policy-table">
+                        <thead>
+                          <tr>
+                            <th>Rule</th>
+                            <th>Matches</th>
+                            <th>Classification</th>
+                            <th>Scope</th>
+                            <th>Rationale</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {classificationRules.map((rule: ClassificationRule) => (
+                            <tr key={rule.id}>
+                              <td>
+                                <strong>{rule.name}</strong>
+                              </td>
+                              <td>
+                                <code>{rule.matchPattern}</code>
+                              </td>
+                              <td>
+                                <span className={`governance-classification-badge ${rule.classification}`}>
+                                  {rule.classification}
+                                </span>
+                              </td>
+                              <td className="subtle">{statusLabel(rule.scope)}</td>
+                              <td className="subtle">{rule.rationale}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 ) : null}
               </div>
             </div>

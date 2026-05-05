@@ -3261,6 +3261,158 @@ code {
   border: 1px solid rgba(46, 125, 50, 0.12);
 }
 
+.governance-classification-badge.confidential {
+  background: rgba(46, 117, 182, 0.12);
+  color: var(--oc-blue);
+  border: 1px solid rgba(46, 117, 182, 0.14);
+}
+
+.governance-classification-badge.phi {
+  background: rgba(183, 28, 28, 0.14);
+  color: var(--oc-critical);
+  border: 1px solid rgba(183, 28, 28, 0.18);
+}
+
+.governance-classification-badge.unknown {
+  background: rgba(95, 107, 122, 0.12);
+  color: var(--oc-gray-700);
+  border: 1px solid rgba(95, 107, 122, 0.14);
+}
+
+.classification-inventory,
+.classification-rule-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.classification-rule-panel {
+  padding-top: 10px;
+}
+
+.classification-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.classification-summary-grid article {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(248, 250, 253, 0.92);
+}
+
+.classification-summary-grid strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--oc-gray-900);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.classification-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.28fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.classification-toolbar label {
+  display: grid;
+  gap: 6px;
+}
+
+.classification-toolbar input,
+.classification-toolbar select {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 56, 100, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--oc-gray-900);
+  padding: 0 12px;
+  font: inherit;
+}
+
+.classification-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(290px, 0.34fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.classification-table-shell {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.classification-table tbody tr {
+  cursor: pointer;
+}
+
+.classification-table tbody tr.selected td {
+  background: rgba(46, 117, 182, 0.06);
+}
+
+.classification-table td:first-child,
+.classification-table th:first-child {
+  min-width: 210px;
+}
+
+.classification-table td:nth-child(2),
+.classification-table th:nth-child(2) {
+  min-width: 150px;
+}
+
+.classification-detail {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  background: rgba(248, 250, 253, 0.94);
+}
+
+.classification-detail h4 {
+  margin: 0;
+  color: var(--oc-gray-900);
+}
+
+.classification-detail-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.classification-detail-list div {
+  display: grid;
+  gap: 3px;
+}
+
+.classification-detail-list dt {
+  color: var(--oc-gray-600);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.classification-detail-list dd {
+  margin: 0;
+  color: var(--oc-gray-900);
+  line-height: 1.4;
+}
+
+.classification-safety-note {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(230, 81, 0, 0.08);
+  color: var(--oc-warning);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .governance-dq-scorecard {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3336,6 +3488,12 @@ code {
   .governance-dq-scorecard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .classification-summary-grid,
+  .classification-toolbar,
+  .classification-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3362,7 +3520,10 @@ code {
   .governance-trust-map,
   .governance-trust-flow,
   .governance-overview-grid,
-  .governance-dq-scorecard {
+  .governance-dq-scorecard,
+  .classification-summary-grid,
+  .classification-toolbar,
+  .classification-grid {
     grid-template-columns: 1fr;
   }
 
