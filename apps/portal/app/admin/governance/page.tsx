@@ -12,11 +12,8 @@ export default function AdminGovernancePage() {
     <PageFrame
       eyebrow="Administration"
       title="Governance control tower"
-      description="Admin governance workspace for classification, contracts, assets, lineage, quality, compliance, and steward-ready trust evidence."
-      chips={[
-        { label: "Classification inventory", tone: "primary" },
-        { label: "Lineage-backed evidence", tone: "accent" },
-      ]}
+      description="Trust evidence for operational KPIs, datasets, dashboards, and decisions."
+      pageClassName="governance-page"
     >
       <GovernanceControlTower />
     </PageFrame>

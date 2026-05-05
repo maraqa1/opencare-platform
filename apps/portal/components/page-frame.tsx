@@ -12,6 +12,7 @@ type PageFrameProps = {
   chips?: HeroChip[];
   actions?: ReactNode;
   children: ReactNode;
+  pageClassName?: string;
 };
 
 export function PageFrame({
@@ -21,9 +22,10 @@ export function PageFrame({
   chips = [],
   actions,
   children,
+  pageClassName,
 }: PageFrameProps) {
   return (
-    <div className="page">
+    <div className={`page ${pageClassName ?? ""}`.trim()}>
       <section className="hero">
         <div className="hero-header">
           <div className="hero-copy">

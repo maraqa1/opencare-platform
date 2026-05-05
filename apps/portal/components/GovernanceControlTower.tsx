@@ -167,17 +167,11 @@ function findAssetForNode(useCase: GovernanceUseCase, node: BusinessTrustNode | 
 }
 
 function countWarnings(useCases: GovernanceUseCase[]) {
-  return useCases.reduce((count, useCase) => {
-    const nodeWarnings = useCase.trustMap.nodes.filter((node) => trustStateForNode(node) !== "Trusted").length;
-    const assetWarnings = useCase.governedDatasets.filter(
-      (asset) =>
-        asset.freshnessStatus !== "fresh" ||
-        asset.testStatus !== "passing" ||
-        asset.lineageStatus === "missing" ||
-        asset.certificationStatus === "warning",
-    ).length;
-    return count + nodeWarnings + assetWarnings;
-  }, 0);
+  return useCases.reduce(
+    (count, useCase) =>
+      count + useCase.trustMap.nodes.filter((node) => ["Warning", "Degraded"].includes(trustStateForNode(node))).length,
+    0,
+  );
 }
 
 function countClassifiedColumns(useCases: GovernanceUseCase[]) {
@@ -197,19 +191,19 @@ function TrustPostureStrip({ useCases }: { useCases: GovernanceUseCase[] }) {
   const overview = getGovernanceOverview();
   const lineageCoverage = overview.lineageCoverage;
   const items = [
-    ["Trusted Assets", overview.certifiedAssets],
-    ["Active Warnings", countWarnings(useCases)],
-    ["Classified Columns", countClassifiedColumns(useCases)],
-    ["Lineage Coverage", lineageCoverage],
+    ["Trusted assets", overview.certifiedAssets],
+    ["Warning stages", countWarnings(useCases)],
+    ["Classified columns", countClassifiedColumns(useCases)],
+    ["Lineage coverage", lineageCoverage],
   ];
 
   return (
     <section className="trust-posture-strip" aria-label="Trust posture summary">
-      {items.map(([label, value]) => (
-        <div className="trust-posture-item" key={label}>
-          <span>{label}</span>
-          <strong>{value}</strong>
-        </div>
+      {items.map(([label, value], index) => (
+        <span className="trust-posture-inline-item" key={label}>
+          <strong>{label}</strong> {value}
+          {index < items.length - 1 ? <em>·</em> : null}
+        </span>
       ))}
     </section>
   );
@@ -239,7 +233,7 @@ function TrustMapHero({
         </span>
       </div>
 
-      <div className="trust-map-chain">
+      <div className="trust-map-chain" style={{ ["--trust-node-count" as string]: orderedNodes.length }}>
         {orderedNodes.map((node, index) => {
           const trustState = trustStateForNode(node);
           const selected = selectedNodeId === node.id;
@@ -328,6 +322,15 @@ function EvidenceDrawer({
         </header>
 
         <section>
+          <h4>Trust Posture</h4>
+          <p>
+            {trustState === "Not instrumented"
+              ? "Source-level freshness is not yet connected. Raw landing and downstream dbt stages are governed."
+              : `This stage is marked ${trustState.toLowerCase()} based on certification, freshness, and quality evidence.`}
+          </p>
+        </section>
+
+        <section>
           <h4>Evidence Summary</h4>
           <dl className="trust-evidence-list">
             <div>
@@ -348,7 +351,12 @@ function EvidenceDrawer({
             </div>
             <div>
               <dt>Sensitivity</dt>
-              <dd>{asset ? columnClassification(asset) : node.sensitivityClass ?? "unknown"}</dd>
+              <dd>
+                <span className={`governance-classification-badge ${asset ? columnClassification(asset) : node.sensitivityClass ?? "unknown"}`}>
+                  {asset ? columnClassification(asset) : node.sensitivityClass ?? "unknown"}
+                </span>
+                <span className="trust-sensitivity-note">Classification, not trust posture</span>
+              </dd>
             </div>
           </dl>
         </section>
