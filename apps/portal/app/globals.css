@@ -1541,6 +1541,10 @@ code {
   padding-top: 28px;
 }
 
+.dictionary-admin-shell {
+  border-top: 4px solid var(--oc-blue);
+}
+
 .dictionary-search-shell {
   display: grid;
   gap: 6px;
@@ -1554,6 +1558,28 @@ code {
   background: rgba(255, 255, 255, 0.92);
   padding: 0 14px;
   font: inherit;
+}
+
+.dictionary-coverage-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(248, 250, 253, 0.92);
+  color: var(--oc-gray-600);
+  font-size: 13px;
+}
+
+.dictionary-coverage-strip strong {
+  color: var(--oc-gray-900);
+}
+
+.dictionary-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.52fr);
+  gap: 18px;
+  align-items: start;
 }
 
 .metric-category {
@@ -1596,6 +1622,161 @@ code {
   display: grid;
   gap: 16px;
   animation: rise-in 0.35s ease both;
+}
+
+.dictionary-metric-card {
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dictionary-metric-card.selected {
+  border-color: rgba(46, 117, 182, 0.32);
+  box-shadow: var(--surface-shadow-strong);
+}
+
+.dictionary-badge-row,
+.dictionary-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ndmo-badge,
+.workflow-badge,
+.usecase-approval {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ndmo-badge.public {
+  background: rgba(46, 125, 50, 0.1);
+  color: var(--oc-positive);
+}
+
+.ndmo-badge.internal {
+  background: rgba(46, 117, 182, 0.1);
+  color: var(--oc-blue);
+}
+
+.ndmo-badge.confidential {
+  background: rgba(230, 81, 0, 0.12);
+  color: var(--oc-warning);
+}
+
+.ndmo-badge.restricted {
+  background: rgba(183, 28, 28, 0.12);
+  color: var(--oc-critical);
+}
+
+.workflow-badge.approved,
+.usecase-approval.approved {
+  background: rgba(46, 125, 50, 0.1);
+  color: var(--oc-positive);
+}
+
+.workflow-badge.under_review,
+.workflow-badge.draft {
+  background: rgba(230, 81, 0, 0.12);
+  color: var(--oc-warning);
+}
+
+.workflow-badge.deprecated,
+.usecase-approval.denied {
+  background: rgba(183, 28, 28, 0.12);
+  color: var(--oc-critical);
+}
+
+.dictionary-admin-actions span {
+  min-height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--oc-gray-700);
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.metric-detail-panel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: var(--surface-shadow);
+  padding: 22px;
+}
+
+.metric-detail-header {
+  display: grid;
+  gap: 12px;
+}
+
+.metric-detail-header h3,
+.metric-detail-section h4 {
+  margin: 0;
+  color: var(--oc-gray-900);
+  font-family: var(--font-heading);
+  letter-spacing: 0;
+}
+
+.metric-detail-header p {
+  margin: 6px 0 0;
+  color: var(--oc-gray-600);
+  line-height: 1.55;
+}
+
+.metric-detail-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.metric-detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.metric-detail-list div {
+  display: grid;
+  gap: 3px;
+}
+
+.metric-detail-list dt {
+  color: var(--oc-gray-600);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.metric-detail-list dd {
+  margin: 0;
+  color: var(--oc-gray-900);
+  line-height: 1.4;
+}
+
+.metric-lineage-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--oc-gray-700);
 }
 
 .metric-description,
@@ -2465,10 +2646,12 @@ code {
   }
 
   .lineage-layout,
+  .dictionary-workspace,
   .governance-grid,
   .compliance-grid,
   .metric-grid,
   .metric-grid.compact,
+  .metric-detail-list,
   .quality-grid,
   .analytics-actions,
   .forecast-meta-grid,

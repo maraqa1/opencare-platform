@@ -10,10 +10,10 @@ export default function DictionaryPage() {
   return (
     <PageFrame
       title="Dictionary"
-      description="Metric definitions, calculation notes, units, and backing datasets for the active use case."
+      description="Metric definitions, sensitivity classification, approved uses, ownership, and lineage evidence for the active use case."
       chips={[
-        { label: "Governed terminology", tone: "primary" },
-        { label: "Use-case aware", tone: "accent" },
+        { label: "NDMO-labelled metrics", tone: "primary" },
+        { label: "Clickable drill-down", tone: "accent" },
       ]}
     >
       <DictionaryView useCase="bed_pressure" />
