@@ -13,6 +13,7 @@ from psycopg.errors import UndefinedTable
 
 from app.config import settings
 from app.db import connect, qualified_table, split_table_name
+from app.services.classification_service import normalise_column_metadata
 
 REF_PATTERN = re.compile(r"ref\(\s*['\"]([^'\"]+)['\"]\s*\)")
 SOURCE_PATTERN = re.compile(r"source\(\s*['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]\s*\)")
@@ -88,6 +89,15 @@ def _relative_freshness_minutes(value: Any) -> int | None:
     except Exception:
         return None
     return row["minutes"] if row else None
+
+
+def _normalise_column(
+    column_name: str,
+    column: dict[str, Any],
+    parent_meta: dict[str, Any] | None = None,
+    asset_name: str = "",
+) -> dict[str, Any]:
+    return normalise_column_metadata(column_name, column, parent_meta, asset_name)
 
 
 class DbtLineageService:
@@ -423,7 +433,7 @@ class DbtLineageService:
             doc = model_docs.get(model_name, {})
             schema = settings.analytics_schema if sql_path.parent.name != "staging" else settings.staging_schema
             key = f"model.opencare.{model_name}"
-            columns = self._columns_from_schema(doc)
+            columns = self._columns_from_schema(doc, doc.get("meta", {}), model_name)
             node = {
                 "id": key,
                 "name": model_name,
@@ -449,6 +459,7 @@ class DbtLineageService:
                 if not table_name:
                     continue
                 key = f"source.{source_name}.{table_name}"
+                table_meta = {**source_meta, **table.get("meta", {})}
                 source_node = {
                     "id": key,
                     "name": table_name,
@@ -460,8 +471,8 @@ class DbtLineageService:
                     "description": table.get("description", ""),
                     "loaded_at_field": table.get("loaded_at_field"),
                     "freshness": table.get("freshness", source_doc.get("freshness", {})),
-                    "meta": {**source_meta, **table.get("meta", {}), "stage": "source"},
-                    "columns": self._columns_from_schema(table),
+                    "meta": {**table_meta, "stage": "source"},
+                    "columns": self._columns_from_schema(table, table_meta, table_name),
                     "stage": "source",
                 }
                 nodes[key] = source_node
@@ -570,6 +581,7 @@ class DbtLineageService:
 
     def _normalise_manifest_model(self, key: str, node: dict[str, Any]) -> dict[str, Any]:
         schema = node.get("schema", "")
+        meta = {"stage": _stage_for_name(node.get("name", ""), schema), **node.get("meta", {})}
         return {
             "id": key,
             "name": node.get("name", key.split(".")[-1]),
@@ -579,13 +591,9 @@ class DbtLineageService:
             "description": node.get("description", ""),
             "materialization": node.get("config", {}).get("materialized", ""),
             "tags": node.get("tags", []),
-            "meta": {"stage": _stage_for_name(node.get("name", ""), schema), **node.get("meta", {})},
+            "meta": meta,
             "columns": {
-                name: {
-                    "type": column.get("data_type", ""),
-                    "description": column.get("description", ""),
-                    "meta": column.get("meta", {}),
-                }
+                name: _normalise_column(name, column, meta, node.get("name", ""))
                 for name, column in node.get("columns", {}).items()
             },
             "stage": _stage_for_name(node.get("name", ""), schema),
@@ -593,6 +601,7 @@ class DbtLineageService:
 
     def _normalise_manifest_source(self, key: str, node: dict[str, Any]) -> dict[str, Any]:
         schema = node.get("schema", settings.dbt_source_schema)
+        meta = {"stage": "source", **node.get("meta", {})}
         return {
             "id": key,
             "name": node.get("name", key.split(".")[-1]),
@@ -604,29 +613,26 @@ class DbtLineageService:
             "description": node.get("description", ""),
             "loaded_at_field": node.get("loaded_at_field"),
             "freshness": node.get("freshness", {}),
-            "meta": {"stage": "source", **node.get("meta", {})},
+            "meta": meta,
             "columns": {
-                name: {
-                    "type": column.get("data_type", ""),
-                    "description": column.get("description", ""),
-                    "meta": column.get("meta", {}),
-                }
+                name: _normalise_column(name, column, meta, node.get("name", ""))
                 for name, column in node.get("columns", {}).items()
             },
             "stage": "source",
         }
 
-    def _columns_from_schema(self, payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    def _columns_from_schema(
+        self,
+        payload: dict[str, Any],
+        parent_meta: dict[str, Any] | None = None,
+        asset_name: str = "",
+    ) -> dict[str, dict[str, Any]]:
         columns: dict[str, dict[str, Any]] = {}
         for column in payload.get("columns", []):
             name = column.get("name")
             if not name:
                 continue
-            columns[name] = {
-                "type": column.get("data_type", ""),
-                "description": column.get("description", ""),
-                "meta": column.get("meta", {}),
-            }
+            columns[name] = _normalise_column(name, column, parent_meta, asset_name)
         return columns
 
     def _tests_from_schema(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
