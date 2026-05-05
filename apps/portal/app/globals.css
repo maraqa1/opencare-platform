@@ -3136,7 +3136,7 @@ code {
 .governance-discovery-row {
   display: flex;
   gap: 16px;
-  align-items: end;
+  align-items: flex-end;
 }
 
 .governance-search-shell,
@@ -3816,7 +3816,7 @@ code {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 0.28fr);
   gap: 12px;
-  align-items: end;
+  align-items: flex-end;
 }
 
 .classification-toolbar label {
@@ -4331,7 +4331,7 @@ code {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  align-items: end;
+  align-items: flex-end;
 }
 
 .governance-journey {
@@ -4670,7 +4670,7 @@ code {
 @media (max-width: 720px) {
   .journey-popover-backdrop {
     padding: 0;
-    align-items: end;
+    align-items: flex-end;
   }
 
   .journey-popover {

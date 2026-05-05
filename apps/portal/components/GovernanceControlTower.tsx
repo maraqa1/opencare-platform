@@ -78,7 +78,9 @@ function statusTone(status: GovernanceStatus | CertificationStatus | string) {
 }
 
 function trustStateForNode(node: BusinessTrustNode): "Trusted" | "Warning" | "Degraded" | "Not instrumented" {
-  const statuses = [node.freshnessStatus, node.qualityStatus, node.certificationStatus].filter(Boolean);
+  const statuses = [node.freshnessStatus, node.qualityStatus, node.certificationStatus]
+    .filter(Boolean)
+    .map(String);
   if (statuses.length === 0) return "Not instrumented";
   if (statuses.some((status) => status === "failing" || status === "stale" || status === "deprecated")) {
     return "Degraded";
