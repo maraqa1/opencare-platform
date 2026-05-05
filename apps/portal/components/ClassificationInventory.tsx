@@ -39,12 +39,6 @@ type ClassificationPayload = {
   summary: ClassificationSummary;
 };
 
-type ClassificationInventoryProps = {
-  assetNames?: string[];
-  description?: string;
-  title?: string;
-};
-
 const defaultPayload: ClassificationPayload = {
   items: [],
   summary: {
@@ -105,11 +99,7 @@ function evidenceLabel(row: ClassificationInventoryRow) {
   return [label(type), field, value].filter(Boolean).join(" / ");
 }
 
-export function ClassificationInventory({
-  assetNames,
-  description = "Backend-resolved classifications from dbt metadata, rules, inheritance, and lineage inventory.",
-  title = "Column-Level Classification",
-}: ClassificationInventoryProps = {}) {
+export function ClassificationInventory() {
   const [payload, setPayload] = useState<ClassificationPayload | null>(null);
   const [query, setQuery] = useState("");
   const [selectedSensitivity, setSelectedSensitivity] = useState("all");
@@ -140,39 +130,8 @@ export function ClassificationInventory({
     };
   }, []);
 
-  const items = useMemo(() => {
-    const sourceItems = payload?.items ?? [];
-    if (!assetNames || assetNames.length === 0) {
-      return sourceItems;
-    }
-    const normalizedAssets = new Set(assetNames.map((item) => item.toLowerCase()));
-    return sourceItems.filter((item) => {
-      const candidates = [item.asset, item.asset_name ?? "", item.asset.split(".").pop() ?? ""].map((candidate) =>
-        candidate.toLowerCase(),
-      );
-      return candidates.some((candidate) => normalizedAssets.has(candidate));
-    });
-  }, [assetNames, payload?.items]);
-  const summary = useMemo<ClassificationSummary>(() => {
-    if (!payload || !assetNames || assetNames.length === 0) {
-      return payload?.summary ?? defaultPayload.summary;
-    }
-    return items.reduce(
-      (nextSummary, item) => {
-        nextSummary.total_columns += 1;
-        if (item.sensitivity === "phi") nextSummary.phi_columns += 1;
-        if (item.sensitivity === "restricted") nextSummary.restricted_columns += 1;
-        if (item.sensitivity === "sensitive") nextSummary.sensitive_columns += 1;
-        if (item.review_state === "not_reviewed" || item.review_state === "needs_review") {
-          nextSummary.unreviewed_columns += 1;
-        }
-        if (item.confidence_tier === "low") nextSummary.low_confidence_columns += 1;
-        if (item.enforcement_eligible) nextSummary.enforcement_eligible_columns += 1;
-        return nextSummary;
-      },
-      { ...defaultPayload.summary },
-    );
-  }, [assetNames, items, payload]);
+  const items = payload?.items ?? [];
+  const summary = payload?.summary ?? defaultPayload.summary;
   const sensitivityOptions = useMemo(
     () => ["all", ...Array.from(new Set(items.map((item) => item.sensitivity))).sort()],
     [items],
@@ -196,8 +155,10 @@ export function ClassificationInventory({
       <div className="governance-panel-head">
         <div>
           <p className="eyebrow">Classification Inventory</p>
-          <h3>{title}</h3>
-          <p className="section-subtitle">{description}</p>
+          <h3>Column-Level Classification</h3>
+          <p className="section-subtitle">
+            Backend-resolved classifications from dbt metadata, rules, inheritance, and lineage inventory.
+          </p>
         </div>
         <span className="governance-mini-pill">{summary.total_columns} columns</span>
       </div>
