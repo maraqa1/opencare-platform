@@ -21,10 +21,11 @@ import {
   getGovernanceUseCases,
 } from "@/lib/governance-registry";
 
-type ScopeFilter = "all" | ScopeCoverage;
+type ScopeFilter = "all" | "source_tables" | ScopeCoverage;
 type GovernanceTab =
   | "overview"
   | "contracts"
+  | "source_tables"
   | "glossary"
   | "assets"
   | "lineage"
@@ -34,22 +35,18 @@ type GovernanceTab =
 type LineageMode = "business" | "technical";
 
 const scopeLabels: Array<{ key: ScopeFilter; label: string; tab: GovernanceTab }> = [
-  { key: "classification", label: "Classification", tab: "classification" },
-  { key: "all", label: "All", tab: "overview" },
+  { key: "all", label: "All Use Cases", tab: "overview" },
   { key: "use_cases", label: "Use Cases", tab: "contracts" },
   { key: "assets", label: "Assets", tab: "assets" },
-  { key: "glossary", label: "Glossary", tab: "glossary" },
+  { key: "source_tables", label: "Source Tables", tab: "source_tables" },
   { key: "lineage", label: "Lineage", tab: "lineage" },
+  { key: "classification", label: "Classification", tab: "classification" },
+  { key: "glossary", label: "Glossary", tab: "glossary" },
   { key: "quality", label: "Quality", tab: "quality" },
   { key: "compliance", label: "Compliance", tab: "compliance" },
 ];
 
 const tabLabels: Array<{ key: GovernanceTab; label: string; description: string }> = [
-  {
-    key: "classification",
-    label: "Classification",
-    description: "Column-level classification inventory, confidence, evidence, review state, and curated rules.",
-  },
   {
     key: "overview",
     label: "Overview",
@@ -57,8 +54,13 @@ const tabLabels: Array<{ key: GovernanceTab; label: string; description: string 
   },
   {
     key: "contracts",
-    label: "Contracts",
+    label: "Use Case",
     description: "Business purpose, workspace coverage, downstream consumers, and use-case contract definition.",
+  },
+  {
+    key: "source_tables",
+    label: "Source Tables",
+    description: "Raw and upstream tables that feed the selected use case and its governed assets.",
   },
   {
     key: "glossary",
@@ -74,6 +76,11 @@ const tabLabels: Array<{ key: GovernanceTab; label: string; description: string 
     key: "lineage",
     label: "Lineage",
     description: "Curated business trust map plus technical lineage powered by the existing dbt-backed DAG.",
+  },
+  {
+    key: "classification",
+    label: "Classification",
+    description: "Column and attribute classification scoped to the selected use case, with the global inventory still available through all-use-case discovery.",
   },
   {
     key: "quality",
@@ -206,6 +213,8 @@ function scopeMatchesUseCase(useCase: GovernanceUseCase, scope: ScopeFilter) {
       return true;
     case "assets":
       return useCase.governedDatasets.length > 0;
+    case "source_tables":
+      return useCase.sourceTables.length > 0;
     case "glossary":
       return useCase.dictionaryTerms.length > 0;
     case "lineage":
@@ -538,10 +547,10 @@ export function GovernanceControlTower() {
   const overview = getGovernanceOverview();
   const classificationRules = getClassificationRules();
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<ScopeFilter>("classification");
+  const [scope, setScope] = useState<ScopeFilter>("all");
   const [domain, setDomain] = useState<GovernanceUseCase["domain"] | "All domains">("All domains");
   const [activeUseCaseId, setActiveUseCaseId] = useState(useCases[0]?.id ?? "");
-  const [activeTab, setActiveTab] = useState<GovernanceTab>("classification");
+  const [activeTab, setActiveTab] = useState<GovernanceTab>("overview");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(useCases[0]?.governedDatasets[0]?.id ?? null);
   const [selectedTrustNodeId, setSelectedTrustNodeId] = useState<string | null>(useCases[0]?.trustMap.focusNodeId ?? null);
   const [lineageMode, setLineageMode] = useState<LineageMode>("business");
@@ -632,6 +641,23 @@ export function GovernanceControlTower() {
     activeUseCase?.lineageEntryPoints[0]?.technicalModel ??
     selectedAsset?.table ??
     null;
+  const selectedClassificationAssets = useMemo(() => {
+    if (!activeUseCase) {
+      return [];
+    }
+    return Array.from(
+      new Set([
+        ...activeUseCase.sourceTables,
+        ...activeUseCase.governedDatasets.flatMap((dataset) => [
+          dataset.name,
+          dataset.table,
+          `${dataset.schema}.${dataset.table}`,
+          ...(dataset.upstreamSources ?? []),
+        ]),
+      ]),
+    );
+  }, [activeUseCase]);
+  const showGlobalClassification = scope === "all" && activeTab === "classification";
 
   const handleUseCaseSelect = (useCase: GovernanceUseCase) => {
     setActiveUseCaseId(useCase.id);
@@ -728,54 +754,7 @@ export function GovernanceControlTower() {
         </div>
       </section>
 
-      {activeTab === "classification" ? (
-        <section className="governance-classification-workbench">
-          <ClassificationInventory />
-          <div className="classification-rule-panel">
-            <div className="governance-panel-head">
-              <div>
-                <p className="eyebrow">Curated Registry</p>
-                <h3>Classification Rules</h3>
-                <p className="section-subtitle">
-                  Existing curated rules remain visible as policy context while the backend inventory becomes the resolved classification source.
-                </p>
-              </div>
-            </div>
-            <table className="governance-policy-table">
-              <thead>
-                <tr>
-                  <th>Rule</th>
-                  <th>Matches</th>
-                  <th>Classification</th>
-                  <th>Scope</th>
-                  <th>Rationale</th>
-                </tr>
-              </thead>
-              <tbody>
-                {classificationRules.map((rule: ClassificationRule) => (
-                  <tr key={rule.id}>
-                    <td>
-                      <strong>{rule.name}</strong>
-                    </td>
-                    <td>
-                      <code>{rule.matchPattern}</code>
-                    </td>
-                    <td>
-                      <span className={`governance-classification-badge ${rule.classification}`}>
-                        {rule.classification}
-                      </span>
-                    </td>
-                    <td className="subtle">{statusLabel(rule.scope)}</td>
-                    <td className="subtle">{rule.rationale}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
-      {activeTab !== "classification" ? (
+      {activeTab ? (
       <section className="governance-master-detail">
         <aside className="governance-usecase-list">
           {filteredUseCases.map((useCase) => {
@@ -962,6 +941,56 @@ export function GovernanceControlTower() {
                   </div>
                 ) : null}
 
+                {activeTab === "source_tables" ? (
+                  <div className="governance-contract-grid">
+                    <article className="governance-contract-block">
+                      <h4>Use-Case Source Tables</h4>
+                      <p>
+                        Source tables are shown before derived assets so governance can trace the use case back to the
+                        operational data that feeds it.
+                      </p>
+                      <div className="governance-inline-list">
+                        {activeUseCase.sourceTables.map((sourceTable) => (
+                          <span className="governance-mini-pill" key={sourceTable}>
+                            {sourceTable}
+                          </span>
+                        ))}
+                      </div>
+                    </article>
+                    <article className="governance-contract-block">
+                      <h4>Asset Upstreams</h4>
+                      <ul className="governance-bullet-list">
+                        {activeUseCase.governedDatasets.map((asset) => (
+                          <li key={asset.id}>
+                            <strong>{asset.name}:</strong>{" "}
+                            {(asset.upstreamSources ?? activeUseCase.sourceTables).join(", ")}
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                    <article className="governance-contract-block">
+                      <h4>Lineage Entry Points</h4>
+                      <ul className="governance-bullet-list">
+                        {activeUseCase.lineageEntryPoints.map((entryPoint) => (
+                          <li key={entryPoint.id}>
+                            <strong>{entryPoint.technicalModel}:</strong> {entryPoint.summary}
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                    <article className="governance-contract-block">
+                      <h4>Downstream Consumers</h4>
+                      <div className="governance-inline-list">
+                        {activeUseCase.downstreamConsumers.map((item) => (
+                          <span className="governance-mini-pill" key={item}>
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </article>
+                  </div>
+                ) : null}
+
                 {activeTab === "glossary" ? (
                   matchingGlossaryTerms.length > 0 ? (
                     <div className="governance-glossary-grid">
@@ -1125,6 +1154,65 @@ export function GovernanceControlTower() {
                       ))}
                     </div>
                   </>
+                ) : null}
+
+                {activeTab === "classification" ? (
+                  <div className="governance-classification-workbench">
+                    <ClassificationInventory
+                      assetNames={showGlobalClassification ? undefined : selectedClassificationAssets}
+                      title={
+                        showGlobalClassification
+                          ? "All Use Cases Attribute Classification"
+                          : `${activeUseCase.name} Attribute Classification`
+                      }
+                      description={
+                        showGlobalClassification
+                          ? "Backend-resolved column classifications across the full governed inventory."
+                          : "Backend-resolved column classifications filtered to the selected use case sources and governed assets."
+                      }
+                    />
+                    <div className="classification-rule-panel">
+                      <div className="governance-panel-head">
+                        <div>
+                          <p className="eyebrow">Curated Registry</p>
+                          <h3>Rules Relevant To Review</h3>
+                          <p className="section-subtitle">
+                            Curated rules remain visible beside the resolved inventory so stewards can compare registry intent with backend evidence.
+                          </p>
+                        </div>
+                      </div>
+                      <table className="governance-policy-table">
+                        <thead>
+                          <tr>
+                            <th>Rule</th>
+                            <th>Matches</th>
+                            <th>Classification</th>
+                            <th>Scope</th>
+                            <th>Rationale</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {classificationRules.map((rule: ClassificationRule) => (
+                            <tr key={rule.id}>
+                              <td>
+                                <strong>{rule.name}</strong>
+                              </td>
+                              <td>
+                                <code>{rule.matchPattern}</code>
+                              </td>
+                              <td>
+                                <span className={`governance-classification-badge ${rule.classification}`}>
+                                  {rule.classification}
+                                </span>
+                              </td>
+                              <td className="subtle">{statusLabel(rule.scope)}</td>
+                              <td className="subtle">{rule.rationale}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 ) : null}
 
                 {activeTab === "quality" ? (
