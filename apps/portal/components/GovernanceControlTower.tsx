@@ -57,8 +57,8 @@ const tabLabels: Array<{ key: GovernanceTab; label: string; description: string 
   },
   {
     key: "contracts",
-    label: "Contracts",
-    description: "Business purpose, workspace coverage, downstream consumers, and use-case contract definition.",
+    label: "Use Cases",
+    description: "Business purpose, owners, workspace coverage, downstream consumers, and trust posture by use case.",
   },
   {
     key: "glossary",
@@ -611,6 +611,19 @@ export function GovernanceControlTower() {
 
   const assetLabel = selectedAsset?.name ?? selectedTrustNode?.label ?? null;
   const activeTabMeta = availableTabs.find((tab) => tab.key === activeTab) ?? availableTabs[0];
+  const showLegacyGovernanceDetail = false;
+  const cleanAssets = filteredUseCases.flatMap((useCase) =>
+    useCase.governedDatasets.map((asset) => ({ useCase, asset })),
+  );
+  const cleanGlossaryTerms = filteredUseCases.flatMap((useCase) =>
+    useCase.dictionaryTerms.map((term) => ({ useCase, term })),
+  );
+  const cleanLineageEntries = filteredUseCases.flatMap((useCase) =>
+    useCase.lineageEntryPoints.map((entry) => ({ useCase, entry })),
+  );
+  const cleanPolicies = filteredUseCases.flatMap((useCase) =>
+    useCase.complianceContext.policies.map((policy) => ({ useCase, policy })),
+  );
 
   const matchingGlossaryTerms = useMemo(() => {
     if (!activeUseCase) return [];
@@ -776,6 +789,276 @@ export function GovernanceControlTower() {
       ) : null}
 
       {activeTab !== "classification" ? (
+        <section className="governance-clean-workbench">
+          <div className="governance-panel-head">
+            <div>
+              <p className="eyebrow">Discovery</p>
+              <h3>{activeTabMeta?.label}</h3>
+              <p className="section-subtitle">{activeTabMeta?.description}</p>
+            </div>
+            <div className="governance-inline-list">
+              <span className="governance-mini-pill">{filteredUseCases.length} use cases</span>
+              <span className="governance-mini-pill">{cleanAssets.length} assets</span>
+              <span className="governance-mini-pill">{cleanGlossaryTerms.length} terms</span>
+            </div>
+          </div>
+
+          {activeTab === "overview" ? (
+            <div className="governance-clean-grid">
+              {filteredUseCases.map((useCase) => (
+                <article className="governance-clean-card governance-clean-card-wide" key={useCase.id}>
+                  <div className="governance-card-topline">
+                    <span className="eyebrow">{useCase.domain}</span>
+                    <span className={`governance-badge ${statusTone(useCase.complianceContext.posture)}`}>
+                      {statusLabel(useCase.complianceContext.posture)}
+                    </span>
+                  </div>
+                  <h4>{useCase.name}</h4>
+                  <p>{useCase.businessPurpose}</p>
+                  <div className="governance-clean-meta">
+                    <span>
+                      Owner <strong>{useCase.owner}</strong>
+                    </span>
+                    <span>
+                      Steward <strong>{useCase.steward}</strong>
+                    </span>
+                    <span>
+                      Assets <strong>{useCase.governedDatasets.length}</strong>
+                    </span>
+                    <span>
+                      Lineage <strong>{statusLabel(useCase.qualitySummary.lineage)}</strong>
+                    </span>
+                  </div>
+                  <div className="governance-inline-list">
+                    {useCase.workspaceCoverage.map((item) => (
+                      <Link className="governance-link-pill" href={item.href} key={item.href}>
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          {activeTab === "contracts" ? (
+            <div className="governance-clean-grid">
+              {filteredUseCases.map((useCase) => (
+                <article className="governance-clean-card governance-clean-card-wide" key={useCase.id}>
+                  <div className="governance-card-topline">
+                    <span className="eyebrow">{useCase.domain}</span>
+                    <span className={`governance-badge ${statusTone(useCase.complianceContext.posture)}`}>
+                      {statusLabel(useCase.complianceContext.posture)}
+                    </span>
+                  </div>
+                  <h4>{useCase.name}</h4>
+                  <p>{useCase.description}</p>
+                  <p className="subtle">{useCase.businessPurpose}</p>
+                  <div className="governance-clean-meta">
+                    <span>
+                      Owner <strong>{useCase.owner}</strong>
+                    </span>
+                    <span>
+                      Steward <strong>{useCase.steward}</strong>
+                    </span>
+                    <span>
+                      Downstream <strong>{useCase.downstreamConsumers.length}</strong>
+                    </span>
+                    <span>
+                      Mapped assets <strong>{countConnectedAssets(useCase)}</strong>
+                    </span>
+                  </div>
+                  <div className="governance-inline-list">
+                    {useCase.downstreamConsumers.map((consumer) => (
+                      <span className="governance-mini-pill" key={consumer}>
+                        {consumer}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          {activeTab === "assets" ? (
+            <div className="governance-clean-grid">
+              {cleanAssets.map(({ useCase, asset }) => (
+                <article className="governance-clean-card" key={`${useCase.id}-${asset.id}`}>
+                  <div className="governance-card-topline">
+                    <span className="governance-mini-pill">{assetTypeLabel(asset.assetType)}</span>
+                    <span className={`governance-badge ${statusTone(asset.certification?.status ?? asset.certificationStatus)}`}>
+                      {statusLabel(asset.certification?.status ?? asset.certificationStatus)}
+                    </span>
+                  </div>
+                  <h4>{asset.name}</h4>
+                  <p className="governance-asset-label">
+                    {asset.schema}.{asset.table}
+                  </p>
+                  <p>{asset.businessMeaning}</p>
+                  <div className="governance-clean-meta">
+                    <span>
+                      Use case <strong>{useCase.name}</strong>
+                    </span>
+                    <span>
+                      Columns <strong>{asset.columns?.length ?? 0}</strong>
+                    </span>
+                    <span>
+                      Freshness <strong>{statusLabel(asset.freshnessStatus)}</strong>
+                    </span>
+                    <span>
+                      Quality <strong>{statusLabel(asset.testStatus)}</strong>
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          {activeTab === "glossary" ? (
+            cleanGlossaryTerms.length > 0 ? (
+              <div className="governance-clean-grid">
+                {cleanGlossaryTerms.map(({ useCase, term }) => (
+                  <article className="governance-clean-card" key={`${useCase.id}-${term.id}`}>
+                    <div className="governance-card-topline">
+                      <span className="governance-mini-pill">{term.domain}</span>
+                      <span className={`governance-badge ${statusTone(term.status)}`}>
+                        {statusLabel(term.status)}
+                      </span>
+                    </div>
+                    <h4>{term.term}</h4>
+                    <p>{term.definition}</p>
+                    <div className="governance-clean-meta">
+                      <span>
+                        Use case <strong>{useCase.name}</strong>
+                      </span>
+                      <span>
+                        Owner <strong>{term.owner ?? useCase.owner}</strong>
+                      </span>
+                      <span>
+                        Steward <strong>{term.steward ?? useCase.steward}</strong>
+                      </span>
+                      <span>
+                        Source <strong>{term.sourceMetric ?? "Registry"}</strong>
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              renderUnknown("Governance glossary terms are not yet configured for this filter.")
+            )
+          ) : null}
+
+          {activeTab === "lineage" ? (
+            <div className="governance-clean-grid">
+              {cleanLineageEntries.map(({ useCase, entry }) => (
+                <article className="governance-clean-card" key={`${useCase.id}-${entry.id}`}>
+                  <div className="governance-card-topline">
+                    <span className="governance-mini-pill">{entry.technicalModel}</span>
+                    <span className={`governance-badge ${statusTone(entry.status)}`}>
+                      {statusLabel(entry.status)}
+                    </span>
+                  </div>
+                  <h4>{entry.label}</h4>
+                  <p>{entry.summary}</p>
+                  <div className="governance-clean-meta">
+                    <span>
+                      Use case <strong>{useCase.name}</strong>
+                    </span>
+                    <span>
+                      Sources <strong>{useCase.sourceTables.length}</strong>
+                    </span>
+                    <span>
+                      Assets <strong>{useCase.governedDatasets.length}</strong>
+                    </span>
+                    <span>
+                      Targets <strong>{entry.impactTargets.length}</strong>
+                    </span>
+                  </div>
+                  <div className="governance-inline-list">
+                    {entry.impactTargets.map((target) => (
+                      <span className="governance-mini-pill" key={target}>
+                        {target}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          {activeTab === "quality" ? (
+            <div className="governance-clean-grid">
+              {filteredUseCases.map((useCase) => (
+                <article className="governance-clean-card governance-clean-card-wide" key={useCase.id}>
+                  <div className="governance-card-topline">
+                    <span className="eyebrow">{useCase.domain}</span>
+                    <span className={`governance-badge ${statusTone(useCase.qualitySummary.quality)}`}>
+                      {statusLabel(useCase.qualitySummary.quality)}
+                    </span>
+                  </div>
+                  <h4>{useCase.name}</h4>
+                  <p>{useCase.qualitySummary.note}</p>
+                  <div className="governance-clean-meta">
+                    <span>
+                      Freshness <strong>{statusLabel(useCase.qualitySummary.freshness)}</strong>
+                    </span>
+                    <span>
+                      Quality <strong>{statusLabel(useCase.qualitySummary.quality)}</strong>
+                    </span>
+                    <span>
+                      Record specs <strong>{statusLabel(useCase.qualitySummary.recordSpecs)}</strong>
+                    </span>
+                    <span>
+                      Coverage <strong>{recordCoverage(useCase)}</strong>
+                    </span>
+                  </div>
+                  <div className="governance-inline-list">
+                    {useCase.governedDatasets.slice(0, 6).map((asset) => (
+                      <span className={`governance-status-pill ${statusTone(asset.testStatus)}`} key={asset.id}>
+                        {asset.name}: {statusLabel(asset.testStatus)}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          {activeTab === "compliance" ? (
+            <div className="governance-clean-grid">
+              {cleanPolicies.map(({ useCase, policy }) => (
+                <article className="governance-clean-card" key={`${useCase.id}-${policy.id}`}>
+                  <div className="governance-card-topline">
+                    <span className="governance-mini-pill">{policy.framework}</span>
+                    <span className={`governance-badge ${statusTone(policy.status)}`}>
+                      {statusLabel(policy.status)}
+                    </span>
+                  </div>
+                  <h4>{policy.policy}</h4>
+                  <p>{policy.evidence}</p>
+                  <div className="governance-clean-meta">
+                    <span>
+                      Use case <strong>{useCase.name}</strong>
+                    </span>
+                    <span>
+                      Owner <strong>{policy.owner}</strong>
+                    </span>
+                    <span>
+                      Posture <strong>{statusLabel(useCase.complianceContext.posture)}</strong>
+                    </span>
+                    <span>
+                      Review <strong>{policy.nextReviewDate ?? "-"}</strong>
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {showLegacyGovernanceDetail ? (
       <section className="governance-master-detail">
         <aside className="governance-usecase-list">
           {filteredUseCases.map((useCase) => {

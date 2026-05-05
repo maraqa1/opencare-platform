@@ -3281,17 +3281,73 @@ code {
 
 .classification-inventory,
 .classification-rule-panel,
-.governance-classification-workbench {
+.governance-classification-workbench,
+.governance-clean-workbench {
   display: grid;
   gap: 16px;
 }
 
-.governance-classification-workbench {
+.governance-classification-workbench,
+.governance-clean-workbench {
   border: 1px solid rgba(31, 56, 100, 0.08);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: var(--shadow-sm);
   padding: 22px;
+}
+
+.governance-clean-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.governance-clean-card {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(248, 250, 253, 0.92);
+}
+
+.governance-clean-card-wide {
+  grid-column: span 2;
+}
+
+.governance-clean-card h4 {
+  margin: 0;
+  color: var(--oc-gray-900);
+  font-family: var(--font-heading);
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.governance-clean-card p {
+  margin: 0;
+  color: var(--oc-gray-600);
+  line-height: 1.55;
+}
+
+.governance-clean-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.governance-clean-meta span {
+  min-width: 0;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+}
+
+.governance-clean-meta strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--oc-gray-900);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .classification-rule-panel {
@@ -3450,6 +3506,7 @@ code {
   .governance-summary-grid,
   .governance-view-nav,
   .governance-legacy-grid,
+  .governance-clean-grid,
   .governance-contract-tiles,
   .governance-glossary-grid,
   .governance-asset-grid,
@@ -3485,8 +3542,13 @@ code {
   .governance-view-nav,
   .governance-legacy-grid,
   .governance-contract-grid,
+  .governance-clean-grid,
   .governance-compliance-grid {
     grid-template-columns: 1fr;
+  }
+
+  .governance-clean-card-wide {
+    grid-column: auto;
   }
 
   .governance-discovery-row {
@@ -3511,6 +3573,7 @@ code {
   .governance-contract-panel,
   .governance-trust-drawer,
   .governance-discovery-shell,
+  .governance-clean-workbench,
   .governance-tab-panel,
   .governance-contract-tile,
   .governance-glossary-card,
@@ -3530,6 +3593,7 @@ code {
   .governance-trust-flow,
   .governance-overview-grid,
   .governance-dq-scorecard,
+  .governance-clean-grid,
   .classification-summary-grid,
   .classification-toolbar,
   .classification-grid {
