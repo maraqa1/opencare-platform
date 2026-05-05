@@ -3280,9 +3280,18 @@ code {
 }
 
 .classification-inventory,
-.classification-rule-panel {
+.classification-rule-panel,
+.governance-classification-workbench {
   display: grid;
   gap: 16px;
+}
+
+.governance-classification-workbench {
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+  padding: 22px;
 }
 
 .classification-rule-panel {

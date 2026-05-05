@@ -34,6 +34,7 @@ type GovernanceTab =
 type LineageMode = "business" | "technical";
 
 const scopeLabels: Array<{ key: ScopeFilter; label: string; tab: GovernanceTab }> = [
+  { key: "classification", label: "Classification", tab: "classification" },
   { key: "all", label: "All", tab: "overview" },
   { key: "use_cases", label: "Use Cases", tab: "contracts" },
   { key: "assets", label: "Assets", tab: "assets" },
@@ -44,6 +45,11 @@ const scopeLabels: Array<{ key: ScopeFilter; label: string; tab: GovernanceTab }
 ];
 
 const tabLabels: Array<{ key: GovernanceTab; label: string; description: string }> = [
+  {
+    key: "classification",
+    label: "Classification",
+    description: "Column-level classification inventory, confidence, evidence, review state, and curated rules.",
+  },
   {
     key: "overview",
     label: "Overview",
@@ -78,11 +84,6 @@ const tabLabels: Array<{ key: GovernanceTab; label: string; description: string 
     key: "compliance",
     label: "Compliance",
     description: "Structured governance policies, evidence, owners, and review dates by use case.",
-  },
-  {
-    key: "classification",
-    label: "Classification Rules",
-    description: "Rules used to classify fields and assets as public, internal, sensitive, or restricted.",
   },
 ];
 
@@ -537,10 +538,10 @@ export function GovernanceControlTower() {
   const overview = getGovernanceOverview();
   const classificationRules = getClassificationRules();
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<ScopeFilter>("all");
+  const [scope, setScope] = useState<ScopeFilter>("classification");
   const [domain, setDomain] = useState<GovernanceUseCase["domain"] | "All domains">("All domains");
   const [activeUseCaseId, setActiveUseCaseId] = useState(useCases[0]?.id ?? "");
-  const [activeTab, setActiveTab] = useState<GovernanceTab>("overview");
+  const [activeTab, setActiveTab] = useState<GovernanceTab>("classification");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(useCases[0]?.governedDatasets[0]?.id ?? null);
   const [selectedTrustNodeId, setSelectedTrustNodeId] = useState<string | null>(useCases[0]?.trustMap.focusNodeId ?? null);
   const [lineageMode, setLineageMode] = useState<LineageMode>("business");
@@ -727,6 +728,54 @@ export function GovernanceControlTower() {
         </div>
       </section>
 
+      {activeTab === "classification" ? (
+        <section className="governance-classification-workbench">
+          <ClassificationInventory />
+          <div className="classification-rule-panel">
+            <div className="governance-panel-head">
+              <div>
+                <p className="eyebrow">Curated Registry</p>
+                <h3>Classification Rules</h3>
+                <p className="section-subtitle">
+                  Existing curated rules remain visible as policy context while the backend inventory becomes the resolved classification source.
+                </p>
+              </div>
+            </div>
+            <table className="governance-policy-table">
+              <thead>
+                <tr>
+                  <th>Rule</th>
+                  <th>Matches</th>
+                  <th>Classification</th>
+                  <th>Scope</th>
+                  <th>Rationale</th>
+                </tr>
+              </thead>
+              <tbody>
+                {classificationRules.map((rule: ClassificationRule) => (
+                  <tr key={rule.id}>
+                    <td>
+                      <strong>{rule.name}</strong>
+                    </td>
+                    <td>
+                      <code>{rule.matchPattern}</code>
+                    </td>
+                    <td>
+                      <span className={`governance-classification-badge ${rule.classification}`}>
+                        {rule.classification}
+                      </span>
+                    </td>
+                    <td className="subtle">{statusLabel(rule.scope)}</td>
+                    <td className="subtle">{rule.rationale}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab !== "classification" ? (
       <section className="governance-master-detail">
         <aside className="governance-usecase-list">
           {filteredUseCases.map((useCase) => {
@@ -1181,52 +1230,6 @@ export function GovernanceControlTower() {
                   </>
                 ) : null}
 
-                {activeTab === "classification" ? (
-                  <>
-                    <ClassificationInventory />
-                    <div className="classification-rule-panel">
-                      <div className="governance-panel-head">
-                        <div>
-                          <p className="eyebrow">Legacy Rules</p>
-                          <h3>Curated Registry Rules</h3>
-                          <p className="section-subtitle">
-                            Existing frontend rules remain visible while the backend classification module becomes the resolved inventory source.
-                          </p>
-                        </div>
-                      </div>
-                      <table className="governance-policy-table">
-                        <thead>
-                          <tr>
-                            <th>Rule</th>
-                            <th>Matches</th>
-                            <th>Classification</th>
-                            <th>Scope</th>
-                            <th>Rationale</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {classificationRules.map((rule: ClassificationRule) => (
-                            <tr key={rule.id}>
-                              <td>
-                                <strong>{rule.name}</strong>
-                              </td>
-                              <td>
-                                <code>{rule.matchPattern}</code>
-                              </td>
-                              <td>
-                                <span className={`governance-classification-badge ${rule.classification}`}>
-                                  {rule.classification}
-                                </span>
-                              </td>
-                              <td className="subtle">{statusLabel(rule.scope)}</td>
-                              <td className="subtle">{rule.rationale}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                ) : null}
               </div>
             </div>
 
@@ -1234,6 +1237,7 @@ export function GovernanceControlTower() {
           </div>
         </div>
       </section>
+      ) : null}
     </div>
   );
 }
