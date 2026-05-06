@@ -2209,6 +2209,188 @@ code {
   gap: 20px;
 }
 
+.use-case-briefing {
+  display: grid;
+  gap: 18px;
+}
+
+.use-case-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.use-case-tabs button {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--oc-gray-700);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.use-case-tabs button.active {
+  border-color: rgba(46, 117, 182, 0.24);
+  background: rgba(46, 117, 182, 0.08);
+  color: var(--oc-gray-900);
+  box-shadow: var(--surface-shadow);
+}
+
+.use-case-tabs span {
+  font-weight: 800;
+}
+
+.use-case-tabs em {
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.use-case-briefing-hero,
+.use-case-briefing-panel {
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--surface-shadow);
+  padding: 22px;
+}
+
+.use-case-briefing-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.use-case-briefing-hero h2,
+.use-case-briefing-panel h3 {
+  margin: 12px 0 8px;
+  color: var(--oc-gray-900);
+  font-family: var(--font-heading);
+  letter-spacing: 0;
+}
+
+.use-case-briefing-hero h2 {
+  font-size: clamp(28px, 4vw, 46px);
+}
+
+.use-case-briefing-hero p,
+.use-case-briefing-panel p {
+  margin: 0;
+  color: var(--oc-gray-600);
+  line-height: 1.6;
+}
+
+.use-case-briefing-actions {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+  min-width: 180px;
+}
+
+.use-case-briefing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 0.8fr));
+  gap: 16px;
+}
+
+.use-case-briefing-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.use-case-briefing-panel.objective {
+  grid-row: span 2;
+}
+
+.use-case-input-list,
+.use-case-outcome-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.use-case-input-list span,
+.use-case-outcome-list span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 999px;
+  background: rgba(248, 250, 253, 0.95);
+  color: var(--oc-navy);
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.use-case-evidence-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.use-case-evidence-list div {
+  display: grid;
+  gap: 4px;
+}
+
+.use-case-evidence-list dt {
+  color: var(--oc-gray-600);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.use-case-evidence-list dd {
+  margin: 0;
+  color: var(--oc-gray-900);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.use-case-lineage-brief {
+  overflow: hidden;
+}
+
+.use-case-lineage-strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(150px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.use-case-lineage-step {
+  min-height: 150px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  border-radius: 14px;
+  background: rgba(248, 250, 253, 0.92);
+  padding: 14px;
+  position: relative;
+}
+
+.use-case-lineage-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 26px;
+  right: -9px;
+  width: 14px;
+  height: 2px;
+  background: rgba(31, 56, 100, 0.24);
+}
+
+.use-case-lineage-step strong {
+  color: var(--oc-gray-900);
+  font-size: 13px;
+}
+
 .metric-grid.compact {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -4505,7 +4687,8 @@ code {
   .governance-contract-tiles,
   .governance-glossary-grid,
   .governance-asset-grid,
-  .governance-quality-grid {
+  .governance-quality-grid,
+  .use-case-briefing-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -4549,7 +4732,8 @@ code {
   .governance-view-nav,
   .governance-legacy-grid,
   .governance-contract-grid,
-  .governance-compliance-grid {
+  .governance-compliance-grid,
+  .use-case-briefing-grid {
     grid-template-columns: 1fr;
   }
 
@@ -4574,6 +4758,7 @@ code {
 @media (max-width: 720px) {
   .registry-toolbar,
   .asset-detail-grid,
+  .use-case-briefing-hero,
   .trust-drawer-actions,
   .trust-stage-panel-header,
   .trust-stage-risk-row {
@@ -4584,7 +4769,9 @@ code {
   .trust-map-hero,
   .asset-registry-workbench,
   .classification-admin-view,
-  .dictionary-workbench {
+  .dictionary-workbench,
+  .use-case-briefing-hero,
+  .use-case-briefing-panel {
     padding: 18px;
   }
 
@@ -4653,7 +4840,9 @@ code {
 
   .governance-tab,
   .governance-chip,
-  .governance-view-tile {
+  .governance-view-tile,
+  .use-case-briefing-actions,
+  .use-case-briefing-actions .button {
     width: 100%;
     justify-content: center;
   }
