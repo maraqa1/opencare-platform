@@ -4341,11 +4341,22 @@ code {
   flex: 1 1 140px;
 }
 
-.classification-policy-grid {
+.classification-policy-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 0.62fr) minmax(340px, 0.38fr);
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+
+.classification-policy-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 12px;
+  max-height: 520px;
   min-width: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .classification-policy-card {
@@ -4356,7 +4367,16 @@ code {
   border: 1px solid rgba(31, 56, 100, 0.08);
   border-radius: 14px;
   background: rgba(248, 250, 253, 0.92);
+  color: inherit;
   padding: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.classification-policy-card.selected {
+  border-color: rgba(46, 117, 182, 0.28);
+  background: rgba(46, 117, 182, 0.08);
+  box-shadow: var(--surface-shadow);
 }
 
 .classification-policy-card .governance-card-topline {
@@ -4373,6 +4393,46 @@ code {
   display: inline-block;
   max-width: 100%;
   white-space: normal;
+}
+
+.classification-policy-editor {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--surface-shadow);
+  padding: 16px;
+}
+
+.classification-policy-editor label {
+  display: grid;
+  gap: 6px;
+}
+
+.classification-policy-editor input,
+.classification-policy-editor select,
+.classification-policy-editor textarea {
+  width: 100%;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 56, 100, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--oc-gray-900);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.classification-policy-editor textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.classification-policy-editor-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .governance-dq-scorecard {
@@ -4493,6 +4553,7 @@ code {
   .classification-summary-grid,
   .classification-toolbar,
   .classification-grid,
+  .classification-policy-workbench,
   .asset-registry-layout {
     grid-template-columns: 1fr;
   }
@@ -4571,6 +4632,7 @@ code {
   .classification-summary-grid,
   .classification-toolbar,
   .classification-grid,
+  .classification-policy-editor-row,
   .trust-stage-panel-grid,
   .trust-stage-lineage,
   .asset-contract-zone {

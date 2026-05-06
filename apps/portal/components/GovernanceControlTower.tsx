@@ -684,7 +684,17 @@ function ClassificationPoliciesView({ useCases }: { useCases: GovernanceUseCase[
   const policies = useCases.flatMap((useCase) =>
     useCase.complianceContext.policies.map((policy) => ({ policy, useCase })),
   );
-  const classificationRules: ClassificationRule[] = getClassificationRules();
+  const [classificationRules, setClassificationRules] = useState<ClassificationRule[]>(() => getClassificationRules());
+  const [selectedRuleId, setSelectedRuleId] = useState(classificationRules[0]?.id ?? "");
+  const [savedRuleId, setSavedRuleId] = useState<string | null>(null);
+  const selectedRule = classificationRules.find((rule) => rule.id === selectedRuleId) ?? classificationRules[0] ?? null;
+
+  const updateSelectedRule = (updates: Partial<ClassificationRule>) => {
+    if (!selectedRule) return;
+    setClassificationRules((rules) =>
+      rules.map((rule) => (rule.id === selectedRule.id ? { ...rule, ...updates } : rule)),
+    );
+  };
 
   return (
     <section className="classification-admin-view">
@@ -706,36 +716,128 @@ function ClassificationPoliciesView({ useCases }: { useCases: GovernanceUseCase[
           <div>
             <p className="eyebrow">Classification Policies</p>
             <h3>Active Pattern Rules</h3>
-            <p className="section-subtitle">Approved patterns are visible with their scope and rationale before any enforcement policy consumes them.</p>
+            <p className="section-subtitle">Approved patterns are visible and editable here before any enforcement policy consumes them.</p>
           </div>
+          <span className="governance-mini-pill">Editable draft</span>
         </div>
-        <div className="classification-policy-grid">
-          {classificationRules.map((rule) => (
-            <article className="classification-policy-card" key={rule.id}>
-              <div className="governance-card-topline">
-                <span className="governance-mini-pill">Policy</span>
-                <span className={`governance-classification-badge ${rule.classification}`}>{rule.classification}</span>
-              </div>
-              <h4>{rule.name}</h4>
-              <dl className="classification-detail-list">
-                <div>
-                  <dt>Pattern</dt>
-                  <dd>
-                    <code>{rule.matchPattern}</code>
-                  </dd>
+        <div className="classification-policy-workbench">
+          <div className="classification-policy-list" aria-label="Classification policy rules">
+            {classificationRules.map((rule) => (
+              <button
+                className={`classification-policy-card ${selectedRule?.id === rule.id ? "selected" : ""}`}
+                key={rule.id}
+                type="button"
+                onClick={() => setSelectedRuleId(rule.id)}
+              >
+                <div className="governance-card-topline">
+                  <span className="governance-mini-pill">Policy</span>
+                  <span className={`governance-classification-badge ${rule.classification}`}>{rule.classification}</span>
                 </div>
-                <div>
-                  <dt>Scope</dt>
-                  <dd>{statusLabel(rule.scope)}</dd>
+                <h4>{rule.name}</h4>
+                <dl className="classification-detail-list">
+                  <div>
+                    <dt>Pattern</dt>
+                    <dd>
+                      <code>{rule.matchPattern}</code>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Scope</dt>
+                    <dd>{statusLabel(rule.scope)}</dd>
+                  </div>
+                  <div>
+                    <dt>Mode</dt>
+                    <dd>Review only until steward approved</dd>
+                  </div>
+                </dl>
+                <p>{rule.rationale}</p>
+              </button>
+            ))}
+          </div>
+
+          <aside className="classification-policy-editor" aria-label="Selected classification policy editor">
+            {selectedRule ? (
+              <>
+                <div className="governance-card-topline">
+                  <span className="governance-mini-pill">Selected Rule</span>
+                  <span className={`governance-classification-badge ${selectedRule.classification}`}>
+                    {selectedRule.classification}
+                  </span>
                 </div>
-                <div>
-                  <dt>Mode</dt>
-                  <dd>Review only until steward approved</dd>
+                <label>
+                  <span className="eyebrow">Rule Name</span>
+                  <input
+                    value={selectedRule.name}
+                    onChange={(event) => updateSelectedRule({ name: event.target.value })}
+                  />
+                </label>
+                <label>
+                  <span className="eyebrow">Pattern</span>
+                  <input
+                    value={selectedRule.matchPattern}
+                    onChange={(event) => updateSelectedRule({ matchPattern: event.target.value })}
+                  />
+                </label>
+                <div className="classification-policy-editor-row">
+                  <label>
+                    <span className="eyebrow">Classification</span>
+                    <select
+                      value={selectedRule.classification}
+                      onChange={(event) =>
+                        updateSelectedRule({ classification: event.target.value as ClassificationRule["classification"] })
+                      }
+                    >
+                      <option value="public">public</option>
+                      <option value="internal">internal</option>
+                      <option value="sensitive">sensitive</option>
+                      <option value="restricted">restricted</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="eyebrow">Scope</span>
+                    <select
+                      value={selectedRule.scope}
+                      onChange={(event) => updateSelectedRule({ scope: event.target.value as ClassificationRule["scope"] })}
+                    >
+                      <option value="column_name">column name</option>
+                      <option value="field_usage">field usage</option>
+                    </select>
+                  </label>
                 </div>
-              </dl>
-              <p>{rule.rationale}</p>
-            </article>
-          ))}
+                <label>
+                  <span className="eyebrow">Rationale</span>
+                  <textarea
+                    value={selectedRule.rationale}
+                    onChange={(event) => updateSelectedRule({ rationale: event.target.value })}
+                  />
+                </label>
+                <p className="classification-safety-note">
+                  Edits are visible in this admin session only. Backend persistence and approval workflow remain a separate governance API change.
+                </p>
+                <div className="classification-action-grid">
+                  <button className="button primary" type="button" onClick={() => setSavedRuleId(selectedRule.id)}>
+                    Save draft
+                  </button>
+                  <button
+                    className="button secondary"
+                    type="button"
+                    onClick={() => {
+                      setClassificationRules(getClassificationRules());
+                      setSavedRuleId(null);
+                    }}
+                  >
+                    Reset rules
+                  </button>
+                  <button className="button secondary" type="button">Submit for approval</button>
+                </div>
+                {savedRuleId === selectedRule.id ? (
+                  <p className="subtle">Draft saved in this session. Persistence will require the governance policy API.</p>
+                ) : null}
+              </>
+            ) : (
+              renderUnknown("Select a classification policy rule to edit.")
+            )}
+          </aside>
         </div>
       </div>
       <div className="classification-rule-panel">
