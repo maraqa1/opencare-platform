@@ -2965,14 +2965,16 @@ code {
 .trust-map-main {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 .trust-map-hero {
-  min-height: 640px;
+  min-height: 560px;
   display: grid;
-  gap: 24px;
+  gap: 18px;
   align-content: start;
-  padding: 26px;
+  overflow: hidden;
+  padding: 22px;
 }
 
 .trust-map-hero-head {
@@ -2997,13 +2999,22 @@ code {
   line-height: 1.55;
 }
 
+.trust-map-viewport {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 12px;
+  scrollbar-color: rgba(31, 56, 100, 0.28) rgba(248, 250, 253, 0.9);
+  scrollbar-width: thin;
+}
+
 .trust-map-chain {
   --trust-node-count: 7;
   display: grid;
-  grid-template-columns: repeat(var(--trust-node-count), minmax(132px, 1fr));
-  gap: 28px 18px;
+  grid-template-columns: repeat(var(--trust-node-count), minmax(150px, 1fr));
+  gap: 18px;
   align-items: stretch;
-  overflow: visible;
+  min-width: max(100%, calc(var(--trust-node-count) * 168px));
   padding: 8px 4px 10px;
 }
 
@@ -3011,14 +3022,17 @@ code {
   display: flex;
   align-items: center;
   min-width: 0;
+  height: 100%;
   position: relative;
 }
 
 .trust-map-node {
   width: 100%;
-  min-height: 230px;
+  min-height: 220px;
+  height: 100%;
   display: grid;
-  align-content: start;
+  grid-template-rows: auto auto 1fr auto;
+  align-content: stretch;
   gap: 10px;
   border: 1px solid rgba(31, 56, 100, 0.1);
   border-radius: 14px;
@@ -3108,6 +3122,85 @@ code {
   padding: 0 2px;
   position: relative;
   z-index: 1;
+}
+
+.trust-stage-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--surface-shadow);
+  padding: 18px;
+}
+
+.trust-stage-panel-header,
+.trust-stage-risk-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.trust-stage-panel h3,
+.asset-list-zone-head h3,
+.classification-policy-card h4 {
+  margin: 0;
+  color: var(--oc-gray-900);
+  font-family: var(--font-heading);
+  letter-spacing: 0;
+}
+
+.trust-stage-panel p,
+.classification-policy-card p {
+  margin: 0;
+  color: var(--oc-gray-600);
+  line-height: 1.55;
+}
+
+.trust-stage-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trust-stage-lineage,
+.asset-contract-zone {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trust-stage-panel-grid article,
+.trust-stage-lineage div,
+.asset-contract-zone article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border-radius: 12px;
+  background: rgba(248, 250, 253, 0.92);
+  padding: 14px;
+}
+
+.trust-stage-lineage strong {
+  color: var(--oc-gray-900);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.trust-stage-actions,
+.asset-steward-actions,
+.classification-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.trust-stage-technical-trace {
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+  padding-top: 14px;
 }
 
 .trust-drawer-layer {
@@ -3239,11 +3332,65 @@ code {
   font: inherit;
 }
 
+.asset-registry-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.asset-registry-zone-card {
+  min-width: 0;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 14px;
+  background: rgba(248, 250, 253, 0.92);
+  padding: 14px;
+}
+
+.asset-registry-zone-card.primary {
+  background: rgba(46, 117, 182, 0.08);
+  border-color: rgba(46, 117, 182, 0.14);
+}
+
+.asset-registry-zone-card strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--oc-gray-900);
+  font-family: var(--font-heading);
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.asset-registry-zone-card p {
+  margin: 8px 0 0;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .asset-registry-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 0.38fr) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
+}
+
+.asset-list-zone {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--surface-shadow);
+  padding: 16px;
+}
+
+.asset-list-zone-head,
+.asset-stage-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .asset-card-grid,
@@ -3252,6 +3399,35 @@ code {
 .technical-lineage-panel {
   display: grid;
   gap: 12px;
+}
+
+.asset-card-grid {
+  max-height: 740px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.asset-stage-group {
+  display: grid;
+  gap: 10px;
+}
+
+.asset-stage-group + .asset-stage-group {
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+  padding-top: 12px;
+}
+
+.asset-stage-group-head span:last-child {
+  min-width: 26px;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(31, 56, 100, 0.08);
+  color: var(--oc-gray-700);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .registry-asset-card {
@@ -3285,6 +3461,8 @@ code {
 
 .asset-detail-panel {
   padding: 18px;
+  max-height: 920px;
+  overflow-y: auto;
 }
 
 .asset-detail-grid {
@@ -4008,7 +4186,14 @@ code {
   padding: 22px;
 }
 
+.classification-workspace-shell {
+  display: grid;
+  gap: 14px;
+}
+
 .classification-rule-panel {
+  display: grid;
+  gap: 14px;
   padding-top: 10px;
 }
 
@@ -4060,14 +4245,19 @@ code {
 
 .classification-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(290px, 0.34fr);
+  grid-template-columns: minmax(0, 0.7fr) minmax(320px, 0.3fr);
   gap: 16px;
   align-items: start;
 }
 
 .classification-table-shell {
   min-width: 0;
-  overflow-x: auto;
+  max-height: 680px;
+  overflow: auto;
+}
+
+.classification-table {
+  min-width: 980px;
 }
 
 .classification-table tbody tr {
@@ -4091,6 +4281,9 @@ code {
 .classification-detail {
   display: grid;
   gap: 12px;
+  align-self: start;
+  max-height: 680px;
+  overflow-y: auto;
   padding: 16px;
   border-radius: 14px;
   border: 1px solid rgba(31, 56, 100, 0.1);
@@ -4136,6 +4329,30 @@ code {
   line-height: 1.45;
 }
 
+.classification-action-grid {
+  justify-content: stretch;
+}
+
+.classification-action-grid .button {
+  min-width: 0;
+  flex: 1 1 140px;
+}
+
+.classification-policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.classification-policy-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 14px;
+  background: rgba(248, 250, 253, 0.92);
+  padding: 16px;
+}
+
 .governance-dq-scorecard {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4173,14 +4390,6 @@ code {
   .trust-map-layout,
   .asset-registry-layout {
     grid-template-columns: 1fr;
-  }
-
-  .trust-map-chain {
-    grid-template-columns: repeat(4, minmax(150px, 1fr));
-  }
-
-  .trust-map-chain-step:nth-child(4) .trust-map-connector {
-    display: none;
   }
 
   .trust-usecase-rail {
@@ -4226,6 +4435,12 @@ code {
   .governance-overview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .trust-stage-panel-grid,
+  .trust-stage-lineage,
+  .asset-contract-zone {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 920px) {
@@ -4255,7 +4470,8 @@ code {
 
   .classification-summary-grid,
   .classification-toolbar,
-  .classification-grid {
+  .classification-grid,
+  .asset-registry-layout {
     grid-template-columns: 1fr;
   }
 }
@@ -4263,8 +4479,11 @@ code {
 @media (max-width: 720px) {
   .registry-toolbar,
   .asset-detail-grid,
-  .trust-drawer-actions {
+  .trust-drawer-actions,
+  .trust-stage-panel-header,
+  .trust-stage-risk-row {
     grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .trust-map-hero,
@@ -4329,7 +4548,10 @@ code {
   .governance-dq-scorecard,
   .classification-summary-grid,
   .classification-toolbar,
-  .classification-grid {
+  .classification-grid,
+  .trust-stage-panel-grid,
+  .trust-stage-lineage,
+  .asset-contract-zone {
     grid-template-columns: 1fr;
   }
 

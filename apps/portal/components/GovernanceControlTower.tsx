@@ -9,10 +9,12 @@ import { SourceFreshness } from "@/components/SourceFreshness";
 import {
   type BusinessTrustNode,
   type CertificationStatus,
+  type ClassificationRule,
   type GovernanceStatus,
   type GovernanceUseCase,
   type GovernedDataset,
   type QualityDimensionStatus,
+  getClassificationRules,
   getGovernanceOverview,
   getGovernanceUseCases,
 } from "@/lib/governance-registry";
@@ -233,26 +235,28 @@ function TrustMapHero({
         </span>
       </div>
 
-      <div className="trust-map-chain" style={{ ["--trust-node-count" as string]: orderedNodes.length }}>
-        {orderedNodes.map((node, index) => {
-          const trustState = trustStateForNode(node);
-          const selected = selectedNodeId === node.id;
-          return (
-            <div className="trust-map-chain-step" key={node.id}>
-              <button
-                className={`trust-map-node ${selected ? "selected" : ""}`}
-                type="button"
-                onClick={() => onSelectNode(node)}
-              >
-                <span className="trust-map-stage">{statusLabel(node.type)}</span>
-                <strong>{businessNodeLabel(node)}</strong>
-                <em>{node.description ?? technicalNodeLabel(node)}</em>
-                <span className={`trust-state-pill ${trustStateTone(trustState)}`}>{trustState}</span>
-              </button>
-              {index < orderedNodes.length - 1 ? <span className="trust-map-connector" aria-hidden="true" /> : null}
-            </div>
-          );
-        })}
+      <div className="trust-map-viewport" aria-label="Source to decision journey">
+        <div className="trust-map-chain" style={{ ["--trust-node-count" as string]: orderedNodes.length }}>
+          {orderedNodes.map((node, index) => {
+            const trustState = trustStateForNode(node);
+            const selected = selectedNodeId === node.id;
+            return (
+              <div className="trust-map-chain-step" key={node.id}>
+                <button
+                  className={`trust-map-node ${selected ? "selected" : ""}`}
+                  type="button"
+                  onClick={() => onSelectNode(node)}
+                >
+                  <span className="trust-map-stage">{statusLabel(node.type)}</span>
+                  <strong>{businessNodeLabel(node)}</strong>
+                  <em>{node.description ?? technicalNodeLabel(node)}</em>
+                  <span className={`trust-state-pill ${trustStateTone(trustState)}`}>{trustState}</span>
+                </button>
+                {index < orderedNodes.length - 1 ? <span className="trust-map-connector" aria-hidden="true" /> : null}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -288,15 +292,17 @@ function UseCaseRail({
   );
 }
 
-function EvidenceDrawer({
+function SelectedStagePanel({
   node,
-  onClose,
   onOpenAssetRegistry,
+  onToggleTechnicalTrace,
+  showTechnicalTrace,
   useCase,
 }: {
   node: BusinessTrustNode | null;
-  onClose: () => void;
   onOpenAssetRegistry: () => void;
+  onToggleTechnicalTrace: () => void;
+  showTechnicalTrace: boolean;
   useCase: GovernanceUseCase;
 }) {
   if (!node) return null;
@@ -306,37 +312,38 @@ function EvidenceDrawer({
   const upstream = asset?.upstreamSources?.[0] ?? useCase.sourceTables[0] ?? "Not mapped";
   const downstream = asset?.downstreamConsumers?.[0] ?? useCase.downstreamConsumers[0] ?? "Not mapped";
   const risk = asset?.openRisks?.[0] ?? (trustState === "Trusted" ? "No active risk" : "Evidence is partial for this stage.");
+  const technicalModel = asset?.table ?? useCase.lineageEntryPoints[0]?.technicalModel ?? "";
 
   return (
-    <div className="trust-drawer-layer" role="dialog" aria-modal="true" aria-label={`${businessNodeLabel(node)} evidence`}>
-      <button className="trust-drawer-scrim" type="button" aria-label="Close evidence drawer" onClick={onClose} />
-      <aside className="trust-evidence-drawer">
-        <button className="trust-drawer-close" type="button" onClick={onClose} aria-label="Close">
-          X
-        </button>
-        <header>
-          <span className="eyebrow">{statusLabel(node.type)}</span>
+    <section className="trust-stage-panel" aria-label={`${businessNodeLabel(node)} evidence`}>
+      <div className="trust-stage-panel-header">
+        <div>
+          <p className="eyebrow">{statusLabel(node.type)} evidence</p>
           <h3>{businessNodeLabel(node)}</h3>
-          <span className={`trust-state-pill ${trustStateTone(trustState)}`}>{trustState}</span>
           <p>{node.description ?? "Governed stage in the operational KPI trust chain."}</p>
-        </header>
+        </div>
+        <span className={`trust-state-pill ${trustStateTone(trustState)}`}>{trustState}</span>
+      </div>
 
-        <section>
-          <h4>Trust Posture</h4>
+      <div className="trust-stage-panel-grid">
+        <article>
+          <span className="eyebrow">What This Stage Represents</span>
+          <p>
+            {asset?.businessMeaning ??
+              `${businessNodeLabel(node)} is part of the source-to-decision evidence chain for ${useCase.name}.`}
+          </p>
+        </article>
+        <article>
+          <span className="eyebrow">Trust Posture</span>
           <p>
             {trustState === "Not instrumented"
               ? "Source-level freshness is not yet connected. Raw landing and downstream dbt stages are governed."
-              : `This stage is marked ${trustState.toLowerCase()} based on certification, freshness, and quality evidence.`}
+              : `This stage is ${trustState.toLowerCase()} based on certification, freshness, and quality evidence.`}
           </p>
-        </section>
-
-        <section>
-          <h4>Evidence Summary</h4>
+        </article>
+        <article>
+          <span className="eyebrow">Evidence Summary</span>
           <dl className="trust-evidence-list">
-            <div>
-              <dt>Owner / Steward</dt>
-              <dd>{asset ? `${asset.owner ?? "Unknown"} / ${asset.steward ?? "Unknown"}` : `${node.owner ?? useCase.owner} / ${node.steward ?? useCase.steward ?? "Unknown"}`}</dd>
-            </div>
             <div>
               <dt>Certification</dt>
               <dd>{statusLabel(asset?.certification?.status ?? node.certificationStatus ?? "draft")}</dd>
@@ -346,55 +353,71 @@ function EvidenceDrawer({
               <dd>{statusLabel(asset?.freshnessStatus ?? node.freshnessStatus ?? "not_connected")}</dd>
             </div>
             <div>
-              <dt>Quality posture</dt>
+              <dt>Quality</dt>
               <dd>{statusLabel(asset?.testStatus ?? node.qualityStatus ?? "not_connected")}</dd>
             </div>
-            <div>
-              <dt>Sensitivity</dt>
-              <dd>
-                <span className={`governance-classification-badge ${asset ? columnClassification(asset) : node.sensitivityClass ?? "unknown"}`}>
-                  {asset ? columnClassification(asset) : node.sensitivityClass ?? "unknown"}
-                </span>
-                <span className="trust-sensitivity-note">Classification, not trust posture</span>
-              </dd>
-            </div>
           </dl>
-        </section>
+        </article>
+        <article>
+          <span className="eyebrow">Sensitivity Classification</span>
+          <span className={`governance-classification-badge ${asset ? columnClassification(asset) : node.sensitivityClass ?? "unknown"}`}>
+            {asset ? columnClassification(asset) : node.sensitivityClass ?? "unknown"}
+          </span>
+          <p className="trust-sensitivity-note">This controls handling. It is separate from trust posture.</p>
+        </article>
+      </div>
 
-        <section>
-          <h4>Lineage Summary</h4>
-          <dl className="trust-evidence-list">
-            <div>
-              <dt>Upstream source</dt>
-              <dd>{upstream}</dd>
-            </div>
-            <div>
-              <dt>Current stage / asset</dt>
-              <dd>{asset ? `${asset.schema}.${asset.table}` : technicalNodeLabel(node)}</dd>
-            </div>
-            <div>
-              <dt>Downstream consumer</dt>
-              <dd>{downstream}</dd>
-            </div>
-          </dl>
-        </section>
+      <div className="trust-stage-lineage">
+        <div>
+          <span className="eyebrow">Upstream</span>
+          <strong>{upstream}</strong>
+        </div>
+        <div>
+          <span className="eyebrow">Current Stage / Asset</span>
+          <strong>{asset ? `${asset.schema}.${asset.table}` : technicalNodeLabel(node)}</strong>
+        </div>
+        <div>
+          <span className="eyebrow">Downstream</span>
+          <strong>{downstream}</strong>
+        </div>
+      </div>
 
-        <section>
-          <h4>Risk</h4>
+      <div className="trust-stage-risk-row">
+        <div>
+          <span className="eyebrow">Risk Or Missing Evidence</span>
           <p>{risk}</p>
-        </section>
-
-        <div className="trust-drawer-actions">
-          <button className="button secondary" type="button" onClick={onOpenAssetRegistry}>
-            See technical trace
+        </div>
+        <div className="trust-stage-actions">
+          <button className="button secondary" type="button" onClick={onToggleTechnicalTrace}>
+            {showTechnicalTrace ? "Hide technical trace" : "See technical trace"}
           </button>
           <button className="button primary" type="button" onClick={onOpenAssetRegistry}>
             See full asset detail
           </button>
         </div>
-      </aside>
-    </div>
+      </div>
+
+      {showTechnicalTrace && technicalModel ? (
+        <div className="trust-stage-technical-trace">
+          <LineageDAG
+            modelName={technicalModel}
+            layout="stacked"
+            declaredSources={asset?.upstreamSources ?? useCase.sourceTables}
+          />
+        </div>
+      ) : null}
+    </section>
   );
+}
+
+function stageGroupForAsset(asset: GovernedDataset) {
+  if (asset.assetType === "source") return "Source";
+  if (asset.schema === "staging") return "Staging";
+  if (asset.schema === "analytics") return "Analytics";
+  if (asset.schema === "output" || asset.assetType === "output") return "Output";
+  if (asset.assetType === "decision") return "Decision";
+  if (asset.assetType === "dictionary") return "Dictionary";
+  return assetTypeLabel(asset.assetType);
 }
 
 function AssetRegistryView({
@@ -425,6 +448,19 @@ function AssetRegistryView({
     filteredAssets[0] ??
     selectedUseCase.governedDatasets[0] ??
     null;
+  const assetZones = Array.from(
+    filteredAssets.reduce((zones, asset) => {
+      const group = stageGroupForAsset(asset);
+      zones.set(group, [...(zones.get(group) ?? []), asset]);
+      return zones;
+    }, new Map<string, GovernedDataset[]>()),
+  );
+  const warningCount = filteredAssets.filter(
+    (asset) =>
+      ["warning", "stale", "failing", "partial", "missing", "not_connected"].includes(asset.freshnessStatus) ||
+      ["warning", "stale", "failing", "partial", "missing", "not_connected"].includes(asset.testStatus) ||
+      ["warning", "stale", "failing", "partial", "missing", "not_connected"].includes(asset.lineageStatus),
+  ).length;
 
   return (
     <section className="asset-registry-workbench">
@@ -459,25 +495,64 @@ function AssetRegistryView({
         </label>
       </div>
 
+      <div className="asset-registry-matrix" aria-label="Asset landscape matrix">
+        <article className="asset-registry-zone-card primary">
+          <span className="eyebrow">Selected Use Case</span>
+          <strong>{selectedUseCase.name}</strong>
+          <p>{filteredAssets.length} governed assets visible after filters.</p>
+        </article>
+        {assetZones.map(([group, assets]) => (
+          <article className="asset-registry-zone-card" key={group}>
+            <span className="eyebrow">{group}</span>
+            <strong>{assets.length}</strong>
+            <p>
+              {assets.filter((asset) => statusTone(asset.certification?.status ?? "draft") === "positive").length} certified or reviewed
+            </p>
+          </article>
+        ))}
+        <article className="asset-registry-zone-card">
+          <span className="eyebrow">Warnings</span>
+          <strong>{warningCount}</strong>
+          <p>Assets with freshness, quality, or lineage gaps.</p>
+        </article>
+      </div>
+
       <div className="asset-registry-layout">
-        <div className="asset-card-grid">
-          {filteredAssets.map((asset) => (
-            <button
-              className={`registry-asset-card ${selectedAsset?.id === asset.id ? "selected" : ""}`}
-              key={asset.id}
-              type="button"
-              onClick={() => onSelectAsset(asset.id)}
-            >
-              <span className="governance-mini-pill">{assetTypeLabel(asset.assetType)}</span>
-              <strong>{asset.name}</strong>
-              <em>
-                {asset.schema}.{asset.table}
-              </em>
-              <span className={`trust-state-pill ${statusTone(asset.certification?.status ?? "draft")}`}>
-                {statusLabel(asset.certification?.status ?? "draft")}
-              </span>
-            </button>
-          ))}
+        <div className="asset-list-zone">
+          <div className="asset-list-zone-head">
+            <div>
+              <p className="eyebrow">Asset Landscape</p>
+              <h3>Grouped By Pipeline Stage</h3>
+            </div>
+            <span className="governance-mini-pill">{filteredAssets.length} assets</span>
+          </div>
+          <div className="asset-card-grid">
+            {assetZones.map(([group, assets]) => (
+              <section className="asset-stage-group" key={group}>
+                <div className="asset-stage-group-head">
+                  <span className="eyebrow">{group}</span>
+                  <span>{assets.length}</span>
+                </div>
+                {assets.map((asset) => (
+                  <button
+                    className={`registry-asset-card ${selectedAsset?.id === asset.id ? "selected" : ""}`}
+                    key={asset.id}
+                    type="button"
+                    onClick={() => onSelectAsset(asset.id)}
+                  >
+                    <span className="governance-mini-pill">{assetTypeLabel(asset.assetType)}</span>
+                    <strong>{asset.name}</strong>
+                    <em>
+                      {asset.schema}.{asset.table}
+                    </em>
+                    <span className={`trust-state-pill ${statusTone(asset.certification?.status ?? "draft")}`}>
+                      {statusLabel(asset.certification?.status ?? "draft")}
+                    </span>
+                  </button>
+                ))}
+              </section>
+            ))}
+          </div>
         </div>
 
         <article className="asset-detail-panel">
@@ -520,6 +595,21 @@ function AssetRegistryView({
                     <span className={`governance-status-pill ${statusTone(status)}`}>{statusLabel(status)}</span>
                   </div>
                 ))}
+              </div>
+
+              <div className="asset-contract-zone">
+                <article>
+                  <span className="eyebrow">Lineage Summary</span>
+                  <p>{selectedAsset.lineageSummary?.[0] ?? "Lineage is represented through the existing dbt-backed lineage service."}</p>
+                </article>
+                <article>
+                  <span className="eyebrow">Open Risk</span>
+                  <p>{selectedAsset.openRisks?.[0] ?? "No active risk"}</p>
+                </article>
+                <article>
+                  <span className="eyebrow">Consumers</span>
+                  <p>{selectedAsset.downstreamConsumers?.join(", ") || selectedAsset.consumers.join(", ") || "No mapped consumers"}</p>
+                </article>
               </div>
 
               <div className="registry-columns">
@@ -575,6 +665,11 @@ function AssetRegistryView({
                   declaredSources={selectedAsset.upstreamSources ?? selectedUseCase.sourceTables}
                 />
               </div>
+              <div className="asset-steward-actions" aria-label="Asset steward actions">
+                <button className="button secondary" type="button">Review metadata</button>
+                <button className="button secondary" type="button">Assign steward</button>
+                <button className="button primary" type="button">Open lineage evidence</button>
+              </div>
             </>
           ) : (
             renderUnknown("No governed assets match the current filters.")
@@ -589,10 +684,60 @@ function ClassificationPoliciesView({ useCases }: { useCases: GovernanceUseCase[
   const policies = useCases.flatMap((useCase) =>
     useCase.complianceContext.policies.map((policy) => ({ policy, useCase })),
   );
+  const classificationRules: ClassificationRule[] = getClassificationRules();
 
   return (
     <section className="classification-admin-view">
-      <ClassificationInventory />
+      <div className="classification-workspace-shell">
+        <div className="governance-panel-head">
+          <div>
+            <p className="eyebrow">Classification & Policies</p>
+            <h2>Column Review Queue And Policy Evidence</h2>
+            <p className="section-subtitle">
+              Sensitivity, review status, confidence, and policy action stay separate so inferred logic cannot enforce by accident.
+            </p>
+          </div>
+          <span className="governance-mini-pill">Review-first</span>
+        </div>
+        <ClassificationInventory />
+      </div>
+      <div className="classification-rule-panel">
+        <div className="governance-panel-head">
+          <div>
+            <p className="eyebrow">Classification Policies</p>
+            <h3>Active Pattern Rules</h3>
+            <p className="section-subtitle">Approved patterns are visible with their scope and rationale before any enforcement policy consumes them.</p>
+          </div>
+        </div>
+        <div className="classification-policy-grid">
+          {classificationRules.map((rule) => (
+            <article className="classification-policy-card" key={rule.id}>
+              <div className="governance-card-topline">
+                <span className="governance-mini-pill">Policy</span>
+                <span className={`governance-classification-badge ${rule.classification}`}>{rule.classification}</span>
+              </div>
+              <h4>{rule.name}</h4>
+              <dl className="classification-detail-list">
+                <div>
+                  <dt>Pattern</dt>
+                  <dd>
+                    <code>{rule.matchPattern}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Scope</dt>
+                  <dd>{statusLabel(rule.scope)}</dd>
+                </div>
+                <div>
+                  <dt>Mode</dt>
+                  <dd>Review only until steward approved</dd>
+                </div>
+              </dl>
+              <p>{rule.rationale}</p>
+            </article>
+          ))}
+        </div>
+      </div>
       <div className="classification-rule-panel">
         <div className="governance-panel-head">
           <div>
@@ -692,6 +837,7 @@ export function GovernanceControlTower() {
   const [query, setQuery] = useState("");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(useCases[0]?.governedDatasets[0]?.id ?? null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [showTechnicalTrace, setShowTechnicalTrace] = useState(false);
   const [selectedUseCaseId, setSelectedUseCaseId] = useState(useCases[0]?.id ?? "");
 
   const selectedUseCase =
@@ -705,6 +851,7 @@ export function GovernanceControlTower() {
     setSelectedUseCaseId(useCase.id);
     setSelectedAssetId(useCase.governedDatasets[0]?.id ?? null);
     setSelectedNodeId(null);
+    setShowTechnicalTrace(false);
   };
 
   if (!selectedUseCase) {
@@ -731,6 +878,7 @@ export function GovernanceControlTower() {
               onClick={() => {
                 setMode(item.key);
                 setSelectedNodeId(null);
+                setShowTechnicalTrace(false);
               }}
             >
               {item.label}
@@ -754,6 +902,7 @@ export function GovernanceControlTower() {
                 useCase={selectedUseCase}
                 onSelectNode={(node) => {
                   setSelectedNodeId(node.id);
+                  setShowTechnicalTrace(false);
                   const asset = findAssetForNode(selectedUseCase, node);
                   if (asset) {
                     setSelectedAssetId(asset.id);
@@ -765,17 +914,18 @@ export function GovernanceControlTower() {
                   Explore Asset Registry
                 </button>
               </div>
+              <SelectedStagePanel
+                node={selectedNode}
+                onOpenAssetRegistry={() => {
+                  setMode("asset-registry");
+                  setShowTechnicalTrace(false);
+                }}
+                onToggleTechnicalTrace={() => setShowTechnicalTrace((current) => !current)}
+                showTechnicalTrace={showTechnicalTrace}
+                useCase={selectedUseCase}
+              />
             </div>
           </main>
-          <EvidenceDrawer
-            node={selectedNode}
-            onClose={() => setSelectedNodeId(null)}
-            onOpenAssetRegistry={() => {
-              setSelectedNodeId(null);
-              setMode("asset-registry");
-            }}
-            useCase={selectedUseCase}
-          />
         </>
       ) : null}
 

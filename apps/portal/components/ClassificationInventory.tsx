@@ -306,6 +306,13 @@ export function ClassificationInventory() {
               <p className="classification-safety-note">
                 Inferred classifications are visible for review and do not trigger enforcement until explicitly approved.
               </p>
+              <div className="classification-action-grid" aria-label="Classification review actions">
+                <button className="button secondary" type="button">Review</button>
+                <button className="button primary" type="button">Approve</button>
+                <button className="button secondary" type="button">Request change</button>
+                <button className="button secondary" type="button">Mark false positive</button>
+                <button className="button secondary" type="button">Assign steward</button>
+              </div>
             </>
           ) : (
             <div className="governance-empty-state">Select a column to inspect classification evidence.</div>
