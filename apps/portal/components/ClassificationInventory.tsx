@@ -99,6 +99,18 @@ function evidenceLabel(row: ClassificationInventoryRow) {
   return [label(type), field, value].filter(Boolean).join(" / ");
 }
 
+function displayAssetName(row: ClassificationInventoryRow) {
+  if (row.asset_name && row.asset_stage) {
+    return `${row.asset_stage}.${row.asset_name}`;
+  }
+  if (row.asset_name) {
+    return row.asset_name;
+  }
+  const tableName = row.asset.split(".").at(-1) ?? row.asset;
+  const schema = row.asset_stage === "source" ? "raw" : row.asset_stage;
+  return schema ? `${schema}.${tableName}` : tableName;
+}
+
 export function ClassificationInventory() {
   const [payload, setPayload] = useState<ClassificationPayload | null>(null);
   const [query, setQuery] = useState("");
@@ -231,7 +243,7 @@ export function ClassificationInventory() {
                     onClick={() => setSelectedRowId(rowId)}
                   >
                     <td>
-                      <strong>{item.asset}</strong>
+                      <strong>{displayAssetName(item)}</strong>
                       <p className="subtle">{item.asset_stage ?? "unknown"}</p>
                     </td>
                     <td>
@@ -280,7 +292,7 @@ export function ClassificationInventory() {
                 </span>
               </div>
               <h4>{selectedRow.column}</h4>
-              <p className="subtle">{selectedRow.asset}</p>
+              <p className="subtle">{displayAssetName(selectedRow)}</p>
               <dl className="classification-detail-list">
                 <div>
                   <dt>Source</dt>
