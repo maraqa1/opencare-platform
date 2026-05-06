@@ -70,6 +70,7 @@ select {
 
 code {
   font-family: var(--font-mono);
+  overflow-wrap: anywhere;
 }
 
 .portal-shell {
@@ -4317,6 +4318,8 @@ code {
   margin: 0;
   color: var(--oc-gray-900);
   line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .classification-safety-note {
@@ -4340,17 +4343,36 @@ code {
 
 .classification-policy-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 12px;
+  min-width: 0;
 }
 
 .classification-policy-card {
   display: grid;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid rgba(31, 56, 100, 0.08);
   border-radius: 14px;
   background: rgba(248, 250, 253, 0.92);
   padding: 16px;
+}
+
+.classification-policy-card .governance-card-topline {
+  flex-wrap: wrap;
+}
+
+.classification-policy-card h4,
+.classification-policy-card p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.classification-policy-card code {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
 }
 
 .governance-dq-scorecard {
