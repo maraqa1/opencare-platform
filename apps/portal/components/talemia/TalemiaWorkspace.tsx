@@ -241,7 +241,7 @@ function filterControls(rows: TalemiaRow[], filters: TalemiaFilters, keys: Array
 function stageItems(rows: TalemiaRow[]) {
   return stageOrder.map((label) => {
     const stageRows = rows.filter((row) => textValue(row.opportunity_stage) === label);
-    return { label, count: stageRows.length, value: sum(stageRows, "contract_value") };
+    return { label, count: stageRows.length, value: sum(stageRows, "contract_value"), qualifiedValue: sum(stageRows, "qualified_sales") };
   });
 }
 
@@ -409,6 +409,38 @@ function ColumnChart({ items, mode = "value" }: { items: Array<{ label: string; 
         );
       })}
       {items.length === 0 ? <div className="talemia-empty">No rows available.</div> : null}
+    </div>
+  );
+}
+
+function StagePipelineChart({ items }: { items: Array<{ label: string; value: number; qualifiedValue?: number; count?: number }> }) {
+  const max = maxValue(items, "count");
+  return (
+    <div className="talemia-stage-chart">
+      <div className="talemia-stage-legend">
+        <span><i className="pipeline" />Pipeline Value</span>
+        <span><i className="qualified" />Qualified Pipeline</span>
+      </div>
+      <div className="talemia-stage-bars">
+        {items.map((item) => {
+          const count = numberValue(item.count);
+          return (
+            <div className="talemia-stage-column" key={item.label}>
+              <strong>{integer(count)}</strong>
+              <div className="talemia-stage-bar" style={{ height: `${Math.max((count / max) * 100, count > 0 ? 8 : 1)}px` }} />
+              <span>{item.label}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="talemia-stage-values">
+        <b>Values</b>
+        {items.map((item) => (
+          <div className="talemia-stage-value-cell" key={item.label}>
+            <span className={numberValue(item.qualifiedValue) > 0 ? "qualified" : ""}>{item.value ? compactNumber(item.value) : "--"}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -612,7 +644,7 @@ function ExecutiveDashboard({ executive, opportunities, filters }: DashboardProp
       ]} />
       <section className="talemia-grid talemia-executive-grid">
         <DashboardCard title="Opportunities Per Stage" className="span-8">
-          <ColumnChart items={stageItems(opps)} mode="count" />
+          <StagePipelineChart items={stageItems(opps)} />
         </DashboardCard>
         <DashboardCard title="Key Performance Indicators" className="span-4 executive-kpi-panel">
           <div className="talemia-side-kpis">
