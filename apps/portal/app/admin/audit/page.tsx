@@ -51,7 +51,7 @@ export default function AdminAuditPage() {
         <p className="eyebrow">Change History</p>
         <h3 className="section-heading">Threshold and configuration changes tracked</h3>
         <p className="section-subtitle">
-          PII access requires authentication and an audit entry. Retention: 2,555 days.
+          Personally Identifiable Data access requires authentication and an audit entry. Retention: 2,555 days.
         </p>
       </section>
     </PageFrame>

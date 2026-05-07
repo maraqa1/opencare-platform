@@ -55,7 +55,7 @@ export function ComplianceSummary() {
         <div>
           <p className="eyebrow">Compliance</p>
           <h3>Compliance &amp; Data Classification</h3>
-          <p className="section-subtitle">PII tagging, retention, masking posture, and audit expectations brought into the same product surface as the live metrics.</p>
+          <p className="section-subtitle">Personally Identifiable Data tagging, retention, masking posture, and audit expectations brought into the same product surface as the live metrics.</p>
         </div>
       </div>
 
@@ -71,7 +71,7 @@ export function ComplianceSummary() {
         </article>
 
         <article className="compliance-panel">
-          <h4>PII Tracking</h4>
+          <h4>Personally Identifiable Data Tracking</h4>
           {(payload?.pii_tracking ?? []).map((item) => (
             <div className="classification-row" key={item.model}>
               <strong>{item.model}</strong>
@@ -98,7 +98,7 @@ export function ComplianceSummary() {
         <article className="compliance-panel">
           <h4>Audit Trail</h4>
           <p>All data access logged with {payload?.audit_trail.retention_days ?? 0}-day retention.</p>
-          <p>PII access requires authentication and an audit entry.</p>
+          <p>Personally Identifiable Data access requires authentication and an audit entry.</p>
           <p className="subtle">Last audit query: {payload?.audit_trail.last_audit_query ?? "unknown"}.</p>
         </article>
       </div>
