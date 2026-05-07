@@ -615,21 +615,21 @@ function BusinessLineDashboard({ opportunities, filters }: DashboardProps) {
         { label: "Other Clients Opportunities", value: integer(otherRows.length), tone: "teal" },
       ]} />
       <section className="talemia-grid talemia-business-line-grid">
-        <DashboardCard title="Opportunities Status" className="span-7">
+        <DashboardCard title="Opportunities Status" className="span-6 business-line-status-panel">
           <BarChart items={[{ label: "Pipeline", value: sum(opps, "contract_value"), count: opps.length }, { label: "Active", value: 0, count: 0 }]} mode="count" />
           <p className="talemia-note">Active pipeline is provisional in V4 because the extract contains closed awarded/lost records.</p>
         </DashboardCard>
-        <DashboardCard title="Win/Loss Ratio By Business Line" className="span-5">
+        <DashboardCard title="Win/Loss Ratio By Business Line" className="span-6 business-line-ratio-panel">
           <ColumnChart items={byBusinessLine} mode="count" />
         </DashboardCard>
-        <DashboardCard title="Number of Opportunity per Client" className="span-6">
+        <DashboardCard title="Number of Opportunity per Client" className="span-6 business-line-client-panel">
           <ColumnChart items={byClientDepartment} mode="count" />
         </DashboardCard>
         <DashboardCard title="No. Of Opportunities Per Year" className="span-3 business-line-year-panel">
           <ColumnChart items={byYear} mode="count" />
           <p className="talemia-note">Unknown indicates missing or invalid submission year.</p>
         </DashboardCard>
-        <DashboardCard title="Business-line opportunity detail" className="span-9 business-line-detail-panel">
+        <DashboardCard title="Business-line opportunity detail" className="span-12 business-line-detail-panel">
           <SimpleTable rows={opps} columns={[
             { key: "opportunity_name_en", label: "Opportunity Name (en)" },
             { key: "contract_value", label: "Sum of Contract Value", type: "money" },

@@ -2803,23 +2803,45 @@ code {
 
 .talemia-business-line-grid {
   align-items: stretch;
+  grid-auto-flow: dense;
 }
 
 .talemia-business-line-grid .talemia-panel {
-  min-height: 222px;
+  min-height: 242px;
+}
+
+.talemia-business-line-grid .business-line-status-panel,
+.talemia-business-line-grid .business-line-ratio-panel {
+  min-height: 250px;
+}
+
+.talemia-business-line-grid .business-line-client-panel,
+.talemia-business-line-grid .business-line-year-panel,
+.talemia-business-line-grid .business-line-sales-panel {
+  min-height: 286px;
 }
 
 .talemia-business-line-grid .business-line-detail-panel {
-  min-height: 390px;
+  min-height: 430px;
 }
 
 .talemia-business-line-grid .business-line-detail-panel .talemia-table-shell {
-  max-height: 320px;
+  max-height: 352px;
 }
 
 .talemia-business-line-grid .business-line-sales-panel {
-  grid-column: 10 / span 3;
-  grid-row: 3;
+  grid-column: span 3;
+  grid-row: auto;
+}
+
+.talemia-business-line-grid .business-line-year-panel .talemia-column-chart,
+.talemia-business-line-grid .business-line-sales-panel .talemia-column-chart {
+  min-height: 188px;
+}
+
+.talemia-business-line-grid .business-line-status-panel .talemia-bar-chart {
+  max-width: 92%;
+  margin-top: 10px;
 }
 
 .talemia-panel h3 {
