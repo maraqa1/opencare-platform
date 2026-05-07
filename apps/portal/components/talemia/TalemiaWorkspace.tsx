@@ -26,8 +26,7 @@ export type TalemiaTabKey =
   | "business-lines"
   | "account-managers"
   | "commercial"
-  | "opportunities"
-  | "data-contract";
+  | "opportunities";
 
 type TalemiaTabConfig = {
   key: TalemiaTabKey;
@@ -108,15 +107,6 @@ const tabConfigs: Record<TalemiaTabKey, TalemiaTabConfig> = {
     endpoint: "/api/v1/talemia/opportunities",
     contract: "/docs/use_cases/talemia_business_intelligence/dashboards/opportunity_details_dashboard_contract.md",
     primaryDataset: "analytics.fct_talemia_opportunity",
-  },
-  "data-contract": {
-    key: "data-contract",
-    title: "TALEMIA Data Contract",
-    eyebrow: "Record Specification",
-    description: "Raw tables, analytics marts, dictionary outputs, deployment placeholders, and removal boundaries.",
-    endpoint: "/api/v1/talemia/kpis",
-    contract: "/docs/use_cases/talemia_business_intelligence/use_case_contract.md",
-    primaryDataset: "raw_demo.talemia_opportunities",
   },
 };
 
@@ -656,11 +646,9 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
           ? accountManagers
           : config.key === "commercial"
             ? stages
-            : config.key === "data-contract"
-              ? kpis
-              : config.key === "opportunities"
-                ? opportunities
-                : executive;
+            : config.key === "opportunities"
+              ? opportunities
+              : executive;
   const meta = activePayload.meta;
   const contractHref = `https://github.com/maraqa1/opencare-platform/blob/talimya${config.contract}`;
 
@@ -677,7 +665,7 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
     >
       <TabNav items={talemiaTabs} activeKey={config.key} />
       <section className="talemia-dashboard-shell">
-        {activeKey === "overview" || activeKey === "data-contract" ? <ShellPanel config={config} payload={activePayload} /> : null}
+        {activeKey === "overview" ? <ShellPanel config={config} payload={activePayload} /> : null}
         {activeKey === "executive" ? <ExecutiveDashboard {...props} /> : null}
         {activeKey === "financial" ? <FinancialDashboard {...props} /> : null}
         {activeKey === "business-lines" ? <BusinessLineDashboard {...props} /> : null}

@@ -167,7 +167,6 @@ export const talemiaTabs = [
   { key: "account-managers", label: "Account Managers", href: "/use-cases/talemia-business-intelligence/account-managers" },
   { key: "commercial", label: "Commercial", href: "/use-cases/talemia-business-intelligence/commercial" },
   { key: "opportunities", label: "Opportunities", href: "/use-cases/talemia-business-intelligence/opportunities" },
-  { key: "data-contract", label: "Data Contract", href: "/use-cases/talemia-business-intelligence/data-contract" },
 ];
 
 export function getUseCaseByPath(pathname: string): UseCaseModule | null {

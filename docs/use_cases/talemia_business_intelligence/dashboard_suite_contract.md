@@ -37,9 +37,7 @@ The portal workspace at `/use-cases/talemia-business-intelligence` must expose t
 | Account Managers | `/account-managers` | Account Manager Dashboard |
 | Commercial | `/commercial` | Commercial Dashboard |
 | Opportunities | `/opportunities` | Opportunity Details Dashboard |
-| Data Contract | `/data-contract` | Raw table, mart, metric, and removal contract view |
-
-Governance is not an operational workspace tab. TALEMIA governance belongs under Platform -> Administration -> Governance -> Use Case so it follows the shared governance template used by other OpenCare use cases.
+Governance and data contract evidence are not operational workspace tabs. TALEMIA governance and record-spec evidence belong under Platform -> Administration -> Governance -> Use Case so they follow the shared governance template used by other OpenCare use cases.
 
 ## 4. Superset Dashboard Slugs
 
@@ -179,8 +177,8 @@ Endpoint rules:
 | Executive / BD Director | Full business dashboard access and governance summary | Overview, Executive, Financial, Business Lines, Governance |
 | Account Manager | Own account and opportunity views; governed summary metrics | Account Managers, Opportunities, Commercial |
 | Commercial Operations Lead | Full operational and governance access | All tabs |
-| Data/Governance Owner | Full governance, lineage, dictionary, record-spec, and reconciliation access | Governance, Data Contract, Opportunities |
-| Platform Admin | Configuration, deployment, and removal visibility | Governance, Data Contract, admin surfaces |
+| Data/Governance Owner | Full governance, lineage, dictionary, record-spec, and reconciliation access | Administration -> Governance, Opportunities |
+| Platform Admin | Configuration, deployment, and removal visibility | Administration -> Governance and admin surfaces |
 
 Access rules:
 

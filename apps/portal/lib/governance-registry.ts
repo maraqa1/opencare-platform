@@ -1724,7 +1724,6 @@ const governanceUseCases: GovernanceUseCase[] = [
       { label: "Account Managers", href: "/use-cases/talemia-business-intelligence/account-managers" },
       { label: "Commercial", href: "/use-cases/talemia-business-intelligence/commercial" },
       { label: "Opportunities", href: "/use-cases/talemia-business-intelligence/opportunities" },
-      { label: "Data Contract", href: "/use-cases/talemia-business-intelligence/data-contract" },
     ],
     governedDatasets: [
       {
@@ -1860,7 +1859,7 @@ const governanceUseCases: GovernanceUseCase[] = [
         recordSpecStatus: "complete",
         certificationStatus: "draft",
         certification: certification("draft", "Definitions are documented; authoritative reporting waits on reconciliation."),
-        consumers: ["Administration -> Governance", "TALEMIA Data Contract"],
+        consumers: ["Administration -> Governance", "TALEMIA contract documentation"],
         downstreamConsumers: ["Governance control tower", "Metric calculation detail panel"],
         upstreamSources: ["docs/use_cases/talemia_business_intelligence/use_case_contract.md", "analytics.fct_talemia_pipeline"],
         relatedDashboards: ["KPI Governance and Dictionary"],
@@ -2057,7 +2056,7 @@ const governanceUseCases: GovernanceUseCase[] = [
         label: "Dictionary and reconciliation lineage",
         summary: "Metric dictionary and dashboard reconciliation used by Administration -> Governance.",
         technicalModel: "dict_talemia_metrics",
-        impactTargets: ["Governance control tower", "Data Contract"],
+        impactTargets: ["Governance control tower", "Contract documentation"],
         status: "partial",
       },
     ],

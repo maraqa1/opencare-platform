@@ -19,7 +19,6 @@ const validTabs = new Set([
   "account-managers",
   "commercial",
   "opportunities",
-  "data-contract",
 ]);
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
