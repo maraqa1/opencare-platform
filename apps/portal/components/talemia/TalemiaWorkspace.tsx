@@ -419,14 +419,14 @@ function ExecutiveDashboard({ executive, opportunities, businessLines, stages, w
         { label: "# Clients", value: integer(rowValue(kpis, "Client Count") || uniqueCount(opps, "client_name")), tone: "green" },
         { label: "New Clients", value: integer(rowValue(kpis, "New Clients") || uniqueCount(opps, "client_name")), tone: "green" },
       ]} />
-      <section className="talemia-grid">
+      <section className="talemia-grid talemia-executive-grid">
         <DashboardCard title="Opportunities Per Stage" className="span-8">
           <ColumnChart items={stageOrder.map((label) => {
             const found = stageRows.find((row) => textValue(row.opportunity_stage) === label);
             return { label, count: numberValue(found?.opportunity_count), value: numberValue(found?.pipeline_value) };
           })} mode="count" />
         </DashboardCard>
-        <DashboardCard title="Key Performance Indicators" className="span-4">
+        <DashboardCard title="Key Performance Indicators" className="span-4 executive-kpi-panel">
           <div className="talemia-side-kpis">
             <div><span>Hit Rate</span><strong>{pct(rowValue(kpis, "Hit Rate"))}</strong></div>
             <div><span>Win Rate</span><strong>{pct(rowValue(kpis, "Win Rate"))}</strong></div>
@@ -435,10 +435,10 @@ function ExecutiveDashboard({ executive, opportunities, businessLines, stages, w
             <div><span>Customer Engagement</span><strong>{integer(opps.length + uniqueCount(opps, "client_department"))}</strong></div>
           </div>
         </DashboardCard>
-        <DashboardCard title="Opportunity Pipeline Per Business Line" className="span-4">
+        <DashboardCard title="Opportunity Pipeline Per Business Line" className="span-4 executive-lower-panel">
           <ColumnChart items={blRows.map((row) => ({ label: textValue(row.business_line_name), count: numberValue(row.opportunity_count), value: numberValue(row.pipeline_value) }))} mode="count" />
         </DashboardCard>
-        <DashboardCard title="Win/Loss Ratio" className="span-4">
+        <DashboardCard title="Win/Loss Ratio" className="span-4 executive-lower-panel">
           <DonutPair wonCount={won.length} lostCount={lost.length} wonValue={sum(won, "awarded_value")} lostValue={sum(lost, "contract_value")} />
         </DashboardCard>
       </section>

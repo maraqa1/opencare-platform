@@ -2590,6 +2590,20 @@ code {
 .talemia-panel.span-10 { grid-column: span 10; }
 .talemia-panel.span-12 { grid-column: span 12; }
 
+.talemia-executive-grid {
+  align-items: stretch;
+}
+
+.talemia-executive-grid .executive-kpi-panel {
+  grid-column: 9 / span 4;
+  grid-row: 1 / span 2;
+  min-height: 100%;
+}
+
+.talemia-executive-grid .executive-lower-panel {
+  grid-column: span 4;
+}
+
 .talemia-panel h3 {
   margin: 0 0 12px;
   color: #666;
@@ -2730,10 +2744,12 @@ code {
 .talemia-side-kpis {
   display: grid;
   gap: 10px;
+  height: calc(100% - 32px);
+  align-content: stretch;
 }
 
 .talemia-side-kpis > div {
-  min-height: 66px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2922,6 +2938,12 @@ code {
   .talemia-panel.span-9,
   .talemia-panel.span-10 {
     grid-column: span 12;
+  }
+
+  .talemia-executive-grid .executive-kpi-panel,
+  .talemia-executive-grid .executive-lower-panel {
+    grid-column: span 12;
+    grid-row: auto;
   }
 }
 
