@@ -2,50 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+import app.services.talemia_service as talemia_service
+
 router = APIRouter(prefix="/api/v1/talemia", tags=["talemia"])
 
 FilterParam = str | None
-
-MARTS_BY_ENDPOINT: dict[str, list[str]] = {
-    "executive-summary": [
-        "analytics.fct_talemia_kpi_performance",
-        "analytics.fct_talemia_pipeline",
-        "analytics.fct_talemia_win_loss",
-    ],
-    "pipeline-business-lines": [
-        "analytics.fct_talemia_business_line_performance",
-    ],
-    "pipeline-stages": [
-        "analytics.fct_talemia_stage_distribution",
-        "analytics.fct_talemia_pipeline",
-    ],
-    "win-loss": [
-        "analytics.fct_talemia_win_loss",
-    ],
-    "account-managers": [
-        "analytics.fct_talemia_account_manager_performance",
-        "analytics.fct_talemia_client_cohort",
-    ],
-    "opportunities": [
-        "analytics.fct_talemia_opportunity",
-    ],
-    "opportunity-detail": [
-        "analytics.fct_talemia_opportunity",
-        "analytics.fct_talemia_opportunity_updates",
-        "analytics.fct_talemia_pipeline_risk",
-    ],
-    "updates": [
-        "analytics.fct_talemia_opportunity_updates",
-    ],
-    "kpis": [
-        "dictionary.dict_talemia_metrics",
-        "dictionary.dict_talemia_terms",
-    ],
-    "governance-reconciliation": [
-        "analytics.fct_talemia_dashboard_reconciliation",
-        "analytics.fct_talemia_extraction_quality",
-    ],
-}
 
 
 def _filters(
@@ -85,30 +46,6 @@ def _filters(
     }
 
 
-def _empty_response(
-    endpoint: str,
-    *,
-    filters: dict[str, str | None],
-    data: object | None = None,
-    message: str | None = None,
-) -> dict[str, object]:
-    return {
-        "meta": {
-            "empty": True,
-            "message": message or "TALEMIA marts are not available yet.",
-            "status": "contract_scaffold",
-            "filters": filters,
-            "lineage": MARTS_BY_ENDPOINT.get(endpoint, []),
-            "limitations": [
-                "V4 raw extract is the accepted baseline but has not been loaded into Postgres yet.",
-                "dbt TALEMIA marts have not been materialized yet.",
-                "Dashboard values are not authoritative until reconciliation passes.",
-            ],
-        },
-        "data": data if data is not None else [],
-    }
-
-
 @router.get("/executive-summary")
 def executive_summary(
     year: FilterParam = None,
@@ -118,17 +55,15 @@ def executive_summary(
     winning_likelihood: FilterParam = None,
     sector_type: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "executive-summary",
-        filters=_filters(
+    return talemia_service.executive_summary(
+        _filters(
             year=year,
             account_manager=account_manager,
             business_line=business_line,
             workflow_state=workflow_state,
             winning_likelihood=winning_likelihood,
             sector_type=sector_type,
-        ),
-        data={"kpis": [], "signals": [], "reconciliation": []},
+        )
     )
 
 
@@ -141,16 +76,15 @@ def pipeline_business_lines(
     winning_likelihood: FilterParam = None,
     sector_type: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "pipeline-business-lines",
-        filters=_filters(
+    return talemia_service.pipeline_business_lines(
+        _filters(
             year=year,
             account_manager=account_manager,
             business_line=business_line,
             workflow_state=workflow_state,
             winning_likelihood=winning_likelihood,
             sector_type=sector_type,
-        ),
+        )
     )
 
 
@@ -163,17 +97,15 @@ def pipeline_stages(
     winning_likelihood: FilterParam = None,
     sector_type: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "pipeline-stages",
-        filters=_filters(
+    return talemia_service.pipeline_stages(
+        _filters(
             year=year,
             account_manager=account_manager,
             business_line=business_line,
             workflow_state=workflow_state,
             winning_likelihood=winning_likelihood,
             sector_type=sector_type,
-        ),
-        message="TALEMIA stage distribution is pending raw load and dbt materialization.",
+        )
     )
 
 
@@ -186,16 +118,15 @@ def win_loss(
     winning_likelihood: FilterParam = None,
     sector_type: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "win-loss",
-        filters=_filters(
+    return talemia_service.win_loss(
+        _filters(
             year=year,
             account_manager=account_manager,
             business_line=business_line,
             workflow_state=workflow_state,
             winning_likelihood=winning_likelihood,
             sector_type=sector_type,
-        ),
+        )
     )
 
 
@@ -208,16 +139,15 @@ def account_managers(
     winning_likelihood: FilterParam = None,
     sector_type: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "account-managers",
-        filters=_filters(
+    return talemia_service.account_managers(
+        _filters(
             year=year,
             account_manager=account_manager,
             business_line=business_line,
             workflow_state=workflow_state,
             winning_likelihood=winning_likelihood,
             sector_type=sector_type,
-        ),
+        )
     )
 
 
@@ -232,9 +162,8 @@ def opportunities(
     winning_likelihood: FilterParam = None,
     sector_type: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "opportunities",
-        filters=_filters(
+    return talemia_service.opportunities(
+        _filters(
             opportunity_id=opportunity_id,
             client=client,
             client_department=client_department,
@@ -243,18 +172,13 @@ def opportunities(
             workflow_state=workflow_state,
             winning_likelihood=winning_likelihood,
             sector_type=sector_type,
-        ),
+        )
     )
 
 
 @router.get("/opportunities/{opportunity_id}")
 def opportunity_detail(opportunity_id: str) -> dict[str, object]:
-    return _empty_response(
-        "opportunity-detail",
-        filters=_filters(opportunity_id=opportunity_id),
-        data=None,
-        message=f"TALEMIA opportunity {opportunity_id} is not available because marts are not loaded yet.",
-    )
+    return talemia_service.opportunity_detail(opportunity_id)
 
 
 @router.get("/updates")
@@ -266,17 +190,15 @@ def updates(
     winning_likelihood: FilterParam = None,
     sector_type: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "updates",
-        filters=_filters(
+    return talemia_service.updates(
+        _filters(
             opportunity_id=opportunity_id,
             account_manager=account_manager,
             business_line=business_line,
             workflow_state=workflow_state,
             winning_likelihood=winning_likelihood,
             sector_type=sector_type,
-        ),
-        message="TALEMIA weekly updates are pending parser validation and mart materialization.",
+        )
     )
 
 
@@ -288,17 +210,14 @@ def kpis(
     metric_category: FilterParam = None,
     quality_status: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "kpis",
-        filters=_filters(
+    return talemia_service.kpis(
+        _filters(
             dashboard_name=dashboard_name,
             kpi_name=kpi_name,
             source_table=source_table,
             metric_category=metric_category,
             quality_status=quality_status,
-        ),
-        data={"metrics": [], "terms": []},
-        message="TALEMIA dictionary marts have not been materialized yet.",
+        )
     )
 
 
@@ -310,15 +229,12 @@ def governance_reconciliation(
     metric_category: FilterParam = None,
     quality_status: FilterParam = None,
 ) -> dict[str, object]:
-    return _empty_response(
-        "governance-reconciliation",
-        filters=_filters(
+    return talemia_service.governance_reconciliation(
+        _filters(
             dashboard_name=dashboard_name,
             kpi_name=kpi_name,
             source_table=source_table,
             metric_category=metric_category,
             quality_status=quality_status,
-        ),
-        data={"reconciliation": [], "extraction_quality": [], "dbt_tests": []},
-        message="TALEMIA reconciliation is pending raw load, dbt run, and dashboard target comparison.",
+        )
     )

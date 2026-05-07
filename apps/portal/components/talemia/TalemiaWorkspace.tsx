@@ -16,6 +16,8 @@ type TalemiaApiPayload = {
   data?: unknown;
 };
 
+type TalemiaRow = Record<string, string | number | boolean | null | undefined>;
+
 export type TalemiaTabKey =
   | "overview"
   | "executive"
@@ -295,9 +297,9 @@ const tabConfigs: Record<TalemiaTabKey, TalemiaTabConfig> = {
 };
 
 const scaffoldKpis = [
-  { label: "Raw Load", value: "Pending", note: "V4 accepted, loader next" },
-  { label: "dbt Marts", value: "Empty", note: "Guarded models not built yet" },
-  { label: "API State", value: "Ready", note: "Contract endpoints return empty meta" },
+  { label: "Raw Load", value: "Ready", note: "V4 SQL loader added" },
+  { label: "dbt Marts", value: "Guarded", note: "TALEMIA models added" },
+  { label: "API State", value: "Live", note: "Queries analytics/dictionary" },
   { label: "Portal UX", value: "Shell", note: "Tabs and record specs visible" },
 ];
 
@@ -322,6 +324,28 @@ function readableKey(value: string) {
   return value.replaceAll("_", " ");
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function asRows(value: unknown): TalemiaRow[] {
+  return Array.isArray(value) ? (value as TalemiaRow[]) : [];
+}
+
+function formatValue(value: unknown) {
+  if (typeof value === "number") {
+    return Math.abs(value) >= 1000
+      ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value)
+      : new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+  }
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+  return value === null || value === undefined || value === "" ? "-" : String(value);
+}
+
 export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey }) {
   const config = getTalemiaTabConfig(activeKey);
   const contractHref = `https://github.com/maraqa1/opencare-platform/blob/talimya${config.contract}`;
@@ -341,6 +365,22 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
   const meta = payload.meta;
   const lineage = meta?.lineage?.length ? meta.lineage : [config.primaryDataset];
   const limitations = meta?.limitations?.length ? meta.limitations : config.limitations;
+  const data = asRecord(payload.data);
+  const topLevelRows = asRows(payload.data);
+  const kpiRows = asRows(data.kpis);
+  const previewRows =
+    topLevelRows.length > 0
+      ? topLevelRows.slice(0, 8)
+      : asRows(data.business_lines).concat(asRows(data.stages), asRows(data.metrics), asRows(data.reconciliation)).slice(0, 8);
+  const previewColumns = previewRows[0] ? Object.keys(previewRows[0]).slice(0, 6) : [];
+  const runtimeKpis =
+    !meta?.empty && kpiRows.length > 0
+      ? kpiRows.slice(0, 4).map((row) => ({
+          label: formatValue(row.kpi_name),
+          value: formatValue(row.kpi_value),
+          note: formatValue(row.unit),
+        }))
+      : scaffoldKpis;
 
   return (
     <PageFrame
@@ -361,7 +401,7 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
       <TabNav items={talemiaTabs} activeKey={config.key} />
 
       <section className="metric-grid compact">
-        {scaffoldKpis.map((kpi) => (
+        {runtimeKpis.map((kpi) => (
           <article className="forecast-stat" key={kpi.label}>
             <p className="eyebrow">{kpi.label}</p>
             <strong>{kpi.value}</strong>
@@ -375,8 +415,9 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
           <p className="eyebrow">Runtime State</p>
           <h3>{meta?.message ?? "TALEMIA data is not loaded yet."}</h3>
           <p className="subtle">
-            This workspace is intentionally visible before V4 data arrives. It proves the route,
-            tabs, endpoint dependencies, and record-spec expectations without hardcoded KPI values.
+            {meta?.empty
+              ? "The workspace remains visible while raw data, dbt marts, and reconciliation are refreshed."
+              : "V4-backed analytics are available through the backend contract. Values remain provisional until reconciliation passes."}
           </p>
         </div>
         <div className="summary-badges">
@@ -426,6 +467,33 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
             The API must continue returning <code>meta.empty=true</code> until the required marts
             exist and contain records.
           </p>
+        </article>
+
+        <article className="panel span-8">
+          <p className="eyebrow">Live Preview</p>
+          <h3>API data sample</h3>
+          {previewRows.length > 0 ? (
+            <table className="table">
+              <thead>
+                <tr>
+                  {previewColumns.map((column) => (
+                    <th key={column}>{readableKey(column)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.map((row, index) => (
+                  <tr key={`${config.key}-${index}`}>
+                    {previewColumns.map((column) => (
+                      <td key={column}>{formatValue(row[column])}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="empty-state">No live rows are available for this tab yet.</div>
+          )}
         </article>
 
         <article className="panel span-8">

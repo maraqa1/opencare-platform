@@ -12,6 +12,7 @@ sync_dbt_project_configmap() {
     --from-file=dbt_project.yml="$ROOT_DIR/dbt/opencare/dbt_project.yml" \
     --from-file=generate_schema_name.sql="$ROOT_DIR/dbt/opencare/macros/generate_schema_name.sql" \
     --from-file=test_expression_is_true.sql="$ROOT_DIR/dbt/opencare/macros/test_expression_is_true.sql" \
+    --from-file=talemia_raw_relation.sql="$ROOT_DIR/dbt/opencare/macros/talemia_raw_relation.sql" \
     --from-file=sources.yml="$ROOT_DIR/dbt/opencare/models/sources.yml" \
     --from-file=schema.yml="$ROOT_DIR/dbt/opencare/models/schema.yml" \
     --from-file=stg_wards.sql="$ROOT_DIR/dbt/opencare/models/staging/stg_wards.sql" \
@@ -42,6 +43,30 @@ sync_dbt_project_configmap() {
     --from-file=fct_payer_contract_performance.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_payer_contract_performance.sql" \
     --from-file=fct_team_recovery_performance.sql="$ROOT_DIR/dbt/opencare/models/revenue_cycle/marts/fct_team_recovery_performance.sql" \
     --from-file=revenue_cycle_gl_reconciliation.sql="$ROOT_DIR/dbt/opencare/tests/revenue_cycle_gl_reconciliation.sql" \
+    --from-file=talemia_schema.yml="$ROOT_DIR/dbt/opencare/models/talemia/schema.yml" \
+    --from-file=stg_talemia_opportunities.sql="$ROOT_DIR/dbt/opencare/models/talemia/staging/stg_talemia_opportunities.sql" \
+    --from-file=stg_talemia_awards.sql="$ROOT_DIR/dbt/opencare/models/talemia/staging/stg_talemia_awards.sql" \
+    --from-file=stg_talemia_losses.sql="$ROOT_DIR/dbt/opencare/models/talemia/staging/stg_talemia_losses.sql" \
+    --from-file=stg_talemia_updates.sql="$ROOT_DIR/dbt/opencare/models/talemia/staging/stg_talemia_updates.sql" \
+    --from-file=stg_talemia_dimensions.sql="$ROOT_DIR/dbt/opencare/models/talemia/staging/stg_talemia_dimensions.sql" \
+    --from-file=stg_talemia_dashboard_targets.sql="$ROOT_DIR/dbt/opencare/models/talemia/staging/stg_talemia_dashboard_targets.sql" \
+    --from-file=fct_talemia_opportunity.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_opportunity.sql" \
+    --from-file=fct_talemia_pipeline.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_pipeline.sql" \
+    --from-file=fct_talemia_win_loss.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_win_loss.sql" \
+    --from-file=fct_talemia_account_manager_performance.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_account_manager_performance.sql" \
+    --from-file=fct_talemia_business_line_performance.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_business_line_performance.sql" \
+    --from-file=fct_talemia_opportunity_updates.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_opportunity_updates.sql" \
+    --from-file=fct_talemia_kpi_performance.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_kpi_performance.sql" \
+    --from-file=fct_talemia_stage_distribution.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_stage_distribution.sql" \
+    --from-file=fct_talemia_pipeline_risk.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_pipeline_risk.sql" \
+    --from-file=fct_talemia_client_cohort.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_client_cohort.sql" \
+    --from-file=fct_talemia_sales_cycle.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_sales_cycle.sql" \
+    --from-file=fct_talemia_pipeline_forecast.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_pipeline_forecast.sql" \
+    --from-file=fct_talemia_sales_growth.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_sales_growth.sql" \
+    --from-file=fct_talemia_dashboard_reconciliation.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_dashboard_reconciliation.sql" \
+    --from-file=fct_talemia_extraction_quality.sql="$ROOT_DIR/dbt/opencare/models/talemia/marts/fct_talemia_extraction_quality.sql" \
+    --from-file=dict_talemia_metrics.sql="$ROOT_DIR/dbt/opencare/models/talemia/dictionary/dict_talemia_metrics.sql" \
+    --from-file=dict_talemia_terms.sql="$ROOT_DIR/dbt/opencare/models/talemia/dictionary/dict_talemia_terms.sql" \
     --dry-run=client -o yaml | kubectl apply -f -
 }
 

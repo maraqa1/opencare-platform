@@ -1,0 +1,37 @@
+{{ config(tags=["talemia", "commercial-intelligence"]) }}
+
+select
+    opportunity_id,
+    opportunity_name_en,
+    opportunity_name_ar,
+    client_name,
+    client_department,
+    account_manager_name,
+    business_line_name,
+    sector_type,
+    opportunity_stage,
+    workflow_state,
+    winning_likelihood,
+    deal_type,
+    coalesce(contract_value, 0)::numeric(14, 2) as contract_value,
+    coalesce(qualified_sales, 0)::numeric(14, 2) as qualified_sales,
+    coalesce(converted_value_2026, 0)::numeric(14, 2) as converted_value_2026,
+    coalesce(awarded_value, 0)::numeric(14, 2) as awarded_value,
+    win_probability,
+    submission_year,
+    expected_award_quarter,
+    created_date,
+    submission_date,
+    expected_award_date,
+    award_date,
+    loss_date,
+    close_date,
+    loss_reason,
+    competitor,
+    notes,
+    parse_status,
+    match_confidence,
+    parser_warning,
+    as_of_timestamp
+from {{ ref('stg_talemia_opportunities') }}
+where opportunity_id is not null

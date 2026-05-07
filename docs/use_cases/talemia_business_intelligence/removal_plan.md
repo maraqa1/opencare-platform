@@ -56,6 +56,7 @@ Remove:
 Remove:
 
 - `dbt/opencare/models/talemia/`
+- `dbt/opencare/macros/talemia_raw_relation.sql`
 - Any model entries tagged `talemia`
 - Any TALEMIA source definitions
 - Any TALEMIA additions to `dbt/opencare/models/metadata/dashboard_config.yml`
@@ -69,7 +70,15 @@ drop table if exists analytics.fct_talemia_win_loss cascade;
 drop table if exists analytics.fct_talemia_account_manager_performance cascade;
 drop table if exists analytics.fct_talemia_business_line_performance cascade;
 drop table if exists analytics.fct_talemia_opportunity_updates cascade;
+drop table if exists analytics.fct_talemia_kpi_performance cascade;
+drop table if exists analytics.fct_talemia_stage_distribution cascade;
+drop table if exists analytics.fct_talemia_pipeline_risk cascade;
+drop table if exists analytics.fct_talemia_client_cohort cascade;
+drop table if exists analytics.fct_talemia_sales_cycle cascade;
+drop table if exists analytics.fct_talemia_pipeline_forecast cascade;
+drop table if exists analytics.fct_talemia_sales_growth cascade;
 drop table if exists analytics.fct_talemia_dashboard_reconciliation cascade;
+drop table if exists analytics.fct_talemia_extraction_quality cascade;
 drop table if exists dictionary.dict_talemia_metrics cascade;
 drop table if exists dictionary.dict_talemia_terms cascade;
 ```
@@ -91,6 +100,8 @@ drop table if exists raw_demo.talemia_risk_classification cascade;
 drop table if exists raw_demo.talemia_sector_type cascade;
 drop table if exists raw_demo.talemia_business_terms cascade;
 drop table if exists raw_demo.talemia_dashboard_targets cascade;
+drop table if exists raw_demo.talemia_field_mapping_report cascade;
+drop table if exists raw_demo.talemia_load_summary cascade;
 drop table if exists raw_demo.extraction_quality_report cascade;
 ```
 

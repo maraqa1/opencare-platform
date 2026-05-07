@@ -552,6 +552,14 @@ bash scripts/talemia/load_raw_demo.sh C:/R_Home/Talymia/talemia_raw_demo_extract
 
 Existing generic demo sync commands are Airbyte/MySQL demo specific and should not be reused for TALEMIA unless extended intentionally.
 
+Current V4 raw load command:
+
+```bash
+bash scripts/talemia/load_v4_raw.sh
+```
+
+The command loads `scripts/talemia/talemia_raw_demo_v4.sql`, which was generated from `talemia_raw_demo_extracted_v4.xlsx`, into `raw_demo` source-derived tables.
+
 ### dbt Run and Test
 
 Existing deployment pattern:
