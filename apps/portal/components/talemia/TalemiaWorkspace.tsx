@@ -47,6 +47,8 @@ type MetricCard = {
 type TalemiaFilters = {
   business_line?: string;
   year?: string;
+  account_manager?: string;
+  workflow_state?: string;
   winning_likelihood?: string;
   sector_type?: string;
 };
@@ -180,6 +182,79 @@ function uniqueOptions(rows: TalemiaRow[], key: string) {
 
 function matchesFilter(row: TalemiaRow, key: string, value: string | undefined) {
   return !value || textValue(row[key], "") === value;
+}
+
+const filterFieldMap: Record<keyof TalemiaFilters, { label: string; field: string }> = {
+  business_line: { label: "Business Line", field: "business_line_name" },
+  year: { label: "Year", field: "submission_year" },
+  account_manager: { label: "Account Manager", field: "account_manager_name" },
+  workflow_state: { label: "Workflow State", field: "workflow_state" },
+  winning_likelihood: { label: "Likelihood", field: "winning_likelihood" },
+  sector_type: { label: "Sector", field: "sector_type" },
+};
+
+const standardFilterKeys: Array<keyof TalemiaFilters> = [
+  "year",
+  "business_line",
+  "account_manager",
+  "workflow_state",
+  "winning_likelihood",
+  "sector_type",
+];
+
+function selectedFilters(filters: TalemiaFilters): TalemiaFilters {
+  return {
+    year: cleanFilter(filters.year),
+    business_line: cleanFilter(filters.business_line),
+    account_manager: cleanFilter(filters.account_manager),
+    workflow_state: cleanFilter(filters.workflow_state),
+    winning_likelihood: cleanFilter(filters.winning_likelihood),
+    sector_type: cleanFilter(filters.sector_type),
+  };
+}
+
+function filterRows(rows: TalemiaRow[], filters: TalemiaFilters) {
+  const selected = selectedFilters(filters);
+  return rows.filter((row) =>
+    matchesFilter(row, "submission_year", selected.year) &&
+    matchesFilter(row, "business_line_name", selected.business_line) &&
+    matchesFilter(row, "account_manager_name", selected.account_manager) &&
+    matchesFilter(row, "workflow_state", selected.workflow_state) &&
+    matchesFilter(row, "winning_likelihood", selected.winning_likelihood) &&
+    matchesFilter(row, "sector_type", selected.sector_type),
+  );
+}
+
+function filterControls(rows: TalemiaRow[], filters: TalemiaFilters, keys: Array<keyof TalemiaFilters> = standardFilterKeys): FilterControl[] {
+  const selected = selectedFilters(filters);
+  return keys.map((key) => {
+    const config = filterFieldMap[key];
+    return {
+      name: key,
+      label: config.label,
+      value: selected[key],
+      options: uniqueOptions(rows, config.field),
+    };
+  });
+}
+
+function stageItems(rows: TalemiaRow[]) {
+  return stageOrder.map((label) => {
+    const stageRows = rows.filter((row) => textValue(row.opportunity_stage) === label);
+    return { label, count: stageRows.length, value: sum(stageRows, "contract_value") };
+  });
+}
+
+function awardedRows(rows: TalemiaRow[]) {
+  return rows.filter((row) => textValue(row.workflow_state).toLowerCase() === "awarded" || row.is_won === true);
+}
+
+function lostRows(rows: TalemiaRow[]) {
+  return rows.filter((row) => textValue(row.workflow_state).toLowerCase() === "lost" || row.is_lost === true);
+}
+
+function awardedValue(rows: TalemiaRow[]) {
+  return sum(rows, "awarded_value") || sum(rows, "contract_value");
 }
 
 function isMoeSector(value: unknown) {
@@ -476,37 +551,32 @@ function OverviewDashboard() {
   );
 }
 
-function ExecutiveDashboard({ executive, opportunities, businessLines, stages, winLoss }: DashboardProps) {
+function ExecutiveDashboard({ executive, opportunities, filters }: DashboardProps) {
   const data = asRecord(executive.data);
   const kpis = asRows(data.kpis);
-  const opps = rowsFor(opportunities);
-  const blRows = rowsFor(businessLines);
-  const stageRows = asRows(data.stages).length ? asRows(data.stages) : rowsFor(stages);
-  const wlRows = rowsFor(winLoss);
-  const won = wlRows.filter((row) => row.is_won === true || textValue(row.workflow_state).toLowerCase() === "awarded");
-  const lost = wlRows.filter((row) => row.is_lost === true || textValue(row.workflow_state).toLowerCase() === "lost");
+  const allOpps = rowsFor(opportunities);
+  const opps = filterRows(allOpps, filters);
+  const won = awardedRows(opps);
+  const lost = lostRows(opps);
   const moeRows = opps.filter((row) => isMoeSector(row.sector_type));
   const nonMoeRows = opps.filter((row) => isNonMoeSector(row.sector_type));
 
   return (
     <>
-      <FilterBar label="Year" value="All" />
+      <FilterBar label="Filters" controls={filterControls(allOpps, filters)} />
       <KpiStrip cards={[
-        { label: "YTD Opportunities", value: integer(rowValue(kpis, "YTD Opportunities") || opps.length), tone: "blue" },
-        { label: "Pipeline Opportunities", value: integer(rowValue(kpis, "Pipeline Opportunities")), tone: "blue" },
-        { label: "Pipeline Value", value: compactNumber(rowValue(kpis, "Pipeline Value") || sum(opps, "contract_value")), tone: "teal" },
-        { label: "Qualified Pipeline", value: compactNumber(rowValue(kpis, "Qualified Pipeline") || sum(opps, "qualified_sales")), tone: "teal" },
-        { label: "Wins Value", value: compactNumber(rowValue(kpis, "Wins Value") || sum(won, "awarded_value")), tone: "green" },
-        { label: "# YTD Wins", value: integer(rowValue(kpis, "YTD Wins") || won.length), tone: "green" },
-        { label: "# Clients", value: integer(rowValue(kpis, "Client Count") || uniqueCount(opps, "client_name")), tone: "green" },
-        { label: "New Clients", value: integer(rowValue(kpis, "New Clients") || uniqueCount(opps, "client_name")), tone: "green" },
+        { label: "YTD Opportunities", value: integer(opps.length), tone: "blue" },
+        { label: "Pipeline Opportunities", value: integer(opps.length), tone: "blue" },
+        { label: "Pipeline Value", value: compactNumber(sum(opps, "contract_value")), tone: "teal" },
+        { label: "Qualified Pipeline", value: compactNumber(sum(opps, "qualified_sales")), tone: "teal" },
+        { label: "Wins Value", value: compactNumber(awardedValue(won)), tone: "green" },
+        { label: "# YTD Wins", value: integer(won.length), tone: "green" },
+        { label: "# Clients", value: integer(uniqueCount(opps, "client_name")), tone: "green" },
+        { label: "New Clients", value: integer(uniqueCount(opps, "client_name")), tone: "green" },
       ]} />
       <section className="talemia-grid talemia-executive-grid">
         <DashboardCard title="Opportunities Per Stage" className="span-8">
-          <ColumnChart items={stageOrder.map((label) => {
-            const found = stageRows.find((row) => textValue(row.opportunity_stage) === label);
-            return { label, count: numberValue(found?.opportunity_count), value: numberValue(found?.pipeline_value) };
-          })} mode="count" />
+          <ColumnChart items={stageItems(opps)} mode="count" />
         </DashboardCard>
         <DashboardCard title="Key Performance Indicators" className="span-4 executive-kpi-panel">
           <div className="talemia-side-kpis">
@@ -518,10 +588,10 @@ function ExecutiveDashboard({ executive, opportunities, businessLines, stages, w
           </div>
         </DashboardCard>
         <DashboardCard title="Opportunity Pipeline Per Business Line" className="span-4 executive-lower-panel">
-          <ColumnChart items={blRows.map((row) => ({ label: textValue(row.business_line_name), count: numberValue(row.opportunity_count), value: numberValue(row.pipeline_value) }))} mode="count" />
+          <ColumnChart items={groupRows(opps, "business_line_name")} mode="count" />
         </DashboardCard>
         <DashboardCard title="Win/Loss Ratio" className="span-4 executive-lower-panel">
-          <DonutPair wonCount={won.length} lostCount={lost.length} wonValue={sum(won, "awarded_value")} lostValue={sum(lost, "contract_value")} />
+          <DonutPair wonCount={won.length} lostCount={lost.length} wonValue={awardedValue(won)} lostValue={sum(lost, "contract_value")} />
         </DashboardCard>
       </section>
     </>
@@ -543,26 +613,26 @@ function rowsFor(payload: TalemiaApiPayload) {
   return asRows(payload.data);
 }
 
-function FinancialDashboard({ opportunities, businessLines, winLoss }: DashboardProps) {
-  const opps = rowsFor(opportunities);
-  const wlRows = rowsFor(winLoss);
-  const won = wlRows.filter((row) => row.is_won === true || textValue(row.workflow_state).toLowerCase() === "awarded");
+function FinancialDashboard({ opportunities, filters }: DashboardProps) {
+  const allOpps = rowsFor(opportunities);
+  const opps = filterRows(allOpps, filters);
+  const won = awardedRows(opps);
   const topRows = [...opps].sort((a, b) => numberValue(b.contract_value) - numberValue(a.contract_value));
   return (
     <>
-      <FilterBar label="Account Manager" value="All" />
+      <FilterBar label="Filters" controls={filterControls(allOpps, filters, ["year", "business_line", "account_manager", "winning_likelihood", "sector_type"])} />
       <KpiStrip cards={[
         { label: "Pipeline Value", value: compactNumber(sum(opps, "contract_value")), tone: "blue" },
         { label: "Qualified Pipeline Forecasted", value: compactNumber(sum(opps, "qualified_sales")), tone: "blue" },
-        { label: "Wins Value", value: compactNumber(sum(won, "awarded_value")), tone: "teal" },
+        { label: "Wins Value", value: compactNumber(awardedValue(won)), tone: "teal" },
         { label: "Sales Growth / Year 2025", value: "--", tone: "green" },
         { label: "Sales Growth / Year 2026", value: compactNumber(sum(opps, "converted_value_2026")), tone: "green" },
-        { label: "Current Clients Won Sales", value: compactNumber(sum(won, "awarded_value")), tone: "green" },
+        { label: "Current Clients Won Sales", value: compactNumber(awardedValue(won)), tone: "green" },
         { label: "New Clients Won Sales", value: "--", tone: "green" },
       ]} />
       <section className="talemia-grid">
         <DashboardCard title="Pipeline value of each business line" className="span-12">
-          <BarChart items={rowsFor(businessLines).map((row) => ({ label: textValue(row.business_line_name), value: numberValue(row.pipeline_value), count: numberValue(row.opportunity_count) }))} />
+          <BarChart items={groupRows(opps, "business_line_name")} />
         </DashboardCard>
         <DashboardCard title="Top opportunities by value" className="span-12">
           <SimpleTable rows={topRows} columns={[
@@ -579,16 +649,7 @@ function FinancialDashboard({ opportunities, businessLines, winLoss }: Dashboard
 
 function BusinessLineDashboard({ opportunities, filters }: DashboardProps) {
   const allOpps = rowsFor(opportunities);
-  const selectedBusinessLine = cleanFilter(filters.business_line);
-  const selectedYear = cleanFilter(filters.year);
-  const selectedWinningLikelihood = cleanFilter(filters.winning_likelihood);
-  const selectedSectorType = cleanFilter(filters.sector_type);
-  const opps = allOpps.filter((row) =>
-    matchesFilter(row, "business_line_name", selectedBusinessLine) &&
-    matchesFilter(row, "submission_year", selectedYear) &&
-    matchesFilter(row, "winning_likelihood", selectedWinningLikelihood) &&
-    matchesFilter(row, "sector_type", selectedSectorType),
-  );
+  const opps = filterRows(allOpps, filters);
   const moeRows = opps.filter((row) => isMoeSector(row.sector_type));
   const otherRows = opps.filter((row) => isNonMoeSector(row.sector_type));
   const byBusinessLine = groupRows(opps, "business_line_name").map((item) => {
@@ -601,13 +662,8 @@ function BusinessLineDashboard({ opportunities, filters }: DashboardProps) {
   return (
     <>
       <FilterBar
-        label="Business Line"
-        controls={[
-          { name: "business_line", label: "Business Line", value: selectedBusinessLine, options: uniqueOptions(allOpps, "business_line_name") },
-          { name: "year", label: "Year", value: selectedYear, options: uniqueOptions(allOpps, "submission_year") },
-          { name: "winning_likelihood", label: "Likelihood", value: selectedWinningLikelihood, options: uniqueOptions(allOpps, "winning_likelihood") },
-          { name: "sector_type", label: "Sector", value: selectedSectorType, options: uniqueOptions(allOpps, "sector_type") },
-        ]}
+        label="Filters"
+        controls={filterControls(allOpps, filters)}
       />
       <KpiStrip cards={[
         { label: "# Opportunities", value: integer(opps.length), tone: "blue" },
@@ -646,28 +702,33 @@ function BusinessLineDashboard({ opportunities, filters }: DashboardProps) {
   );
 }
 
-function AccountManagerDashboard({ opportunities, accountManagers, winLoss }: DashboardProps) {
-  const opps = rowsFor(opportunities);
-  const managers = rowsFor(accountManagers);
-  const won = rowsFor(winLoss).filter((row) => row.is_won === true || textValue(row.workflow_state).toLowerCase() === "awarded");
+function AccountManagerDashboard({ opportunities, filters }: DashboardProps) {
+  const allOpps = rowsFor(opportunities);
+  const opps = filterRows(allOpps, filters);
+  const managers = groupRows(opps, "account_manager_name", "contract_value");
+  const won = awardedRows(opps);
   return (
     <>
-      <FilterBar label="Account Manager" value="All" />
+      <FilterBar label="Filters" controls={filterControls(allOpps, filters)} />
       <KpiStrip cards={[
-        { label: "# Account Managers", value: integer(managers.length || uniqueCount(opps, "account_manager_name")), tone: "blue" },
+        { label: "# Account Managers", value: integer(uniqueCount(opps, "account_manager_name")), tone: "blue" },
         { label: "Total Clients Managed", value: integer(uniqueCount(opps, "client_name")), tone: "teal" },
         { label: "Total Opportunities", value: integer(opps.length), tone: "teal" },
         { label: "Qualified Value", value: compactNumber(sum(opps, "qualified_sales")), tone: "teal" },
-        { label: "Awarded", value: compactNumber(sum(won, "awarded_value")), tone: "teal" },
+        { label: "Awarded", value: compactNumber(awardedValue(won)), tone: "teal" },
         { label: "Total Proposals", value: integer(opps.length), tone: "teal" },
         { label: "Awarded", value: integer(won.length), tone: "teal" },
       ]} />
       <section className="talemia-grid">
         <DashboardCard title="Live Opportunities" className="span-3">
-          <DonutPair wonCount={won.length} lostCount={Math.max(opps.length - won.length, 0)} wonValue={sum(won, "awarded_value")} lostValue={sum(opps, "contract_value") - sum(won, "awarded_value")} />
+          <DonutPair wonCount={won.length} lostCount={Math.max(opps.length - won.length, 0)} wonValue={awardedValue(won)} lostValue={Math.max(sum(opps, "contract_value") - awardedValue(won), 0)} />
         </DashboardCard>
         <DashboardCard title="Win/Loss Ratio Per Account Manager" className="span-4">
-          <ColumnChart items={managers.map((row) => ({ label: textValue(row.account_manager_name), value: numberValue(row.winning_pct), count: Math.round(numberValue(row.winning_pct) * 100) }))} mode="count" />
+          <ColumnChart items={managers.map((item) => {
+            const managerRows = opps.filter((row) => textValue(row.account_manager_name) === item.label);
+            const managerWins = awardedRows(managerRows);
+            return { ...item, count: item.count ? Math.round((managerWins.length / item.count) * 100) : 0 };
+          })} mode="count" />
         </DashboardCard>
         <DashboardCard title="Top 5 Clients By Value" className="span-5">
           <ColumnChart items={groupRows(opps, "client_name").slice(0, 5)} />
@@ -688,12 +749,12 @@ function AccountManagerDashboard({ opportunities, accountManagers, winLoss }: Da
   );
 }
 
-function CommercialDashboard({ opportunities, stages }: DashboardProps) {
-  const opps = rowsFor(opportunities);
-  const stageRows = rowsFor(stages);
+function CommercialDashboard({ opportunities, filters }: DashboardProps) {
+  const allOpps = rowsFor(opportunities);
+  const opps = filterRows(allOpps, filters);
   return (
     <>
-      <FilterBar label="Account Manager" value="All" />
+      <FilterBar label="Filters" controls={filterControls(allOpps, filters, ["year", "business_line", "account_manager", "workflow_state", "winning_likelihood"])} />
       <KpiStrip cards={[
         { label: "# Opportunities", value: integer(opps.length), tone: "blue" },
         { label: "Client", value: integer(uniqueCount(opps, "client_name")), tone: "teal" },
@@ -706,7 +767,7 @@ function CommercialDashboard({ opportunities, stages }: DashboardProps) {
           <ColumnChart items={groupRows(opps, "client_department").slice(0, 5)} />
         </DashboardCard>
         <DashboardCard title="Opportunity Stage" className="span-5">
-          <BarChart items={stageRows.map((row) => ({ label: textValue(row.opportunity_stage), value: numberValue(row.pipeline_value), count: numberValue(row.opportunity_count) }))} mode="count" />
+          <BarChart items={stageItems(opps)} mode="count" />
         </DashboardCard>
         <DashboardCard title="Avg. Sales Cycle Days" className="span-2">
           <div className="talemia-big-number">--</div>
@@ -726,11 +787,12 @@ function CommercialDashboard({ opportunities, stages }: DashboardProps) {
   );
 }
 
-function OpportunityDashboard({ opportunities }: DashboardProps) {
-  const opps = rowsFor(opportunities);
+function OpportunityDashboard({ opportunities, filters }: DashboardProps) {
+  const allOpps = rowsFor(opportunities);
+  const opps = filterRows(allOpps, filters);
   return (
     <>
-      <FilterBar label="BD Owner" value="All" secondary="All" />
+      <FilterBar label="Filters" controls={filterControls(allOpps, filters, ["business_line", "account_manager", "workflow_state", "winning_likelihood", "sector_type"])} />
       <div className="talemia-segments">
         <span>Active</span><span className="dark">Pipeline</span><span className="dark">High</span><span>Low</span><span>Medium</span>
       </div>
@@ -771,6 +833,8 @@ export async function TalemiaWorkspace({
   const filters: TalemiaFilters = {
     business_line: firstParam(searchParams.business_line),
     year: firstParam(searchParams.year),
+    account_manager: firstParam(searchParams.account_manager),
+    workflow_state: firstParam(searchParams.workflow_state),
     winning_likelihood: firstParam(searchParams.winning_likelihood),
     sector_type: firstParam(searchParams.sector_type),
   };
