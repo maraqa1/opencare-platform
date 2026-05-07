@@ -2473,6 +2473,8 @@ code {
 .talemia-dashboard-shell {
   display: grid;
   gap: 14px;
+  width: 100%;
+  max-width: none;
   padding: 18px;
   border-radius: 10px;
   background: #f1f1f1;
@@ -2516,7 +2518,7 @@ code {
 
 .talemia-kpi-strip {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 10px;
 }
 
@@ -2562,6 +2564,7 @@ code {
 
 .talemia-grid {
   display: grid;
+  width: 100%;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 14px;
 }
@@ -2581,6 +2584,7 @@ code {
 .talemia-panel.span-4 { grid-column: span 4; }
 .talemia-panel.span-5 { grid-column: span 5; }
 .talemia-panel.span-6 { grid-column: span 6; }
+.talemia-panel.span-7 { grid-column: span 7; }
 .talemia-panel.span-8 { grid-column: span 8; }
 .talemia-panel.span-9 { grid-column: span 9; }
 .talemia-panel.span-10 { grid-column: span 10; }
@@ -2611,6 +2615,8 @@ code {
 .talemia-column span {
   color: #4f4f4f;
   line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .talemia-bar-track {
@@ -2633,14 +2639,15 @@ code {
   min-height: 190px;
   display: flex;
   align-items: end;
-  justify-content: center;
-  gap: 22px;
-  overflow-x: auto;
+  justify-content: space-around;
+  gap: 12px;
+  overflow-x: hidden;
   padding-top: 14px;
 }
 
 .talemia-column {
-  min-width: 78px;
+  min-width: 64px;
+  max-width: 108px;
   display: grid;
   justify-items: center;
   align-items: end;
@@ -2649,7 +2656,7 @@ code {
 }
 
 .talemia-column div {
-  width: 72px;
+  width: clamp(42px, 5vw, 72px);
   min-height: 1px;
   background: #315a87;
 }
@@ -2665,7 +2672,11 @@ code {
 
 .talemia-column span {
   min-height: 34px;
+  max-width: 104px;
   font-size: 11px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 
 .talemia-donut-pair {
@@ -2764,7 +2775,7 @@ code {
 
 .talemia-table {
   width: 100%;
-  min-width: 760px;
+  min-width: 900px;
   border-collapse: collapse;
   font-size: 12px;
 }
@@ -2867,6 +2878,13 @@ code {
   font-size: 13px;
 }
 
+.talemia-note {
+  margin: 12px 0 0;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .talemia-list {
   display: grid;
   gap: 8px;
@@ -2899,6 +2917,7 @@ code {
   .talemia-panel.span-4,
   .talemia-panel.span-5,
   .talemia-panel.span-6,
+  .talemia-panel.span-7,
   .talemia-panel.span-8,
   .talemia-panel.span-9,
   .talemia-panel.span-10 {

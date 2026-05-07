@@ -172,6 +172,24 @@ function textValue(value: unknown, fallback = "-") {
   return value === null || value === undefined || value === "" ? fallback : String(value);
 }
 
+function isMoeSector(value: unknown) {
+  const normalized = textValue(value, "").trim().toLowerCase();
+  return normalized === "moe+" || normalized === "moe" || normalized === "moe related";
+}
+
+function isNonMoeSector(value: unknown) {
+  const normalized = textValue(value, "").trim().toLowerCase();
+  return normalized === "non-moe" || normalized === "non moe" || normalized === "other";
+}
+
+function weeklyUpdateValue(value: unknown) {
+  const text = textValue(value, "");
+  if (!text || text.includes("_not_found") || text.includes("parser")) {
+    return "No validated weekly update";
+  }
+  return text;
+}
+
 function compactNumber(value: unknown) {
   const numeric = numberValue(value);
   const abs = Math.abs(numeric);
@@ -310,7 +328,7 @@ function DonutPair({ wonCount, lostCount, wonValue, lostValue }: { wonCount: num
   );
 }
 
-function SimpleTable({ rows, columns }: { rows: TalemiaRow[]; columns: Array<{ key: string; label: string }> }) {
+function SimpleTable({ rows, columns }: { rows: TalemiaRow[]; columns: Array<{ key: string; label: string; type?: "money" | "update" }> }) {
   return (
     <div className="talemia-table-shell">
       <table className="talemia-table">
@@ -325,7 +343,13 @@ function SimpleTable({ rows, columns }: { rows: TalemiaRow[]; columns: Array<{ k
           {rows.slice(0, 12).map((row, index) => (
             <tr key={`${textValue(row.opportunity_id, String(index))}-${index}`}>
               {columns.map((column) => (
-                <td key={column.key}>{column.key.includes("value") || column.key.includes("sales") ? compactNumber(row[column.key]) : textValue(row[column.key])}</td>
+                <td key={column.key}>
+                  {column.type === "update"
+                    ? weeklyUpdateValue(row[column.key])
+                    : column.type === "money" || column.key.includes("value") || column.key.includes("sales")
+                      ? compactNumber(row[column.key])
+                      : textValue(row[column.key])}
+                </td>
               ))}
             </tr>
           ))}
@@ -379,8 +403,8 @@ function ExecutiveDashboard({ executive, opportunities, businessLines, stages, w
   const wlRows = rowsFor(winLoss);
   const won = wlRows.filter((row) => row.is_won === true || textValue(row.workflow_state).toLowerCase() === "awarded");
   const lost = wlRows.filter((row) => row.is_lost === true || textValue(row.workflow_state).toLowerCase() === "lost");
-  const moeRows = opps.filter((row) => textValue(row.sector_type).toLowerCase().includes("moe"));
-  const nonMoeRows = opps.filter((row) => !textValue(row.sector_type).toLowerCase().includes("moe"));
+  const moeRows = opps.filter((row) => isMoeSector(row.sector_type));
+  const nonMoeRows = opps.filter((row) => isNonMoeSector(row.sector_type));
 
   return (
     <>
@@ -462,7 +486,7 @@ function FinancialDashboard({ opportunities, businessLines, winLoss }: Dashboard
           <SimpleTable rows={topRows} columns={[
             { key: "client_name", label: "Client Name (en)" },
             { key: "opportunity_name_en", label: "Opportunity Name (en)" },
-            { key: "contract_value", label: "Sum of Contract Value" },
+            { key: "contract_value", label: "Sum of Contract Value", type: "money" },
             { key: "winning_likelihood", label: "Winning Likelihood" },
           ]} />
         </DashboardCard>
@@ -473,8 +497,8 @@ function FinancialDashboard({ opportunities, businessLines, winLoss }: Dashboard
 
 function BusinessLineDashboard({ opportunities, businessLines, winLoss }: DashboardProps) {
   const opps = rowsFor(opportunities);
-  const moeRows = opps.filter((row) => textValue(row.sector_type).toLowerCase().includes("moe"));
-  const otherRows = opps.filter((row) => !textValue(row.sector_type).toLowerCase().includes("moe"));
+  const moeRows = opps.filter((row) => isMoeSector(row.sector_type));
+  const otherRows = opps.filter((row) => isNonMoeSector(row.sector_type));
   const byClientDepartment = groupRows(opps, "client_department");
   const byYear = groupRows(opps, "submission_year");
   return (
@@ -486,23 +510,25 @@ function BusinessLineDashboard({ opportunities, businessLines, winLoss }: Dashbo
         { label: "Other Clients Opportunities", value: integer(otherRows.length), tone: "teal" },
       ]} />
       <section className="talemia-grid">
-        <DashboardCard title="Opportunities Status" className="span-5">
+        <DashboardCard title="Opportunities Status" className="span-7">
           <BarChart items={[{ label: "Pipeline", value: sum(opps, "contract_value"), count: opps.length }, { label: "Active", value: 0, count: 0 }]} mode="count" />
+          <p className="talemia-note">Active pipeline is provisional in V4 because the extract contains closed awarded/lost records.</p>
         </DashboardCard>
-        <DashboardCard title="Win/Loss Ratio By Business Line" className="span-4">
+        <DashboardCard title="Win/Loss Ratio By Business Line" className="span-5">
           <ColumnChart items={rowsFor(businessLines).map((row) => ({ label: textValue(row.business_line_name), value: numberValue(row.win_rate), count: Math.round(numberValue(row.win_rate) * 100) }))} mode="count" />
         </DashboardCard>
-        <DashboardCard title="Number of Opportunity per Client" className="span-5">
+        <DashboardCard title="Number of Opportunity per Client" className="span-7">
           <ColumnChart items={byClientDepartment} mode="count" />
         </DashboardCard>
         <DashboardCard title="No. Of Opportunities Per Year" className="span-3">
           <ColumnChart items={byYear} mode="count" />
+          <p className="talemia-note">Unknown indicates missing or invalid submission year.</p>
         </DashboardCard>
         <DashboardCard title="Business-line opportunity detail" className="span-9">
           <SimpleTable rows={opps} columns={[
             { key: "opportunity_name_en", label: "Opportunity Name (en)" },
-            { key: "contract_value", label: "Sum of Contract Value" },
-            { key: "converted_value_2026", label: "Converted Value 2026" },
+            { key: "contract_value", label: "Sum of Contract Value", type: "money" },
+            { key: "converted_value_2026", label: "Converted Value 2026", type: "money" },
             { key: "deal_type", label: "Deal Types" },
             { key: "client_department", label: "Client Department" },
           ]} />
@@ -544,8 +570,8 @@ function AccountManagerDashboard({ opportunities, accountManagers, winLoss }: Da
         <DashboardCard title="Client/opportunity detail" className="span-9">
           <SimpleTable rows={opps} columns={[
             { key: "opportunity_name_en", label: "Opportunity Name (en)" },
-            { key: "contract_value", label: "Sum of Contract Value" },
-            { key: "parser_warning", label: "Weekly Update (en)" },
+            { key: "contract_value", label: "Sum of Contract Value", type: "money" },
+            { key: "parser_warning", label: "Weekly Update (en)", type: "update" },
             { key: "client_department", label: "Client Department" },
           ]} />
         </DashboardCard>
@@ -579,6 +605,7 @@ function CommercialDashboard({ opportunities, stages }: DashboardProps) {
         </DashboardCard>
         <DashboardCard title="Avg. Sales Cycle Days" className="span-2">
           <div className="talemia-big-number">--</div>
+          <p className="talemia-note">Date fields are not strong enough in V4.</p>
         </DashboardCard>
         <DashboardCard title="Opportunities by Business Line" className="span-10">
           <div className="talemia-tile-row">
@@ -587,6 +614,7 @@ function CommercialDashboard({ opportunities, stages }: DashboardProps) {
         </DashboardCard>
         <DashboardCard title="Expected Award Date" className="span-2">
           <ColumnChart items={groupRows(opps, "expected_award_quarter")} mode="count" />
+          <p className="talemia-note">Expected award quarter is mostly unavailable in V4.</p>
         </DashboardCard>
       </section>
     </>
@@ -606,7 +634,7 @@ function OpportunityDashboard({ opportunities }: DashboardProps) {
           <SimpleTable rows={opps} columns={[
             { key: "sector_type", label: "MoE vs Non-MoE" },
             { key: "opportunity_name_en", label: "Opportunity Name (en)" },
-            { key: "contract_value", label: "Contract Value" },
+            { key: "contract_value", label: "Contract Value", type: "money" },
             { key: "client_name", label: "Client Name (en)" },
             { key: "business_line_name", label: "Business Line (en)" },
             { key: "account_manager_name", label: "BD Owner (en)" },
