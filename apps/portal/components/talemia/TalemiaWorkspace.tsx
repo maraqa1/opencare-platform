@@ -384,7 +384,22 @@ function OverviewDashboard() {
         <span>v3.1</span>
       </div>
       <div className="talemia-overview-body">
-        <img className="talemia-brand-mark" src="/talemia-logo.svg" alt="TALEMIA" />
+        <svg className="talemia-brand-mark" viewBox="0 0 168 144" role="img" aria-labelledby="talemia-logo-title">
+          <title id="talemia-logo-title">TALEMIA</title>
+          <g transform="translate(45 4)">
+            <rect x="0" y="30" width="10" height="47" rx="5" fill="#2F5A87" />
+            <rect x="20" y="16" width="10" height="68" rx="5" fill="#2D8E95" />
+            <rect x="40" y="4" width="10" height="83" rx="5" fill="#4FA4A1" />
+            <rect x="60" y="16" width="10" height="68" rx="5" fill="#78BF8F" />
+            <rect x="80" y="30" width="10" height="47" rx="5" fill="#B7D9B1" />
+          </g>
+          <text x="84" y="104" textAnchor="middle" fill="#555" fontFamily="Tahoma, Arial, sans-serif" fontSize="32" fontWeight="700" direction="rtl">
+            التعليمية
+          </text>
+          <text x="84" y="135" textAnchor="middle" fill="#4C4C4C" fontFamily="Arial, sans-serif" fontSize="25" fontWeight="700" letterSpacing="7">
+            TALEMIA
+          </text>
+        </svg>
         <div className="talemia-overview-menu" aria-label="Dashboard suite overview">
           {overviewItems.map((item) => (
             <Link className="talemia-overview-row" href={item.href} key={item.label}>
