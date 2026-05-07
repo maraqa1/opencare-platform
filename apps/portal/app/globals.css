@@ -3052,14 +3052,21 @@ code {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: 22px;
-  min-height: 174px;
+  gap: 16px 22px;
+  min-height: 190px;
+}
+
+.talemia-donut-plot {
+  position: relative;
+  min-height: 150px;
+  display: grid;
+  place-items: center;
 }
 
 .talemia-donut {
   --fill: 0%;
-  width: 118px;
-  height: 118px;
+  width: clamp(104px, 9vw, 128px);
+  height: clamp(104px, 9vw, 128px);
   display: grid;
   place-items: center;
   margin: 0 auto;
@@ -3071,28 +3078,96 @@ code {
 .talemia-donut::after {
   content: "";
   position: absolute;
-  inset: 28px;
+  inset: 28%;
   border-radius: 50%;
   background: white;
 }
 
-.talemia-donut strong,
-.talemia-donut span {
+.talemia-donut strong {
   position: relative;
   z-index: 1;
-  text-align: center;
-}
-
-.talemia-donut strong {
-  color: #315a87;
-  font-size: 16px;
-}
-
-.talemia-donut span {
-  display: block;
   max-width: 58px;
   color: #111;
   font-size: 10px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.talemia-donut-callout {
+  position: absolute;
+  z-index: 2;
+  color: #4f4f4f;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.talemia-donut-callout::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 16px;
+  border: solid #8d8d8d;
+  border-width: 1px 0 0 1px;
+}
+
+.talemia-donut-callout.top {
+  top: 12px;
+  left: 18%;
+}
+
+.talemia-donut-callout.top::before {
+  left: 24px;
+  top: 12px;
+}
+
+.talemia-donut-callout.bottom {
+  right: 10%;
+  bottom: 12px;
+}
+
+.talemia-donut-callout.bottom::before {
+  right: 100%;
+  bottom: 12px;
+  transform: rotate(180deg);
+}
+
+.talemia-donut-legend {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 10px;
+  color: #3f4f64;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.talemia-donut-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.talemia-donut-legend i {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+  border-radius: 50%;
+  background: #4f86f7;
+}
+
+.talemia-donut-legend i.loss {
+  background: #dd7137;
+}
+
+.talemia-donut-legend i.win {
+  background: #284a82;
+}
+
+.talemia-donut-legend .separator {
+  color: #111;
   font-weight: 800;
 }
 

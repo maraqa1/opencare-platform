@@ -440,15 +440,29 @@ function DonutPair({ wonCount, lostCount, wonValue, lostValue }: { wonCount: num
   const totalValue = wonValue + lostValue;
   const countPct = totalCount ? Math.round((wonCount / totalCount) * 100) : 0;
   const valuePct = totalValue ? Math.round((wonValue / totalValue) * 100) : 0;
+  const lostPct = totalCount ? Math.max(100 - countPct, 0) : 0;
   return (
     <div className="talemia-donut-pair">
-      <div className="talemia-donut" style={{ "--fill": `${countPct}%` } as CSSProperties}>
-        <strong>{countPct || "--"}%</strong>
-        <span>By # Opp.</span>
+      <div className="talemia-donut-plot">
+        <span className="talemia-donut-callout top">{totalCount ? `${lostPct}%` : "--"}</span>
+        <div className="talemia-donut" style={{ "--fill": `${countPct}%` } as CSSProperties}>
+          <strong>By # Opp.</strong>
+        </div>
+        <span className="talemia-donut-callout bottom">{totalCount ? `${countPct}%` : "--"}</span>
       </div>
-      <div className="talemia-donut" style={{ "--fill": `${valuePct}%` } as CSSProperties}>
-        <strong>{compactNumber(wonValue)}</strong>
-        <span>By Value</span>
+      <div className="talemia-donut-plot">
+        <span className="talemia-donut-callout top">{compactNumber(lostValue)}</span>
+        <div className="talemia-donut" style={{ "--fill": `${valuePct}%` } as CSSProperties}>
+          <strong>By Value</strong>
+        </div>
+        <span className="talemia-donut-callout bottom">{compactNumber(wonValue)}</span>
+      </div>
+      <div className="talemia-donut-legend">
+        <span><i className="loss" />Loss Ratio</span>
+        <span><i />In Progress Ratio</span>
+        <span className="separator">|</span>
+        <span><i />In Progress</span>
+        <span><i className="win" />Win</span>
       </div>
     </div>
   );
