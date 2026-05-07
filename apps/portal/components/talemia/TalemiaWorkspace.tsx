@@ -413,6 +413,28 @@ function ColumnChart({ items, mode = "value" }: { items: Array<{ label: string; 
   );
 }
 
+function FunnelChart({ items, mode = "value" }: { items: Array<{ label: string; value: number; count?: number }>; mode?: "value" | "count" }) {
+  const visibleItems = items.slice(0, 6);
+  const max = maxValue(visibleItems, mode);
+  return (
+    <div className="talemia-funnel-chart">
+      {visibleItems.map((item, index) => {
+        const numeric = mode === "count" ? numberValue(item.count) : item.value;
+        const height = Math.max((numeric / max) * 132, numeric > 0 ? 22 : 2);
+        return (
+          <div className="talemia-funnel-step" key={item.label}>
+            <strong>{mode === "count" ? integer(numeric) : compactNumber(numeric)}</strong>
+            <div className="talemia-funnel-block" style={{ height: `${height}px` }} />
+            {index < visibleItems.length - 1 ? <span className="talemia-funnel-connector" aria-hidden="true" /> : null}
+            <span>{item.label}</span>
+          </div>
+        );
+      })}
+      {items.length === 0 ? <div className="talemia-empty">No rows available.</div> : null}
+    </div>
+  );
+}
+
 function DonutPair({ wonCount, lostCount, wonValue, lostValue }: { wonCount: number; lostCount: number; wonValue: number; lostValue: number }) {
   const totalCount = wonCount + lostCount;
   const totalValue = wonValue + lostValue;
@@ -588,7 +610,7 @@ function ExecutiveDashboard({ executive, opportunities, filters }: DashboardProp
           </div>
         </DashboardCard>
         <DashboardCard title="Opportunity Pipeline Per Business Line" className="span-4 executive-lower-panel">
-          <ColumnChart items={groupRows(opps, "business_line_name")} mode="count" />
+          <FunnelChart items={groupRows(opps, "business_line_name")} mode="count" />
         </DashboardCard>
         <DashboardCard title="Win/Loss Ratio" className="span-4 executive-lower-panel">
           <DonutPair wonCount={won.length} lostCount={lost.length} wonValue={awardedValue(won)} lostValue={sum(lost, "contract_value")} />
@@ -632,7 +654,7 @@ function FinancialDashboard({ opportunities, filters }: DashboardProps) {
       ]} />
       <section className="talemia-grid">
         <DashboardCard title="Pipeline value of each business line" className="span-12">
-          <BarChart items={groupRows(opps, "business_line_name")} />
+          <FunnelChart items={groupRows(opps, "business_line_name")} />
         </DashboardCard>
         <DashboardCard title="Top opportunities by value" className="span-12">
           <SimpleTable rows={topRows} columns={[

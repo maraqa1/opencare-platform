@@ -2985,6 +2985,69 @@ code {
   -webkit-box-orient: vertical;
 }
 
+.talemia-funnel-chart {
+  min-height: 190px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 0;
+  overflow-x: auto;
+  padding: 18px 12px 6px;
+}
+
+.talemia-funnel-step {
+  position: relative;
+  min-width: clamp(84px, 10vw, 132px);
+  display: grid;
+  justify-items: center;
+  align-items: end;
+  grid-template-rows: 22px minmax(8px, 132px) 46px;
+  text-align: center;
+}
+
+.talemia-funnel-step strong {
+  color: #4b4b4b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.talemia-funnel-block {
+  z-index: 2;
+  width: 100%;
+  align-self: end;
+  border-radius: 0 7px 0 0;
+  background: #315a87;
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.2);
+}
+
+.talemia-funnel-step:nth-child(even) .talemia-funnel-block {
+  background: #4fa4a1;
+}
+
+.talemia-funnel-connector {
+  position: absolute;
+  z-index: 1;
+  right: -14px;
+  bottom: 46px;
+  width: 28px;
+  height: 84px;
+  border-radius: 0 12px 12px 0;
+  background: #86a0cc;
+  transform: skewY(-12deg);
+  transform-origin: bottom left;
+}
+
+.talemia-funnel-step span:not(.talemia-funnel-connector) {
+  max-width: 118px;
+  color: #4f4f4f;
+  font-size: 11px;
+  line-height: 1.18;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
 .talemia-donut-pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
