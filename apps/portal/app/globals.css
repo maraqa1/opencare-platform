@@ -2858,11 +2858,42 @@ code {
   grid-auto-flow: dense;
 }
 
+.talemia-business-line-top-row {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(320px, 5fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.talemia-business-line-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.talemia-business-line-top-row .talemia-kpi-card {
+  min-height: 104px;
+}
+
+.talemia-business-line-top-row .business-line-status-panel {
+  min-height: 104px;
+  padding-top: 12px;
+  padding-bottom: 10px;
+}
+
+.talemia-business-line-top-row .business-line-status-panel .talemia-bar-chart {
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.talemia-business-line-top-row .business-line-status-panel .talemia-note {
+  margin-top: 8px;
+}
+
 .talemia-business-line-grid .talemia-panel {
   min-height: 242px;
 }
 
-.talemia-business-line-grid .business-line-status-panel,
 .talemia-business-line-grid .business-line-ratio-panel {
   min-height: 250px;
 }
@@ -2878,12 +2909,11 @@ code {
 }
 
 .talemia-business-line-grid .business-line-detail-panel .talemia-table-shell {
-  max-height: 352px;
+  max-height: 320px;
 }
 
 .talemia-business-line-grid .business-line-sales-panel {
-  grid-column: span 3;
-  grid-row: auto;
+  min-height: 430px;
 }
 
 .talemia-business-line-grid .business-line-year-panel .talemia-column-chart,
@@ -3492,6 +3522,14 @@ code {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  .talemia-business-line-top-row {
+    grid-template-columns: 1fr;
+  }
+
+  .talemia-business-line-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .talemia-panel.span-2,
   .talemia-panel.span-3,
   .talemia-panel.span-4,
@@ -3575,6 +3613,10 @@ code {
 
   .talemia-kpi-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .talemia-business-line-kpis {
+    grid-template-columns: 1fr;
   }
 
   .talemia-donut-pair,
