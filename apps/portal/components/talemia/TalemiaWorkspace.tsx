@@ -384,17 +384,7 @@ function OverviewDashboard() {
         <span>v3.1</span>
       </div>
       <div className="talemia-overview-body">
-        <div className="talemia-brand-mark" aria-label="TALEMIA">
-          <div className="talemia-brand-bars" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-          <strong>TALEMIA</strong>
-          <small>التعليمية</small>
-        </div>
+        <img className="talemia-brand-mark" src="/talemia-logo.svg" alt="TALEMIA" />
         <div className="talemia-overview-menu" aria-label="Dashboard suite overview">
           {overviewItems.map((item) => (
             <Link className="talemia-overview-row" href={item.href} key={item.label}>

@@ -1,0 +1,13 @@
+<svg width="168" height="144" viewBox="0 0 168 144" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">TALEMIA logo</title>
+  <desc id="desc">TALEMIA wordmark with colored vertical bars and Arabic text.</desc>
+  <g transform="translate(45 4)">
+    <rect x="0" y="30" width="10" height="47" rx="5" fill="#2F5A87"/>
+    <rect x="20" y="16" width="10" height="68" rx="5" fill="#2D8E95"/>
+    <rect x="40" y="4" width="10" height="83" rx="5" fill="#4FA4A1"/>
+    <rect x="60" y="16" width="10" height="68" rx="5" fill="#78BF8F"/>
+    <rect x="80" y="30" width="10" height="47" rx="5" fill="#B7D9B1"/>
+  </g>
+  <text x="84" y="104" text-anchor="middle" fill="#555555" font-family="Tahoma, Arial, sans-serif" font-size="32" font-weight="700" direction="rtl">التعليمية</text>
+  <text x="84" y="135" text-anchor="middle" fill="#4C4C4C" font-family="Arial, sans-serif" font-size="25" font-weight="700" letter-spacing="7">TALEMIA</text>
+</svg>

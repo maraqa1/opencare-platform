@@ -2522,46 +2522,11 @@ code {
 }
 
 .talemia-brand-mark {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
+  width: min(168px, 100%);
+  height: auto;
   align-self: end;
+  justify-self: center;
   padding-bottom: 22px;
-  color: #565656;
-  text-align: center;
-}
-
-.talemia-brand-bars {
-  height: 54px;
-  display: flex;
-  align-items: end;
-  gap: 8px;
-}
-
-.talemia-brand-bars span {
-  width: 8px;
-  border-radius: 999px;
-  background: #315a87;
-}
-
-.talemia-brand-bars span:nth-child(1) { height: 24px; }
-.talemia-brand-bars span:nth-child(2) { height: 42px; background: #4fa4a1; }
-.talemia-brand-bars span:nth-child(3) { height: 50px; background: #78bf8f; }
-.talemia-brand-bars span:nth-child(4) { height: 40px; background: #a8d9b5; }
-.talemia-brand-bars span:nth-child(5) { height: 28px; background: #dbe9d9; }
-
-.talemia-brand-mark strong {
-  color: #444;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 4px;
-}
-
-.talemia-brand-mark small {
-  color: #555;
-  font-size: 29px;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .talemia-overview-menu {
@@ -3190,25 +3155,9 @@ code {
   }
 
   .talemia-brand-mark {
+    width: 138px;
     justify-self: start;
-    grid-template-columns: auto auto;
-    justify-items: start;
-    gap: 6px 12px;
     padding-bottom: 0;
-    text-align: left;
-  }
-
-  .talemia-brand-bars {
-    grid-row: span 2;
-    height: 42px;
-  }
-
-  .talemia-brand-mark strong {
-    font-size: 18px;
-  }
-
-  .talemia-brand-mark small {
-    font-size: 20px;
   }
 
   .talemia-overview-row {
