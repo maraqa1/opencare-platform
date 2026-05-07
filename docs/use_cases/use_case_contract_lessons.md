@@ -52,6 +52,13 @@ Future prompts should explicitly separate:
 - Superset sync
 - demo proof flow
 
+Important lesson:
+
+- a green pull-request CI run does not necessarily mean deployable images were published
+- if Kubernetes manifests consume `:latest` images, the branch that carries use-case code must either publish those images or merge into a branch that does
+- VM rollout scripts that restart deployments only make new code visible after the target image tag has been rebuilt and pushed
+- deployment validation must inspect the running pod contents or runtime routes, not only local git state or CI status
+
 ### 3. Synthetic data contract
 
 If a use case is expected to demo live values, the prompt must require a non-empty synthetic data path.
@@ -197,6 +204,7 @@ Governance should remain aligned to the OpenCare workspace model:
 From this implementation, future use-case prompts should explicitly guard against:
 
 - adding portal routes without defining how the portal image gets deployed
+- assuming a PR validation run published backend or portal images
 - creating dbt models without specifying their schema materialization path
 - using empty scaffold marts where a live demo is expected
 - using Superset viz types that are not registered in the deployed image
