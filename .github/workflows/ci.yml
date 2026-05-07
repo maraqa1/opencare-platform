@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - dev
+      - talimya
   pull_request:
     branches:
       - main
