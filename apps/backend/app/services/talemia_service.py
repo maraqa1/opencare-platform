@@ -292,7 +292,13 @@ def account_managers(filters: dict[str, str | None]) -> dict[str, Any]:
 
 def opportunities(filters: dict[str, str | None]) -> dict[str, Any]:
     opportunity_filters = {
-        **PIPELINE_FILTERS,
+        "year": "submission_year",
+        "account_manager": "account_manager_name",
+        "business_line": "business_line_name",
+        "workflow_state": "workflow_state",
+        "winning_likelihood": "winning_likelihood",
+        "sector_type": "sector_type",
+        "expected_award_quarter": "expected_award_quarter",
         "opportunity_id": "opportunity_id",
         "client": "client_name",
         "client_department": "client_department",
@@ -314,10 +320,13 @@ def opportunities(filters: dict[str, str | None]) -> dict[str, Any]:
             "opportunity_stage",
             "workflow_state",
             "winning_likelihood",
+            "deal_type",
             "contract_value",
             "qualified_sales",
             "converted_value_2026",
             "awarded_value",
+            "submission_year",
+            "expected_award_quarter",
             "loss_reason",
             "parser_warning",
         ],

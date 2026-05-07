@@ -2470,6 +2470,469 @@ code {
   align-items: flex-start;
 }
 
+.talemia-dashboard-shell {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 10px;
+  background: #f1f1f1;
+  box-shadow: inset 0 0 0 1px rgba(31, 56, 100, 0.05);
+}
+
+.talemia-filter-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  color: #5d5d5d;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.talemia-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 220px;
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: #315a87;
+  color: white;
+  font-size: 13px;
+  font-style: normal;
+}
+
+.talemia-select::after {
+  content: "v";
+  font-size: 16px;
+  line-height: 1;
+}
+
+.talemia-select.small {
+  width: 96px;
+}
+
+.talemia-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.talemia-kpi-card {
+  min-height: 94px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 7px;
+  padding: 12px 10px;
+  border-radius: 6px;
+  color: white;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(31, 56, 100, 0.18);
+}
+
+.talemia-kpi-card.blue {
+  background: #2f5a87;
+}
+
+.talemia-kpi-card.teal {
+  background: #4fa4a1;
+}
+
+.talemia-kpi-card.green {
+  background: #78bf8f;
+}
+
+.talemia-kpi-card strong {
+  min-width: 78px;
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  font-family: var(--font-heading);
+  font-size: 28px;
+  line-height: 1.08;
+}
+
+.talemia-kpi-card span {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.talemia-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.talemia-panel {
+  min-height: 154px;
+  padding: 14px 16px;
+  border-radius: 7px;
+  background: white;
+  border: 1px solid rgba(31, 56, 100, 0.06);
+  box-shadow: 2px 4px 7px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.talemia-panel.span-2 { grid-column: span 2; }
+.talemia-panel.span-3 { grid-column: span 3; }
+.talemia-panel.span-4 { grid-column: span 4; }
+.talemia-panel.span-5 { grid-column: span 5; }
+.talemia-panel.span-6 { grid-column: span 6; }
+.talemia-panel.span-8 { grid-column: span 8; }
+.talemia-panel.span-9 { grid-column: span 9; }
+.talemia-panel.span-10 { grid-column: span 10; }
+.talemia-panel.span-12 { grid-column: span 12; }
+
+.talemia-panel h3 {
+  margin: 0 0 12px;
+  color: #666;
+  font-family: var(--font-heading);
+  font-size: 17px;
+  letter-spacing: 0;
+}
+
+.talemia-bar-chart {
+  display: grid;
+  gap: 11px;
+}
+
+.talemia-bar-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.34fr) minmax(90px, 1fr) 72px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.talemia-bar-row span,
+.talemia-column span {
+  color: #4f4f4f;
+  line-height: 1.25;
+}
+
+.talemia-bar-track {
+  height: 20px;
+  background: #d9d9d9;
+}
+
+.talemia-bar-fill {
+  height: 100%;
+  background: #315a87;
+}
+
+.talemia-bar-row strong {
+  color: #444;
+  font-size: 12px;
+  text-align: right;
+}
+
+.talemia-column-chart {
+  min-height: 190px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 22px;
+  overflow-x: auto;
+  padding-top: 14px;
+}
+
+.talemia-column {
+  min-width: 78px;
+  display: grid;
+  justify-items: center;
+  align-items: end;
+  gap: 7px;
+  text-align: center;
+}
+
+.talemia-column div {
+  width: 72px;
+  min-height: 1px;
+  background: #315a87;
+}
+
+.talemia-column:nth-child(even) div {
+  background: #4fa4a1;
+}
+
+.talemia-column strong {
+  color: #4b4b4b;
+  font-size: 12px;
+}
+
+.talemia-column span {
+  min-height: 34px;
+  font-size: 11px;
+}
+
+.talemia-donut-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 22px;
+  min-height: 174px;
+}
+
+.talemia-donut {
+  --fill: 0%;
+  width: 118px;
+  height: 118px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: conic-gradient(#4f86f7 var(--fill), #d9d9d9 0);
+  position: relative;
+}
+
+.talemia-donut::after {
+  content: "";
+  position: absolute;
+  inset: 28px;
+  border-radius: 50%;
+  background: white;
+}
+
+.talemia-donut strong,
+.talemia-donut span {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.talemia-donut strong {
+  color: #315a87;
+  font-size: 16px;
+}
+
+.talemia-donut span {
+  display: block;
+  max-width: 58px;
+  color: #111;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.talemia-side-kpis {
+  display: grid;
+  gap: 10px;
+}
+
+.talemia-side-kpis > div {
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 13px;
+  background: #f1f1f1;
+  box-shadow: 2px 3px 4px rgba(0, 0, 0, 0.18);
+}
+
+.talemia-side-kpis span {
+  color: #315a87;
+  font-weight: 800;
+}
+
+.talemia-side-kpis strong {
+  color: #2b7e7c;
+  font-size: 28px;
+}
+
+.talemia-side-kpis .split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.talemia-side-kpis .split span {
+  display: grid;
+  gap: 6px;
+}
+
+.talemia-side-kpis .split span + span {
+  border-left: 3px solid #111;
+  padding-left: 14px;
+}
+
+.talemia-table-shell {
+  width: 100%;
+  overflow: auto;
+}
+
+.talemia-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.talemia-table th {
+  padding: 8px;
+  background: #315a87;
+  color: white;
+  text-align: left;
+  font-weight: 500;
+}
+
+.talemia-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #e6e6e6;
+  color: #111;
+  vertical-align: top;
+}
+
+.talemia-table tr:nth-child(even) td {
+  background: #ededed;
+}
+
+.talemia-tile-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(110px, 1fr));
+  gap: 28px;
+  align-items: end;
+  min-height: 150px;
+}
+
+.talemia-tile-row div {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.talemia-tile-row span {
+  min-height: 42px;
+  color: #333;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.talemia-tile-row strong,
+.talemia-big-number {
+  min-width: 136px;
+  padding: 14px 20px;
+  border-radius: 4px;
+  background: #e8e8e8;
+  color: #315a87;
+  font-family: var(--font-heading);
+  font-size: 30px;
+  text-align: center;
+}
+
+.talemia-big-number {
+  display: grid;
+  place-items: center;
+  min-height: 170px;
+  background: transparent;
+  font-size: 46px;
+}
+
+.talemia-segments {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.talemia-segments span {
+  min-width: 96px;
+  padding: 18px 20px;
+  background: #4fa4a1;
+  color: white;
+  text-align: center;
+}
+
+.talemia-segments .dark {
+  background: #171717;
+}
+
+.talemia-state {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.talemia-state p {
+  margin: 0 0 6px;
+  color: var(--oc-gray-900);
+  font-weight: 700;
+}
+
+.talemia-state span,
+.talemia-empty {
+  color: var(--oc-gray-600);
+  font-size: 13px;
+}
+
+.talemia-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.talemia-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.talemia-chip-row span {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--oc-blue-light);
+  color: var(--oc-navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 1100px) {
+  .talemia-kpi-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .talemia-panel.span-2,
+  .talemia-panel.span-3,
+  .talemia-panel.span-4,
+  .talemia-panel.span-5,
+  .talemia-panel.span-6,
+  .talemia-panel.span-8,
+  .talemia-panel.span-9,
+  .talemia-panel.span-10 {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 720px) {
+  .talemia-dashboard-shell {
+    padding: 12px;
+  }
+
+  .talemia-filter-bar,
+  .talemia-segments,
+  .talemia-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .talemia-select,
+  .talemia-select.small {
+    width: 100%;
+  }
+
+  .talemia-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .talemia-donut-pair,
+  .talemia-tile-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .decision-card {
   display: grid;
   gap: 18px;
