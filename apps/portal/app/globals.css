@@ -2604,6 +2604,22 @@ code {
   grid-column: span 4;
 }
 
+.talemia-business-line-grid {
+  align-items: stretch;
+}
+
+.talemia-business-line-grid .talemia-panel {
+  min-height: 222px;
+}
+
+.talemia-business-line-grid .business-line-detail-panel {
+  min-height: 390px;
+}
+
+.talemia-business-line-grid .business-line-detail-panel .talemia-table-shell {
+  max-height: 320px;
+}
+
 .talemia-panel h3 {
   margin: 0 0 12px;
   color: #666;
@@ -2650,7 +2666,7 @@ code {
 }
 
 .talemia-column-chart {
-  min-height: 190px;
+  min-height: 170px;
   display: flex;
   align-items: end;
   justify-content: space-around;
@@ -2787,6 +2803,7 @@ code {
 .talemia-table-shell {
   width: 100%;
   overflow: auto;
+  max-height: 440px;
 }
 
 .talemia-table {
@@ -3032,7 +3049,8 @@ code {
   }
 
   .talemia-executive-grid .executive-kpi-panel,
-  .talemia-executive-grid .executive-lower-panel {
+  .talemia-executive-grid .executive-lower-panel,
+  .talemia-business-line-grid .business-line-detail-panel {
     grid-column: span 12;
     grid-row: auto;
   }

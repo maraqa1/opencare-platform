@@ -509,7 +509,7 @@ function BusinessLineDashboard({ opportunities, businessLines, winLoss }: Dashbo
         { label: "MoE Opportunities", value: integer(moeRows.length), tone: "teal" },
         { label: "Other Clients Opportunities", value: integer(otherRows.length), tone: "teal" },
       ]} />
-      <section className="talemia-grid">
+      <section className="talemia-grid talemia-business-line-grid">
         <DashboardCard title="Opportunities Status" className="span-7">
           <BarChart items={[{ label: "Pipeline", value: sum(opps, "contract_value"), count: opps.length }, { label: "Active", value: 0, count: 0 }]} mode="count" />
           <p className="talemia-note">Active pipeline is provisional in V4 because the extract contains closed awarded/lost records.</p>
@@ -517,14 +517,14 @@ function BusinessLineDashboard({ opportunities, businessLines, winLoss }: Dashbo
         <DashboardCard title="Win/Loss Ratio By Business Line" className="span-5">
           <ColumnChart items={rowsFor(businessLines).map((row) => ({ label: textValue(row.business_line_name), value: numberValue(row.win_rate), count: Math.round(numberValue(row.win_rate) * 100) }))} mode="count" />
         </DashboardCard>
-        <DashboardCard title="Number of Opportunity per Client" className="span-7">
+        <DashboardCard title="Number of Opportunity per Client" className="span-6">
           <ColumnChart items={byClientDepartment} mode="count" />
         </DashboardCard>
         <DashboardCard title="No. Of Opportunities Per Year" className="span-3">
           <ColumnChart items={byYear} mode="count" />
           <p className="talemia-note">Unknown indicates missing or invalid submission year.</p>
         </DashboardCard>
-        <DashboardCard title="Business-line opportunity detail" className="span-9">
+        <DashboardCard title="Business-line opportunity detail" className="span-9 business-line-detail-panel">
           <SimpleTable rows={opps} columns={[
             { key: "opportunity_name_en", label: "Opportunity Name (en)" },
             { key: "contract_value", label: "Sum of Contract Value", type: "money" },
