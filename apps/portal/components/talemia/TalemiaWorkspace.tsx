@@ -649,32 +649,93 @@ function OpportunityDashboard({ opportunities }: DashboardProps) {
 function GovernanceDashboard({ kpis, governance }: DashboardProps) {
   const kpiData = asRecord(kpis.data);
   const govData = asRecord(governance.data);
+  const metricRows = asRows(kpiData.metrics);
+  const termRows = asRows(kpiData.terms);
+  const qualityRows = asRows(govData.extraction_quality);
+  const reconciliationRows = asRows(govData.reconciliation);
+  const varianceCount = reconciliationRows.filter((row) => textValue(row.reconciliation_status).toLowerCase() === "variance").length;
+  const comparableCount = reconciliationRows.filter((row) => textValue(row.reconciliation_status).toLowerCase() !== "not_comparable").length;
+
   return (
-    <section className="talemia-grid">
-      <DashboardCard title="KPI dictionary" className="span-6">
-        <SimpleTable rows={asRows(kpiData.metrics)} columns={[
+    <>
+      <FilterBar label="Governance View" value="All" />
+      <KpiStrip cards={[
+        { label: "KPI Definitions", value: integer(metricRows.length), tone: "blue" },
+        { label: "Business Terms", value: integer(termRows.length), tone: "teal" },
+        { label: "Quality Checks", value: integer(qualityRows.length), tone: "teal" },
+        { label: "Comparable Targets", value: integer(comparableCount), tone: "green" },
+        { label: "Variance Flags", value: integer(varianceCount), tone: varianceCount > 0 ? "blue" : "green" },
+      ]} />
+      <section className="talemia-grid talemia-governance-grid">
+        <DashboardCard title="Metric calculation detail panel" className="span-5">
+          <div className="talemia-governance-detail">
+            <span>Selected Metric</span>
+            <strong>{textValue(metricRows[0]?.kpi_name, "No KPI selected")}</strong>
+            <p>{textValue(metricRows[0]?.formula, "KPI dictionary is waiting for dbt dictionary output.")}</p>
+            <dl>
+              <div><dt>Source mart</dt><dd>{textValue(metricRows[0]?.source_mart, "dictionary.dict_talemia_metrics")}</dd></div>
+              <div><dt>Raw lineage</dt><dd>{textValue(metricRows[0]?.raw_lineage, "raw_demo.talemia_opportunities")}</dd></div>
+              <div><dt>Limitation</dt><dd>Dashboard values remain provisional until reconciliation passes.</dd></div>
+            </dl>
+          </div>
+        </DashboardCard>
+
+        <DashboardCard title="Source-to-mart lineage summary" className="span-7">
+          <div className="talemia-lineage-strip">
+            {["raw_demo", "staging", "analytics", "dictionary", "portal"].map((stage) => (
+              <div key={stage}>
+                <span>{stage}</span>
+                <strong>{stage === "raw_demo" ? "V4 workbook tables" : stage === "portal" ? "TALEMIA dashboard tabs" : `${stage}.talemia_*`}</strong>
+              </div>
+            ))}
+          </div>
+          <p className="talemia-note">dbt remains the lineage source. Custom lineage should wait for manifest integration.</p>
+        </DashboardCard>
+
+        <DashboardCard title="KPI dictionary table" className="span-6">
+          <SimpleTable rows={metricRows} columns={[
           { key: "kpi_name", label: "KPI" },
           { key: "formula", label: "Formula" },
           { key: "source_mart", label: "Source Mart" },
         ]} />
-      </DashboardCard>
-      <DashboardCard title="Extraction quality" className="span-6">
-        <SimpleTable rows={asRows(govData.extraction_quality)} columns={[
+        </DashboardCard>
+
+        <DashboardCard title="Business glossary table" className="span-6">
+          <SimpleTable rows={termRows} columns={[
+            { key: "term_name", label: "Term" },
+            { key: "term_definition", label: "Definition" },
+            { key: "parse_status", label: "Status" },
+          ]} />
+        </DashboardCard>
+
+        <DashboardCard title="Dashboard target reconciliation table" className="span-7">
+          <SimpleTable rows={reconciliationRows} columns={[
+            { key: "dashboard_name", label: "Dashboard" },
+            { key: "kpi_name", label: "KPI" },
+            { key: "dashboard_visible_value", label: "Target" },
+            { key: "calculated_value", label: "Calculated", type: "money" },
+            { key: "reconciliation_status", label: "Status" },
+          ]} />
+        </DashboardCard>
+
+        <DashboardCard title="Extraction quality report" className="span-5">
+          <SimpleTable rows={qualityRows} columns={[
           { key: "check_name", label: "Check" },
           { key: "check_value", label: "Value" },
           { key: "quality_status", label: "Status" },
         ]} />
-      </DashboardCard>
-      <DashboardCard title="Dashboard reconciliation" className="span-12">
-        <SimpleTable rows={asRows(govData.reconciliation)} columns={[
-          { key: "dashboard_name", label: "Dashboard" },
-          { key: "kpi_name", label: "KPI" },
-          { key: "dashboard_visible_value", label: "Target" },
-          { key: "calculated_value", label: "Calculated" },
-          { key: "reconciliation_status", label: "Status" },
-        ]} />
-      </DashboardCard>
-    </section>
+        </DashboardCard>
+
+        <DashboardCard title="dbt test status summary" className="span-12">
+          <div className="talemia-governance-status">
+            <div><strong>tag:talemia</strong><span>Model tests defined in dbt schema files</span></div>
+            <div><strong>Raw guards</strong><span>Models compile to empty outputs if V4 tables are absent</span></div>
+            <div><strong>Reconciliation</strong><span>Dashboard targets compared after marts materialize</span></div>
+            <div><strong>Freshness</strong><span>Extraction quality is present; source freshness automation is phase 2</span></div>
+          </div>
+        </DashboardCard>
+      </section>
+    </>
   );
 }
 
