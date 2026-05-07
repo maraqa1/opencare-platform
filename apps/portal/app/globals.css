@@ -2481,6 +2481,198 @@ code {
   box-shadow: inset 0 0 0 1px rgba(31, 56, 100, 0.05);
 }
 
+.talemia-overview {
+  min-height: 610px;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(34px, 5vw, 70px);
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.talemia-overview-heading {
+  display: grid;
+  gap: 18px;
+}
+
+.talemia-overview-heading h2 {
+  max-width: 760px;
+  margin: 0;
+  color: #315a87;
+  font-family: var(--font-heading);
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.talemia-overview-heading span {
+  color: #4fa4a1;
+  font-size: clamp(22px, 3vw, 32px);
+  line-height: 1;
+}
+
+.talemia-overview-body {
+  min-height: 430px;
+  display: grid;
+  grid-template-columns: minmax(130px, 220px) minmax(420px, 680px) minmax(180px, 1fr);
+  gap: clamp(22px, 4vw, 58px);
+  align-items: end;
+  padding-top: 60px;
+}
+
+.talemia-brand-mark {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  align-self: end;
+  padding-bottom: 22px;
+  color: #565656;
+  text-align: center;
+}
+
+.talemia-brand-bars {
+  height: 54px;
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.talemia-brand-bars span {
+  width: 8px;
+  border-radius: 999px;
+  background: #315a87;
+}
+
+.talemia-brand-bars span:nth-child(1) { height: 24px; }
+.talemia-brand-bars span:nth-child(2) { height: 42px; background: #4fa4a1; }
+.talemia-brand-bars span:nth-child(3) { height: 50px; background: #78bf8f; }
+.talemia-brand-bars span:nth-child(4) { height: 40px; background: #a8d9b5; }
+.talemia-brand-bars span:nth-child(5) { height: 28px; background: #dbe9d9; }
+
+.talemia-brand-mark strong {
+  color: #444;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 4px;
+}
+
+.talemia-brand-mark small {
+  color: #555;
+  font-size: 29px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.talemia-overview-menu {
+  display: grid;
+  gap: 18px;
+  align-self: center;
+}
+
+.talemia-overview-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(240px, 1fr);
+  gap: 0;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.talemia-overview-button {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 18px 9px 12px;
+  border-radius: 5px;
+  background: #409873;
+  color: #fff;
+  font-size: 16px;
+  box-shadow: inset -18px 0 0 rgba(44, 127, 92, 0.35), 0 1px 3px rgba(0, 0, 0, 0.16);
+}
+
+.talemia-overview-icon {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.talemia-overview-copy {
+  max-width: 640px;
+  padding-left: 4px;
+  color: #111;
+  font-size: 15px;
+  line-height: 1.34;
+}
+
+.talemia-overview-row:hover .talemia-overview-button {
+  background: #347f61;
+}
+
+.talemia-overview-rings {
+  position: relative;
+  align-self: stretch;
+  min-height: 390px;
+  pointer-events: none;
+}
+
+.talemia-overview-rings span,
+.talemia-overview-rings i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 191, 143, 0.42);
+}
+
+.talemia-overview-rings span:nth-child(1) {
+  width: 540px;
+  height: 540px;
+  right: -300px;
+  bottom: -120px;
+}
+
+.talemia-overview-rings span:nth-child(2) {
+  width: 430px;
+  height: 430px;
+  right: -245px;
+  bottom: -72px;
+}
+
+.talemia-overview-rings span:nth-child(3) {
+  width: 320px;
+  height: 320px;
+  right: -190px;
+  bottom: -24px;
+}
+
+.talemia-overview-rings i {
+  border: 0;
+  background: #61bd80;
+  transform: rotate(-24deg);
+}
+
+.talemia-overview-rings i:nth-of-type(1) {
+  width: 96px;
+  height: 16px;
+  right: 36px;
+  top: 46px;
+}
+
+.talemia-overview-rings i:nth-of-type(2) {
+  width: 112px;
+  height: 20px;
+  right: 120px;
+  top: 210px;
+}
+
 .talemia-filter-bar {
   display: flex;
   justify-content: flex-end;
@@ -2892,20 +3084,6 @@ code {
   background: #171717;
 }
 
-.talemia-state {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: center;
-}
-
-.talemia-state p {
-  margin: 0 0 6px;
-  color: var(--oc-gray-900);
-  font-weight: 700;
-}
-
-.talemia-state span,
 .talemia-empty {
   color: var(--oc-gray-600);
   font-size: 13px;
@@ -2947,29 +3125,19 @@ code {
   font-size: 13px;
 }
 
-.talemia-list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding-left: 18px;
-}
-
-.talemia-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.talemia-chip-row span {
-  padding: 7px 11px;
-  border-radius: 999px;
-  background: var(--oc-blue-light);
-  color: var(--oc-navy);
-  font-size: 12px;
-  font-weight: 800;
-}
-
 @media (max-width: 1100px) {
+  .talemia-overview-body {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .talemia-overview-rings {
+    display: none;
+  }
+
+  .talemia-overview-row {
+    grid-template-columns: minmax(210px, 245px) minmax(240px, 1fr);
+  }
+
   .talemia-kpi-strip {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -3004,10 +3172,53 @@ code {
   }
 
   .talemia-filter-bar,
-  .talemia-segments,
-  .talemia-state {
+  .talemia-segments {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .talemia-overview {
+    min-height: auto;
+    padding: 28px 18px;
+  }
+
+  .talemia-overview-body {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 32px;
+  }
+
+  .talemia-brand-mark {
+    justify-self: start;
+    grid-template-columns: auto auto;
+    justify-items: start;
+    gap: 6px 12px;
+    padding-bottom: 0;
+    text-align: left;
+  }
+
+  .talemia-brand-bars {
+    grid-row: span 2;
+    height: 42px;
+  }
+
+  .talemia-brand-mark strong {
+    font-size: 18px;
+  }
+
+  .talemia-brand-mark small {
+    font-size: 20px;
+  }
+
+  .talemia-overview-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .talemia-overview-copy {
+    padding-left: 0;
+    font-size: 14px;
   }
 
   .talemia-select,

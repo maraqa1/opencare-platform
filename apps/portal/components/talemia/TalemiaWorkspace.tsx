@@ -121,7 +121,6 @@ const emptyPayload: TalemiaApiPayload = {
   data: [],
 };
 
-const sharedFilters = ["year", "account_manager", "business_line", "workflow_state", "winning_likelihood", "sector_type"];
 const stageOrder = ["Opportunity Development", "Qualification & Planning", "Proposal Development", "Negotiation", "Awarded", "Contract Signed"];
 
 export function getTalemiaTabConfig(tab: string | undefined): TalemiaTabConfig {
@@ -344,32 +343,77 @@ function SimpleTable({ rows, columns }: { rows: TalemiaRow[]; columns: Array<{ k
   );
 }
 
-function ShellPanel({ config, payload }: { config: TalemiaTabConfig; payload: TalemiaApiPayload }) {
-  const meta = payload.meta;
-  const lineage = meta?.lineage?.length ? meta.lineage : [config.primaryDataset];
+const overviewItems = [
+  {
+    label: "Executive Insights",
+    icon: "EX",
+    href: "/use-cases/talemia-business-intelligence/executive",
+    description: "Summary of the opportunity stages and their associated key performance indicators.",
+  },
+  {
+    label: "Financial",
+    icon: "FI",
+    href: "/use-cases/talemia-business-intelligence/financial",
+    description: "Actual vs. pipeline revenue.",
+  },
+  {
+    label: "Business Line",
+    icon: "BL",
+    href: "/use-cases/talemia-business-intelligence/business-lines",
+    description: "Progress of opportunities across each business line and their status.",
+  },
+  {
+    label: "Account Manager",
+    icon: "AM",
+    href: "/use-cases/talemia-business-intelligence/account-managers",
+    description: "Ongoing opportunities by account manager and prioritisation of top five clients.",
+  },
+  {
+    label: "Commercial",
+    icon: "CO",
+    href: "/use-cases/talemia-business-intelligence/commercial",
+    description: "Evaluating sectors based on value, opportunity progression, and escalation status.",
+  },
+];
+
+function OverviewDashboard() {
   return (
-    <section className="talemia-grid">
-      <DashboardCard title="Runtime state" className="span-12">
-        <div className="talemia-state">
-          <div>
-            <p>{meta?.message ?? "TALEMIA data is not loaded yet."}</p>
-            <span>{meta?.empty ? "Empty or pending" : "Data loaded"} - {textValue(meta?.status, "unknown")}</span>
+    <section className="talemia-overview">
+      <div className="talemia-overview-heading">
+        <h2>Business Development Dashboard</h2>
+        <span>v3.1</span>
+      </div>
+      <div className="talemia-overview-body">
+        <div className="talemia-brand-mark" aria-label="TALEMIA">
+          <div className="talemia-brand-bars" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
           </div>
-          <Link className="button secondary" href={`https://github.com/maraqa1/opencare-platform/blob/talimya${config.contract}`}>
-            Open Contract
-          </Link>
+          <strong>TALEMIA</strong>
+          <small>التعليمية</small>
         </div>
-      </DashboardCard>
-      <DashboardCard title="Lineage" className="span-6">
-        <ul className="talemia-list">
-          {lineage.map((item) => <li key={item}>{item}</li>)}
-        </ul>
-      </DashboardCard>
-      <DashboardCard title="Shared Filters" className="span-6">
-        <div className="talemia-chip-row">
-          {sharedFilters.map((filter) => <span key={filter}>{filter}</span>)}
+        <div className="talemia-overview-menu" aria-label="Dashboard suite overview">
+          {overviewItems.map((item) => (
+            <Link className="talemia-overview-row" href={item.href} key={item.label}>
+              <span className="talemia-overview-button">
+                <span className="talemia-overview-icon">{item.icon}</span>
+                {item.label}
+              </span>
+              <span className="talemia-overview-copy">{item.description}</span>
+            </Link>
+          ))}
         </div>
-      </DashboardCard>
+        <div className="talemia-overview-rings" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <i />
+          <i />
+        </div>
+      </div>
     </section>
   );
 }
@@ -665,7 +709,7 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
     >
       <TabNav items={talemiaTabs} activeKey={config.key} />
       <section className="talemia-dashboard-shell">
-        {activeKey === "overview" ? <ShellPanel config={config} payload={activePayload} /> : null}
+        {activeKey === "overview" ? <OverviewDashboard /> : null}
         {activeKey === "executive" ? <ExecutiveDashboard {...props} /> : null}
         {activeKey === "financial" ? <FinancialDashboard {...props} /> : null}
         {activeKey === "business-lines" ? <BusinessLineDashboard {...props} /> : null}
