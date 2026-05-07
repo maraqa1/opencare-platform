@@ -233,7 +233,7 @@ Observed V3 values:
 - Store values within approved tolerance as `matched`.
 - Store values outside tolerance as `variance`.
 - Store values whose source formula is unresolved as `requires_business_review`.
-- Reconciliation must be visible in the Governance tab before executive metrics are marked authoritative.
+- Reconciliation must be visible in Platform -> Administration -> Governance -> TALEMIA before executive metrics are marked authoritative.
 
 ## 6. Phase 2 Measures
 

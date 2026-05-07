@@ -19,7 +19,6 @@ const validTabs = new Set([
   "account-managers",
   "commercial",
   "opportunities",
-  "governance",
   "data-contract",
 ]);
 

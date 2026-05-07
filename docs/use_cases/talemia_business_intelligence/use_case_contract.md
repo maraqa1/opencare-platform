@@ -466,7 +466,6 @@ Workspace tabs:
 | Business Lines | Pipeline and performance by business line | pipeline/business-lines | Pipeline value by business line | Show business-line dimension requirements | `analytics.fct_talemia_business_line_performance` |
 | Account Managers | Account manager pipeline, wins, losses, overload signals | account-managers | Account manager performance | Show unknown/blank owner caveat | `analytics.fct_talemia_account_manager_performance` |
 | Opportunities | Searchable opportunity list and detail navigation | opportunities, opportunity detail | Opportunity details table | Show no records until opportunity mart exists | `analytics.fct_talemia_opportunity` |
-| Governance | Reconciliation, extraction quality, lineage, and quality checks | governance/reconciliation, KPIs | KPI governance table | Show dashboard reconciliation required | `analytics.fct_talemia_dashboard_reconciliation` |
 | Data Contract | Raw table definitions, glossary, metric dictionary, accepted values | KPIs, governance/reconciliation | Optional dictionary charts | Show contract even when marts are empty | `dictionary.dict_talemia_terms` |
 
 Portal rules:
@@ -475,6 +474,7 @@ Portal rules:
 - It must not hardcode KPI values from screenshots or workbook targets.
 - It must use record specification panels for each tab's primary mart.
 - It must keep dashboard-visible values separate from reconciled mart values until reconciliation passes.
+- Governance, lineage, dictionary, extraction quality, and reconciliation belong in Platform -> Administration -> Governance -> Use Case, not as a TALEMIA operational workspace tab.
 
 ## 16. Superset Dashboard Contract
 

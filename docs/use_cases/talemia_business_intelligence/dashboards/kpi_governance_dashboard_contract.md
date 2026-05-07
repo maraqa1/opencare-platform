@@ -3,12 +3,12 @@
 Status: draft dashboard contract  
 Use-case key: `talemia_business_intelligence`  
 Dashboard name: TALEMIA KPI Governance and Dictionary Dashboard  
-Portal route/tab: `/use-cases/talemia-business-intelligence/governance`  
+Platform location: `/admin/governance` -> TALEMIA Business Intelligence use case
 Source workbook: `C:\R_Home\Talymia\talemia_raw_demo_extracted_v3.xlsx`
 
 ## 1. Purpose
 
-The TALEMIA KPI Governance and Dictionary Dashboard exposes KPI definitions, formulas, dashboard lineage, business glossary, extraction quality, and reconciliation. It is the trust layer for the TALEMIA commercial intelligence workspace and the required evidence surface before dashboard values are treated as authoritative.
+The TALEMIA KPI Governance and Dictionary Dashboard exposes KPI definitions, formulas, dashboard lineage, business glossary, extraction quality, and reconciliation through the shared Platform -> Administration -> Governance -> Use Case template. It is the trust layer for the TALEMIA commercial intelligence workspace and the required evidence surface before dashboard values are treated as authoritative.
 
 The dashboard must help answer:
 
@@ -372,7 +372,7 @@ Accepted quality statuses:
 
 ## 13. Record Specification Panels
 
-The Governance tab must expose record specification panels for:
+The Platform -> Administration -> Governance -> TALEMIA use-case view must expose record specification panels for:
 
 - `dictionary.dict_talemia_metrics`
 - `dictionary.dict_talemia_terms`

@@ -81,7 +81,7 @@ export const useCases: UseCaseModule[] = [
     slug: "talemia-business-intelligence",
     icon: "BI",
     name: "TALEMIA Business Intelligence",
-    description: "Commercial pipeline, win/loss, account ownership, opportunity drilldown, and KPI governance.",
+    description: "Commercial pipeline, win/loss, account ownership, and opportunity drilldown with platform-governed KPI lineage.",
     status: "active",
     summary: "Contract shell live, V4 accepted, raw load and dbt marts pending",
     defaultHref: "/use-cases/talemia-business-intelligence",
@@ -94,7 +94,7 @@ export const useCases: UseCaseModule[] = [
       label: "TALEMIA Business Intelligence",
       title: "TALEMIA Commercial Workspace",
       badge: "Contract Shell",
-      actionHref: "/use-cases/talemia-business-intelligence/governance",
+      actionHref: "/admin/governance",
       actionLabel: "Governance",
     },
   },
@@ -167,7 +167,6 @@ export const talemiaTabs = [
   { key: "account-managers", label: "Account Managers", href: "/use-cases/talemia-business-intelligence/account-managers" },
   { key: "commercial", label: "Commercial", href: "/use-cases/talemia-business-intelligence/commercial" },
   { key: "opportunities", label: "Opportunities", href: "/use-cases/talemia-business-intelligence/opportunities" },
-  { key: "governance", label: "Governance", href: "/use-cases/talemia-business-intelligence/governance" },
   { key: "data-contract", label: "Data Contract", href: "/use-cases/talemia-business-intelligence/data-contract" },
 ];
 

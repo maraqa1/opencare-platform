@@ -27,7 +27,6 @@ export type TalemiaTabKey =
   | "account-managers"
   | "commercial"
   | "opportunities"
-  | "governance"
   | "data-contract";
 
 type TalemiaTabConfig = {
@@ -51,7 +50,7 @@ const tabConfigs: Record<TalemiaTabKey, TalemiaTabConfig> = {
     key: "overview",
     title: "TALEMIA Business Intelligence",
     eyebrow: "Commercial Intelligence",
-    description: "Commercial pipeline, win/loss, financial, account-manager, and governance workspace for TALEMIA.",
+    description: "Commercial pipeline, win/loss, financial, account-manager, and opportunity workspace for TALEMIA.",
     endpoint: "/api/v1/talemia/executive-summary",
     contract: "/docs/use_cases/talemia_business_intelligence/dashboard_suite_contract.md",
     primaryDataset: "analytics.fct_talemia_opportunity",
@@ -109,15 +108,6 @@ const tabConfigs: Record<TalemiaTabKey, TalemiaTabConfig> = {
     endpoint: "/api/v1/talemia/opportunities",
     contract: "/docs/use_cases/talemia_business_intelligence/dashboards/opportunity_details_dashboard_contract.md",
     primaryDataset: "analytics.fct_talemia_opportunity",
-  },
-  governance: {
-    key: "governance",
-    title: "KPI Governance and Dictionary",
-    eyebrow: "Trust Layer",
-    description: "KPI definitions, formulas, dashboard lineage, extraction quality, and reconciliation.",
-    endpoint: "/api/v1/talemia/governance/reconciliation",
-    contract: "/docs/use_cases/talemia_business_intelligence/dashboards/kpi_governance_dashboard_contract.md",
-    primaryDataset: "dictionary.dict_talemia_metrics",
   },
   "data-contract": {
     key: "data-contract",
@@ -454,7 +444,6 @@ type DashboardProps = {
   winLoss: TalemiaApiPayload;
   stages: TalemiaApiPayload;
   kpis: TalemiaApiPayload;
-  governance: TalemiaApiPayload;
 };
 
 function rowsFor(payload: TalemiaApiPayload) {
@@ -646,102 +635,9 @@ function OpportunityDashboard({ opportunities }: DashboardProps) {
   );
 }
 
-function GovernanceDashboard({ kpis, governance }: DashboardProps) {
-  const kpiData = asRecord(kpis.data);
-  const govData = asRecord(governance.data);
-  const metricRows = asRows(kpiData.metrics);
-  const termRows = asRows(kpiData.terms);
-  const qualityRows = asRows(govData.extraction_quality);
-  const reconciliationRows = asRows(govData.reconciliation);
-  const varianceCount = reconciliationRows.filter((row) => textValue(row.reconciliation_status).toLowerCase() === "variance").length;
-  const comparableCount = reconciliationRows.filter((row) => textValue(row.reconciliation_status).toLowerCase() !== "not_comparable").length;
-
-  return (
-    <>
-      <FilterBar label="Governance View" value="All" />
-      <KpiStrip cards={[
-        { label: "KPI Definitions", value: integer(metricRows.length), tone: "blue" },
-        { label: "Business Terms", value: integer(termRows.length), tone: "teal" },
-        { label: "Quality Checks", value: integer(qualityRows.length), tone: "teal" },
-        { label: "Comparable Targets", value: integer(comparableCount), tone: "green" },
-        { label: "Variance Flags", value: integer(varianceCount), tone: varianceCount > 0 ? "blue" : "green" },
-      ]} />
-      <section className="talemia-grid talemia-governance-grid">
-        <DashboardCard title="Metric calculation detail panel" className="span-5">
-          <div className="talemia-governance-detail">
-            <span>Selected Metric</span>
-            <strong>{textValue(metricRows[0]?.kpi_name, "No KPI selected")}</strong>
-            <p>{textValue(metricRows[0]?.formula, "KPI dictionary is waiting for dbt dictionary output.")}</p>
-            <dl>
-              <div><dt>Source mart</dt><dd>{textValue(metricRows[0]?.source_mart, "dictionary.dict_talemia_metrics")}</dd></div>
-              <div><dt>Raw lineage</dt><dd>{textValue(metricRows[0]?.raw_lineage, "raw_demo.talemia_opportunities")}</dd></div>
-              <div><dt>Limitation</dt><dd>Dashboard values remain provisional until reconciliation passes.</dd></div>
-            </dl>
-          </div>
-        </DashboardCard>
-
-        <DashboardCard title="Source-to-mart lineage summary" className="span-7">
-          <div className="talemia-lineage-strip">
-            {["raw_demo", "staging", "analytics", "dictionary", "portal"].map((stage) => (
-              <div key={stage}>
-                <span>{stage}</span>
-                <strong>{stage === "raw_demo" ? "V4 workbook tables" : stage === "portal" ? "TALEMIA dashboard tabs" : `${stage}.talemia_*`}</strong>
-              </div>
-            ))}
-          </div>
-          <p className="talemia-note">dbt remains the lineage source. Custom lineage should wait for manifest integration.</p>
-        </DashboardCard>
-
-        <DashboardCard title="KPI dictionary table" className="span-6">
-          <SimpleTable rows={metricRows} columns={[
-          { key: "kpi_name", label: "KPI" },
-          { key: "formula", label: "Formula" },
-          { key: "source_mart", label: "Source Mart" },
-        ]} />
-        </DashboardCard>
-
-        <DashboardCard title="Business glossary table" className="span-6">
-          <SimpleTable rows={termRows} columns={[
-            { key: "term_name", label: "Term" },
-            { key: "term_definition", label: "Definition" },
-            { key: "parse_status", label: "Status" },
-          ]} />
-        </DashboardCard>
-
-        <DashboardCard title="Dashboard target reconciliation table" className="span-7">
-          <SimpleTable rows={reconciliationRows} columns={[
-            { key: "dashboard_name", label: "Dashboard" },
-            { key: "kpi_name", label: "KPI" },
-            { key: "dashboard_visible_value", label: "Target" },
-            { key: "calculated_value", label: "Calculated", type: "money" },
-            { key: "reconciliation_status", label: "Status" },
-          ]} />
-        </DashboardCard>
-
-        <DashboardCard title="Extraction quality report" className="span-5">
-          <SimpleTable rows={qualityRows} columns={[
-          { key: "check_name", label: "Check" },
-          { key: "check_value", label: "Value" },
-          { key: "quality_status", label: "Status" },
-        ]} />
-        </DashboardCard>
-
-        <DashboardCard title="dbt test status summary" className="span-12">
-          <div className="talemia-governance-status">
-            <div><strong>tag:talemia</strong><span>Model tests defined in dbt schema files</span></div>
-            <div><strong>Raw guards</strong><span>Models compile to empty outputs if V4 tables are absent</span></div>
-            <div><strong>Reconciliation</strong><span>Dashboard targets compared after marts materialize</span></div>
-            <div><strong>Freshness</strong><span>Extraction quality is present; source freshness automation is phase 2</span></div>
-          </div>
-        </DashboardCard>
-      </section>
-    </>
-  );
-}
-
 export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey }) {
   const config = getTalemiaTabConfig(activeKey);
-  const [executive, opportunities, businessLines, accountManagers, winLoss, stages, kpis, governance] = await Promise.all([
+  const [executive, opportunities, businessLines, accountManagers, winLoss, stages, kpis] = await Promise.all([
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/executive-summary", fallback: emptyPayload }),
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/opportunities", fallback: emptyPayload }),
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/pipeline/business-lines", fallback: emptyPayload }),
@@ -749,9 +645,8 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/win-loss", fallback: emptyPayload }),
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/pipeline/stages", fallback: emptyPayload }),
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/kpis", fallback: emptyPayload }),
-    getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/governance/reconciliation", fallback: emptyPayload }),
   ]);
-  const props = { executive, opportunities, businessLines, accountManagers, winLoss, stages, kpis, governance };
+  const props = { executive, opportunities, businessLines, accountManagers, winLoss, stages, kpis };
   const activePayload =
     config.key === "financial"
       ? winLoss
@@ -761,8 +656,6 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
           ? accountManagers
           : config.key === "commercial"
             ? stages
-          : config.key === "governance"
-            ? governance
             : config.key === "data-contract"
               ? kpis
               : config.key === "opportunities"
@@ -791,7 +684,6 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
         {activeKey === "account-managers" ? <AccountManagerDashboard {...props} /> : null}
         {activeKey === "commercial" ? <CommercialDashboard {...props} /> : null}
         {activeKey === "opportunities" ? <OpportunityDashboard {...props} /> : null}
-        {activeKey === "governance" ? <GovernanceDashboard {...props} /> : null}
       </section>
     </PageFrame>
   );

@@ -2918,62 +2918,7 @@ code {
   line-height: 1.35;
 }
 
-.talemia-governance-grid .talemia-panel {
-  min-height: 220px;
-}
-
-.talemia-governance-detail {
-  display: grid;
-  gap: 12px;
-}
-
-.talemia-governance-detail > span {
-  color: var(--oc-navy);
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.talemia-governance-detail > strong {
-  color: var(--oc-gray-900);
-  font-size: 22px;
-}
-
-.talemia-governance-detail p {
-  margin: 0;
-  color: var(--oc-gray-600);
-  line-height: 1.45;
-}
-
-.talemia-governance-detail dl {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-}
-
-.talemia-governance-detail dl div {
-  display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 10px;
-  padding: 9px 0;
-  border-top: 1px solid rgba(31, 56, 100, 0.08);
-}
-
-.talemia-governance-detail dt {
-  color: var(--oc-gray-600);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.talemia-governance-detail dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: var(--oc-gray-900);
-  font-size: 12px;
-}
-
-.talemia-lineage-strip,
-.talemia-governance-status {
+.talemia-lineage-strip {
   display: grid;
   gap: 10px;
 }
@@ -2983,8 +2928,7 @@ code {
   align-items: stretch;
 }
 
-.talemia-lineage-strip div,
-.talemia-governance-status div {
+.talemia-lineage-strip div {
   display: grid;
   gap: 7px;
   padding: 13px;
@@ -2993,20 +2937,14 @@ code {
   border-left: 5px solid #315a87;
 }
 
-.talemia-lineage-strip span,
-.talemia-governance-status span {
+.talemia-lineage-strip span {
   color: var(--oc-gray-600);
   font-size: 12px;
 }
 
-.talemia-lineage-strip strong,
-.talemia-governance-status strong {
+.talemia-lineage-strip strong {
   color: var(--oc-navy);
   font-size: 13px;
-}
-
-.talemia-governance-status {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .talemia-list {
@@ -3055,8 +2993,7 @@ code {
     grid-row: auto;
   }
 
-  .talemia-lineage-strip,
-  .talemia-governance-status {
+  .talemia-lineage-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -3084,8 +3021,7 @@ code {
 
   .talemia-donut-pair,
   .talemia-tile-row,
-  .talemia-lineage-strip,
-  .talemia-governance-status {
+  .talemia-lineage-strip {
     grid-template-columns: 1fr;
   }
 }

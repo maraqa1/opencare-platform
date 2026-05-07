@@ -22,7 +22,7 @@ The request references a six-dashboard suite but lists seven dashboards. This co
 | Account Manager Dashboard | `/use-cases/talemia-business-intelligence/account-managers` | `dashboards/account_manager_dashboard_contract.md` | Relationship ownership, owner performance, client coverage, managed pipeline, and weekly follow-up |
 | Commercial Dashboard | `/use-cases/talemia-business-intelligence/commercial` | `dashboards/commercial_dashboard_contract.md` | Commercial planning, sales-cycle monitoring, expected award timing, client acquisition, and lifecycle visibility |
 | Opportunity Details Dashboard | `/use-cases/talemia-business-intelligence/opportunities` | `dashboards/opportunity_details_dashboard_contract.md` | Opportunity-grain operational workflow intelligence and drilldown |
-| KPI Governance Dashboard | `/use-cases/talemia-business-intelligence/governance` | `dashboards/kpi_governance_dashboard_contract.md` | KPI definitions, formulas, lineage, glossary, extraction quality, and reconciliation |
+| KPI Governance Dashboard | `/admin/governance` -> TALEMIA use case | `dashboards/kpi_governance_dashboard_contract.md` | KPI definitions, formulas, lineage, glossary, extraction quality, and reconciliation in the platform governance template |
 
 ## 3. Portal Tab Structure
 
@@ -37,8 +37,9 @@ The portal workspace at `/use-cases/talemia-business-intelligence` must expose t
 | Account Managers | `/account-managers` | Account Manager Dashboard |
 | Commercial | `/commercial` | Commercial Dashboard |
 | Opportunities | `/opportunities` | Opportunity Details Dashboard |
-| Governance | `/governance` | KPI Governance Dashboard |
 | Data Contract | `/data-contract` | Raw table, mart, metric, and removal contract view |
+
+Governance is not an operational workspace tab. TALEMIA governance belongs under Platform -> Administration -> Governance -> Use Case so it follows the shared governance template used by other OpenCare use cases.
 
 ## 4. Superset Dashboard Slugs
 
