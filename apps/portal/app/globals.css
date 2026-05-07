@@ -3108,22 +3108,26 @@ code {
 }
 
 .talemia-funnel-chart {
-  min-height: 190px;
+  min-height: 220px;
   display: flex;
   align-items: end;
-  justify-content: center;
+  justify-content: stretch;
   gap: 0;
   overflow-x: auto;
-  padding: 18px 12px 6px;
+  padding: 20px 24px 10px;
 }
 
 .talemia-funnel-step {
+  --step-height: 40px;
+  --connector-height: 40px;
+  --step-grow: 1;
   position: relative;
-  min-width: clamp(84px, 10vw, 132px);
+  flex: var(--step-grow) 0 clamp(92px, 13vw, 240px);
+  min-width: 92px;
   display: grid;
   justify-items: center;
   align-items: end;
-  grid-template-rows: 22px minmax(8px, 132px) 46px;
+  grid-template-rows: 24px 132px 44px;
   text-align: center;
 }
 
@@ -3136,37 +3140,39 @@ code {
 .talemia-funnel-block {
   z-index: 2;
   width: 100%;
+  height: var(--step-height);
   align-self: end;
-  border-radius: 0 7px 0 0;
+  border-radius: 0;
   background: #315a87;
   box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.2);
 }
 
 .talemia-funnel-step:nth-child(even) .talemia-funnel-block {
-  background: #4fa4a1;
+  background: #284a82;
 }
 
 .talemia-funnel-connector {
   position: absolute;
   z-index: 1;
-  right: -14px;
-  bottom: 46px;
-  width: 28px;
-  height: 84px;
-  border-radius: 0 12px 12px 0;
-  background: #86a0cc;
-  transform: skewY(-12deg);
+  right: -28px;
+  bottom: 44px;
+  width: 56px;
+  height: var(--connector-height);
+  border-radius: 0 28px 28px 0;
+  background: #87a0c4;
+  transform: skewY(-10deg);
   transform-origin: bottom left;
 }
 
 .talemia-funnel-step span:not(.talemia-funnel-connector) {
-  max-width: 118px;
+  max-width: 92%;
   color: #4f4f4f;
   font-size: 11px;
+  font-weight: 700;
   line-height: 1.18;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 

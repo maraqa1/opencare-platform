@@ -452,11 +452,23 @@ function FunnelChart({ items, mode = "value" }: { items: Array<{ label: string; 
     <div className="talemia-funnel-chart">
       {visibleItems.map((item, index) => {
         const numeric = mode === "count" ? numberValue(item.count) : item.value;
-        const height = Math.max((numeric / max) * 132, numeric > 0 ? 22 : 2);
+        const nextItem = visibleItems[index + 1];
+        const nextNumeric = nextItem ? (mode === "count" ? numberValue(nextItem.count) : nextItem.value) : numeric;
+        const height = Math.max((numeric / max) * 126, numeric > 0 ? 22 : 2);
+        const nextHeight = Math.max((nextNumeric / max) * 126, nextNumeric > 0 ? 22 : 2);
+        const grow = Math.max((numeric / max) * 2.4, 0.72);
         return (
-          <div className="talemia-funnel-step" key={item.label}>
+          <div
+            className="talemia-funnel-step"
+            key={item.label}
+            style={{
+              "--step-height": `${height}px`,
+              "--connector-height": `${Math.max((height + nextHeight) / 2, 18)}px`,
+              "--step-grow": grow,
+            } as CSSProperties}
+          >
             <strong>{mode === "count" ? integer(numeric) : compactNumber(numeric)}</strong>
-            <div className="talemia-funnel-block" style={{ height: `${height}px` }} />
+            <div className="talemia-funnel-block" />
             {index < visibleItems.length - 1 ? <span className="talemia-funnel-connector" aria-hidden="true" /> : null}
             <span>{item.label}</span>
           </div>
