@@ -792,6 +792,7 @@ export async function TalemiaWorkspace({
 
   return (
     <PageFrame
+      pageClassName="talemia-page"
       eyebrow={config.eyebrow}
       title={config.title}
       description={config.description}

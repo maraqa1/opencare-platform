@@ -2481,11 +2481,63 @@ code {
   box-shadow: inset 0 0 0 1px rgba(31, 56, 100, 0.05);
 }
 
+.talemia-page {
+  gap: 12px;
+}
+
+.talemia-page > .hero {
+  padding: 14px 20px;
+  border-radius: 16px;
+}
+
+.talemia-page > .hero .hero-header {
+  align-items: center;
+}
+
+.talemia-page > .hero .hero-copy {
+  max-width: min(820px, 100%);
+}
+
+.talemia-page > .hero .eyebrow {
+  margin-bottom: 5px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+.talemia-page > .hero h1 {
+  margin-bottom: 4px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.talemia-page > .hero p:not(.eyebrow) {
+  max-width: 720px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.talemia-page > .hero .hero-strip {
+  margin-top: 10px;
+  gap: 8px;
+}
+
+.talemia-page > .hero .chip {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.talemia-page > .hero .button {
+  min-height: 32px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+
 .talemia-overview {
-  min-height: 610px;
+  min-height: 500px;
   position: relative;
   overflow: hidden;
-  padding: clamp(34px, 5vw, 70px);
+  padding: clamp(28px, 4vw, 46px);
   border-radius: 8px;
   background: #fff;
   color: #111;
@@ -2493,7 +2545,7 @@ code {
 
 .talemia-overview-heading {
   display: grid;
-  gap: 18px;
+  gap: 10px;
 }
 
 .talemia-overview-heading h2 {
@@ -2513,12 +2565,12 @@ code {
 }
 
 .talemia-overview-body {
-  min-height: 430px;
+  min-height: 338px;
   display: grid;
   grid-template-columns: minmax(130px, 220px) minmax(420px, 680px) minmax(180px, 1fr);
   gap: clamp(22px, 4vw, 58px);
   align-items: end;
-  padding-top: 60px;
+  padding-top: 32px;
 }
 
 .talemia-brand-mark {
@@ -3202,6 +3254,18 @@ code {
 @media (max-width: 720px) {
   .talemia-dashboard-shell {
     padding: 12px;
+  }
+
+  .talemia-page > .hero {
+    padding: 12px 14px;
+  }
+
+  .talemia-page > .hero .hero-header {
+    align-items: stretch;
+  }
+
+  .talemia-page > .hero .hero-strip {
+    margin-top: 8px;
   }
 
   .talemia-filter-bar,
