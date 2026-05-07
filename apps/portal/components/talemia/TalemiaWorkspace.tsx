@@ -44,6 +44,20 @@ type MetricCard = {
   tone?: "blue" | "teal" | "green";
 };
 
+type TalemiaFilters = {
+  business_line?: string;
+  year?: string;
+  winning_likelihood?: string;
+  sector_type?: string;
+};
+
+type FilterControl = {
+  name: keyof TalemiaFilters;
+  label: string;
+  value?: string;
+  options: string[];
+};
+
 const tabConfigs: Record<TalemiaTabKey, TalemiaTabConfig> = {
   overview: {
     key: "overview",
@@ -138,6 +152,15 @@ function asRows(value: unknown): TalemiaRow[] {
   return Array.isArray(value) ? (value as TalemiaRow[]) : [];
 }
 
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function cleanFilter(value: string | string[] | undefined) {
+  const current = firstParam(value);
+  return current && current !== "All" ? current : undefined;
+}
+
 function numberValue(value: unknown) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   if (typeof value === "string") {
@@ -149,6 +172,14 @@ function numberValue(value: unknown) {
 
 function textValue(value: unknown, fallback = "-") {
   return value === null || value === undefined || value === "" ? fallback : String(value);
+}
+
+function uniqueOptions(rows: TalemiaRow[], key: string) {
+  return Array.from(new Set(rows.map((row) => textValue(row[key], "")).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+}
+
+function matchesFilter(row: TalemiaRow, key: string, value: string | undefined) {
+  return !value || textValue(row[key], "") === value;
 }
 
 function isMoeSector(value: unknown) {
@@ -238,7 +269,26 @@ function KpiStrip({ cards }: { cards: MetricCard[] }) {
   );
 }
 
-function FilterBar({ label, value = "All", secondary }: { label: string; value?: string; secondary?: string }) {
+function FilterBar({ label, value = "All", secondary, controls }: { label: string; value?: string; secondary?: string; controls?: FilterControl[] }) {
+  if (controls?.length) {
+    return (
+      <form className="talemia-filter-bar talemia-filter-form" method="get">
+        {controls.map((control) => (
+          <label key={control.name}>
+            <span>{control.label}:</span>
+            <select className="talemia-select" name={control.name} defaultValue={control.value ?? "All"}>
+              <option value="All">All</option>
+              {control.options.map((option) => (
+                <option value={option} key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+        ))}
+        <button type="submit">Apply</button>
+      </form>
+    );
+  }
+
   return (
     <div className="talemia-filter-bar">
       <span>{label}:</span>
@@ -393,8 +443,11 @@ function OverviewDashboard() {
             <rect x="60" y="16" width="10" height="68" rx="5" fill="#78BF8F" />
             <rect x="80" y="30" width="10" height="47" rx="5" fill="#B7D9B1" />
           </g>
-          <text x="84" y="104" textAnchor="middle" fill="#555" fontFamily="Tahoma, Arial, sans-serif" fontSize="32" fontWeight="700" direction="rtl">
+          <text x="84" y="104" textAnchor="middle" fill="#555" fontFamily="Tahoma, Arial, sans-serif" fontSize="0" fontWeight="700" direction="rtl">
             التعليمية
+          </text>
+          <text x="84" y="104" textAnchor="middle" fill="#555" fontFamily="Tahoma, Arial, sans-serif" fontSize="32" fontWeight="700" direction="rtl">
+            {"\u0627\u0644\u062a\u0639\u0644\u064a\u0645\u064a\u0629"}
           </text>
           <text x="84" y="135" textAnchor="middle" fill="#4C4C4C" fontFamily="Arial, sans-serif" fontSize="25" fontWeight="700" letterSpacing="7">
             TALEMIA
@@ -483,6 +536,7 @@ type DashboardProps = {
   winLoss: TalemiaApiPayload;
   stages: TalemiaApiPayload;
   kpis: TalemiaApiPayload;
+  filters: TalemiaFilters;
 };
 
 function rowsFor(payload: TalemiaApiPayload) {
@@ -523,15 +577,38 @@ function FinancialDashboard({ opportunities, businessLines, winLoss }: Dashboard
   );
 }
 
-function BusinessLineDashboard({ opportunities, businessLines, winLoss }: DashboardProps) {
-  const opps = rowsFor(opportunities);
+function BusinessLineDashboard({ opportunities, filters }: DashboardProps) {
+  const allOpps = rowsFor(opportunities);
+  const selectedBusinessLine = cleanFilter(filters.business_line);
+  const selectedYear = cleanFilter(filters.year);
+  const selectedWinningLikelihood = cleanFilter(filters.winning_likelihood);
+  const selectedSectorType = cleanFilter(filters.sector_type);
+  const opps = allOpps.filter((row) =>
+    matchesFilter(row, "business_line_name", selectedBusinessLine) &&
+    matchesFilter(row, "submission_year", selectedYear) &&
+    matchesFilter(row, "winning_likelihood", selectedWinningLikelihood) &&
+    matchesFilter(row, "sector_type", selectedSectorType),
+  );
   const moeRows = opps.filter((row) => isMoeSector(row.sector_type));
   const otherRows = opps.filter((row) => isNonMoeSector(row.sector_type));
+  const byBusinessLine = groupRows(opps, "business_line_name").map((item) => {
+    const lineRows = opps.filter((row) => textValue(row.business_line_name) === item.label);
+    const awardedRows = lineRows.filter((row) => textValue(row.workflow_state).toLowerCase() === "awarded");
+    return { ...item, count: item.count ? Math.round((awardedRows.length / item.count) * 100) : 0 };
+  });
   const byClientDepartment = groupRows(opps, "client_department");
   const byYear = groupRows(opps, "submission_year");
   return (
     <>
-      <FilterBar label="Business Line" value="All" />
+      <FilterBar
+        label="Business Line"
+        controls={[
+          { name: "business_line", label: "Business Line", value: selectedBusinessLine, options: uniqueOptions(allOpps, "business_line_name") },
+          { name: "year", label: "Year", value: selectedYear, options: uniqueOptions(allOpps, "submission_year") },
+          { name: "winning_likelihood", label: "Likelihood", value: selectedWinningLikelihood, options: uniqueOptions(allOpps, "winning_likelihood") },
+          { name: "sector_type", label: "Sector", value: selectedSectorType, options: uniqueOptions(allOpps, "sector_type") },
+        ]}
+      />
       <KpiStrip cards={[
         { label: "# Opportunities", value: integer(opps.length), tone: "blue" },
         { label: "MoE Opportunities", value: integer(moeRows.length), tone: "teal" },
@@ -543,12 +620,12 @@ function BusinessLineDashboard({ opportunities, businessLines, winLoss }: Dashbo
           <p className="talemia-note">Active pipeline is provisional in V4 because the extract contains closed awarded/lost records.</p>
         </DashboardCard>
         <DashboardCard title="Win/Loss Ratio By Business Line" className="span-5">
-          <ColumnChart items={rowsFor(businessLines).map((row) => ({ label: textValue(row.business_line_name), value: numberValue(row.win_rate), count: Math.round(numberValue(row.win_rate) * 100) }))} mode="count" />
+          <ColumnChart items={byBusinessLine} mode="count" />
         </DashboardCard>
         <DashboardCard title="Number of Opportunity per Client" className="span-6">
           <ColumnChart items={byClientDepartment} mode="count" />
         </DashboardCard>
-        <DashboardCard title="No. Of Opportunities Per Year" className="span-3">
+        <DashboardCard title="No. Of Opportunities Per Year" className="span-3 business-line-year-panel">
           <ColumnChart items={byYear} mode="count" />
           <p className="talemia-note">Unknown indicates missing or invalid submission year.</p>
         </DashboardCard>
@@ -561,7 +638,7 @@ function BusinessLineDashboard({ opportunities, businessLines, winLoss }: Dashbo
             { key: "client_department", label: "Client Department" },
           ]} />
         </DashboardCard>
-        <DashboardCard title="Sales by Years" className="span-3">
+        <DashboardCard title="Sales by Years" className="span-3 business-line-sales-panel">
           <ColumnChart items={byYear} />
         </DashboardCard>
       </section>
@@ -674,7 +751,13 @@ function OpportunityDashboard({ opportunities }: DashboardProps) {
   );
 }
 
-export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey }) {
+export async function TalemiaWorkspace({
+  activeKey,
+  searchParams = {},
+}: {
+  activeKey: TalemiaTabKey;
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const config = getTalemiaTabConfig(activeKey);
   const [executive, opportunities, businessLines, accountManagers, winLoss, stages, kpis] = await Promise.all([
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/executive-summary", fallback: emptyPayload }),
@@ -685,7 +768,13 @@ export async function TalemiaWorkspace({ activeKey }: { activeKey: TalemiaTabKey
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/pipeline/stages", fallback: emptyPayload }),
     getApiJson<TalemiaApiPayload>({ path: "/api/v1/talemia/kpis", fallback: emptyPayload }),
   ]);
-  const props = { executive, opportunities, businessLines, accountManagers, winLoss, stages, kpis };
+  const filters: TalemiaFilters = {
+    business_line: firstParam(searchParams.business_line),
+    year: firstParam(searchParams.year),
+    winning_likelihood: firstParam(searchParams.winning_likelihood),
+    sector_type: firstParam(searchParams.sector_type),
+  };
+  const props = { executive, opportunities, businessLines, accountManagers, winLoss, stages, kpis, filters };
   const activePayload =
     config.key === "financial"
       ? winLoss

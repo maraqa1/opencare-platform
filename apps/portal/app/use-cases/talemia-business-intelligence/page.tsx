@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: "TALEMIA Business Intelligence - OpenCare Portal",
 };
 
-export default function TalemiaWorkspaceIndexPage() {
-  return <TalemiaWorkspace activeKey="overview" />;
+type PageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function TalemiaWorkspaceIndexPage({ searchParams }: PageProps) {
+  return <TalemiaWorkspace activeKey="overview" searchParams={(await searchParams) ?? {}} />;
 }

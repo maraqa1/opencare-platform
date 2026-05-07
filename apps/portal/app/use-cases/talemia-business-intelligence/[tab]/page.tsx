@@ -9,6 +9,7 @@ import {
 
 type PageProps = {
   params: Promise<{ tab: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const validTabs = new Set([
@@ -29,11 +30,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function TalemiaWorkspaceTabPage({ params }: PageProps) {
+export default async function TalemiaWorkspaceTabPage({ params, searchParams }: PageProps) {
   const { tab } = await params;
   if (!validTabs.has(tab)) {
     notFound();
   }
 
-  return <TalemiaWorkspace activeKey={tab as TalemiaTabKey} />;
+  return <TalemiaWorkspace activeKey={tab as TalemiaTabKey} searchParams={(await searchParams) ?? {}} />;
 }

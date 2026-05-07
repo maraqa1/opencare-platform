@@ -2649,6 +2649,41 @@ code {
   font-style: italic;
 }
 
+.talemia-filter-form {
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 10px 12px;
+}
+
+.talemia-filter-form label {
+  display: grid;
+  gap: 5px;
+  color: #555;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.talemia-filter-form label > span {
+  font-weight: 800;
+}
+
+.talemia-filter-form button {
+  min-height: 30px;
+  padding: 5px 15px;
+  border: 0;
+  border-radius: 4px;
+  background: #315a87;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.talemia-filter-form button:hover {
+  background: #24466d;
+}
+
 .talemia-select {
   display: flex;
   align-items: center;
@@ -2661,6 +2696,11 @@ code {
   color: white;
   font-size: 13px;
   font-style: normal;
+}
+
+.talemia-filter-form .talemia-select {
+  width: clamp(150px, 17vw, 230px);
+  appearance: auto;
 }
 
 .talemia-select::after {
@@ -2775,6 +2815,11 @@ code {
 
 .talemia-business-line-grid .business-line-detail-panel .talemia-table-shell {
   max-height: 320px;
+}
+
+.talemia-business-line-grid .business-line-sales-panel {
+  grid-column: 10 / span 3;
+  grid-row: 3;
 }
 
 .talemia-panel h3 {
@@ -3121,7 +3166,8 @@ code {
 
   .talemia-executive-grid .executive-kpi-panel,
   .talemia-executive-grid .executive-lower-panel,
-  .talemia-business-line-grid .business-line-detail-panel {
+  .talemia-business-line-grid .business-line-detail-panel,
+  .talemia-business-line-grid .business-line-sales-panel {
     grid-column: span 12;
     grid-row: auto;
   }
