@@ -77,6 +77,28 @@ export const useCases: UseCaseModule[] = [
     },
   },
   {
+    id: "talemia_business_intelligence",
+    slug: "talemia-business-intelligence",
+    icon: "BI",
+    name: "TALEMIA Business Intelligence",
+    description: "Commercial pipeline, win/loss, account ownership, opportunity drilldown, and KPI governance.",
+    status: "active",
+    summary: "Contract shell live, V4 accepted, raw load and dbt marts pending",
+    defaultHref: "/use-cases/talemia-business-intelligence",
+    kpis: [
+      { label: "Dashboard Suite", value: "7", note: "Contracted tabs ready" },
+      { label: "API Surface", value: "Empty", note: "Stable meta.empty responses" },
+      { label: "Data Load", value: "Pending", note: "V4 accepted as baseline" },
+    ],
+    shell: {
+      label: "TALEMIA Business Intelligence",
+      title: "TALEMIA Commercial Workspace",
+      badge: "Contract Shell",
+      actionHref: "/use-cases/talemia-business-intelligence/governance",
+      actionLabel: "Governance",
+    },
+  },
+  {
     id: "staff_scheduling",
     slug: "staff-scheduling",
     icon: "Staff",
@@ -137,12 +159,27 @@ export const revenueCycleTabs = [
   { key: "executive-narrative", label: "Executive Narrative", href: "/use-cases/revenue-cycle-management/executive-narrative" },
 ];
 
+export const talemiaTabs = [
+  { key: "overview", label: "Overview", href: "/use-cases/talemia-business-intelligence" },
+  { key: "executive", label: "Executive", href: "/use-cases/talemia-business-intelligence/executive" },
+  { key: "financial", label: "Financial", href: "/use-cases/talemia-business-intelligence/financial" },
+  { key: "business-lines", label: "Business Lines", href: "/use-cases/talemia-business-intelligence/business-lines" },
+  { key: "account-managers", label: "Account Managers", href: "/use-cases/talemia-business-intelligence/account-managers" },
+  { key: "commercial", label: "Commercial", href: "/use-cases/talemia-business-intelligence/commercial" },
+  { key: "opportunities", label: "Opportunities", href: "/use-cases/talemia-business-intelligence/opportunities" },
+  { key: "governance", label: "Governance", href: "/use-cases/talemia-business-intelligence/governance" },
+  { key: "data-contract", label: "Data Contract", href: "/use-cases/talemia-business-intelligence/data-contract" },
+];
+
 export function getUseCaseByPath(pathname: string): UseCaseModule | null {
   if (pathname.startsWith("/occupancy") || pathname.startsWith("/use-cases/bed-pressure")) {
     return useCases.find((item) => item.id === "bed_pressure") ?? null;
   }
   if (pathname.startsWith("/use-cases/revenue-cycle-management")) {
     return useCases.find((item) => item.id === "revenue_cycle_management") ?? null;
+  }
+  if (pathname.startsWith("/use-cases/talemia-business-intelligence")) {
+    return useCases.find((item) => item.id === "talemia_business_intelligence") ?? null;
   }
   if (pathname.startsWith("/use-cases/staff-scheduling")) {
     return useCases.find((item) => item.id === "staff_scheduling") ?? null;

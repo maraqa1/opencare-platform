@@ -5,7 +5,7 @@ Use-case key: `talemia_business_intelligence`
 Route slug: `talemia-business-intelligence`  
 API prefix: `/api/v1/talemia`  
 Superset dashboard slug: `talemia-business-intelligence`  
-Source workbook: `C:\R_Home\Talymia\talemia_raw_demo_extracted_v3.xlsx`
+Source workbook: `C:\R_Home\Talymia\talemia_raw_demo_extracted_v4.xlsx`
 
 ## 1. Repo Discovery Findings
 
@@ -21,7 +21,7 @@ Source workbook: `C:\R_Home\Talymia\talemia_raw_demo_extracted_v3.xlsx`
 
 ## 2. Workbook Discovery Findings
 
-The V3 workbook contains these source-derived sheets:
+The V4 workbook is accepted as the current implementation baseline. It contains these source-derived sheets:
 
 - `talemia_opportunities`
 - `talemia_opportunity_identity_br`
@@ -39,12 +39,13 @@ The V3 workbook contains these source-derived sheets:
 - `talemia_deal_type`
 - `talemia_business_terms`
 - `talemia_dashboard_targets`
+- `talemia_field_mapping_report`
 - `extraction_quality_report`
 - `load_summary`
 
 The required raw table `raw_demo.talemia_opportunity_updates_long` maps to workbook sheet `talemia_opportunity_updates_lon`. The shortened sheet name appears to be caused by Excel's worksheet name length limit.
 
-Observed workbook row counts from the source extract include 15 opportunities, 10 awards, 5 losses, 37 opportunity update rows, 5 clients, 10 client departments, 6 account managers, 4 business lines, 34 business terms, 8 dashboard target rows, and 11 extraction quality checks.
+Observed V4 workbook row counts include 15 opportunities, 10 awards, 5 losses, 0 opportunity update rows, 5 clients, 10 client departments, 6 account managers, 6 business lines, 34 business terms, 8 dashboard target rows, 21 field-mapping rows, and 18 extraction quality checks. V4 improves parser diagnostics and business-line cleanup, but active pipeline rows, expected award dates, weekly updates, loss reasons, competitors, and outcome dates remain limited.
 
 ## 3. Proposed File Locations
 

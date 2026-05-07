@@ -17,6 +17,7 @@ from app.routes.revenue_cycle import router as revenue_cycle_router
 from app.routes.reports import router as reports_router
 from app.routes.status import router as status_router
 from app.routes.superset import router as superset_router
+from app.routes.talemia import router as talemia_router
 
 app = FastAPI(
     title="OpenCare Insight Platform Backend",
@@ -40,6 +41,7 @@ app.include_router(status_router)
 app.include_router(reports_router)
 app.include_router(facts_router)
 app.include_router(revenue_cycle_router)
+app.include_router(talemia_router)
 
 
 @app.get("/")

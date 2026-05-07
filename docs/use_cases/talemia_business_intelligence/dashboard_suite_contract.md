@@ -4,7 +4,7 @@ Status: draft suite contract
 Use-case key: `talemia_business_intelligence`  
 Use-case route: `/use-cases/talemia-business-intelligence`  
 Main Superset slug: `talemia-business-intelligence`  
-Source workbook: `C:\R_Home\Talymia\talemia_raw_demo_extracted_v3.xlsx`
+Source workbook: `C:\R_Home\Talymia\talemia_raw_demo_extracted_v4.xlsx`
 
 ## 1. Purpose
 
@@ -246,7 +246,8 @@ Suite rules:
 
 ## 12. Known Limitations
 
-- V3 weekly updates may need parser correction.
+- V4 is accepted as the current implementation baseline, but it still needs incremental manual and extractor-driven enhancement.
+- V4 weekly updates are currently empty and need parser correction or manual enrichment.
 - Expected award dates may need validation.
 - Active opportunity stage extraction appears partial in V3.
 - Hidden Power BI / DAX logic may still exist behind visible dashboard targets.
