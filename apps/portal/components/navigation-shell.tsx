@@ -15,7 +15,7 @@ function getTopbarContext(pathname: string) {
   if (pathname === "/governance") {
     return {
       label: "Governance",
-      title: "KPI entry",
+      title: "Governance overview",
       badge: "Trust mode",
       actionHref: "/governance/health",
       actionLabel: "Health",

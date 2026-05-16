@@ -6587,3 +6587,107 @@ code {
     border-radius: 24px 24px 0 0;
   }
 }
+
+/* ── Governance overview page ─────────────────────────────────────────── */
+
+.governance-overview-shell {
+  display: grid;
+  gap: 24px;
+}
+
+.governance-overview-usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.governance-overview-usecase-card {
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.governance-overview-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.governance-overview-meta div {
+  display: grid;
+  gap: 2px;
+}
+
+.governance-overview-meta dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--oc-gray-600);
+}
+
+.governance-overview-meta dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--oc-gray-900);
+}
+
+.governance-overview-area-nav {
+  display: grid;
+  gap: 12px;
+}
+
+.governance-overview-area-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.governance-overview-area-card {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.governance-overview-area-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--surface-shadow-strong);
+  border-color: rgba(46, 117, 182, 0.22);
+}
+
+.governance-overview-area-card strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--oc-navy);
+}
+
+.governance-overview-area-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--oc-gray-600);
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  .governance-overview-usecase-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .governance-overview-area-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .governance-overview-usecase-grid,
+  .governance-overview-area-grid {
+    grid-template-columns: 1fr;
+  }
+}
