@@ -22,8 +22,8 @@ export default function GovernancePage() {
         <Link key="health" className="button secondary" href="/governance/health">
           Health overview
         </Link>,
-        <Link key="admin" className="secondary-link" href="/admin/governance">
-          Control tower
+        <Link key="explore" className="secondary-link" href="/governance/explore">
+          Explore
         </Link>,
       ]}
     >

@@ -58,7 +58,17 @@ function getTopbarContext(pathname: string) {
       title: "Governance health",
       badge: "Program view",
       actionHref: "/governance",
-      actionLabel: "Entry",
+      actionLabel: "Overview",
+    };
+  }
+
+  if (pathname.startsWith("/governance/explore")) {
+    return {
+      label: "Governance",
+      title: "Governance explorer",
+      badge: "Explorer",
+      actionHref: "/governance",
+      actionLabel: "Overview",
     };
   }
 
