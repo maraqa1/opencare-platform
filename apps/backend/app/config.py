@@ -56,6 +56,8 @@ class Settings:
     runtime_writes_enabled: bool = _get_bool("RUNTIME_WRITES_ENABLED", True)
     governance_v2_enabled: bool = _get_bool("GOVERNANCE_V2_ENABLED", False)
     governance_schema: str = os.getenv("GOVERNANCE_SCHEMA", "governance")
+    governance_use_cases_dir: str = os.getenv("GOVERNANCE_USE_CASES_DIR", "/app/governance/use-cases")
+    governance_policies_dir: str = os.getenv("GOVERNANCE_POLICIES_DIR", "/app/governance/policies")
     use_cases_config_path: str = os.getenv("USE_CASES_CONFIG_PATH", "")
     dbt_project_dir: str = os.getenv("DBT_PROJECT_DIR", "/app/dbt")
     dbt_manifest_path: str = os.getenv("DBT_MANIFEST_PATH", "/app/dbt/target/manifest.json")

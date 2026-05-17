@@ -1,0 +1,46 @@
+policy_id: healthcare-default
+name: Healthcare Default Classification
+version: "1.0.0"
+status: active
+owner: Data Governance Owner
+standard_or_framework: OpenCare Healthcare Data Handling
+scope:
+  - clinical
+  - operational
+classification_levels:
+  - public
+  - internal
+  - confidential
+  - restricted
+rules:
+  - rule_id: patient-identifiers
+    description: Patient identifiers must be restricted.
+    match:
+      column_name_patterns:
+        - patient_id
+        - patient_key
+        - mrn
+        - medical_record_number
+      semantic_terms:
+        - patient identifier
+    classification: restricted
+    sensitivity: high
+    actions:
+      - restrict_access
+      - block_export
+    requires_review: true
+    scope_specificity: 10
+  - rule_id: operational-codes
+    description: Operational ward and department codes are internal.
+    match:
+      column_name_patterns:
+        - ward_code
+        - department_id
+      semantic_terms:
+        - operational code
+    classification: internal
+    sensitivity: low
+    actions:
+      - audit
+    requires_review: false
+    scope_specificity: 5

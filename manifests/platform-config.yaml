@@ -21,6 +21,8 @@ data:
   POSTGRES_USER: opencare
   GOVERNANCE_SCHEMA: governance
   GOVERNANCE_V2_ENABLED: "false"
+  GOVERNANCE_USE_CASES_DIR: /app/governance/use-cases
+  GOVERNANCE_POLICIES_DIR: /app/governance/policies
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   MINIO_ENDPOINT: minio.opencare.svc.cluster.local:9000

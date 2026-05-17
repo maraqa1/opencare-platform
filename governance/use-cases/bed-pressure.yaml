@@ -1,0 +1,38 @@
+slug: bed-pressure
+name: Bed Pressure Intelligence
+domain: Clinical Operations
+maturity: in_progress
+ownership:
+  owner: Clinical Operations Analytics
+  steward: Capacity Planning Lead
+  review_cadence: monthly
+source_systems:
+  - EMR
+  - ADT
+governed_tables:
+  - id: analytics.fct_bed_occupancy
+    schema: analytics
+    table: fct_bed_occupancy
+    stage: analytics
+    description: Daily ward occupancy fact used by bed pressure reporting.
+  - id: output.forecast
+    schema: output
+    table: forecast
+    stage: output
+    description: Forecast runtime output for ward pressure prediction.
+kpis:
+  - id: current-occupancy-rate
+    name: Current Occupancy Rate
+    definition: Percentage of staffed beds occupied during the reporting interval.
+    formula: occupied_beds / staffed_beds * 100
+    owner: Capacity Planning Lead
+    source_table: analytics.fct_bed_occupancy
+    consumers:
+      - Bed Pressure workspace
+      - Superset bed occupancy dashboard
+policies_in_scope:
+  - healthcare-default
+consumers:
+  - Bed Pressure workspace
+  - Governance evidence exports
+freshness_sla: 2 hours
