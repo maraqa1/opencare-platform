@@ -21,7 +21,11 @@ class GovernanceSyncTests(unittest.TestCase):
 
         payload = build_seed_payload(use_cases, policies, legacy_slugs={"bed-pressure", "legacy-only"})
 
+        self.assertEqual(payload.use_cases[0]["schema_version"], "1.0")
         self.assertEqual(payload.use_cases[0]["slug"], "bed-pressure")
+        self.assertEqual(payload.use_cases[0]["source_systems"], ["emr", "adt"])
+        self.assertEqual(payload.use_cases[0]["freshness_sla"], "2 hours")
+        self.assertEqual(payload.use_cases[0]["consumers"], ["bed-pressure-workspace", "bed-occupancy-dashboard"])
         self.assertEqual(payload.governed_assets[0]["evidence_source"], "governance_use_case_yaml")
         self.assertEqual(payload.policies[0]["policy_id"], "healthcare-default")
         self.assertEqual(payload.policy_rules[0]["policy_id"], "healthcare-default")

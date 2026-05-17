@@ -1,3 +1,4 @@
+schema_version: "1.0"
 slug: bed-pressure
 name: Bed Pressure Intelligence
 domain: Clinical Operations
@@ -7,19 +8,23 @@ ownership:
   steward: Capacity Planning Lead
   review_cadence: monthly
 source_systems:
-  - EMR
-  - ADT
+  - id: emr
+    name: EMR
+    system_type: clinical
+  - id: adt
+    name: ADT
+    system_type: operational
 governed_tables:
   - id: analytics.fct_bed_occupancy
     schema: analytics
     table: fct_bed_occupancy
     stage: analytics
-    description: Daily ward occupancy fact used by bed pressure reporting.
+    purpose: Daily ward occupancy fact used by bed pressure reporting.
   - id: output.forecast
     schema: output
     table: forecast
     stage: output
-    description: Forecast runtime output for ward pressure prediction.
+    purpose: Forecast runtime output for ward pressure prediction.
 kpis:
   - id: current-occupancy-rate
     name: Current Occupancy Rate
@@ -33,6 +38,19 @@ kpis:
 policies_in_scope:
   - healthcare-default
 consumers:
-  - Bed Pressure workspace
-  - Governance evidence exports
-freshness_sla: 2 hours
+  - id: bed-pressure-workspace
+    type: portal
+    name: Bed Pressure workspace
+  - id: bed-occupancy-dashboard
+    type: dashboard
+    name: Superset bed occupancy dashboard
+freshness:
+  sla: 2 hours
+  critical_tables:
+    - analytics.fct_bed_occupancy
+evidence:
+  dbt_project: opencare
+  expected_dbt_models:
+    - fct_bed_occupancy
+  expected_outputs:
+    - output.forecast

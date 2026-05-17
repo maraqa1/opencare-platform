@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 from app.governance.config_loader import GovernanceUseCaseConfig
 from app.governance.policy_loader import PolicyConfig, PolicyMatchConfig
@@ -15,10 +17,20 @@ class GovernanceSeedPayload:
     divergence_report: dict[str, object]
 
 
+def json_ready(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, dict):
+        return {key: json_ready(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [json_ready(item) for item in value]
+    return value
+
+
 def model_to_dict(model: PolicyConfig | PolicyMatchConfig) -> dict[str, object]:
     if hasattr(model, "model_dump"):
         return model.model_dump(mode="json")
-    return model.dict()
+    return json_ready(model.dict())
 
 
 def build_seed_payload(
@@ -31,6 +43,7 @@ def build_seed_payload(
 
     use_case_rows = [
         {
+            "schema_version": use_case.schema_version,
             "slug": use_case.slug,
             "name": use_case.name,
             "domain": use_case.domain,
@@ -38,6 +51,9 @@ def build_seed_payload(
             "owner": use_case.ownership.owner,
             "steward": use_case.ownership.steward,
             "review_cadence": use_case.ownership.review_cadence,
+            "freshness_sla": use_case.freshness.sla,
+            "source_systems": [source.id for source in use_case.source_systems],
+            "consumers": [consumer.id for consumer in use_case.consumers],
             "config_checksum": use_case.checksum,
             "config_source": use_case.source_path,
         }

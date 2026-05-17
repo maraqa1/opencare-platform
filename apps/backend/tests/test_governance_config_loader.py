@@ -24,10 +24,16 @@ class GovernanceConfigLoaderTests(unittest.TestCase):
 
         config = load_governance_use_case(path)
 
+        self.assertEqual(config.schema_version, "1.0")
         self.assertEqual(config.slug, "bed-pressure")
         self.assertEqual(config.ownership.owner, "Clinical Operations Analytics")
+        self.assertEqual(config.source_systems[0].id, "emr")
         self.assertTrue(config.checksum)
         self.assertEqual(config.governed_tables[0].schema_name, "analytics")
+        self.assertEqual(config.governed_tables[0].purpose, "Daily ward occupancy fact used by bed pressure reporting.")
+        self.assertEqual(config.consumers[0].type, "portal")
+        self.assertEqual(config.freshness.sla, "2 hours")
+        self.assertEqual(config.evidence.expected_dbt_models, ["fct_bed_occupancy"])
 
     def test_invalid_yaml_is_hard_fail(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -41,6 +47,15 @@ class GovernanceConfigLoaderTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+
+            with self.assertRaises(GovernanceConfigError):
+                load_governance_use_case(path)
+
+    def test_unexpected_fields_are_rejected(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "bad-defaults.yaml"
+            content = (REPO_ROOT / "governance/use-cases/bed-pressure.yaml").read_text(encoding="utf-8")
+            path.write_text(f"{content}\ntrust_status: trusted\n", encoding="utf-8")
 
             with self.assertRaises(GovernanceConfigError):
                 load_governance_use_case(path)

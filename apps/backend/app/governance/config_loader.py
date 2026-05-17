@@ -12,21 +12,32 @@ class GovernanceConfigError(ValueError):
     pass
 
 
-class OwnershipConfig(BaseModel):
+class StrictConfigModel(BaseModel):
+    class Config:
+        extra = "forbid"
+
+
+class OwnershipConfig(StrictConfigModel):
     owner: str
     steward: str
     review_cadence: str
 
 
-class GovernedTableConfig(BaseModel):
+class SourceSystemConfig(StrictConfigModel):
+    id: str
+    name: str
+    system_type: str | None = None
+
+
+class GovernedTableConfig(StrictConfigModel):
     id: str
     schema_name: str = Field(alias="schema")
     table_name: str = Field(alias="table")
     stage: Literal["source", "raw", "staging", "analytics", "output", "consumption"]
-    description: str | None = None
+    purpose: str
 
 
-class KpiConfig(BaseModel):
+class KpiConfig(StrictConfigModel):
     id: str
     name: str
     definition: str
@@ -36,18 +47,44 @@ class KpiConfig(BaseModel):
     consumers: list[str] = Field(default_factory=list)
 
 
-class GovernanceUseCaseConfig(BaseModel):
+class ConsumerConfig(StrictConfigModel):
+    id: str
+    type: Literal["dashboard", "portal", "decision", "export", "api", "report", "other"]
+    name: str
+    link: str | None = None
+
+
+class FreshnessConfig(StrictConfigModel):
+    sla: str
+    critical_tables: list[str]
+
+    @validator("critical_tables")
+    def require_critical_tables(cls, value: list[str]) -> list[str]:
+        if not value:
+            raise ValueError("must contain at least one item")
+        return value
+
+
+class EvidenceConfig(StrictConfigModel):
+    dbt_project: str | None = None
+    expected_dbt_models: list[str] = Field(default_factory=list)
+    expected_outputs: list[str] = Field(default_factory=list)
+
+
+class GovernanceUseCaseConfig(StrictConfigModel):
+    schema_version: str
     slug: str
     name: str
     domain: str
     maturity: str
     ownership: OwnershipConfig
-    source_systems: list[str]
+    source_systems: list[SourceSystemConfig]
     governed_tables: list[GovernedTableConfig]
     kpis: list[KpiConfig]
     policies_in_scope: list[str]
-    consumers: list[str]
-    freshness_sla: str
+    consumers: list[ConsumerConfig]
+    freshness: FreshnessConfig
+    evidence: EvidenceConfig
     checksum: str | None = None
     source_path: str | None = None
 
