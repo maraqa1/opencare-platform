@@ -54,6 +54,25 @@ class GovernanceResolver:
             ),
         )
 
+    def loaded_signal(
+        self,
+        name: Literal["freshness", "quality", "ownership", "coverage"],
+        source_id: str,
+        source_type: str,
+        detail: str,
+        status: SignalStatus,
+    ) -> GovernanceSignal:
+        return GovernanceSignal(
+            name=name,
+            status=status,
+            evidence=EvidenceSource(
+                source_id=source_id,
+                source_type=source_type,
+                state="loaded",
+                detail=detail,
+            ),
+        )
+
     def empty_use_case_record(self, slug: str, name: str) -> UseCaseGovernanceRecord:
         signals = [
             self.unknown_signal("freshness", f"{slug}:freshness"),

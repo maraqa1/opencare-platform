@@ -9,6 +9,7 @@ from app.routes.dictionary import router as dictionary_router
 from app.routes.decisions import router as decisions_router
 from app.routes.facts import router as facts_router
 from app.routes.forecasts import router as forecasts_router
+from app.routes.governance import router as governance_router
 from app.routes.health import router as health_router
 from app.routes.lineage import router as lineage_router
 from app.routes.occupancy import router as occupancy_router
@@ -33,6 +34,7 @@ app.include_router(classification_router)
 app.include_router(decisions_router)
 app.include_router(lineage_router)
 app.include_router(forecasts_router)
+app.include_router(governance_router)
 app.include_router(anomalies_router)
 app.include_router(record_spec_router)
 app.include_router(superset_router)
