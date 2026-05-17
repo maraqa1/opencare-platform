@@ -123,7 +123,7 @@ def get_table(slug: str, table_id: str) -> dict[str, object]:
 @router.get("/attributes/{attribute_id}")
 def get_attribute(attribute_id: str) -> dict[str, object]:
     try:
-        return get_governance_read_service().get_attribute(attribute_id)
+        return get_governance_read_service().get_attribute(attribute_id).dict()
     except GovernanceNotFound as exc:
         raise not_found(exc) from exc
 

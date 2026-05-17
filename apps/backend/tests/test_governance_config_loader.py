@@ -31,6 +31,8 @@ class GovernanceConfigLoaderTests(unittest.TestCase):
         self.assertTrue(config.checksum)
         self.assertEqual(config.governed_tables[0].schema_name, "analytics")
         self.assertEqual(config.governed_tables[0].purpose, "Daily ward occupancy fact used by bed pressure reporting.")
+        self.assertEqual(config.governed_tables[0].attributes[0].name, "patient_id")
+        self.assertEqual(config.governed_tables[0].attributes[0].semantic_terms, ["patient identifier"])
         self.assertEqual(config.consumers[0].type, "portal")
         self.assertEqual(config.freshness.sla, "2 hours")
         self.assertEqual(config.evidence.expected_dbt_models, ["fct_bed_occupancy"])

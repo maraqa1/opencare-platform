@@ -112,13 +112,9 @@ def _classification_register(service: GovernanceReadService) -> dict[str, Any]:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "policies": _jsonable(policies),
         "attributes": [
-            {
-                "table_id": table.id,
-                "state": "no_evidence_loaded",
-                "detail": "dbt catalog artifact is not loaded; no attribute classification rows were exported.",
-            }
+            _jsonable(attribute)
             for table in tables
-            if not table.attributes
+            for attribute in table.attributes
         ],
     }
 

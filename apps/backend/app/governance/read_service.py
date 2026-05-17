@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
-from app.governance.config_loader import GovernanceUseCaseConfig, load_governance_use_cases
+from app.governance.config_loader import AttributeConfig, GovernedTableConfig, GovernanceUseCaseConfig, load_governance_use_cases
 from app.governance.models import (
+    AttributeRecord,
     EvidencePackDescriptor,
     EvidenceSource,
     MetricGovernanceRecord,
@@ -12,7 +14,7 @@ from app.governance.models import (
     TableGovernanceRecord,
     UseCaseGovernanceRecord,
 )
-from app.governance.policy_loader import PolicyConfig, load_policies
+from app.governance.policy_loader import PolicyConfig, PolicyRuleConfig, load_policies, select_policy_rule
 from app.governance.resolver import GovernanceResolver
 from app.governance.taxonomy import SignalStatus, TrustStatus, derive_trust_status
 
@@ -126,7 +128,7 @@ class GovernanceReadService:
                 steward=use_case.ownership.steward,
                 consumers=consumer_ids,
                 trust_status=TrustStatus.UNKNOWN,
-                attributes=[],
+                attributes=self._table_attributes(use_case, table),
                 evidence=[
                     EvidenceSource(
                         source_id=f"{use_case.slug}:table:{table.id}",
@@ -137,7 +139,7 @@ class GovernanceReadService:
                     self.resolver.evidence_or_missing(
                         f"{use_case.slug}:table:{table.id}:catalog",
                         "dbt_catalog",
-                        "dbt catalog artifact is not loaded; attributes are unavailable.",
+                        "dbt catalog artifact is not loaded; YAML-declared attributes are used until observed schema evidence is available.",
                     ),
                     self.resolver.evidence_or_missing(
                         f"{use_case.slug}:table:{table.id}:quality",
@@ -155,8 +157,13 @@ class GovernanceReadService:
                 return table
         raise GovernanceNotFound(f"Governance table not found: {slug}/{table_id}")
 
-    def get_attribute(self, attribute_id: str) -> dict[str, object]:
-        raise GovernanceNotFound(f"Governance attribute evidence is not loaded: {attribute_id}")
+    def get_attribute(self, attribute_id: str) -> AttributeRecord:
+        for use_case in self._use_cases():
+            for table in use_case.governed_tables:
+                for attribute in self._table_attributes(use_case, table):
+                    if attribute.id == attribute_id:
+                        return attribute
+        raise GovernanceNotFound(f"Governance attribute not found: {attribute_id}")
 
     def get_lineage(self, slug: str) -> dict[str, object]:
         use_case = self._get_use_case_config(slug)
@@ -215,6 +222,11 @@ class GovernanceReadService:
         raise GovernanceNotFound(f"Governance issue not found: {issue_id}")
 
     def list_evidence_packs(self) -> list[EvidencePackDescriptor]:
+        has_attribute_classifications = any(
+            table.attributes
+            for use_case in self._use_cases()
+            for table in use_case.governed_tables
+        )
         return [
             EvidencePackDescriptor(
                 id="asset-inventory",
@@ -261,13 +273,14 @@ class GovernanceReadService:
             EvidencePackDescriptor(
                 id="classification-register",
                 name="Classification Register",
-                description="Policy-backed attribute classifications when catalog evidence is loaded.",
-                state="not_instrumented",
+                description="Policy-backed attribute classifications from governed use-case attributes and active policies.",
+                state="loaded" if has_attribute_classifications else "not_instrumented",
                 evidence_sources=[
-                    self.resolver.evidence_or_missing(
-                        "governance:classification-register",
-                        "dbt_catalog",
-                        "Attribute catalog evidence is not loaded; classification register export is not instrumented.",
+                    EvidenceSource(
+                        source_id="governance:classification-register",
+                        source_type="governance_use_case_yaml+governance_policy_yaml",
+                        state="loaded" if has_attribute_classifications else "not_instrumented",
+                        detail="Classification register is built from YAML-declared attributes and active policy YAML; dbt catalog remains an additional missing observed-schema source.",
                     )
                 ],
             ),
@@ -325,6 +338,73 @@ class GovernanceReadService:
                 detail="Policy definition is loaded from governance policy YAML.",
             ),
         )
+
+    def _table_attributes(self, use_case: GovernanceUseCaseConfig, table: GovernedTableConfig) -> list[AttributeRecord]:
+        policies = [
+            policy
+            for policy in self._policies()
+            if policy.status == "active" and policy.policy_id in set(use_case.policies_in_scope)
+        ]
+        return [self._attribute_record(use_case, table, attribute, policies) for attribute in table.attributes]
+
+    def _attribute_record(
+        self,
+        use_case: GovernanceUseCaseConfig,
+        table: GovernedTableConfig,
+        attribute: AttributeConfig,
+        policies: list[PolicyConfig],
+    ) -> AttributeRecord:
+        matches = self._matching_policy_rules(attribute, policies)
+        selected = select_policy_rule([rule for _, rule in matches])
+        selected_policy = next((policy for policy, rule in matches if rule is selected), None)
+        evidence_state = "loaded" if selected and selected_policy else "unknown"
+        evidence_detail = (
+            f"Attribute classification is derived from {selected_policy.policy_id} v{selected_policy.version} rule {selected.rule_id}."
+            if selected and selected_policy
+            else "Attribute is declared in governance use-case YAML, but no active policy rule matched it."
+        )
+        return AttributeRecord(
+            id=f"{table.id}.{attribute.name}",
+            table_id=table.id,
+            name=attribute.name,
+            business_name=attribute.business_name,
+            data_type=attribute.data_type,
+            description=attribute.description,
+            classification=selected.classification if selected and isinstance(selected, PolicyRuleConfig) else "unknown",
+            sensitivity=selected.sensitivity if selected and isinstance(selected, PolicyRuleConfig) else "unknown",
+            policy_id=selected_policy.policy_id if selected_policy else None,
+            policy_version=selected_policy.version if selected_policy else None,
+            matched_rule=selected.rule_id if selected and isinstance(selected, PolicyRuleConfig) else None,
+            review_status=attribute.review_status,
+            evidence=EvidenceSource(
+                source_id=f"{use_case.slug}:table:{table.id}:attribute:{attribute.name}",
+                source_type="governance_use_case_yaml+governance_policy_yaml" if selected_policy else "governance_use_case_yaml",
+                state=evidence_state,
+                detail=evidence_detail,
+            ),
+        )
+
+    def _matching_policy_rules(
+        self,
+        attribute: AttributeConfig,
+        policies: list[PolicyConfig],
+    ) -> list[tuple[PolicyConfig, PolicyRuleConfig]]:
+        attribute_name = attribute.name.lower()
+        semantic_terms = {term.lower() for term in attribute.semantic_terms}
+        matches: list[tuple[PolicyConfig, PolicyRuleConfig]] = []
+        for policy in policies:
+            for rule in policy.rules:
+                column_match = any(self._matches_column_pattern(attribute_name, pattern) for pattern in rule.match.column_name_patterns)
+                semantic_match = bool(semantic_terms.intersection(term.lower() for term in rule.match.semantic_terms))
+                if column_match or semantic_match:
+                    matches.append((policy, rule))
+        return matches
+
+    def _matches_column_pattern(self, attribute_name: str, pattern: str) -> bool:
+        normalized_pattern = pattern.lower()
+        if any(token in normalized_pattern for token in ["*", "?", "["]):
+            return fnmatchcase(attribute_name, normalized_pattern)
+        return attribute_name == normalized_pattern
 
     def _rule_payload(self, rule: Any) -> dict[str, object]:
         return {

@@ -29,12 +29,22 @@ class SourceSystemConfig(StrictConfigModel):
     system_type: str | None = None
 
 
+class AttributeConfig(StrictConfigModel):
+    name: str
+    business_name: str | None = None
+    data_type: str | None = None
+    description: str | None = None
+    semantic_terms: list[str] = Field(default_factory=list)
+    review_status: str = "pending"
+
+
 class GovernedTableConfig(StrictConfigModel):
     id: str
     schema_name: str = Field(alias="schema")
     table_name: str = Field(alias="table")
     stage: Literal["source", "raw", "staging", "analytics", "output", "consumption"]
     purpose: str
+    attributes: list[AttributeConfig] = Field(default_factory=list)
 
 
 class KpiConfig(StrictConfigModel):

@@ -49,6 +49,15 @@ class GovernanceExportTests(unittest.TestCase):
         with self.assertRaises(GovernanceExportError):
             exports.build_export_payload("missing-pack", self.service)
 
+    def test_classification_register_exports_attribute_policy_traceability(self):
+        payload = exports.build_export_payload("classification-register", self.service)
+        patient_id = next(attribute for attribute in payload["attributes"] if attribute["name"] == "patient_id")
+
+        self.assertEqual(patient_id["classification"], "restricted")
+        self.assertEqual(patient_id["policy_id"], "healthcare-default")
+        self.assertEqual(patient_id["policy_version"], "1.0.0")
+        self.assertEqual(patient_id["matched_rule"], "patient-identifiers")
+
     def test_request_export_records_status_and_audit_events(self):
         class Conn:
             def __init__(self):

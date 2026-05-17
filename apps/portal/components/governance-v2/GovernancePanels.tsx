@@ -146,7 +146,17 @@ export function TableList({ tables, slug }: { tables: TableGovernanceRecord[]; s
   );
 }
 
-export function AttributeTable({ attributes }: { attributes: AttributeRecord[] }) {
+export function AttributeTable({
+  attributes,
+  slug,
+  tableId,
+  selectedAttributeId,
+}: {
+  attributes: AttributeRecord[];
+  slug: string;
+  tableId: string;
+  selectedAttributeId?: string;
+}) {
   if (attributes.length === 0) {
     return (
       <EmptyState
@@ -173,8 +183,16 @@ export function AttributeTable({ attributes }: { attributes: AttributeRecord[] }
         </thead>
         <tbody>
           {attributes.map((attribute) => (
-            <tr tabIndex={0} key={attribute.id}>
-              <td>{attribute.name}</td>
+            <tr className={attribute.id === selectedAttributeId ? "gv2-selected-row" : undefined} tabIndex={0} key={attribute.id}>
+              <td>
+                <Link
+                  className="gv2-cell-link"
+                  href={`/governance/use-cases/${slug}/tables/${tableId}?attribute=${encodeURIComponent(attribute.id)}`}
+                  aria-current={attribute.id === selectedAttributeId ? "true" : undefined}
+                >
+                  {attribute.name}
+                </Link>
+              </td>
               <td>{displayValue(attribute.business_name)}</td>
               <td>{displayValue(attribute.data_type)}</td>
               <td>{displayValue(attribute.classification)}</td>
@@ -188,6 +206,89 @@ export function AttributeTable({ attributes }: { attributes: AttributeRecord[] }
         </tbody>
       </table>
     </div>
+  );
+}
+
+export function AttributeDetailPanel({
+  attribute,
+  tableName,
+}: {
+  attribute: AttributeRecord | null;
+  tableName: string;
+}) {
+  if (!attribute) {
+    return (
+      <EmptyState
+        title="No attribute selected"
+        detail="No governed attributes were returned for this table, so classification detail remains unavailable."
+      />
+    );
+  }
+
+  return (
+    <aside className="gv2-panel gv2-attribute-detail" aria-label={`Attribute detail for ${attribute.name}`}>
+      <div className="gv2-panel-head">
+        <div>
+          <span className="gv2-muted">{tableName}</span>
+          <h3>{attribute.business_name ?? attribute.name}</h3>
+        </div>
+        <StatusPill label="Classification" value={attribute.classification} />
+      </div>
+      <dl className="gv2-definition-grid">
+        <div>
+          <dt>Attribute</dt>
+          <dd>{attribute.name}</dd>
+        </div>
+        <div>
+          <dt>Technical data type</dt>
+          <dd>{displayValue(attribute.data_type)}</dd>
+        </div>
+        <div>
+          <dt>Source table</dt>
+          <dd>{displayValue(attribute.table_id)}</dd>
+        </div>
+        <div>
+          <dt>Sensitivity</dt>
+          <dd>{displayValue(attribute.sensitivity)}</dd>
+        </div>
+        <div>
+          <dt>Policy ID</dt>
+          <dd>{displayValue(attribute.policy_id)}</dd>
+        </div>
+        <div>
+          <dt>Policy version</dt>
+          <dd>{displayValue(attribute.policy_version)}</dd>
+        </div>
+        <div>
+          <dt>Matched rule</dt>
+          <dd>{displayValue(attribute.matched_rule)}</dd>
+        </div>
+        <div>
+          <dt>Review state</dt>
+          <dd>{displayValue(attribute.review_status)}</dd>
+        </div>
+        <div>
+          <dt>Last reviewed</dt>
+          <dd>{displayValue(attribute.last_reviewed)}</dd>
+        </div>
+        <div>
+          <dt>Active exception</dt>
+          <dd>Unknown</dd>
+        </div>
+      </dl>
+      <div className="gv2-detail-block">
+        <h4>Business description</h4>
+        <p>{displayValue(attribute.description)}</p>
+      </div>
+      <div className="gv2-detail-block">
+        <h4>Evidence</h4>
+        <EvidenceList evidence={[attribute.evidence]} />
+      </div>
+      <div className="gv2-detail-block">
+        <h4>Usage and history</h4>
+        <p>Usage, consumers, reviewer, and change history are Unknown until supporting evidence is loaded through the resolver.</p>
+      </div>
+    </aside>
   );
 }
 

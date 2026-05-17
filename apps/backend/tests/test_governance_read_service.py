@@ -10,7 +10,7 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.governance.read_service import GovernanceNotFound, GovernanceReadService  # noqa: E402
-from app.governance.taxonomy import SignalStatus, TrustStatus  # noqa: E402
+from app.governance.taxonomy import Classification, Sensitivity, SignalStatus, TrustStatus  # noqa: E402
 
 
 class GovernanceReadServiceTests(unittest.TestCase):
@@ -37,13 +37,32 @@ class GovernanceReadServiceTests(unittest.TestCase):
         self.assertEqual(metric.evidence[0].state, "loaded")
         self.assertEqual(metric.evidence[1].state, "no_evidence_loaded")
 
-    def test_table_response_does_not_fake_attributes_or_quality(self):
+    def test_table_response_returns_policy_backed_declared_attributes_without_fake_quality(self):
         table = self.service.get_table("bed-pressure", "analytics.fct_bed_occupancy")
+        patient_id = next(attribute for attribute in table.attributes if attribute.name == "patient_id")
+        ward_code = next(attribute for attribute in table.attributes if attribute.name == "ward_code")
+        occupied_beds = next(attribute for attribute in table.attributes if attribute.name == "occupied_beds")
 
         self.assertEqual(table.name, "analytics.fct_bed_occupancy")
-        self.assertEqual(table.attributes, [])
+        self.assertEqual(patient_id.classification, Classification.RESTRICTED)
+        self.assertEqual(patient_id.sensitivity, Sensitivity.HIGH)
+        self.assertEqual(patient_id.policy_id, "healthcare-default")
+        self.assertEqual(patient_id.policy_version, "1.0.0")
+        self.assertEqual(patient_id.matched_rule, "patient-identifiers")
+        self.assertEqual(ward_code.classification, Classification.INTERNAL)
+        self.assertEqual(ward_code.matched_rule, "operational-codes")
+        self.assertEqual(occupied_beds.classification, "unknown")
+        self.assertIsNone(occupied_beds.policy_id)
         self.assertEqual(table.trust_status, TrustStatus.UNKNOWN)
         self.assertTrue(any(source.source_type == "dbt_catalog" for source in table.evidence))
+
+    def test_attribute_detail_is_resolved_by_id(self):
+        attribute = self.service.get_attribute("analytics.fct_bed_occupancy.patient_id")
+
+        self.assertEqual(attribute.name, "patient_id")
+        self.assertEqual(attribute.table_id, "analytics.fct_bed_occupancy")
+        self.assertEqual(attribute.evidence.state, "loaded")
+        self.assertIn("patient-identifiers", attribute.evidence.detail)
 
     def test_lineage_response_marks_dbt_edges_as_missing(self):
         lineage = self.service.get_lineage("bed-pressure")

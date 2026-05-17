@@ -6968,6 +6968,46 @@ code {
   text-transform: uppercase;
 }
 
+.gv2-attribute-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.gv2-selected-row td {
+  background: #f8fafc;
+}
+
+.gv2-cell-link {
+  color: var(--oc-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.gv2-cell-link:hover,
+.gv2-cell-link:focus-visible {
+  text-decoration: underline;
+}
+
+.gv2-attribute-detail {
+  position: sticky;
+  top: 18px;
+}
+
+.gv2-detail-block {
+  display: grid;
+  gap: 8px;
+}
+
+.gv2-detail-block h4 {
+  margin: 0;
+  color: var(--oc-navy);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
 .gv2-lineage {
   display: grid;
   gap: 16px;
@@ -7030,6 +7070,14 @@ code {
 
   .gv2-lineage-nodes {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gv2-attribute-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .gv2-attribute-detail {
+    position: static;
   }
 }
 

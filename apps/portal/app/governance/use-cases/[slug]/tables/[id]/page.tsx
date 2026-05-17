@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ApiState, AttributeTable, displayValue, EvidenceList, StatusPill } from "@/components/governance-v2/GovernancePanels";
+import {
+  ApiState,
+  AttributeDetailPanel,
+  AttributeTable,
+  displayValue,
+  EvidenceList,
+  StatusPill,
+} from "@/components/governance-v2/GovernancePanels";
 import { PageFrame } from "@/components/page-frame";
 import { getGovernanceTable } from "@/lib/governance/api";
 
@@ -12,15 +19,19 @@ export const metadata: Metadata = {
 
 type PageProps = {
   params: Promise<{ slug: string; id: string }>;
+  searchParams: Promise<{ attribute?: string }>;
 };
 
-export default async function TableGovernancePage({ params }: PageProps) {
+export default async function TableGovernancePage({ params, searchParams }: PageProps) {
   const { slug, id } = await params;
+  const { attribute: selectedAttributeId } = await searchParams;
   const result = await getGovernanceTable(slug, id);
   const table = result.data;
   if (!table) {
     notFound();
   }
+  const selectedAttribute =
+    table.attributes.find((item) => item.id === selectedAttributeId) ?? table.attributes[0] ?? null;
 
   return (
     <PageFrame
@@ -73,7 +84,10 @@ export default async function TableGovernancePage({ params }: PageProps) {
       </section>
       <section className="gv2-section">
         <h2>Attributes</h2>
-        <AttributeTable attributes={table.attributes} />
+        <div className="gv2-attribute-workspace">
+          <AttributeTable attributes={table.attributes} slug={slug} tableId={id} selectedAttributeId={selectedAttribute?.id} />
+          <AttributeDetailPanel attribute={selectedAttribute} tableName={table.name} />
+        </div>
       </section>
       <section className="gv2-section">
         <h2>Evidence</h2>
