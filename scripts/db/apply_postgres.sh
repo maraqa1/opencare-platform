@@ -6,6 +6,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
 
+GOVERNANCE_SCHEMA="${GOVERNANCE_SCHEMA:-governance}"
+
 apply_file "$ROOT_DIR/manifests/postgres/statefulset.yaml"
 wait_for_statefulset postgres
 
@@ -18,6 +20,7 @@ create schema if not exists ${ANALYTICS_SCHEMA};
 create schema if not exists ${DICTIONARY_SCHEMA};
 create schema if not exists ${OUTPUT_SCHEMA};
 create schema if not exists decision;
+create schema if not exists ${GOVERNANCE_SCHEMA};
 create extension if not exists pgcrypto;
 
 grant usage on schema ${RAW_SCHEMA} to ${POSTGRES_USER};
@@ -26,8 +29,139 @@ grant usage on schema ${ANALYTICS_SCHEMA} to ${POSTGRES_USER};
 grant usage on schema ${DICTIONARY_SCHEMA} to ${POSTGRES_USER};
 grant usage on schema ${OUTPUT_SCHEMA} to ${POSTGRES_USER};
 grant usage, create on schema decision to ${POSTGRES_USER};
+grant usage, create on schema ${GOVERNANCE_SCHEMA} to ${POSTGRES_USER};
 grant usage on schema public to ${POSTGRES_USER};
 grant create on schema public to ${POSTGRES_USER};
+
+create table if not exists ${GOVERNANCE_SCHEMA}.use_cases (
+  slug varchar(120) primary key,
+  name text not null,
+  domain text,
+  maturity text,
+  owner text,
+  steward text,
+  review_cadence text,
+  config_checksum text,
+  config_source text,
+  created_at timestamp not null default now(),
+  updated_at timestamp not null default now()
+);
+
+create table if not exists ${GOVERNANCE_SCHEMA}.governed_assets (
+  asset_id varchar(240) primary key,
+  use_case_slug varchar(120) references ${GOVERNANCE_SCHEMA}.use_cases(slug),
+  asset_type varchar(50) not null,
+  schema_name text,
+  table_name text,
+  display_name text,
+  owner text,
+  steward text,
+  evidence_source text not null,
+  created_at timestamp not null default now(),
+  updated_at timestamp not null default now()
+);
+
+create table if not exists ${GOVERNANCE_SCHEMA}.policies (
+  policy_id varchar(160) not null,
+  version varchar(80) not null,
+  name text not null,
+  status varchar(30) not null,
+  owner text,
+  standard_or_framework text,
+  raw_definition jsonb not null default '{}',
+  created_at timestamp not null default now(),
+  updated_at timestamp not null default now(),
+  primary key (policy_id, version)
+);
+
+create table if not exists ${GOVERNANCE_SCHEMA}.policy_rules (
+  policy_id varchar(160) not null,
+  policy_version varchar(80) not null,
+  rule_id varchar(160) not null,
+  description text,
+  classification varchar(30) not null,
+  sensitivity varchar(20) not null,
+  match_definition jsonb not null default '{}',
+  actions jsonb not null default '[]',
+  requires_review boolean not null default false,
+  created_at timestamp not null default now(),
+  primary key (policy_id, policy_version, rule_id),
+  foreign key (policy_id, policy_version) references ${GOVERNANCE_SCHEMA}.policies(policy_id, version)
+);
+
+create table if not exists ${GOVERNANCE_SCHEMA}.issues (
+  issue_id varchar(160) primary key,
+  issue_type varchar(60) not null,
+  status varchar(30) not null,
+  severity varchar(20) not null,
+  use_case_slug varchar(120) references ${GOVERNANCE_SCHEMA}.use_cases(slug),
+  impacted_asset_id varchar(240),
+  title text not null,
+  description text,
+  assigned_owner text,
+  created_at timestamp not null default now(),
+  updated_at timestamp not null default now()
+);
+
+create table if not exists ${GOVERNANCE_SCHEMA}.audit_log (
+  audit_id uuid primary key default gen_random_uuid(),
+  actor text not null,
+  role text not null,
+  event_type text not null,
+  target_type text not null,
+  target_id text not null,
+  use_case_slug varchar(120),
+  before_state jsonb,
+  after_state jsonb,
+  reason text,
+  request_id text,
+  approval_chain jsonb not null default '[]',
+  created_at timestamp not null default now()
+);
+
+create or replace function ${GOVERNANCE_SCHEMA}.prevent_audit_log_mutation()
+returns trigger
+language plpgsql
+as \$\$
+begin
+  raise exception 'governance audit_log is append-only';
+end;
+\$\$;
+
+drop trigger if exists trg_prevent_audit_log_update on ${GOVERNANCE_SCHEMA}.audit_log;
+create trigger trg_prevent_audit_log_update
+before update on ${GOVERNANCE_SCHEMA}.audit_log
+for each row execute function ${GOVERNANCE_SCHEMA}.prevent_audit_log_mutation();
+
+drop trigger if exists trg_prevent_audit_log_delete on ${GOVERNANCE_SCHEMA}.audit_log;
+create trigger trg_prevent_audit_log_delete
+before delete on ${GOVERNANCE_SCHEMA}.audit_log
+for each row execute function ${GOVERNANCE_SCHEMA}.prevent_audit_log_mutation();
+
+create table if not exists ${GOVERNANCE_SCHEMA}.exceptions (
+  exception_id varchar(160) primary key,
+  target_type text not null,
+  target_id text not null,
+  owner text not null,
+  reason text not null,
+  expiry_date timestamp not null,
+  status varchar(30) not null,
+  created_at timestamp not null default now(),
+  updated_at timestamp not null default now()
+);
+
+create table if not exists ${GOVERNANCE_SCHEMA}.evidence_exports (
+  export_id varchar(160) primary key,
+  pack_id varchar(160) not null,
+  status varchar(30) not null,
+  requested_by text,
+  requested_at timestamp not null default now(),
+  completed_at timestamp,
+  error_message text,
+  storage_uri text
+);
+
+revoke update, delete on ${GOVERNANCE_SCHEMA}.audit_log from ${POSTGRES_USER};
 
 create table if not exists decision.decision_queue (
   id serial primary key,

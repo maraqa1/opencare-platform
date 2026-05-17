@@ -19,6 +19,8 @@ data:
   POSTGRES_PORT: "5432"
   POSTGRES_DB: opencare
   POSTGRES_USER: opencare
+  GOVERNANCE_SCHEMA: governance
+  GOVERNANCE_V2_ENABLED: "false"
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   MINIO_ENDPOINT: minio.opencare.svc.cluster.local:9000

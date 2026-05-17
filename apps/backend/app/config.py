@@ -54,6 +54,8 @@ class Settings:
     reports_prefix: str = os.getenv("REPORTS_PREFIX", "reports")
     dictionary_version: str = os.getenv("DICTIONARY_VERSION", "2026.04")
     runtime_writes_enabled: bool = _get_bool("RUNTIME_WRITES_ENABLED", True)
+    governance_v2_enabled: bool = _get_bool("GOVERNANCE_V2_ENABLED", False)
+    governance_schema: str = os.getenv("GOVERNANCE_SCHEMA", "governance")
     use_cases_config_path: str = os.getenv("USE_CASES_CONFIG_PATH", "")
     dbt_project_dir: str = os.getenv("DBT_PROJECT_DIR", "/app/dbt")
     dbt_manifest_path: str = os.getenv("DBT_MANIFEST_PATH", "/app/dbt/target/manifest.json")
