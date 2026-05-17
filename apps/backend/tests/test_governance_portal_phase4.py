@@ -47,12 +47,19 @@ class GovernancePortalPhase4Tests(unittest.TestCase):
             "Change Classification",
             "Add Exception",
             "/api/v1/governance/admin",
-            "/api/v1/governance/evidence/exports",
             "Trust Center",
         ]
         for text in forbidden:
             with self.subTest(text=text):
                 self.assertNotIn(text, combined)
+
+    def test_evidence_export_button_posts_through_json_bridge(self):
+        panels = (PORTAL_ROOT / "components/governance-v2/GovernancePanels.tsx").read_text(encoding="utf-8")
+        bridge = (PORTAL_ROOT / "app/api/portal/governance/evidence/exports/route.ts").read_text(encoding="utf-8")
+
+        self.assertIn('action="/api/portal/governance/evidence/exports"', panels)
+        self.assertIn("/api/v1/governance/evidence/exports", bridge)
+        self.assertIn('"content-type": "application/json"', bridge)
 
 
 if __name__ == "__main__":

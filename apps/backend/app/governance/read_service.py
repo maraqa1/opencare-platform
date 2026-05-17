@@ -231,6 +231,34 @@ class GovernanceReadService:
                 ],
             ),
             EvidencePackDescriptor(
+                id="metric-definitions",
+                name="Metric Definitions",
+                description="KPI definitions, formulas, source tables, owners, consumers, and evidence state.",
+                state="loaded" if self._use_cases() else "no_evidence_loaded",
+                evidence_sources=[
+                    EvidenceSource(
+                        source_id="governance:metrics",
+                        source_type="governance_use_case_yaml",
+                        state="loaded" if self._use_cases() else "no_evidence_loaded",
+                        detail="Metric definitions are loaded from governed use-case YAML files.",
+                    )
+                ],
+            ),
+            EvidencePackDescriptor(
+                id="ownership-register",
+                name="Ownership Register",
+                description="Use-case and table ownership declarations with evidence state.",
+                state="loaded" if self._use_cases() else "no_evidence_loaded",
+                evidence_sources=[
+                    EvidenceSource(
+                        source_id="governance:ownership",
+                        source_type="governance_use_case_yaml",
+                        state="loaded" if self._use_cases() else "no_evidence_loaded",
+                        detail="Ownership evidence is loaded from governed use-case YAML files.",
+                    )
+                ],
+            ),
+            EvidencePackDescriptor(
                 id="classification-register",
                 name="Classification Register",
                 description="Policy-backed attribute classifications when catalog evidence is loaded.",
@@ -240,6 +268,32 @@ class GovernanceReadService:
                         "governance:classification-register",
                         "dbt_catalog",
                         "Attribute catalog evidence is not loaded; classification register export is not instrumented.",
+                    )
+                ],
+            ),
+            EvidencePackDescriptor(
+                id="freshness-summary",
+                name="Freshness Summary",
+                description="Freshness signal evidence for governed use cases.",
+                state="no_evidence_loaded",
+                evidence_sources=[
+                    self.resolver.evidence_or_missing(
+                        "governance:freshness-summary",
+                        "dbt_source_freshness",
+                        "dbt source freshness artifact is not loaded; freshness export values are Unknown.",
+                    )
+                ],
+            ),
+            EvidencePackDescriptor(
+                id="issues-register",
+                name="Issues Register",
+                description="Governance issue records and lifecycle state.",
+                state="no_evidence_loaded",
+                evidence_sources=[
+                    self.resolver.evidence_or_missing(
+                        "governance:issues-register",
+                        "governance_issue_store",
+                        "Governance issue store returned no loaded issue evidence.",
                     )
                 ],
             ),

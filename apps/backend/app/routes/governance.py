@@ -4,11 +4,14 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.config import settings
 from app.governance import actions
 from app.governance.actions import GovernanceActionError
+from app.governance import exports
+from app.governance.exports import GovernanceExportError
 from app.governance.read_service import GovernanceNotFound, GovernanceReadService
 
 router = APIRouter(prefix="/api/v1/governance", tags=["governance"])
@@ -57,6 +60,19 @@ def action_not_found(item: str) -> HTTPException:
 
 def action_payload(payload: GovernanceActionPayload) -> dict[str, Any]:
     return payload.clean()
+
+
+class GovernanceExportPayload(BaseModel):
+    pack_id: str
+    actor: str | None = None
+    role: str | None = None
+    request_id: str | None = None
+    export_id: str | None = None
+
+    def clean(self) -> dict[str, Any]:
+        if hasattr(self, "model_dump"):
+            return self.model_dump(exclude_none=True)
+        return self.dict(exclude_none=True)
 
 
 @router.get("/use-cases")
@@ -136,6 +152,46 @@ def get_issue(issue_id: str) -> dict[str, object]:
 @router.get("/evidence/packs")
 def list_evidence_packs() -> list[dict[str, object]]:
     return [record.dict() for record in get_governance_read_service().list_evidence_packs()]
+
+
+@router.post("/evidence/exports")
+def request_evidence_export(payload: GovernanceExportPayload) -> dict[str, object]:
+    try:
+        return {
+            "item": exports.request_export(
+                payload.pack_id,
+                payload.clean(),
+                service=get_governance_read_service(),
+            )
+        }
+    except GovernanceExportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/evidence/exports")
+def list_evidence_exports() -> dict[str, object]:
+    return {"items": exports.list_exports()}
+
+
+@router.get("/evidence/exports/{export_id}")
+def get_evidence_export(export_id: str) -> dict[str, object]:
+    row = exports.get_export(export_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Evidence export not found")
+    return {"item": row}
+
+
+@router.get("/evidence/exports/{export_id}/download")
+def download_evidence_export(export_id: str) -> Response:
+    try:
+        filename, content = exports.download_export(export_id, service=get_governance_read_service())
+    except GovernanceExportError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return Response(
+        content,
+        media_type="application/json",
+        headers={"content-disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/policies")

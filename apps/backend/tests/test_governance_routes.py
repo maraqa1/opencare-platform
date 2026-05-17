@@ -52,7 +52,10 @@ class GovernanceRouteRegistrationTests(unittest.TestCase):
         self.assertIn(("POST", "/api/v1/governance/admin/attributes/{attribute_id}/exception"), routes)
         self.assertIn(("POST", "/api/v1/governance/admin/policies/{policy_id}/publish"), routes)
         self.assertIn(("POST", "/api/v1/governance/admin/policies/{policy_id}/retire"), routes)
-        self.assertNotIn(("POST", "/api/v1/governance/evidence/exports"), routes)
+        self.assertIn(("GET", "/api/v1/governance/evidence/exports"), routes)
+        self.assertIn(("POST", "/api/v1/governance/evidence/exports"), routes)
+        self.assertIn(("GET", "/api/v1/governance/evidence/exports/{export_id}"), routes)
+        self.assertIn(("GET", "/api/v1/governance/evidence/exports/{export_id}/download"), routes)
 
     def test_operator_dependency_rejects_viewer_role(self):
         with self.assertRaises(HTTPException) as context:

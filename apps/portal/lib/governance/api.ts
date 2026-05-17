@@ -25,6 +25,21 @@ export type GovernanceLineage = {
   evidence: EvidenceSource[];
 };
 
+export type GovernanceEvidenceExport = {
+  export_id: string;
+  pack_id: string;
+  status: string;
+  requested_by?: string | null;
+  requested_at?: string | null;
+  completed_at?: string | null;
+  error_message?: string | null;
+  storage_uri?: string | null;
+};
+
+export type GovernanceEvidenceExportsResponse = {
+  items: GovernanceEvidenceExport[];
+};
+
 export type GovernanceApiResult<TData> = {
   data: TData;
   error?: string;
@@ -88,6 +103,10 @@ export function listGovernanceIssues() {
 
 export function listGovernanceEvidencePacks() {
   return governanceGet<EvidencePackDescriptor[]>("/api/v1/governance/evidence/packs", []);
+}
+
+export function listGovernanceEvidenceExports() {
+  return governanceGet<GovernanceEvidenceExportsResponse>("/api/v1/governance/evidence/exports", { items: [] });
 }
 
 export function listGovernancePolicies() {

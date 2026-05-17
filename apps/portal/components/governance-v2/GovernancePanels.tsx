@@ -11,7 +11,7 @@ import type {
   TableGovernanceRecord,
   UseCaseGovernanceRecord,
 } from "@/lib/governance/types";
-import type { GovernanceLineage } from "@/lib/governance/api";
+import type { GovernanceEvidenceExport, GovernanceLineage } from "@/lib/governance/api";
 
 export function displayValue(value?: string | number | null) {
   if (value === undefined || value === null || value === "") {
@@ -225,6 +225,49 @@ export function EvidencePackList({ packs }: { packs: EvidencePackDescriptor[] })
           </div>
           <p>{pack.description}</p>
           <EvidenceList evidence={pack.evidence_sources} />
+          <form action="/api/portal/governance/evidence/exports" method="post">
+            <input type="hidden" name="pack_id" value={pack.id} />
+            <button className="button secondary" type="submit">
+              Request export
+            </button>
+          </form>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export function EvidenceExportList({ exports }: { exports: GovernanceEvidenceExport[] }) {
+  if (exports.length === 0) {
+    return <EmptyState title="No recent exports" detail="No evidence export records were returned by the backend." />;
+  }
+  return (
+    <div className="gv2-list">
+      {exports.map((item) => (
+        <article className="gv2-panel" key={item.export_id}>
+          <div className="gv2-panel-head">
+            <div>
+              <span className="gv2-muted">{item.export_id}</span>
+              <h3>{displayValue(item.pack_id)}</h3>
+            </div>
+            <StatusPill label="Status" value={item.status} />
+          </div>
+          <dl className="gv2-definition-grid">
+            <div>
+              <dt>Requested by</dt>
+              <dd>{displayValue(item.requested_by)}</dd>
+            </div>
+            <div>
+              <dt>Completed</dt>
+              <dd>{displayValue(item.completed_at)}</dd>
+            </div>
+          </dl>
+          {item.status === "completed" ? (
+            <a className="secondary-link" href={`/api/portal/api/v1/governance/evidence/exports/${item.export_id}/download`}>
+              Download JSON
+            </a>
+          ) : null}
+          {item.error_message ? <p>{item.error_message}</p> : null}
         </article>
       ))}
     </div>
