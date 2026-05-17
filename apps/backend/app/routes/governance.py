@@ -1,13 +1,38 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel
 
 from app.config import settings
+from app.governance import actions
+from app.governance.actions import GovernanceActionError
 from app.governance.read_service import GovernanceNotFound, GovernanceReadService
 
 router = APIRouter(prefix="/api/v1/governance", tags=["governance"])
+
+
+class GovernanceActionPayload(BaseModel):
+    actor: str | None = None
+    role: str | None = None
+    reason: str | None = None
+    request_id: str | None = None
+    assigned_owner: str | None = None
+    use_case_slug: str | None = None
+    classification: str | None = None
+    sensitivity: str | None = None
+    owner: str | None = None
+    expiry_date: str | None = None
+    exception_id: str | None = None
+    version: str | None = None
+    approval_chain: list[dict[str, Any]] | None = None
+
+    def clean(self) -> dict[str, Any]:
+        if hasattr(self, "model_dump"):
+            return self.model_dump(exclude_none=True)
+        return self.dict(exclude_none=True)
 
 
 def get_governance_read_service() -> GovernanceReadService:
@@ -19,6 +44,19 @@ def get_governance_read_service() -> GovernanceReadService:
 
 def not_found(exc: GovernanceNotFound) -> HTTPException:
     return HTTPException(status_code=404, detail=str(exc))
+
+
+def require_operator(x_opencare_role: str | None = Header(default=None)) -> None:
+    if x_opencare_role not in {"operator", "admin"}:
+        raise HTTPException(status_code=403, detail="Operator role is required")
+
+
+def action_not_found(item: str) -> HTTPException:
+    return HTTPException(status_code=404, detail=f"{item} not found")
+
+
+def action_payload(payload: GovernanceActionPayload) -> dict[str, Any]:
+    return payload.clean()
 
 
 @router.get("/use-cases")
@@ -116,3 +154,70 @@ def get_policy(policy_id: str) -> dict[str, object]:
 @router.get("/audit/events")
 def list_audit_events() -> list[dict[str, object]]:
     return get_governance_read_service().list_audit_events()
+
+
+@router.post("/admin/issues/{issue_id}/assign")
+def assign_issue(issue_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    try:
+        row = actions.assign_issue(issue_id, action_payload(payload))
+    except GovernanceActionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if row is None:
+        raise action_not_found("Issue")
+    return {"item": row}
+
+
+@router.post("/admin/issues/{issue_id}/resolve")
+def resolve_issue(issue_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    row = actions.resolve_issue(issue_id, action_payload(payload))
+    if row is None:
+        raise action_not_found("Issue")
+    return {"item": row}
+
+
+@router.post("/admin/issues/{issue_id}/ignore")
+def ignore_issue(issue_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    try:
+        row = actions.ignore_issue(issue_id, action_payload(payload))
+    except GovernanceActionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if row is None:
+        raise action_not_found("Issue")
+    return {"item": row}
+
+
+@router.post("/admin/attributes/{attribute_id}/classify")
+def classify_attribute(attribute_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    return {"item": actions.request_classification_change(attribute_id, action_payload(payload))}
+
+
+@router.post("/admin/attributes/{attribute_id}/approve")
+def approve_attribute(attribute_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    return {"item": actions.approve_classification_change(attribute_id, action_payload(payload))}
+
+
+@router.post("/admin/attributes/{attribute_id}/exception")
+def add_attribute_exception(attribute_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    try:
+        return {"item": actions.add_exception(attribute_id, action_payload(payload))}
+    except GovernanceActionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/admin/policies/{policy_id}/publish")
+def publish_policy(policy_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    row = actions.publish_policy(policy_id, action_payload(payload))
+    if row is None:
+        raise action_not_found("Policy")
+    return {"item": row}
+
+
+@router.post("/admin/policies/{policy_id}/retire")
+def retire_policy(policy_id: str, payload: GovernanceActionPayload, _: None = Depends(require_operator)) -> dict[str, object]:
+    try:
+        row = actions.retire_policy(policy_id, action_payload(payload))
+    except GovernanceActionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if row is None:
+        raise action_not_found("Policy")
+    return {"item": row}
