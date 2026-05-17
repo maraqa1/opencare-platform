@@ -14,11 +14,51 @@ type Props = {
 function getTopbarContext(pathname: string) {
   if (pathname === "/governance") {
     return {
-      label: "Governance",
-      title: "Governance overview",
-      badge: "Trust mode",
-      actionHref: "/governance/health",
-      actionLabel: "Health",
+      label: "Data Governance",
+      title: "Data Governance",
+      badge: "Evidence workspace",
+      actionHref: "/governance/evidence",
+      actionLabel: "Evidence",
+    };
+  }
+
+  if (pathname.startsWith("/governance/use-cases/")) {
+    return {
+      label: "Data Governance",
+      title: "Use Case Governance",
+      badge: "Read-only",
+      actionHref: "/governance",
+      actionLabel: "Overview",
+    };
+  }
+
+  if (pathname.startsWith("/governance/issues")) {
+    return {
+      label: "Data Governance",
+      title: "Governance Issues",
+      badge: "Worklist",
+      actionHref: "/governance",
+      actionLabel: "Overview",
+    };
+  }
+
+  if (pathname.startsWith("/governance/evidence")) {
+    return {
+      label: "Data Governance",
+      title: "Governance Evidence",
+      badge: "Evidence packs",
+      actionHref: "/governance",
+      actionLabel: "Overview",
+    };
+  }
+
+  if (pathname.startsWith("/governance/policies")) {
+    return {
+      label: "Data Governance",
+      title: "Classification Policies",
+      badge: "Policy registry",
+      actionHref: "/governance",
+      actionLabel: "Overview",
     };
   }
 
