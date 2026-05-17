@@ -6793,7 +6793,8 @@ code {
   gap: 10px;
 }
 
-.gv2-row-link {
+.gv2-row-link,
+.gv2-row-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6804,7 +6805,13 @@ code {
   padding: 12px;
 }
 
-.gv2-row-link span:first-child {
+.gv2-row-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.gv2-row-link span:first-child,
+.gv2-row-card span:first-child {
   display: grid;
   gap: 4px;
 }
@@ -6813,6 +6820,13 @@ code {
 .gv2-muted {
   color: var(--oc-gray-600);
   font-size: 12px;
+}
+
+.gv2-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  grid-column: 1 / -1;
 }
 
 .gv2-stat {
@@ -7095,5 +7109,9 @@ code {
   .gv2-row-link {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .gv2-row-card {
+    grid-template-columns: 1fr;
   }
 }

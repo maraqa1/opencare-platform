@@ -64,13 +64,17 @@ class GovernancePortalPhase4Tests(unittest.TestCase):
     def test_table_detail_has_clickable_attribute_classification_panel(self):
         panels = (PORTAL_ROOT / "components/governance-v2/GovernancePanels.tsx").read_text(encoding="utf-8")
         table_page = (PORTAL_ROOT / "app/governance/use-cases/[slug]/tables/[id]/page.tsx").read_text(encoding="utf-8")
+        metric_page = (PORTAL_ROOT / "app/governance/use-cases/[slug]/metrics/[id]/page.tsx").read_text(encoding="utf-8")
 
         self.assertIn("AttributeDetailPanel", panels)
         self.assertIn("encodeURIComponent(attribute.id)", panels)
+        self.assertIn("encodeURIComponent(table.id)", panels)
+        self.assertIn("Review attributes", panels)
         self.assertIn("Policy version", panels)
         self.assertIn("Matched rule", panels)
         self.assertIn("AttributeDetailPanel", table_page)
         self.assertIn("selectedAttributeId", table_page)
+        self.assertIn("encodeURIComponent(metric.source_table_id)", metric_page)
 
 
 if __name__ == "__main__":

@@ -133,15 +133,29 @@ export function TableList({ tables, slug }: { tables: TableGovernanceRecord[]; s
   }
   return (
     <div className="gv2-list">
-      {tables.map((table) => (
-        <Link className="gv2-row-link" href={`/governance/use-cases/${slug}/tables/${table.id}`} key={table.id}>
-          <span>
-            <strong>{table.name}</strong>
-            <small>{displayValue(table.schema_name)} / {displayValue(table.table_name)}</small>
-          </span>
-          <StatusPill label="Trust Status" value={table.trust_status} />
-        </Link>
-      ))}
+      {tables.map((table) => {
+        const tableHref = `/governance/use-cases/${slug}/tables/${encodeURIComponent(table.id)}`;
+        const firstAttribute = table.attributes[0];
+        return (
+          <article className="gv2-row-card" key={table.id}>
+            <span>
+              <strong>{table.name}</strong>
+              <small>{displayValue(table.schema_name)} / {displayValue(table.table_name)}</small>
+            </span>
+            <StatusPill label="Trust Status" value={table.trust_status} />
+            <div className="gv2-row-actions">
+              <Link className="secondary-link" href={tableHref}>
+                Open table
+              </Link>
+              {firstAttribute ? (
+                <Link className="secondary-link" href={`${tableHref}?attribute=${encodeURIComponent(firstAttribute.id)}`}>
+                  Review attributes
+                </Link>
+              ) : null}
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

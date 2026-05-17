@@ -30,7 +30,7 @@ export default async function MetricGovernancePage({ params }: PageProps) {
       chips={[{ label: `Trust Status: ${metric.trust_status}`, tone: "primary" }]}
       actions={[
         metric.source_table_id ? (
-          <Link key="table" className="button secondary" href={`/governance/use-cases/${slug}/tables/${metric.source_table_id}`}>
+          <Link key="table" className="button secondary" href={`/governance/use-cases/${slug}/tables/${encodeURIComponent(metric.source_table_id)}`}>
             Source table
           </Link>
         ) : null,
