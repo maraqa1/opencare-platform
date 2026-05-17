@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 
 
-class TrustStatus(StrEnum):
+class TrustStatus(str, Enum):
     TRUSTED = "trusted"
     IN_PROGRESS = "in_progress"
     NEEDS_REVIEW = "needs_review"
@@ -11,27 +11,27 @@ class TrustStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
-class Classification(StrEnum):
+class Classification(str, Enum):
     PUBLIC = "public"
     INTERNAL = "internal"
     CONFIDENTIAL = "confidential"
     RESTRICTED = "restricted"
 
 
-class Sensitivity(StrEnum):
+class Sensitivity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
 
 
-class Severity(StrEnum):
+class Severity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
 
 
-class SignalStatus(StrEnum):
+class SignalStatus(str, Enum):
     PASS = "pass"
     WARN = "warn"
     FAIL = "fail"
@@ -100,4 +100,3 @@ def normalise_signal(value: str | None) -> SignalStatus:
         "not_connected": SignalStatus.UNKNOWN,
     }
     return aliases.get(normalized, SignalStatus.UNKNOWN)
-
