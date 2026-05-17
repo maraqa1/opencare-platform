@@ -6748,6 +6748,29 @@ code {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.gv2-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gv2-summary-card {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+}
+
+.gv2-summary-card p {
+  margin: 0;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .gv2-signal-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -6793,6 +6816,17 @@ code {
   gap: 10px;
 }
 
+.gv2-workspace-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.55fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.gv2-workspace-split.wide-left {
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
+}
+
 .gv2-row-link,
 .gv2-row-card {
   display: flex;
@@ -6832,7 +6866,7 @@ code {
 .gv2-stat {
   color: var(--oc-navy);
   font-family: var(--font-heading);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: 0;
   overflow-wrap: anywhere;
@@ -6941,17 +6975,49 @@ code {
 }
 
 .gv2-evidence-list,
-.gv2-rule-list {
+.gv2-rule-list,
+.gv2-evidence-cells,
+.gv2-coverage-list {
   display: grid;
   gap: 10px;
 }
 
 .gv2-evidence-row,
-.gv2-rule-row {
+.gv2-rule-row,
+.gv2-evidence-cell,
+.gv2-coverage-row {
   display: grid;
   gap: 6px;
   border-top: 1px solid rgba(31, 56, 100, 0.08);
   padding-top: 10px;
+}
+
+.gv2-evidence-cell {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.gv2-evidence-cell span,
+.gv2-coverage-row span {
+  color: var(--oc-navy);
+  font-weight: 700;
+}
+
+.gv2-evidence-cell small,
+.gv2-coverage-row small {
+  grid-column: 1 / -1;
+  color: var(--oc-gray-600);
+  line-height: 1.45;
+}
+
+.gv2-coverage-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .gv2-table-scroll {
@@ -6980,6 +7046,41 @@ code {
   font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.gv2-portfolio-table {
+  min-width: 860px;
+}
+
+.gv2-lineage-preview {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gv2-lineage-preview .secondary-link {
+  grid-column: 1 / -1;
+  width: fit-content;
+}
+
+.gv2-lineage-stage {
+  display: grid;
+  gap: 6px;
+  min-height: 86px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.gv2-lineage-stage span {
+  color: var(--oc-gray-600);
+  font-size: 12px;
+}
+
+.gv2-lineage-stage strong {
+  color: var(--oc-navy);
+  font-size: 13px;
 }
 
 .gv2-attribute-workspace {
@@ -7020,6 +7121,33 @@ code {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0;
+}
+
+.gv2-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gv2-tabs span {
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 999px;
+  background: #f8fafc;
+  color: var(--oc-gray-700);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gv2-yaml-excerpt {
+  overflow-x: auto;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 8px;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .gv2-lineage {
@@ -7077,6 +7205,10 @@ code {
 }
 
 @media (max-width: 1100px) {
+  .gv2-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .gv2-grid.four,
   .gv2-signal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7086,7 +7218,16 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .gv2-lineage-preview {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .gv2-attribute-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .gv2-workspace-split,
+  .gv2-workspace-split.wide-left {
     grid-template-columns: 1fr;
   }
 
@@ -7100,6 +7241,8 @@ code {
   .gv2-grid.four,
   .gv2-signal-grid,
   .gv2-lineage-nodes,
+  .gv2-lineage-preview,
+  .gv2-summary-strip,
   .gv2-definition-grid {
     grid-template-columns: 1fr;
   }

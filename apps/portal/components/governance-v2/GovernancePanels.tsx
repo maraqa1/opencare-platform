@@ -13,11 +13,32 @@ import type {
 } from "@/lib/governance/types";
 import type { GovernanceEvidenceExport, GovernanceLineage } from "@/lib/governance/api";
 
+export type SummaryMetric = {
+  label: string;
+  value: string | number;
+  detail: string;
+  tone?: string;
+};
+
 export function displayValue(value?: string | number | null) {
   if (value === undefined || value === null || value === "") {
     return "Unknown";
   }
   return String(value).replace(/_/g, " ");
+}
+
+export function SummaryStrip({ metrics }: { metrics: SummaryMetric[] }) {
+  return (
+    <section className="gv2-summary-strip" aria-label="Governance summary">
+      {metrics.map((metric) => (
+        <article className="gv2-summary-card" key={metric.label}>
+          <span className="gv2-muted">{metric.label}</span>
+          <strong className="gv2-stat">{displayValue(metric.value)}</strong>
+          <p>{metric.detail}</p>
+        </article>
+      ))}
+    </section>
+  );
 }
 
 export function StatusPill({ label, value }: { label: string; value?: string | null }) {
@@ -108,6 +129,44 @@ export function UseCaseCard({ useCase }: { useCase: UseCaseGovernanceRecord }) {
   );
 }
 
+export function UseCasePortfolioTable({ useCases }: { useCases: UseCaseGovernanceRecord[] }) {
+  if (useCases.length === 0) {
+    return <EmptyState title="No evidence loaded" detail="No governed use-case YAML files were returned by the backend resolver." />;
+  }
+  return (
+    <div className="gv2-table-scroll">
+      <table className="gv2-table gv2-portfolio-table">
+        <thead>
+          <tr>
+            <th>Use case</th>
+            <th>Owner</th>
+            <th>Steward</th>
+            <th>Governance Status</th>
+            <th>Domain</th>
+            <th>Issues</th>
+          </tr>
+        </thead>
+        <tbody>
+          {useCases.map((useCase) => (
+            <tr key={useCase.slug}>
+              <td>
+                <Link className="gv2-cell-link" href={`/governance/use-cases/${useCase.slug}`}>
+                  {useCase.name}
+                </Link>
+              </td>
+              <td>{displayValue(useCase.owner)}</td>
+              <td>{displayValue(useCase.steward)}</td>
+              <td><StatusPill label="Trust Status" value={useCase.trust_status} /></td>
+              <td>{displayValue(useCase.domain)}</td>
+              <td>Unknown</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function MetricList({ metrics, slug }: { metrics: MetricGovernanceRecord[]; slug: string }) {
   if (metrics.length === 0) {
     return <EmptyState title="No metrics configured" detail="No KPI declarations were returned by the governance resolver." />;
@@ -122,6 +181,29 @@ export function MetricList({ metrics, slug }: { metrics: MetricGovernanceRecord[
           </span>
           <StatusPill label="Trust Status" value={metric.trust_status} />
         </Link>
+      ))}
+    </div>
+  );
+}
+
+export function MetricEvidenceGrid({ metric }: { metric: MetricGovernanceRecord }) {
+  const evidenceCells = [
+    ["Freshness", metric.evidence.find((source) => source.source_type.includes("freshness"))],
+    ["Data Quality (DQ)", metric.evidence.find((source) => source.source_type.includes("run_results"))],
+    ["Lineage", metric.evidence.find((source) => source.source_type.includes("manifest"))],
+    ["Ownership", metric.owner ? metric.evidence[0] : undefined],
+    ["Classification", undefined],
+    ["Source Table", metric.source_table_id ? metric.evidence[0] : undefined],
+  ] as const;
+
+  return (
+    <div className="gv2-evidence-cells">
+      {evidenceCells.map(([label, evidence]) => (
+        <article className="gv2-evidence-cell" key={label}>
+          <span>{label}</span>
+          <StatusPill label="Evidence" value={evidence?.state ?? "unknown"} />
+          <small>{evidence?.detail ?? "No evidence loaded"}</small>
+        </article>
       ))}
     </div>
   );
@@ -156,6 +238,65 @@ export function TableList({ tables, slug }: { tables: TableGovernanceRecord[]; s
           </article>
         );
       })}
+    </div>
+  );
+}
+
+export function GovernedTablesTable({ tables, slug }: { tables: TableGovernanceRecord[]; slug: string }) {
+  if (tables.length === 0) {
+    return <EmptyState title="No tables configured" detail="No governed table declarations were returned by the governance resolver." />;
+  }
+  return (
+    <div className="gv2-table-scroll">
+      <table className="gv2-table">
+        <thead>
+          <tr>
+            <th>Table</th>
+            <th>Stage</th>
+            <th>DQ Status</th>
+            <th>Classification</th>
+            <th>Consumers</th>
+            <th>Last Refresh</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tables.map((table) => {
+            const classifications = table.attributes.map((attribute) => attribute.classification).filter((value) => value !== "unknown");
+            const tableHref = `/governance/use-cases/${slug}/tables/${encodeURIComponent(table.id)}`;
+            return (
+              <tr key={table.id}>
+                <td>
+                  <Link className="gv2-cell-link" href={tableHref}>
+                    {table.name}
+                  </Link>
+                </td>
+                <td>{displayValue(table.schema_name)}</td>
+                <td><StatusPill label="DQ Status" value="unknown" /></td>
+                <td>{classifications.length > 0 ? displayValue(String(classifications[0])) : "Unknown"}</td>
+                <td>{table.consumers.length}</td>
+                <td>Unknown</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function LineagePreview({ slug }: { slug: string }) {
+  const stages = ["Source", "Raw", "Staging", "Analytics", "Output", "Consumption"];
+  return (
+    <div className="gv2-lineage-preview">
+      {stages.map((stage) => (
+        <div className="gv2-lineage-stage" key={stage}>
+          <span>{stage}</span>
+          <strong>{stage === "Source" ? "Declared systems" : "Unknown"}</strong>
+        </div>
+      ))}
+      <Link className="secondary-link" href={`/governance/use-cases/${slug}/lineage`}>
+        View full lineage
+      </Link>
     </div>
   );
 }
@@ -326,6 +467,63 @@ export function IssuesList({ issues }: { issues: IssueRecord[] }) {
   );
 }
 
+export function IssueWorklist({ issues }: { issues: IssueRecord[] }) {
+  if (issues.length === 0) {
+    return <EmptyState title="No issue evidence loaded" detail="The issue store returned no records through the resolver." />;
+  }
+  const selected = issues[0];
+  return (
+    <div className="gv2-workspace-split">
+      <div className="gv2-table-scroll">
+        <table className="gv2-table">
+          <thead>
+            <tr>
+              <th>Issue type</th>
+              <th>Impacted asset</th>
+              <th>Use case</th>
+              <th>Severity</th>
+              <th>Assigned owner</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {issues.map((issue) => (
+              <tr key={issue.id}>
+                <td>{displayValue(issue.issue_type)}</td>
+                <td>{displayValue(issue.impacted_asset_id)}</td>
+                <td>{displayValue(issue.use_case_slug)}</td>
+                <td><StatusPill label="Severity" value={issue.severity} /></td>
+                <td>{displayValue(issue.assigned_owner)}</td>
+                <td><StatusPill label="Status" value={issue.status} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <aside className="gv2-panel">
+        <div className="gv2-panel-head">
+          <h3>{selected.title}</h3>
+          <StatusPill label="Severity" value={selected.severity} />
+        </div>
+        <dl className="gv2-definition-grid">
+          <div><dt>Use case</dt><dd>{displayValue(selected.use_case_slug)}</dd></div>
+          <div><dt>Impacted asset</dt><dd>{displayValue(selected.impacted_asset_id)}</dd></div>
+          <div><dt>Issue type</dt><dd>{displayValue(selected.issue_type)}</dd></div>
+          <div><dt>Status</dt><dd>{displayValue(selected.status)}</dd></div>
+        </dl>
+        <div className="gv2-detail-block">
+          <h4>Evidence</h4>
+          <p>{selected.description ?? "No evidence loaded"}</p>
+        </div>
+        <div className="gv2-detail-block">
+          <h4>Actions (operator only)</h4>
+          <p>Viewer mode does not expose assign, resolve, or ignore actions.</p>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 export function EvidencePackList({ packs }: { packs: EvidencePackDescriptor[] }) {
   if (packs.length === 0) {
     return <EmptyState title="No evidence packs configured" detail="The backend returned no evidence pack descriptors." />;
@@ -347,6 +545,23 @@ export function EvidencePackList({ packs }: { packs: EvidencePackDescriptor[] })
             </button>
           </form>
         </article>
+      ))}
+    </div>
+  );
+}
+
+export function EvidenceCoverage({ packs }: { packs: EvidencePackDescriptor[] }) {
+  if (packs.length === 0) {
+    return <EmptyState title="No coverage evidence" detail="Evidence pack descriptors were not returned by the resolver." />;
+  }
+  return (
+    <div className="gv2-coverage-list">
+      {packs.map((pack) => (
+        <div className="gv2-coverage-row" key={pack.id}>
+          <span>{pack.name}</span>
+          <StatusPill label="State" value={pack.state} />
+          <small>{pack.evidence_sources[0]?.detail ?? "Unknown"}</small>
+        </div>
       ))}
     </div>
   );
@@ -425,6 +640,75 @@ export function PolicyList({ policies }: { policies: PolicyRecord[] }) {
           <EvidenceList evidence={[policy.evidence]} />
         </article>
       ))}
+    </div>
+  );
+}
+
+export function PolicyRegistryWorkspace({ policies }: { policies: PolicyRecord[] }) {
+  if (policies.length === 0) {
+    return <EmptyState title="No policies loaded" detail="No classification policy YAML records were returned by the resolver." />;
+  }
+  const selected = policies[0];
+  return (
+    <div className="gv2-workspace-split">
+      <div className="gv2-table-scroll">
+        <table className="gv2-table">
+          <thead>
+            <tr>
+              <th>Policy name</th>
+              <th>Version</th>
+              <th>Standard</th>
+              <th>Status</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            {policies.map((policy) => (
+              <tr className={policy.policy_id === selected.policy_id ? "gv2-selected-row" : undefined} key={`${policy.policy_id}-${policy.version}`}>
+                <td>{policy.name}</td>
+                <td>v{policy.version}</td>
+                <td>{displayValue(policy.standard_or_framework)}</td>
+                <td><StatusPill label="Status" value={policy.status} /></td>
+                <td>{displayValue(policy.owner)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <aside className="gv2-panel">
+        <div className="gv2-panel-head">
+          <div>
+            <span className="gv2-muted">{selected.policy_id} v{selected.version}</span>
+            <h3>{selected.name} Detail</h3>
+          </div>
+          <StatusPill label="Status" value={selected.status} />
+        </div>
+        <dl className="gv2-definition-grid">
+          <div><dt>Owner</dt><dd>{displayValue(selected.owner)}</dd></div>
+          <div><dt>Standard</dt><dd>{displayValue(selected.standard_or_framework)}</dd></div>
+          <div><dt>Scope</dt><dd>{selected.scope.length > 0 ? selected.scope.join(", ") : "Unknown"}</dd></div>
+          <div><dt>Rules</dt><dd>{selected.rules.length}</dd></div>
+        </dl>
+        <div className="gv2-tabs" aria-label="Policy detail tabs">
+          <span>Rules</span>
+          <span>Attributes</span>
+          <span>Approvals</span>
+          <span>History</span>
+        </div>
+        <div className="gv2-rule-list">
+          {selected.rules.map((rule) => (
+            <div className="gv2-rule-row" key={String(rule.rule_id)}>
+              <strong>{displayValue(String(rule.rule_id))}</strong>
+              <span>{displayValue(String(rule.classification))} / {displayValue(String(rule.sensitivity))}</span>
+            </div>
+          ))}
+        </div>
+        <pre className="gv2-yaml-excerpt">{`policy_id: ${selected.policy_id}
+name: ${selected.name}
+version: "${selected.version}"
+status: ${selected.status}
+owner: ${selected.owner ?? "Unknown"}`}</pre>
+      </aside>
     </div>
   );
 }

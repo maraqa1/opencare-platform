@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ApiState, IssuesList } from "@/components/governance-v2/GovernancePanels";
+import { ApiState, IssueWorklist, SummaryStrip } from "@/components/governance-v2/GovernancePanels";
 import { PageFrame } from "@/components/page-frame";
 import { listGovernanceIssues, listGovernanceUseCases } from "@/lib/governance/api";
 
@@ -23,8 +23,17 @@ export default async function GovernanceIssuesPage() {
       pageClassName="governance-v2-page"
     >
       <ApiState error={issuesResult.error ?? useCasesResult.error} />
+      <SummaryStrip
+        metrics={[
+          { label: "Open Issues", value: issuesResult.data.filter((issue) => issue.status === "open").length, detail: "Open issue records." },
+          { label: "Assigned", value: issuesResult.data.filter((issue) => issue.status === "assigned").length, detail: "Assigned issue records." },
+          { label: "Resolved This Week", value: "Unknown", detail: "Resolution timestamp evidence is not loaded." },
+          { label: "High Severity", value: issuesResult.data.filter((issue) => issue.severity === "high" || issue.severity === "critical").length, detail: "High and critical issues." },
+        ]}
+      />
       <section className="gv2-panel">
         <div className="gv2-filter-row" aria-label="Issue filters">
+          <span>Search issues: Not configured</span>
           <span>Status: all</span>
           <span>Severity: all</span>
           <span>Type: all</span>
@@ -32,7 +41,7 @@ export default async function GovernanceIssuesPage() {
           <span>Owner: all</span>
         </div>
       </section>
-      <IssuesList issues={issuesResult.data} />
+      <IssueWorklist issues={issuesResult.data} />
     </PageFrame>
   );
 }

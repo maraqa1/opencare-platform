@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ApiState, displayValue, EvidenceList, StatusPill } from "@/components/governance-v2/GovernancePanels";
+import { ApiState, displayValue, EvidenceList, MetricEvidenceGrid, StatusPill, SummaryStrip } from "@/components/governance-v2/GovernancePanels";
 import { PageFrame } from "@/components/page-frame";
 import { getGovernanceMetric } from "@/lib/governance/api";
 
@@ -41,6 +41,16 @@ export default async function MetricGovernancePage({ params }: PageProps) {
       pageClassName="governance-v2-page"
     >
       <ApiState error={result.error} />
+      <SummaryStrip
+        metrics={[
+          { label: "Metric Name", value: metric.name, detail: "Metric identity from governance YAML." },
+          { label: "Metric Code", value: metric.id, detail: "Stable API identifier." },
+          { label: "Owner", value: metric.owner ?? "Unknown", detail: "Declared owner." },
+          { label: "Governance Status", value: metric.trust_status, detail: "Displayed property from resolver signals." },
+          { label: "Classification", value: "Unknown", detail: "Metric classification evidence is not loaded." },
+          { label: "Last Reviewed", value: "Unknown", detail: "Review evidence is not loaded." },
+        ]}
+      />
       <section className="gv2-grid two">
         <article className="gv2-panel">
           <div className="gv2-panel-head">
@@ -67,14 +77,27 @@ export default async function MetricGovernancePage({ params }: PageProps) {
           </dl>
         </article>
         <article className="gv2-panel">
-          <h2>Consumers</h2>
-          <div className="gv2-chip-list">
-            {metric.consumers.length > 0 ? metric.consumers.map((consumer) => <span key={consumer}>{consumer}</span>) : <span>Unknown</span>}
-          </div>
+          <h2>Governance Evidence</h2>
+          <MetricEvidenceGrid metric={metric} />
         </article>
       </section>
       <section className="gv2-section">
-        <h2>Evidence</h2>
+        <h2>Source and Consumers</h2>
+        <div className="gv2-grid two">
+          <article className="gv2-panel">
+            <h3>Source Table</h3>
+            <p>{displayValue(metric.source_table_id)}</p>
+          </article>
+          <article className="gv2-panel">
+            <h3>Consumers</h3>
+            <div className="gv2-chip-list">
+              {metric.consumers.length > 0 ? metric.consumers.map((consumer) => <span key={consumer}>{consumer}</span>) : <span>Unknown</span>}
+            </div>
+          </article>
+        </div>
+      </section>
+      <section className="gv2-section">
+        <h2>Resolver Evidence</h2>
         <EvidenceList evidence={metric.evidence} />
       </section>
     </PageFrame>
