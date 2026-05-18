@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
+from app.config import settings
 from app.governance.config_loader import AttributeConfig, GovernedTableConfig, GovernanceUseCaseConfig, load_governance_use_cases
 from app.governance.models import (
     AttributeRecord,
@@ -25,10 +27,17 @@ class GovernanceNotFound(LookupError):
 
 
 class GovernanceReadService:
-    def __init__(self, use_cases_dir: Path, policies_dir: Path, resolver: GovernanceResolver | None = None) -> None:
+    def __init__(
+        self,
+        use_cases_dir: Path,
+        policies_dir: Path,
+        resolver: GovernanceResolver | None = None,
+        dbt_manifest_path: Path | None = None,
+    ) -> None:
         self.use_cases_dir = use_cases_dir
         self.policies_dir = policies_dir
         self.resolver = resolver or GovernanceResolver()
+        self.dbt_manifest_path = dbt_manifest_path or Path(settings.dbt_manifest_path)
 
     def _use_cases(self) -> list[GovernanceUseCaseConfig]:
         return load_governance_use_cases(self.use_cases_dir)
@@ -168,6 +177,7 @@ class GovernanceReadService:
 
     def get_lineage(self, slug: str) -> dict[str, object]:
         use_case = self._get_use_case_config(slug)
+        dbt_lineage = self._dbt_lineage_for_use_case(use_case)
         source_nodes = [
             {
                 "id": f"source:{source.id}",
@@ -197,10 +207,25 @@ class GovernanceReadService:
             }
             for consumer in use_case.consumers
         ]
+        nodes_by_id = {
+            node["id"]: node
+            for node in [*source_nodes, *table_nodes, *consumer_nodes]
+        }
+        for node in dbt_lineage["nodes"]:
+            nodes_by_id[node["id"]] = {**nodes_by_id.get(node["id"], {}), **node}
+        dbt_evidence_state = "loaded" if dbt_lineage["matched"] else "not_instrumented"
+        dbt_evidence_detail = (
+            "dbt manifest lineage is loaded for one or more governed table nodes."
+            if dbt_lineage["matched"]
+            else "dbt manifest artifact is loaded, but no governed table in this use case matched a dbt model/source node."
+        )
+        if not dbt_lineage["manifest_loaded"]:
+            dbt_evidence_state = "no_evidence_loaded"
+            dbt_evidence_detail = "dbt manifest artifact is not loaded; observed model edges are unavailable."
         return {
             "use_case_slug": slug,
-            "nodes": [*source_nodes, *table_nodes, *consumer_nodes],
-            "edges": [],
+            "nodes": list(nodes_by_id.values()),
+            "edges": dbt_lineage["edges"],
             "evidence": [
                 EvidenceSource(
                     source_id=f"{slug}:lineage:declared",
@@ -208,10 +233,11 @@ class GovernanceReadService:
                     state="loaded",
                     detail="Declared source, table, and consumer nodes are loaded from governance use-case YAML.",
                 ),
-                self.resolver.evidence_or_missing(
-                    f"{slug}:lineage:dbt",
-                    "dbt_manifest",
-                    "dbt manifest artifact is not loaded; observed model edges are unavailable.",
+                EvidenceSource(
+                    source_id=f"{slug}:lineage:dbt",
+                    source_type="dbt_manifest",
+                    state=dbt_evidence_state,
+                    detail=dbt_evidence_detail,
                 ),
             ],
         }
@@ -427,6 +453,126 @@ class GovernanceReadService:
         if not value:
             return None
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+    def _dbt_lineage_for_use_case(self, use_case: GovernanceUseCaseConfig) -> dict[str, Any]:
+        payload = self._dbt_manifest_payload()
+        if payload is None:
+            return {"manifest_loaded": False, "matched": False, "nodes": [], "edges": []}
+
+        manifest_nodes = {
+            key: node
+            for key, node in payload.get("nodes", {}).items()
+            if isinstance(node, dict) and node.get("resource_type") == "model"
+        }
+        manifest_nodes.update(
+            {
+                key: node
+                for key, node in payload.get("sources", {}).items()
+                if isinstance(node, dict)
+            }
+        )
+        parent_map = payload.get("parent_map", {}) if isinstance(payload.get("parent_map"), dict) else {}
+        child_map = payload.get("child_map", {}) if isinstance(payload.get("child_map"), dict) else {}
+        governed_table_ids = {table.id for table in use_case.governed_tables}
+        matched_keys = {
+            key
+            for key, node in manifest_nodes.items()
+            if self._dbt_node_lineage_id(key, node) in governed_table_ids
+        }
+        if not matched_keys:
+            return {"manifest_loaded": True, "matched": False, "nodes": [], "edges": []}
+
+        selected_keys: set[str] = set(matched_keys)
+        for key in list(matched_keys):
+            selected_keys.update(self._walk_manifest_lineage(key, parent_map, manifest_nodes))
+            selected_keys.update(self._walk_manifest_lineage(key, child_map, manifest_nodes))
+
+        nodes = [
+            self._dbt_lineage_node(key, manifest_nodes[key], use_case.slug, governed_table_ids)
+            for key in sorted(selected_keys)
+            if key in manifest_nodes
+        ]
+        selected_ids = {node["id"] for node in nodes}
+        edges = []
+        for child_key, parent_keys in parent_map.items():
+            if child_key not in selected_keys or not isinstance(parent_keys, list):
+                continue
+            for parent_key in parent_keys:
+                if parent_key not in selected_keys:
+                    continue
+                source = self._dbt_node_lineage_id(parent_key, manifest_nodes[parent_key])
+                target = self._dbt_node_lineage_id(child_key, manifest_nodes[child_key])
+                if source in selected_ids and target in selected_ids:
+                    edges.append({"from": source, "to": target, "evidence_source": "dbt observed"})
+        return {"manifest_loaded": True, "matched": True, "nodes": nodes, "edges": edges}
+
+    def _dbt_manifest_payload(self) -> dict[str, Any] | None:
+        if not self.dbt_manifest_path.is_file():
+            return None
+        payload = json.loads(self.dbt_manifest_path.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else None
+
+    def _walk_manifest_lineage(
+        self,
+        key: str,
+        lineage_map: dict[str, Any],
+        manifest_nodes: dict[str, dict[str, Any]],
+        visited: set[str] | None = None,
+    ) -> set[str]:
+        visited = visited or set()
+        if key in visited:
+            return set()
+        visited.add(key)
+        results: set[str] = set()
+        for next_key in lineage_map.get(key, []):
+            if next_key not in manifest_nodes:
+                continue
+            results.add(next_key)
+            results.update(self._walk_manifest_lineage(next_key, lineage_map, manifest_nodes, visited))
+        return results
+
+    def _dbt_lineage_node(
+        self,
+        key: str,
+        node: dict[str, Any],
+        slug: str,
+        governed_table_ids: set[str],
+    ) -> dict[str, object]:
+        node_id = self._dbt_node_lineage_id(key, node)
+        kind = self._dbt_node_stage(node)
+        payload: dict[str, object] = {
+            "id": node_id,
+            "label": node.get("name") or node.get("alias") or key.split(".")[-1],
+            "kind": kind,
+            "evidence_source": "dbt observed",
+            "dbt_node_id": key,
+        }
+        if node_id in governed_table_ids:
+            payload["detail_route"] = f"/governance/use-cases/{slug}/tables/{node_id}"
+        return payload
+
+    def _dbt_node_lineage_id(self, key: str, node: dict[str, Any]) -> str:
+        schema_name = node.get("schema")
+        table_name = node.get("alias") or node.get("name")
+        if schema_name and table_name:
+            return f"{schema_name}.{table_name}"
+        if node.get("source_name") and table_name:
+            return f"{node['source_name']}.{table_name}"
+        return key
+
+    def _dbt_node_stage(self, node: dict[str, Any]) -> str:
+        resource_type = node.get("resource_type")
+        if resource_type == "source" or node.get("source_name"):
+            return "source"
+        schema_name = node.get("schema")
+        name = str(node.get("name") or "")
+        if schema_name == settings.output_schema:
+            return "output"
+        if schema_name == settings.staging_schema or name.startswith("stg_"):
+            return "staging"
+        if schema_name == settings.analytics_schema or name.startswith(("fct_", "fact_", "dim_", "dict_")):
+            return "analytics"
+        return "analytics"
 
     def _rule_payload(self, rule: Any) -> dict[str, object]:
         return {

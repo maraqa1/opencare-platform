@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import textwrap
@@ -193,6 +194,98 @@ class GovernanceReadServiceTests(unittest.TestCase):
         self.assertTrue(any(node["id"] == "analytics.fct_bed_occupancy" for node in lineage["nodes"]))
         self.assertEqual(lineage["edges"], [])
         self.assertEqual(lineage["evidence"][1].state, "no_evidence_loaded")
+
+    def test_lineage_response_uses_dbt_manifest_when_available(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manifest_path = Path(tmpdir) / "manifest.json"
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "nodes": {
+                            "model.opencare.stg_bed_events": {
+                                "resource_type": "model",
+                                "name": "stg_bed_events",
+                                "schema": "staging",
+                            },
+                            "model.opencare.fct_bed_occupancy": {
+                                "resource_type": "model",
+                                "name": "fct_bed_occupancy",
+                                "schema": "analytics",
+                            },
+                        },
+                        "sources": {
+                            "source.opencare.adt.bed_events": {
+                                "resource_type": "source",
+                                "source_name": "adt",
+                                "name": "bed_events",
+                                "schema": "raw",
+                            }
+                        },
+                        "parent_map": {
+                            "model.opencare.stg_bed_events": ["source.opencare.adt.bed_events"],
+                            "model.opencare.fct_bed_occupancy": ["model.opencare.stg_bed_events"],
+                        },
+                        "child_map": {
+                            "source.opencare.adt.bed_events": ["model.opencare.stg_bed_events"],
+                            "model.opencare.stg_bed_events": ["model.opencare.fct_bed_occupancy"],
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            service = GovernanceReadService(
+                use_cases_dir=REPO_ROOT / "governance/use-cases",
+                policies_dir=REPO_ROOT / "governance/policies",
+                dbt_manifest_path=manifest_path,
+            )
+
+            lineage = service.get_lineage("bed-pressure")
+
+        node_by_id = {node["id"]: node for node in lineage["nodes"]}
+        self.assertEqual(lineage["evidence"][1].state, "loaded")
+        self.assertEqual(node_by_id["analytics.fct_bed_occupancy"]["evidence_source"], "dbt observed")
+        self.assertEqual(node_by_id["analytics.fct_bed_occupancy"]["detail_route"], "/governance/use-cases/bed-pressure/tables/analytics.fct_bed_occupancy")
+        self.assertEqual(node_by_id["staging.stg_bed_events"]["kind"], "staging")
+        self.assertIn(
+            {"from": "raw.bed_events", "to": "staging.stg_bed_events", "evidence_source": "dbt observed"},
+            lineage["edges"],
+        )
+        self.assertIn(
+            {"from": "staging.stg_bed_events", "to": "analytics.fct_bed_occupancy", "evidence_source": "dbt observed"},
+            lineage["edges"],
+        )
+
+    def test_lineage_response_marks_loaded_manifest_without_matching_model_as_not_instrumented(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manifest_path = Path(tmpdir) / "manifest.json"
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "nodes": {
+                            "model.opencare.unrelated": {
+                                "resource_type": "model",
+                                "name": "unrelated",
+                                "schema": "analytics",
+                            }
+                        },
+                        "sources": {},
+                        "parent_map": {},
+                        "child_map": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            service = GovernanceReadService(
+                use_cases_dir=REPO_ROOT / "governance/use-cases",
+                policies_dir=REPO_ROOT / "governance/policies",
+                dbt_manifest_path=manifest_path,
+            )
+
+            lineage = service.get_lineage("bed-pressure")
+
+        self.assertEqual(lineage["edges"], [])
+        self.assertEqual(lineage["evidence"][1].state, "not_instrumented")
+        self.assertIn("no governed table", lineage["evidence"][1].detail)
 
     def test_policy_response_is_policy_yaml_backed(self):
         policy = self.service.get_policy("healthcare-default")

@@ -21,7 +21,7 @@ export type GovernanceLineageNode = {
 export type GovernanceLineage = {
   use_case_slug: string;
   nodes: GovernanceLineageNode[];
-  edges: { source: string; target: string; evidence_source?: string | null }[];
+  edges: { from: string; to: string; evidence_source?: string | null }[];
   evidence: EvidenceSource[];
 };
 
