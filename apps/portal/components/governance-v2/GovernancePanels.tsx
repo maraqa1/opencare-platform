@@ -766,27 +766,87 @@ export function LineageCanvas({ lineage }: { lineage: GovernanceLineage | null }
   if (!lineage) {
     return <EmptyState title="Lineage unavailable" detail="The lineage resolver did not return a use-case lineage payload." />;
   }
+  const stageOrder = ["source", "raw", "staging", "analytics", "output", "dashboard", "portal", "api", "decision", "consumption"];
+  const stageLabels: Record<string, string> = {
+    source: "Source Systems",
+    raw: "Raw",
+    staging: "Staging",
+    analytics: "Analytics",
+    output: "Outputs",
+    dashboard: "Dashboards",
+    portal: "Portal",
+    api: "APIs",
+    decision: "Decisions",
+    consumption: "Consumption",
+  };
+  const nodesByStage = lineage.nodes.reduce<Record<string, typeof lineage.nodes>>((groups, node) => {
+    const stage = stageOrder.includes(node.kind) ? node.kind : "consumption";
+    groups[stage] = [...(groups[stage] ?? []), node];
+    return groups;
+  }, {});
+  const selectedNode = lineage.nodes.find((node) => node.detail_route) ?? lineage.nodes[0] ?? null;
+
   return (
     <div className="gv2-lineage">
-      <div className="gv2-lineage-nodes">
-        {lineage.nodes.map((node) => {
-          const content = (
-            <>
-              <span>{displayValue(node.kind)}</span>
-              <strong>{node.label}</strong>
-              <small>{node.evidence_source}</small>
-            </>
-          );
-          return node.detail_route ? (
-            <Link className="gv2-lineage-node" href={node.detail_route} key={node.id}>
-              {content}
-            </Link>
-          ) : (
-            <div className="gv2-lineage-node" key={node.id}>
-              {content}
+      <div className="gv2-lineage-workspace">
+        <div className="gv2-lineage-lanes" aria-label="Lineage stages">
+          {stageOrder.filter((stage) => nodesByStage[stage]?.length).map((stage) => (
+            <section className="gv2-lineage-lane" key={stage}>
+              <div className="gv2-lineage-lane-head">
+                <span>{stageLabels[stage] ?? displayValue(stage)}</span>
+                <strong>{nodesByStage[stage].length}</strong>
+              </div>
+              <div className="gv2-lineage-lane-nodes">
+                {nodesByStage[stage].map((node) => {
+                  const content = (
+                    <>
+                      <span>{displayValue(node.kind)}</span>
+                      <strong>{node.label}</strong>
+                      <small>{node.evidence_source}</small>
+                    </>
+                  );
+                  return node.detail_route ? (
+                    <Link className="gv2-lineage-node" href={node.detail_route} key={node.id}>
+                      {content}
+                    </Link>
+                  ) : (
+                    <div className="gv2-lineage-node" key={node.id} tabIndex={0}>
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+        <aside className="gv2-panel gv2-lineage-detail" aria-label="Selected lineage node detail">
+          <div className="gv2-panel-head">
+            <div>
+              <span className="gv2-muted">Selected node</span>
+              <h3>{displayValue(selectedNode?.label)}</h3>
             </div>
-          );
-        })}
+            <StatusPill label="Evidence" value={selectedNode?.evidence_source ?? "unknown"} />
+          </div>
+          <dl className="gv2-definition-grid">
+            <div><dt>Node ID</dt><dd>{displayValue(selectedNode?.id)}</dd></div>
+            <div><dt>Stage</dt><dd>{displayValue(selectedNode?.kind)}</dd></div>
+            <div><dt>Owner</dt><dd>Unknown</dd></div>
+            <div><dt>Steward</dt><dd>Unknown</dd></div>
+            <div><dt>DQ Status</dt><dd>Unknown</dd></div>
+            <div><dt>Freshness</dt><dd>Unknown</dd></div>
+            <div><dt>Consumers</dt><dd>Unknown</dd></div>
+            <div><dt>Classification</dt><dd>Unknown</dd></div>
+          </dl>
+          {selectedNode?.detail_route ? (
+            <Link className="button secondary" href={selectedNode.detail_route}>
+              Open Table Detail
+            </Link>
+          ) : null}
+          <div className="gv2-detail-block">
+            <h4>Node evidence</h4>
+            <p>{selectedNode ? `${selectedNode.evidence_source} evidence from the governance resolver.` : "No evidence loaded"}</p>
+          </div>
+        </aside>
       </div>
       {lineage.edges.length === 0 ? (
         <EmptyState title="Observed edges unavailable" detail="dbt manifest evidence is not loaded, so observed lineage edges remain Unknown." />

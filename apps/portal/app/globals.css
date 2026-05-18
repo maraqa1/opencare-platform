@@ -7211,6 +7211,54 @@ code {
   gap: 16px;
 }
 
+.gv2-lineage-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.42fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.gv2-lineage-lanes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gv2-lineage-lane {
+  display: grid;
+  gap: 10px;
+  min-height: 160px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 12px;
+}
+
+.gv2-lineage-lane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.gv2-lineage-lane-head strong {
+  border-radius: 999px;
+  background: #e8f1ff;
+  color: var(--oc-blue);
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.gv2-lineage-lane-nodes {
+  display: grid;
+  gap: 10px;
+}
+
 .gv2-lineage-nodes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -7233,6 +7281,18 @@ code {
   color: var(--oc-gray-600);
   font-size: 12px;
   text-transform: capitalize;
+}
+
+.gv2-lineage-node[href]:hover,
+.gv2-lineage-node[href]:focus-visible {
+  border-color: rgba(46, 117, 182, 0.28);
+  box-shadow: var(--surface-shadow-strong);
+  outline: none;
+}
+
+.gv2-lineage-detail {
+  position: sticky;
+  top: 18px;
 }
 
 .gv2-skeleton {
@@ -7274,6 +7334,14 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .gv2-lineage-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .gv2-lineage-lanes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .gv2-lineage-preview {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -7294,6 +7362,10 @@ code {
   .gv2-attribute-detail {
     position: static;
   }
+
+  .gv2-lineage-detail {
+    position: static;
+  }
 }
 
 @media (max-width: 720px) {
@@ -7301,6 +7373,7 @@ code {
   .gv2-grid.four,
   .gv2-signal-grid,
   .gv2-lineage-nodes,
+  .gv2-lineage-lanes,
   .gv2-lineage-preview,
   .gv2-summary-strip,
   .gv2-definition-grid {
