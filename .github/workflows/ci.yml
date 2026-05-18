@@ -5,15 +5,18 @@ permissions:
   packages: write
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
       - dev
       - talimya
+      - feature/governance-overview-page
   pull_request:
     branches:
       - main
       - dev
+      - feature/governance-overview-page
 
 jobs:
   validate:
@@ -73,6 +76,14 @@ jobs:
           python -m unittest \
             apps/backend/tests/test_decision_service.py \
             apps/backend/tests/test_revenue_cycle_service.py
+
+      - name: Run governance unit tests
+        shell: bash
+        env:
+          PYTHONPATH: apps/backend
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s apps/backend/tests -p 'test_governance_*.py'
 
       - name: Validate dbt project structure
         shell: bash
