@@ -328,11 +328,15 @@ export function AttributeTable({
             <th>Attribute</th>
             <th>Business name</th>
             <th>Data type</th>
+            <th>Description</th>
             <th>Classification</th>
             <th>Policy</th>
+            <th>Policy version</th>
             <th>Matched rule</th>
             <th>Sensitivity</th>
             <th>Review</th>
+            <th>Owner / steward</th>
+            <th>Last reviewed</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -350,12 +354,16 @@ export function AttributeTable({
               </td>
               <td>{displayValue(attribute.business_name)}</td>
               <td>{displayValue(attribute.data_type)}</td>
+              <td>{displayValue(attribute.description)}</td>
               <td>{displayValue(attribute.classification)}</td>
-              <td>{displayValue(attribute.policy_id)} {attribute.policy_version ? `v${attribute.policy_version}` : ""}</td>
+              <td>{displayValue(attribute.policy_id)}</td>
+              <td>{displayValue(attribute.policy_version)}</td>
               <td>{displayValue(attribute.matched_rule)}</td>
               <td>{displayValue(attribute.sensitivity)}</td>
               <td>{displayValue(attribute.review_status)}</td>
-              <td>Not configured</td>
+              <td>{displayValue(attribute.owner)} / {displayValue(attribute.steward)}</td>
+              <td>{displayValue(attribute.last_reviewed)}</td>
+              <td>Not configured for viewer mode</td>
             </tr>
           ))}
         </tbody>
@@ -395,12 +403,28 @@ export function AttributeDetailPanel({
           <dd>{attribute.name}</dd>
         </div>
         <div>
+          <dt>Physical column name</dt>
+          <dd>{attribute.name}</dd>
+        </div>
+        <div>
+          <dt>Business name</dt>
+          <dd>{displayValue(attribute.business_name)}</dd>
+        </div>
+        <div>
           <dt>Technical data type</dt>
           <dd>{displayValue(attribute.data_type)}</dd>
         </div>
         <div>
           <dt>Source table</dt>
-          <dd>{displayValue(attribute.table_id)}</dd>
+          <dd>{displayValue(attribute.source_table ?? attribute.table_id)}</dd>
+        </div>
+        <div>
+          <dt>Source system</dt>
+          <dd>{displayValue(attribute.source_system)}</dd>
+        </div>
+        <div>
+          <dt>Current classification</dt>
+          <dd>{displayValue(attribute.classification)}</dd>
         </div>
         <div>
           <dt>Sensitivity</dt>
@@ -423,12 +447,24 @@ export function AttributeDetailPanel({
           <dd>{displayValue(attribute.review_status)}</dd>
         </div>
         <div>
-          <dt>Last reviewed</dt>
+          <dt>Reviewer</dt>
+          <dd>{displayValue(attribute.reviewer)}</dd>
+        </div>
+        <div>
+          <dt>Review date</dt>
           <dd>{displayValue(attribute.last_reviewed)}</dd>
         </div>
         <div>
           <dt>Active exception</dt>
-          <dd>Unknown</dd>
+          <dd>{attribute.active_exception ? "Configured" : "Unknown"}</dd>
+        </div>
+        <div>
+          <dt>Owner</dt>
+          <dd>{displayValue(attribute.owner)}</dd>
+        </div>
+        <div>
+          <dt>Steward</dt>
+          <dd>{displayValue(attribute.steward)}</dd>
         </div>
       </dl>
       <div className="gv2-detail-block">
@@ -440,8 +476,21 @@ export function AttributeDetailPanel({
         <EvidenceList evidence={[attribute.evidence]} />
       </div>
       <div className="gv2-detail-block">
-        <h4>Usage and history</h4>
-        <p>Usage, consumers, reviewer, and change history are Unknown until supporting evidence is loaded through the resolver.</p>
+        <h4>Usage and consumers</h4>
+        <div className="gv2-chip-list">
+          {attribute.consumers.length > 0 ? attribute.consumers.map((consumer) => <span key={consumer}>{consumer}</span>) : <span>Unknown</span>}
+        </div>
+        {attribute.lineage_route ? (
+          <Link className="secondary-link" href={attribute.lineage_route}>
+            Open lineage
+          </Link>
+        ) : (
+          <p>Lineage link is Unknown.</p>
+        )}
+      </div>
+      <div className="gv2-detail-block">
+        <h4>History</h4>
+        <p>{attribute.history.length > 0 ? `${attribute.history.length} history events loaded.` : "No evidence loaded"}</p>
       </div>
     </aside>
   );

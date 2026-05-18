@@ -35,6 +35,10 @@ class AttributeConfig(StrictConfigModel):
     data_type: str | None = None
     description: str | None = None
     semantic_terms: list[str] = Field(default_factory=list)
+    owner: str | None = None
+    steward: str | None = None
+    reviewer: str | None = None
+    last_reviewed: str | None = None
     review_status: str = "pending"
 
 

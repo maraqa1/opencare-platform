@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -61,8 +63,129 @@ class GovernanceReadServiceTests(unittest.TestCase):
 
         self.assertEqual(attribute.name, "patient_id")
         self.assertEqual(attribute.table_id, "analytics.fct_bed_occupancy")
+        self.assertEqual(attribute.source_table, "analytics.fct_bed_occupancy")
+        self.assertEqual(attribute.source_system, "EMR, ADT")
+        self.assertEqual(attribute.owner, "Clinical Operations Analytics")
+        self.assertEqual(attribute.steward, "Capacity Planning Lead")
+        self.assertEqual(attribute.consumers, ["bed-pressure-workspace", "bed-occupancy-dashboard"])
+        self.assertEqual(attribute.lineage_route, "/governance/use-cases/bed-pressure/lineage?node=analytics.fct_bed_occupancy")
+        self.assertIsNone(attribute.active_exception)
+        self.assertEqual(attribute.history, [])
         self.assertEqual(attribute.evidence.state, "loaded")
         self.assertIn("patient-identifiers", attribute.evidence.detail)
+
+    def test_attribute_contract_is_repeatable_for_any_governed_use_case(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            use_cases_dir = root / "use-cases"
+            policies_dir = root / "policies"
+            use_cases_dir.mkdir()
+            policies_dir.mkdir()
+            (use_cases_dir / "revenue-cycle.yaml").write_text(
+                textwrap.dedent(
+                    """
+                    schema_version: "1.0"
+                    slug: revenue-cycle
+                    name: Revenue Cycle
+                    domain: Finance
+                    maturity: in_progress
+                    ownership:
+                      owner: Finance Analytics
+                      steward: Revenue Steward
+                      review_cadence: monthly
+                    source_systems:
+                      - id: crm
+                        name: CRM
+                    governed_tables:
+                      - id: analytics.fct_claims
+                        schema: analytics
+                        table: fct_claims
+                        stage: analytics
+                        purpose: Claims analytics fact.
+                        attributes:
+                          - name: claim_id
+                            business_name: Claim ID
+                            data_type: text
+                            description: Claim identifier.
+                            semantic_terms:
+                              - financial identifier
+                            owner: Claims Owner
+                            steward: Claims Steward
+                            reviewer: Audit Reviewer
+                            last_reviewed: "2026-01-15T00:00:00+00:00"
+                            review_status: approved
+                    kpis:
+                      - id: recoverable-cash
+                        name: Recoverable Cash
+                        definition: Cash that can be recovered.
+                        source_table: analytics.fct_claims
+                    policies_in_scope:
+                      - finance-default
+                    consumers:
+                      - id: cash-command
+                        type: portal
+                        name: Cash Command
+                    freshness:
+                      sla: 4 hours
+                      critical_tables:
+                        - analytics.fct_claims
+                    evidence:
+                      dbt_project: opencare
+                    """
+                ).strip(),
+                encoding="utf-8",
+            )
+            (policies_dir / "finance-default.yaml").write_text(
+                textwrap.dedent(
+                    """
+                    policy_id: finance-default
+                    name: Finance Default
+                    version: "2.0.0"
+                    status: active
+                    owner: Finance Governance
+                    standard_or_framework: OpenCare Finance Data Handling
+                    scope:
+                      - finance
+                    classification_levels:
+                      - public
+                      - internal
+                      - confidential
+                      - restricted
+                    rules:
+                      - rule_id: financial-identifiers
+                        description: Financial identifiers are confidential.
+                        match:
+                          column_name_patterns:
+                            - claim_id
+                          semantic_terms:
+                            - financial identifier
+                        classification: confidential
+                        sensitivity: medium
+                        actions:
+                          - audit
+                        requires_review: true
+                    """
+                ).strip(),
+                encoding="utf-8",
+            )
+
+            service = GovernanceReadService(use_cases_dir=use_cases_dir, policies_dir=policies_dir)
+            use_cases = service.list_use_cases()
+            attribute = service.get_attribute("analytics.fct_claims.claim_id")
+
+        self.assertEqual([use_case.slug for use_case in use_cases], ["revenue-cycle"])
+        self.assertEqual(attribute.classification, Classification.CONFIDENTIAL)
+        self.assertEqual(attribute.sensitivity, Sensitivity.MEDIUM)
+        self.assertEqual(attribute.policy_id, "finance-default")
+        self.assertEqual(attribute.policy_version, "2.0.0")
+        self.assertEqual(attribute.matched_rule, "financial-identifiers")
+        self.assertEqual(attribute.source_system, "CRM")
+        self.assertEqual(attribute.owner, "Claims Owner")
+        self.assertEqual(attribute.steward, "Claims Steward")
+        self.assertEqual(attribute.reviewer, "Audit Reviewer")
+        self.assertEqual(attribute.consumers, ["cash-command"])
+        self.assertEqual(attribute.lineage_route, "/governance/use-cases/revenue-cycle/lineage?node=analytics.fct_claims")
+        self.assertNotIn("bed-pressure", attribute.lineage_route)
 
     def test_lineage_response_marks_dbt_edges_as_missing(self):
         lineage = self.service.get_lineage("bed-pressure")

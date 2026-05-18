@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
@@ -370,12 +371,22 @@ class GovernanceReadService:
             business_name=attribute.business_name,
             data_type=attribute.data_type,
             description=attribute.description,
+            source_table=table.id,
+            source_system=self._source_system_label(use_case),
             classification=selected.classification if selected and isinstance(selected, PolicyRuleConfig) else "unknown",
             sensitivity=selected.sensitivity if selected and isinstance(selected, PolicyRuleConfig) else "unknown",
             policy_id=selected_policy.policy_id if selected_policy else None,
             policy_version=selected_policy.version if selected_policy else None,
             matched_rule=selected.rule_id if selected and isinstance(selected, PolicyRuleConfig) else None,
+            owner=attribute.owner or use_case.ownership.owner,
+            steward=attribute.steward or use_case.ownership.steward,
             review_status=attribute.review_status,
+            reviewer=attribute.reviewer,
+            last_reviewed=self._parse_optional_datetime(attribute.last_reviewed),
+            active_exception=None,
+            consumers=[consumer.id for consumer in use_case.consumers],
+            lineage_route=f"/governance/use-cases/{use_case.slug}/lineage?node={table.id}",
+            history=[],
             evidence=EvidenceSource(
                 source_id=f"{use_case.slug}:table:{table.id}:attribute:{attribute.name}",
                 source_type="governance_use_case_yaml+governance_policy_yaml" if selected_policy else "governance_use_case_yaml",
@@ -405,6 +416,17 @@ class GovernanceReadService:
         if any(token in normalized_pattern for token in ["*", "?", "["]):
             return fnmatchcase(attribute_name, normalized_pattern)
         return attribute_name == normalized_pattern
+
+    def _source_system_label(self, use_case: GovernanceUseCaseConfig) -> str | None:
+        names = [source.name for source in use_case.source_systems if source.name]
+        if not names:
+            return None
+        return ", ".join(names)
+
+    def _parse_optional_datetime(self, value: str | None) -> datetime | None:
+        if not value:
+            return None
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
     def _rule_payload(self, rule: Any) -> dict[str, object]:
         return {

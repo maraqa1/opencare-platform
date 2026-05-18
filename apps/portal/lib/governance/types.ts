@@ -49,13 +49,22 @@ export type AttributeRecord = {
   business_name?: string | null;
   data_type?: string | null;
   description?: string | null;
+  source_table?: string | null;
+  source_system?: string | null;
   classification: Classification | "unknown";
   sensitivity: Sensitivity | "unknown";
   policy_id?: string | null;
   policy_version?: string | null;
   matched_rule?: string | null;
+  owner?: string | null;
+  steward?: string | null;
   review_status: string;
+  reviewer?: string | null;
   last_reviewed?: string | null;
+  active_exception?: Record<string, unknown> | null;
+  consumers: string[];
+  lineage_route?: string | null;
+  history: Record<string, unknown>[];
   evidence: EvidenceSource;
 };
 

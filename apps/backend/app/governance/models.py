@@ -55,13 +55,22 @@ class AttributeRecord(BaseModel):
     business_name: str | None = None
     data_type: str | None = None
     description: str | None = None
+    source_table: str | None = None
+    source_system: str | None = None
     classification: Classification | Literal["unknown"] = "unknown"
     sensitivity: Sensitivity | Literal["unknown"] = "unknown"
     policy_id: str | None = None
     policy_version: str | None = None
     matched_rule: str | None = None
+    owner: str | None = None
+    steward: str | None = None
     review_status: str = "unknown"
+    reviewer: str | None = None
     last_reviewed: datetime | None = None
+    active_exception: dict[str, Any] | None = None
+    consumers: list[str] = Field(default_factory=list)
+    lineage_route: str | None = None
+    history: list[dict[str, Any]] = Field(default_factory=list)
     evidence: EvidenceSource
 
 
@@ -138,4 +147,3 @@ class EvidencePackDescriptor(BaseModel):
     description: str
     state: EvidenceState = "unknown"
     evidence_sources: list[EvidenceSource] = Field(default_factory=list)
-
