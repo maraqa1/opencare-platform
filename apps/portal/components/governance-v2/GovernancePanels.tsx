@@ -321,8 +321,8 @@ export function AttributeTable({
     );
   }
   return (
-    <div className="gv2-table-scroll">
-      <table className="gv2-table">
+    <div className="gv2-table-scroll gv2-attribute-table-scroll">
+      <table className="gv2-table gv2-attribute-table">
         <thead>
           <tr>
             <th>Attribute</th>

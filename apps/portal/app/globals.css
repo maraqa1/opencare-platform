@@ -6827,6 +6827,13 @@ code {
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
 }
 
+.gv2-table-detail-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
 .gv2-row-link,
 .gv2-row-card {
   display: flex;
@@ -7031,6 +7038,7 @@ code {
   width: 100%;
   min-width: 980px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .gv2-table th,
@@ -7050,6 +7058,52 @@ code {
 
 .gv2-portfolio-table {
   min-width: 860px;
+}
+
+.gv2-attribute-table-scroll {
+  max-height: 460px;
+}
+
+.gv2-attribute-table {
+  min-width: 1320px;
+}
+
+.gv2-attribute-table th:nth-child(1),
+.gv2-attribute-table td:nth-child(1) {
+  width: 140px;
+}
+
+.gv2-attribute-table th:nth-child(2),
+.gv2-attribute-table td:nth-child(2),
+.gv2-attribute-table th:nth-child(3),
+.gv2-attribute-table td:nth-child(3),
+.gv2-attribute-table th:nth-child(5),
+.gv2-attribute-table td:nth-child(5),
+.gv2-attribute-table th:nth-child(6),
+.gv2-attribute-table td:nth-child(6),
+.gv2-attribute-table th:nth-child(7),
+.gv2-attribute-table td:nth-child(7),
+.gv2-attribute-table th:nth-child(8),
+.gv2-attribute-table td:nth-child(8),
+.gv2-attribute-table th:nth-child(9),
+.gv2-attribute-table td:nth-child(9),
+.gv2-attribute-table th:nth-child(11),
+.gv2-attribute-table td:nth-child(11),
+.gv2-attribute-table th:nth-child(12),
+.gv2-attribute-table td:nth-child(12) {
+  width: 112px;
+}
+
+.gv2-attribute-table th:nth-child(4),
+.gv2-attribute-table td:nth-child(4),
+.gv2-attribute-table th:nth-child(10),
+.gv2-attribute-table td:nth-child(10) {
+  width: 190px;
+}
+
+.gv2-attribute-table td {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .gv2-lineage-preview {
@@ -7108,6 +7162,8 @@ code {
 .gv2-attribute-detail {
   position: sticky;
   top: 18px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
 }
 
 .gv2-detail-block {
@@ -7223,6 +7279,10 @@ code {
   }
 
   .gv2-attribute-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .gv2-table-detail-workspace {
     grid-template-columns: 1fr;
   }
 

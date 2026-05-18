@@ -78,6 +78,8 @@ class GovernancePortalPhase4Tests(unittest.TestCase):
         self.assertIn("Not configured for viewer mode", panels)
         self.assertIn("AttributeDetailPanel", table_page)
         self.assertIn("selectedAttributeId", table_page)
+        self.assertIn("gv2-table-detail-workspace", table_page)
+        self.assertIn("gv2-attribute-table", panels)
         self.assertIn("encodeURIComponent(metric.source_table_id)", metric_page)
 
     def test_v1_3_wireframe_zones_are_represented_in_viewer_pages(self):

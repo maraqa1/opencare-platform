@@ -63,7 +63,7 @@ export default async function TableGovernancePage({ params, searchParams }: Page
           { label: "Consumers", value: table.consumers.length, detail: "Declared downstream consumers." },
         ]}
       />
-      <section className="gv2-workspace-split wide-left">
+      <section className="gv2-table-detail-workspace">
         <article className="gv2-panel">
           <div className="gv2-section-head">
             <h2>Schema</h2>
@@ -71,6 +71,9 @@ export default async function TableGovernancePage({ params, searchParams }: Page
           </div>
           <AttributeTable attributes={table.attributes} slug={slug} tableId={id} selectedAttributeId={selectedAttribute?.id} />
         </article>
+        <AttributeDetailPanel attribute={selectedAttribute} tableName={table.name} />
+      </section>
+      <section className="gv2-workspace-split">
         <article className="gv2-panel">
           <div className="gv2-section-head">
             <h2>Data Quality Checks</h2>
@@ -86,27 +89,21 @@ export default async function TableGovernancePage({ params, searchParams }: Page
             ))}
           </div>
         </article>
-      </section>
-      <section className="gv2-section">
-        <h2>Attribute Detail</h2>
-        <div className="gv2-attribute-workspace">
-          <AttributeDetailPanel attribute={selectedAttribute} tableName={table.name} />
-          <article className="gv2-panel">
-            <h3>Ownership and Governance</h3>
-            <dl className="gv2-definition-grid">
-              <div><dt>Owner</dt><dd>{displayValue(table.owner)}</dd></div>
-              <div><dt>Steward</dt><dd>{displayValue(table.steward)}</dd></div>
-              <div><dt>Review cadence</dt><dd>Unknown</dd></div>
-              <div><dt>Last reviewed</dt><dd>Unknown</dd></div>
-              <div><dt>Data domain</dt><dd>{displayValue(table.schema_name)}</dd></div>
-              <div><dt>Governance tier</dt><dd>Unknown</dd></div>
-            </dl>
-            <h3>Consumers</h3>
-            <div className="gv2-chip-list">
-              {table.consumers.length > 0 ? table.consumers.map((consumer) => <span key={consumer}>{consumer}</span>) : <span>Unknown</span>}
-            </div>
-          </article>
-        </div>
+        <article className="gv2-panel">
+          <h2>Ownership and Governance</h2>
+          <dl className="gv2-definition-grid">
+            <div><dt>Owner</dt><dd>{displayValue(table.owner)}</dd></div>
+            <div><dt>Steward</dt><dd>{displayValue(table.steward)}</dd></div>
+            <div><dt>Review cadence</dt><dd>Unknown</dd></div>
+            <div><dt>Last reviewed</dt><dd>Unknown</dd></div>
+            <div><dt>Data domain</dt><dd>{displayValue(table.schema_name)}</dd></div>
+            <div><dt>Governance tier</dt><dd>Unknown</dd></div>
+          </dl>
+          <h3>Consumers</h3>
+          <div className="gv2-chip-list">
+            {table.consumers.length > 0 ? table.consumers.map((consumer) => <span key={consumer}>{consumer}</span>) : <span>Unknown</span>}
+          </div>
+        </article>
       </section>
       <section className="gv2-section">
         <h2>Evidence</h2>
