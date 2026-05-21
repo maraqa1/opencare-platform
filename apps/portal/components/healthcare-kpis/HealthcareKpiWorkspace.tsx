@@ -30,6 +30,25 @@ const readinessFields: Array<{
   { key: "definition", label: "Definition" },
 ];
 
+const committeeMoments = [
+  {
+    title: "Open with board priorities",
+    copy: "Anchor the conversation in access, flow, safety, finance, digital maturity, workforce, and research outcomes.",
+  },
+  {
+    title: "Switch by executive lens",
+    copy: "Move from CEO to COO, CFO, CIO / CMIO, clinical, nursing, patient experience, workforce, and research views without changing the underlying catalogue.",
+  },
+  {
+    title: "Show packaged dashboards",
+    copy: "Position each pack as a governed dashboard product with a clear operating question, audience, and KPI evidence trail.",
+  },
+  {
+    title: "Close with readiness",
+    copy: "Use metadata coverage, source systems, and predictive guardrails to show what can be activated first.",
+  },
+];
+
 function uniqueCount(values: string[]) {
   return new Set(values.filter(Boolean)).size;
 }
@@ -70,7 +89,7 @@ function KpiDetailDrawer({
             <p className="healthcare-arabic-name">{kpi.arabicName}</p>
           </div>
           <button className="journey-close" type="button" onClick={onClose} aria-label="Close KPI detail">
-            ×
+            X
           </button>
         </div>
 
@@ -131,12 +150,17 @@ function KpiDetailDrawer({
 export function HealthcareKpiWorkspace() {
   const [selectedLensId, setSelectedLensId] = useState(executiveLenses[0].id);
   const [selectedKpi, setSelectedKpi] = useState<HealthcareKpi | null>(null);
+  const [catalogueQuery, setCatalogueQuery] = useState("");
+  const [catalogueLevel, setCatalogueLevel] = useState<"all" | HealthcareKpi["level"]>("all");
+  const [catalogueCategory, setCatalogueCategory] = useState("all");
+  const [limitToLens, setLimitToLens] = useState(false);
   const selectedLens = executiveLenses.find((lens) => lens.id === selectedLensId) ?? executiveLenses[0];
   const selectedLensKpis = getHealthcareKpisByIds(selectedLens.kpiIds);
   const readinessScore = getGovernanceReadinessScore(healthcareKpis);
   const realTimeCount = healthcareKpis.filter((kpi) => kpi.category === "Real-Time").length;
   const predictiveCount = healthcareKpis.filter((kpi) => Boolean(kpi.aiOpportunity)).length;
   const sourceSystemCount = uniqueCount(healthcareKpis.map((kpi) => kpi.source));
+  const categoryOptions = useMemo(() => Array.from(new Set(healthcareKpis.map((kpi) => kpi.category))).sort(), []);
 
   const featuredKpis = useMemo(() => {
     return [
@@ -144,6 +168,34 @@ export function HealthcareKpiWorkspace() {
       ...predictiveOpportunityRadar.map((item) => getHealthcareKpiById(item.kpiId)).filter((kpi): kpi is HealthcareKpi => Boolean(kpi)),
     ].filter((kpi, index, list) => list.findIndex((item) => item.id === kpi.id) === index).slice(0, 10);
   }, [selectedLensKpis]);
+
+  const filteredKpis = useMemo(() => {
+    const normalizedQuery = catalogueQuery.trim().toLowerCase();
+    const lensIds = new Set(selectedLens.kpiIds);
+
+    return healthcareKpis.filter((kpi) => {
+      const matchesLens = !limitToLens || lensIds.has(kpi.id);
+      const matchesLevel = catalogueLevel === "all" || kpi.level === catalogueLevel;
+      const matchesCategory = catalogueCategory === "all" || kpi.category === catalogueCategory;
+      const matchesQuery =
+        !normalizedQuery ||
+        [
+          kpi.name,
+          kpi.arabicName,
+          kpi.definition,
+          kpi.owner,
+          kpi.department,
+          kpi.family,
+          kpi.source,
+          kpi.criticality,
+        ].some((value) => value.toLowerCase().includes(normalizedQuery));
+
+      return matchesLens && matchesLevel && matchesCategory && matchesQuery;
+    });
+  }, [catalogueCategory, catalogueLevel, catalogueQuery, limitToLens, selectedLens.kpiIds]);
+
+  const hasCatalogueFilters = Boolean(catalogueQuery.trim()) || catalogueLevel !== "all" || catalogueCategory !== "all" || limitToLens;
+  const visibleCatalogueKpis = hasCatalogueFilters ? filteredKpis.slice(0, 18) : featuredKpis;
 
   return (
     <PageFrame
@@ -162,7 +214,7 @@ export function HealthcareKpiWorkspace() {
           <p className="eyebrow">Pre-Sales Executive Cockpit</p>
           <h2>From KPI catalogue to hospital command intelligence.</h2>
           <p>
-            OpenCare organizes Hospital Name’s performance measures by executive question, operating domain, predictive opportunity, and governance readiness. L1-L7 remains available as traceability metadata, not the primary experience.
+            OpenCare organizes Hospital Name's performance measures by executive question, operating domain, predictive opportunity, and governance readiness. L1-L7 remains available as traceability metadata, not the primary experience.
           </p>
         </div>
         <div className="healthcare-command-metrics">
@@ -187,6 +239,16 @@ export function HealthcareKpiWorkspace() {
             <p>Named source-system patterns ready for discovery and governance mapping.</p>
           </article>
         </div>
+      </section>
+
+      <section className="healthcare-demo-flow" aria-label="Executive demo storyline">
+        {committeeMoments.map((moment, index) => (
+          <article key={moment.title}>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{moment.title}</strong>
+            <p>{moment.copy}</p>
+          </article>
+        ))}
       </section>
 
       <section className="healthcare-section">
@@ -345,7 +407,7 @@ export function HealthcareKpiWorkspace() {
           <div>
             <p className="eyebrow">KPI Catalogue</p>
             <h2 className="section-heading">Featured KPI catalogue preview</h2>
-            <p className="section-subtitle">The full 70-KPI catalogue stays available beneath the executive cockpit as evidence and drilldown.</p>
+            <p className="section-subtitle">The full 70-KPI catalogue stays available beneath the executive cockpit as searchable evidence and drilldown.</p>
           </div>
           <div className="healthcare-level-badges">
             {healthcareKpiLevels.map((level) => (
@@ -353,8 +415,57 @@ export function HealthcareKpiWorkspace() {
             ))}
           </div>
         </div>
+        <div className="healthcare-catalogue-controls">
+          <label className="healthcare-catalogue-search">
+            <span>Search catalogue</span>
+            <input
+              type="search"
+              value={catalogueQuery}
+              onChange={(event) => setCatalogueQuery(event.target.value)}
+              placeholder="Search KPI, owner, source, department"
+            />
+          </label>
+          <label>
+            <span>Traceability</span>
+            <select value={catalogueLevel} onChange={(event) => setCatalogueLevel(event.target.value as "all" | HealthcareKpi["level"])}>
+              <option value="all">All L1-L7</option>
+              {healthcareKpiLevels.map((level) => (
+                <option key={level.level} value={level.level}>{level.level} - {level.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Signal type</span>
+            <select value={catalogueCategory} onChange={(event) => setCatalogueCategory(event.target.value)}>
+              <option value="all">All categories</option>
+              {categoryOptions.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </label>
+          <label className="healthcare-catalogue-toggle">
+            <input type="checkbox" checked={limitToLens} onChange={(event) => setLimitToLens(event.target.checked)} />
+            <span>Selected lens only</span>
+          </label>
+          <button
+            type="button"
+            className="healthcare-catalogue-reset"
+            onClick={() => {
+              setCatalogueQuery("");
+              setCatalogueLevel("all");
+              setCatalogueCategory("all");
+              setLimitToLens(false);
+            }}
+          >
+            Reset
+          </button>
+        </div>
+        <p className="healthcare-catalogue-summary">
+          Showing {visibleCatalogueKpis.length} of {hasCatalogueFilters ? filteredKpis.length : healthcareKpis.length} KPIs
+          {limitToLens ? ` for ${selectedLens.title}` : ""}.
+        </p>
         <div className="healthcare-catalogue-grid">
-          {featuredKpis.map((kpi) => (
+          {visibleCatalogueKpis.map((kpi) => (
             <article className="healthcare-catalogue-card" key={kpi.id}>
               <div>
                 <span className={`healthcare-category ${categoryTone(kpi.category)}`}>{kpi.category}</span>
@@ -367,6 +478,12 @@ export function HealthcareKpiWorkspace() {
             </article>
           ))}
         </div>
+        {visibleCatalogueKpis.length === 0 ? (
+          <div className="healthcare-catalogue-empty">
+            <strong>No KPI matches this view.</strong>
+            <p>Try clearing the search or widening the traceability and signal filters.</p>
+          </div>
+        ) : null}
       </section>
 
       <KpiDetailDrawer kpi={selectedKpi} onClose={() => setSelectedKpi(null)} />

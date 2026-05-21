@@ -2569,7 +2569,7 @@ code {
   display: grid;
   grid-template-columns: minmax(130px, 220px) minmax(420px, 680px) minmax(180px, 1fr);
   gap: clamp(22px, 4vw, 58px);
-  align-items: end;
+  align-items: flex-end;
   padding-top: 32px;
 }
 
@@ -2703,7 +2703,7 @@ code {
 
 .talemia-filter-form {
   flex-wrap: wrap;
-  align-items: end;
+  align-items: flex-end;
   justify-content: flex-end;
   gap: 10px 12px;
 }
@@ -2974,7 +2974,7 @@ code {
 .talemia-column-chart {
   min-height: 170px;
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: space-around;
   gap: 12px;
   overflow-x: hidden;
@@ -2986,7 +2986,7 @@ code {
   max-width: 108px;
   display: grid;
   justify-items: center;
-  align-items: end;
+  align-items: flex-end;
   gap: 7px;
   text-align: center;
 }
@@ -3057,7 +3057,7 @@ code {
 .talemia-stage-bars {
   display: grid;
   grid-template-columns: repeat(6, minmax(72px, 1fr));
-  align-items: end;
+  align-items: flex-end;
   gap: 12px;
   overflow-x: auto;
   padding: 10px 12px 0;
@@ -3067,7 +3067,7 @@ code {
   min-width: 74px;
   display: grid;
   justify-items: center;
-  align-items: end;
+  align-items: flex-end;
   grid-template-rows: 20px 104px 42px;
   gap: 5px;
   text-align: center;
@@ -3140,7 +3140,7 @@ code {
 .talemia-funnel-chart {
   min-height: 220px;
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: stretch;
   gap: 0;
   overflow-x: auto;
@@ -3156,7 +3156,7 @@ code {
   min-width: 92px;
   display: grid;
   justify-items: center;
-  align-items: end;
+  align-items: flex-end;
   grid-template-rows: 24px 132px 44px;
   text-align: center;
 }
@@ -3408,7 +3408,7 @@ code {
   display: grid;
   grid-template-columns: repeat(5, minmax(110px, 1fr));
   gap: 28px;
-  align-items: end;
+  align-items: flex-end;
   min-height: 150px;
 }
 
@@ -7112,6 +7112,7 @@ code {
 .healthcare-lens-detail p,
 .healthcare-pack-card p,
 .healthcare-domain-node p,
+.healthcare-demo-flow p,
 .healthcare-radar-row p,
 .healthcare-radar-row em,
 .healthcare-catalogue-card p,
@@ -7119,6 +7120,37 @@ code {
   margin: 0;
   color: var(--oc-gray-600);
   line-height: 1.5;
+}
+
+.healthcare-demo-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.healthcare-demo-flow article {
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--surface-shadow);
+  padding: 16px;
+}
+
+.healthcare-demo-flow span {
+  color: var(--oc-teal);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.healthcare-demo-flow strong {
+  color: var(--oc-navy);
+  font-family: var(--font-heading);
+  font-size: 20px;
+  line-height: 1.08;
 }
 
 .healthcare-section {
@@ -7475,6 +7507,74 @@ code {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.healthcare-catalogue-controls {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.5fr) minmax(180px, 0.9fr) minmax(180px, 0.8fr) auto auto;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.healthcare-catalogue-controls label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.healthcare-catalogue-controls label > span,
+.healthcare-catalogue-summary {
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.healthcare-catalogue-controls input[type="search"],
+.healthcare-catalogue-controls select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(31, 56, 100, 0.12);
+  border-radius: 12px;
+  background: var(--oc-white);
+  color: var(--oc-gray-900);
+  font: inherit;
+  padding: 0 12px;
+}
+
+.healthcare-catalogue-toggle {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 12px;
+  background: rgba(248, 250, 253, 0.94);
+  padding: 0 12px;
+}
+
+.healthcare-catalogue-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--oc-teal);
+}
+
+.healthcare-catalogue-reset {
+  min-height: 42px;
+  border: 1px solid rgba(31, 56, 100, 0.12);
+  border-radius: 12px;
+  background: var(--oc-white);
+  color: var(--oc-blue);
+  font: inherit;
+  font-weight: 800;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.healthcare-catalogue-summary {
+  margin: -4px 0 0;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
 .healthcare-catalogue-card {
   display: grid;
   gap: 10px;
@@ -7515,7 +7615,7 @@ code {
 }
 
 .healthcare-catalogue-card button {
-  align-self: end;
+  align-self: flex-end;
   border: 1px solid rgba(31, 56, 100, 0.1);
   border-radius: 999px;
   background: var(--oc-white);
@@ -7524,6 +7624,24 @@ code {
   padding: 0 12px;
   font-size: 13px;
   font-weight: 700;
+}
+
+.healthcare-catalogue-empty {
+  display: grid;
+  gap: 6px;
+  border: 1px dashed rgba(31, 56, 100, 0.18);
+  border-radius: 16px;
+  background: rgba(248, 250, 253, 0.72);
+  padding: 20px;
+}
+
+.healthcare-catalogue-empty strong {
+  color: var(--oc-navy);
+}
+
+.healthcare-catalogue-empty p {
+  margin: 0;
+  color: var(--oc-gray-600);
 }
 
 .healthcare-detail-backdrop {
@@ -7622,7 +7740,12 @@ code {
   .healthcare-lens-grid,
   .healthcare-pack-grid,
   .healthcare-domain-map,
+  .healthcare-demo-flow,
   .healthcare-catalogue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .healthcare-catalogue-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -7632,6 +7755,8 @@ code {
   .healthcare-lens-grid,
   .healthcare-pack-grid,
   .healthcare-domain-map,
+  .healthcare-demo-flow,
+  .healthcare-catalogue-controls,
   .healthcare-catalogue-grid,
   .healthcare-lens-kpis,
   .healthcare-detail-grid {
