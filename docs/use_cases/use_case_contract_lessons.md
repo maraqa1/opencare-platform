@@ -273,6 +273,77 @@ Important lessons:
 - explicit provisioning scripts make new use cases easier to add, test, and rerun
 - "platform is healthy" and "Bed Pressure or RCM is demo-ready" must be treated as different checkpoints
 
+### 13. Repeated pattern for adding a new use case
+
+Future use cases should be added with the same repeatable pattern every time.
+
+The recommended sequence is:
+
+1. define the use-case contract
+2. provision the source data path
+3. land data into a raw schema
+4. materialize staging and marts
+5. expose APIs and portal routes
+6. sync dashboards and governance metadata
+7. validate the use case end to end
+
+The contract for a new use case should always answer:
+
+- what business question the use case solves
+- what source entities are required
+- whether the demo path uses synthetic data, Airbyte, or both
+- which raw schema receives the landed data
+- which dbt staging models and marts are required
+- which runtime outputs are optional versus mandatory
+- which backend endpoints and portal routes are required
+- which Superset datasets and dashboards are required
+- which governance records must appear under Administration
+
+The implementation shape should stay consistent:
+
+- source contract and seed data
+- ingestion configuration
+- dbt staging models
+- dbt marts
+- runtime jobs
+- backend endpoints
+- portal workspace
+- Superset dashboard metadata
+- governance registry entries
+- validation checks
+
+Recommended file-level pattern:
+
+- `seed/mysql/<use_case>/...` or equivalent seed source for demo data
+- `dbt/opencare/models/staging/<use_case>/...`
+- `dbt/opencare/models/marts/<use_case>/...`
+- `apps/api/...` endpoints for use-case APIs
+- `apps/portal/...` routes for workspace pages
+- `sql/superset/...` or metadata sync inputs for dashboard definitions
+- `docs/use_cases/...` for the contract and operator notes
+
+Recommended execution pattern:
+
+1. `bash install/install.sh --platform-only`
+2. `bash scripts/airbyte/apply_airbyte.sh`
+3. `bash scripts/use_cases/apply_use_case.sh <use_case>`
+4. `bash scripts/use_cases/validate_use_case.sh <use_case>`
+
+If a dedicated per-use-case script does not exist yet, the use case should still be built as if that interface is the target outcome.
+
+That means each new use case should be implementable as:
+
+- platform prerequisites
+- provisioning logic
+- validation logic
+
+Important lessons:
+
+- a new use case should never require editing the installer blindly until the UI happens to show data
+- platform bootstrap should be reusable across use cases, while provisioning should be use-case-specific
+- validation should prove the use case is populated, not just that resources were created
+- if a new use case cannot be described as a repeatable sequence, the contract is still too implicit
+
 ## Specific Revenue Cycle Management lessons
 
 From this implementation, future use-case prompts should explicitly guard against:
