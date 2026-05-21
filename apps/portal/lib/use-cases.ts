@@ -1,4 +1,4 @@
-export type UseCaseStatus = "active" | "coming_soon";
+﻿export type UseCaseStatus = "active" | "coming_soon";
 
 export type UseCaseModule = {
   id: string;
@@ -99,6 +99,28 @@ export const useCases: UseCaseModule[] = [
     },
   },
   {
+    id: "healthcare_kpi_intelligence",
+    slug: "healthcare-kpi-intelligence",
+    icon: "KPI",
+    name: "Healthcare KPI Intelligence",
+    description: "Executive hospital performance cockpit with persona lenses, predictive opportunities, and KPI governance readiness.",
+    status: "active",
+    summary: "Premium hospital performance intelligence cockpit",
+    defaultHref: "/use-cases/healthcare-kpi-intelligence",
+    kpis: [
+      { label: "Executive Lenses", value: "9", note: "CEO to research leadership" },
+      { label: "KPI Definitions", value: "70", note: "Hospital Name performance measures" },
+      { label: "Dashboard Packs", value: "8", note: "Buyer-ready cockpit modules" },
+    ],
+    shell: {
+      label: "Healthcare KPI Intelligence",
+      title: "Healthcare KPI Workspace",
+      badge: "KPI Catalogue",
+      actionHref: "/admin/dictionary-management",
+      actionLabel: "Dictionary",
+    },
+  },
+  {
     id: "staff_scheduling",
     slug: "staff-scheduling",
     icon: "Staff",
@@ -178,6 +200,9 @@ export function getUseCaseByPath(pathname: string): UseCaseModule | null {
   }
   if (pathname.startsWith("/use-cases/talemia-business-intelligence")) {
     return useCases.find((item) => item.id === "talemia_business_intelligence") ?? null;
+  }
+  if (pathname.startsWith("/use-cases/healthcare-kpi-intelligence")) {
+    return useCases.find((item) => item.id === "healthcare_kpi_intelligence") ?? null;
   }
   if (pathname.startsWith("/use-cases/staff-scheduling")) {
     return useCases.find((item) => item.id === "staff_scheduling") ?? null;
