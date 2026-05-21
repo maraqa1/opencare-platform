@@ -6,6 +6,13 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
 
+runtime_input_row_count() {
+  local relation="$1"
+  kubectl -n "$NAMESPACE" exec statefulset/postgres -- bash -lc \
+    "PGPASSWORD=$(printf '%q' "$POSTGRES_PASSWORD") psql -U $(printf '%q' "$POSTGRES_USER") -d $(printf '%q' "$POSTGRES_DB") -Atc 'select count(*) from ${relation};'" \
+    | tr -d '[:space:]'
+}
+
 trigger_runtime_job() {
   local cronjob_name="$1"
   local job_name="$2"
@@ -44,6 +51,12 @@ kubectl -n "$NAMESPACE" delete pod -l app=anomaly --ignore-not-found >/dev/null 
 wait_for_deployment anomaly
 TIMEOUT_SECONDS="$previous_timeout"
 
-trigger_runtime_job bed-forecast-refresh bed-forecast-run-now
-trigger_runtime_job anomaly-refresh anomaly-run-now
+bed_forecast_input_rows="$(runtime_input_row_count "${ANALYTICS_SCHEMA}.fct_bed_occupancy")"
+if [[ "$bed_forecast_input_rows" =~ ^[0-9]+$ ]] && (( bed_forecast_input_rows > 0 )); then
+  trigger_runtime_job bed-forecast-refresh bed-forecast-run-now
+  trigger_runtime_job anomaly-refresh anomaly-run-now
+else
+  log_skip "Skipping runtime bootstrap triggers because ${ANALYTICS_SCHEMA}.fct_bed_occupancy has no rows yet"
+fi
+
 log_success "Runtime bootstrap jobs completed"
