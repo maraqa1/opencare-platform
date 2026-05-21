@@ -71,11 +71,7 @@ kubectl -n "$NAMESPACE" rollout restart deployment/superset >/dev/null
 wait_for_deployment superset
 ensure_superset_admin
 
-if command -v psql >/dev/null 2>&1; then
-  bash "$ROOT_DIR/scripts/superset/configure_readonly.sh"
-else
-  log_skip "psql not available; skipping Superset read-only role bootstrap"
-fi
+bash "$ROOT_DIR/scripts/superset/configure_readonly.sh"
 
 log_skip "Superset dashboard sync deferred until dbt models are materialized"
 
