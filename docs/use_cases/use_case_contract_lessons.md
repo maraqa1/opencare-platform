@@ -49,8 +49,27 @@ Future prompts should explicitly separate:
 - backend rollout
 - portal rollout
 - dbt run
+- Airbyte installation and health verification
+- use-case source sync
 - Superset sync
 - demo proof flow
+
+They should also define the correct phase order for data-bearing use cases:
+
+1. platform bootstrap
+2. shared service install
+3. Airbyte and ingestion availability
+4. source sync or synthetic demo load
+5. dbt materialization
+6. runtime execution
+7. dashboard sync
+8. validation
+
+Important lessons:
+
+- Airbyte should be installed after shared infrastructure is healthy, not after runtime side effects
+- runtime jobs should never be the reason ingestion fails to happen
+- dbt and runtime phases need explicit behavior when upstream raw data is intentionally empty on a fresh install
 
 ### 3. Synthetic data contract
 
@@ -192,6 +211,68 @@ Governance should remain aligned to the OpenCare workspace model:
 - governance views grouped by use case contract, glossary, assets, lineage, quality, and compliance
 - business-readable ownership, purpose, consumers, and compliance context shown alongside technical metadata
 
+### 10. Fresh VM and bootstrap contract
+
+Future prompts should require that a brand-new VM build is treated as a first-class scenario, not an afterthought.
+
+That contract should explicitly define:
+
+- host bootstrap requirements
+- expected `.env` source of truth
+- secret rotation or secret replacement behavior
+- whether install scripts are allowed to preserve existing cluster secrets
+- whether a phase is expected to run on the VM host or inside the cluster
+- what "platform installed" means before any use-case data is loaded
+
+Important lessons:
+
+- a fresh VM is the fastest way to expose hidden coupling between install phases
+- stale Kubernetes secrets are a major repeatability risk when `.env` changes are expected to take effect
+- host-run scripts must not assume Kubernetes service DNS names resolve on the VM itself
+- platform install and use-case provisioning are different responsibilities and should not be conflated
+
+### 11. Runtime gating contract
+
+Future prompts must require explicit rules for when runtime jobs are allowed to execute.
+
+That contract should answer:
+
+- which mart or source tables are prerequisites
+- what row-count threshold is considered "ready"
+- whether empty marts are valid on first install
+- whether a runtime miss is fatal or a visible non-fatal skip
+
+Important lessons:
+
+- runtime bootstrap should be gated by mart readiness, not by hope
+- a forecast or anomaly refresh against an empty mart is not a useful readiness signal
+- install should surface skipped runtime work clearly, but it should not block later ingestion or demo phases
+
+### 12. Use-case factory contract
+
+Future prompts should define each use case as a repeatable module with three explicit steps:
+
+1. platform install
+2. use-case provisioning
+3. use-case validation
+
+That contract should make it possible to add new use cases with the same pattern every time:
+
+- source contract
+- seed or connector configuration
+- raw landing schema
+- dbt staging and marts
+- runtime outputs
+- dashboard sync
+- governance registration
+- acceptance validation
+
+Important lessons:
+
+- a single giant installer is convenient, but it hides whether the platform or the use case actually failed
+- explicit provisioning scripts make new use cases easier to add, test, and rerun
+- "platform is healthy" and "Bed Pressure or RCM is demo-ready" must be treated as different checkpoints
+
 ## Specific Revenue Cycle Management lessons
 
 From this implementation, future use-case prompts should explicitly guard against:
@@ -221,15 +302,22 @@ Every future use-case prompt should include these headings:
 - Empty-state behavior
 - Validation and demo acceptance criteria
 - Deployment and refresh steps
+- Fresh VM bootstrap assumptions
+- Ingestion and Airbyte ordering
+- Runtime preconditions and skip behavior
 
 ## Demo acceptance checklist
 
 A future use case should not be called complete unless all of the following are true:
 
+- the shared platform is installed successfully on a clean VM
+- shared secrets reflect the current `.env` values
+- Airbyte or equivalent ingestion infrastructure is deployed and reachable before source sync starts
 - synthetic source tables are populated
 - ingestion loads those records into the target raw schema
 - required marts have non-zero row counts
 - dbt tests pass
+- runtime jobs only execute after their input marts are populated
 - API endpoints return valid populated responses
 - portal workspace pages show live content
 - Home navigation enters the workspace correctly
