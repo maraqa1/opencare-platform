@@ -28,4 +28,23 @@ Useful environment flags:
 After bootstrap:
 1. clone the repo onto the VM
 2. copy `.env.template` to `.env` and fill secrets/hosts
-3. run `sudo bash install/install.sh`
+3. run `sudo bash install/install.sh --platform-only`
+
+## Recommended install pattern
+
+For repeatable fresh environments:
+
+```bash
+bash install/install.sh --platform-only
+bash scripts/demo/apply_demo_proof.sh
+bash scripts/decisions/apply_decisions.sh
+bash install/validation.sh
+```
+
+Useful install options:
+- `--platform-only`
+- `--with-demo`
+- `--with-decision`
+- `--from <phase>`
+- `--to <phase>`
+- `--skip-validation`
