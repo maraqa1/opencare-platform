@@ -1,26 +1,24 @@
+import type { Metadata } from "next";
+
+import { DictionaryView } from "@/components/DictionaryView";
 import { PageFrame } from "@/components/page-frame";
-import { dictionaryRows } from "@/lib/site-data";
+
+export const metadata: Metadata = {
+  title: "Dictionary Management - OpenCare Portal",
+};
 
 export default function DictionaryManagementPage() {
   return (
     <PageFrame
-      title="Dictionary Management"
-      description="Administrative stewardship for shared metric definitions and usage guidance."
+      eyebrow="Governance Admin"
+      title="Metric management"
+      description="Manage metric definitions, classification, ownership, workflow status, and approved use cases."
       chips={[
-        { label: "Definitions owned", tone: "primary" },
-        { label: "Customer-safe language", tone: "accent" },
+        { label: "Draft -> Review -> Approved", tone: "primary" },
+        { label: "NDMO classification", tone: "accent" },
       ]}
     >
-      <section className="dictionary-grid">
-        {dictionaryRows.map((item) => (
-          <article className="dictionary-row" key={item.code}>
-            <p className="eyebrow">{item.code}</p>
-            <h3>{item.label}</h3>
-            <p className="subtle">{item.definition}</p>
-            <p>Owner: Analytics Governance</p>
-          </article>
-        ))}
-      </section>
+      <DictionaryView managementMode useCase="bed_pressure" />
     </PageFrame>
   );
 }

@@ -1,0 +1,397 @@
+version: 2
+
+models:
+  - name: stg_rcm_claims
+    description: Source-aligned claim scaffold for revenue-cycle onboarding.
+    meta:
+      stage: staging
+      owner: Revenue Integrity
+      classification: financial
+    columns:
+      - name: claim_id
+        tests:
+          - unique
+      - name: claim_status
+        tests:
+          - accepted_values:
+              values: ["open", "submitted", "paid", "denied", "appealed", "writeoff", "closed"]
+
+  - name: stg_rcm_financial_postings
+    description: Source-aligned ERP posting scaffold anchored to the general ledger.
+    meta:
+      stage: staging
+      owner: Finance
+      classification: financial
+
+  - name: stg_rcm_referrals
+    description: Source-aligned CRM or referral scaffold used to connect acquisition to revenue.
+    meta:
+      stage: staging
+      owner: Growth Operations
+      classification: commercial
+
+  - name: fct_cash_recovery_opportunity
+    description: One row per ranked cash recovery opportunity.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: opportunity_id
+        data_type: text
+      - name: claim_id
+        data_type: text
+      - name: encounter_id
+        data_type: text
+      - name: payer_id
+        data_type: text
+      - name: department_id
+        data_type: text
+      - name: issue_type
+        data_type: text
+      - name: issue_reason
+        data_type: text
+      - name: detected_date
+        data_type: date
+      - name: due_date
+        data_type: date
+      - name: recoverable_amount
+        data_type: numeric(14,2)
+        tests:
+          - expression_is_true:
+              expression: "recoverable_amount >= 0 or recoverable_amount is null"
+      - name: expected_recovery_amount
+        data_type: numeric(14,2)
+        tests:
+          - expression_is_true:
+              expression: "expected_recovery_amount >= 0 or expected_recovery_amount is null"
+      - name: effort_hours
+        data_type: numeric(10,2)
+        tests:
+          - expression_is_true:
+              expression: "priority_score is null or effort_hours > 0"
+      - name: priority_score
+        data_type: numeric(14,4)
+      - name: owner_team
+        data_type: text
+      - name: owner_user_id
+        data_type: text
+      - name: status
+        data_type: text
+      - name: source_system
+        data_type: text
+      - name: evidence_summary
+        data_type: text
+
+  - name: fct_cash_forecast
+    description: Cash forecast by date and payer or department segment.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: forecast_date
+        data_type: date
+      - name: payer_id
+        data_type: text
+      - name: department_id
+        data_type: text
+      - name: expected_cash
+        data_type: numeric(14,2)
+      - name: cash_at_risk
+        data_type: numeric(14,2)
+      - name: recoverable_cash
+        data_type: numeric(14,2)
+      - name: confidence_score
+        data_type: numeric(8,4)
+      - name: model_used
+        data_type: text
+      - name: run_timestamp
+        data_type: timestamp
+
+  - name: fct_payer_contract_performance
+    description: Monthly payer contract compliance and underpayment performance.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: payer_id
+        data_type: text
+        tests:
+          - not_null
+      - name: month_key
+        data_type: date
+      - name: gross_billed
+        data_type: numeric(14,2)
+      - name: contracted_amount
+        data_type: numeric(14,2)
+      - name: paid_amount
+        data_type: numeric(14,2)
+        tests:
+          - expression_is_true:
+              expression: "overpayment_flag is null or overpayment_flag = true or paid_amount <= contracted_amount"
+      - name: underpayment_amount
+        data_type: numeric(14,2)
+      - name: contract_rate_pct
+        data_type: numeric(8,4)
+      - name: actual_collection_rate
+        data_type: numeric(8,4)
+        tests:
+          - expression_is_true:
+              expression: "actual_collection_rate between 0 and 1.5 or actual_collection_rate is null"
+      - name: payment_sla_days
+        data_type: integer
+      - name: actual_payment_days
+        data_type: integer
+      - name: sla_breach_count
+        data_type: integer
+      - name: overpayment_flag
+        data_type: boolean
+      - name: contract_breach_flag
+        data_type: boolean
+        tests:
+          - accepted_values:
+              values: [true, false]
+              quote: false
+      - name: renegotiation_flag
+        data_type: boolean
+
+  - name: fct_team_recovery_performance
+    description: Accountability metrics for teams and named owners.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: owner_team
+        data_type: text
+      - name: owner_user_id
+        data_type: text
+      - name: period_start
+        data_type: date
+      - name: period_end
+        data_type: date
+      - name: assigned_count
+        data_type: integer
+      - name: completed_count
+        data_type: integer
+      - name: expected_recovery
+        data_type: numeric(14,2)
+      - name: actual_recovery
+        data_type: numeric(14,2)
+      - name: recovery_variance_pct
+        data_type: numeric(10,4)
+      - name: avg_resolution_hours
+        data_type: numeric(10,2)
+      - name: overdue_count
+        data_type: integer
+
+  - name: fct_revenue_cycle
+    description: Revenue lifecycle state per claim and encounter anchored to expected and posted cash.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: revenue_cycle_id
+        data_type: text
+      - name: claim_id
+        data_type: text
+      - name: encounter_id
+        data_type: text
+      - name: payer_id
+        data_type: text
+      - name: department_id
+        data_type: text
+      - name: claim_date
+        data_type: date
+      - name: claim_status
+        data_type: text
+        tests:
+          - accepted_values:
+              values: ["open", "submitted", "paid", "denied", "appealed", "writeoff", "closed"]
+      - name: gross_billed_amount
+        data_type: numeric(14,2)
+      - name: contracted_amount
+        data_type: numeric(14,2)
+      - name: expected_cash_amount
+        data_type: numeric(14,2)
+      - name: posted_cash_amount
+        data_type: numeric(14,2)
+      - name: ar_days
+        data_type: numeric(10,2)
+      - name: as_of_timestamp
+        data_type: timestamp
+
+  - name: fct_financial_posting
+    description: ERP posting fact used as the financial truth anchor.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: posting_id
+        data_type: text
+      - name: claim_id
+        data_type: text
+      - name: encounter_id
+        data_type: text
+      - name: payer_id
+        data_type: text
+      - name: claim_date
+        data_type: date
+      - name: paid_amount
+        data_type: numeric(14,2)
+      - name: gross_billed
+        data_type: numeric(14,2)
+      - name: contracted_amount
+        data_type: numeric(14,2)
+      - name: payment_date
+        data_type: date
+        tests:
+          - expression_is_true:
+              expression: "payment_date is null or claim_date is null or payment_date >= claim_date"
+      - name: posting_date
+        data_type: date
+      - name: posting_type
+        data_type: text
+      - name: overpayment_flag
+        data_type: boolean
+
+  - name: fct_claim_aging
+    description: Claim aging snapshot fact.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: claim_aging_id
+        data_type: text
+      - name: claim_id
+        data_type: text
+      - name: payer_id
+        data_type: text
+      - name: department_id
+        data_type: text
+      - name: snapshot_date
+        data_type: date
+      - name: aging_bucket_days
+        data_type: integer
+      - name: outstanding_amount
+        data_type: numeric(14,2)
+      - name: ar_days
+        data_type: numeric(10,2)
+      - name: claim_status
+        data_type: text
+        tests:
+          - accepted_values:
+              values: ["open", "submitted", "paid", "denied", "appealed", "writeoff", "closed"]
+
+  - name: fct_denials
+    description: Denial event fact used to drive recovery prioritization.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: denial_id
+        data_type: text
+      - name: claim_id
+        data_type: text
+      - name: encounter_id
+        data_type: text
+      - name: payer_id
+        data_type: text
+      - name: department_id
+        data_type: text
+      - name: denial_date
+        data_type: date
+      - name: denial_reason
+        data_type: text
+      - name: appeal_status
+        data_type: text
+      - name: denied_amount
+        data_type: numeric(14,2)
+      - name: appeal_due_date
+        data_type: date
+      - name: claim_status
+        data_type: text
+        tests:
+          - accepted_values:
+              values: ["open", "submitted", "paid", "denied", "appealed", "writeoff", "closed"]
+
+  - name: fct_revenue_leakage
+    description: Revenue leakage decomposition by issue type and value.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: leakage_id
+        data_type: text
+      - name: claim_id
+        data_type: text
+      - name: encounter_id
+        data_type: text
+      - name: payer_id
+        data_type: text
+      - name: department_id
+        data_type: text
+      - name: detected_date
+        data_type: date
+      - name: leakage_type
+        data_type: text
+      - name: leakage_reason
+        data_type: text
+      - name: leakage_amount
+        data_type: numeric(14,2)
+      - name: owner_team
+        data_type: text
+      - name: owner_user_id
+        data_type: text
+      - name: status
+        data_type: text
+
+  - name: fct_payer_performance
+    description: Payer performance summary used for executive benchmarking.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: payer_id
+        data_type: text
+        tests:
+          - not_null
+      - name: period_start
+        data_type: date
+      - name: period_end
+        data_type: date
+      - name: gross_billed
+        data_type: numeric(14,2)
+      - name: contracted_amount
+        data_type: numeric(14,2)
+      - name: paid_amount
+        data_type: numeric(14,2)
+      - name: actual_collection_rate
+        data_type: numeric(8,4)
+      - name: average_payment_days
+        data_type: numeric(10,2)
+      - name: denied_claim_count
+        data_type: integer
+
+  - name: fct_patient_acquisition
+    description: Acquisition and referral channel to revenue connection.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: acquisition_id
+        data_type: text
+      - name: encounter_id
+        data_type: text
+      - name: acquisition_channel
+        data_type: text
+      - name: referral_source
+        data_type: text
+      - name: period_start
+        data_type: date
+      - name: period_end
+        data_type: date
+      - name: encounter_count
+        data_type: integer
+      - name: gross_revenue
+        data_type: numeric(14,2)
+      - name: collected_revenue
+        data_type: numeric(14,2)

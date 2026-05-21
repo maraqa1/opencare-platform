@@ -1,0 +1,181 @@
+postgresql:
+  enabled: false
+
+minio:
+  enabled: false
+
+ingress:
+  enabled: false
+
+connectorBuilderServer:
+  enabled: false
+
+global:
+  edition: community
+  airbyteUrl: __AIRBYTE_WEBAPP_SERVICE_NAME__
+  deploymentMode: oss
+  auth:
+    enabled: false
+  database:
+    type: external
+    secretName: __AIRBYTE_SECRET_NAME__
+    host: __POSTGRES_HOST__
+    port: "__POSTGRES_PORT__"
+    database: __AIRBYTE_DB_NAME__
+    name: __AIRBYTE_DB_NAME__
+    user: __AIRBYTE_DB_USER__
+    userSecretKey: database-user
+    passwordSecretKey: database-password
+  storage:
+    type: S3
+    secretName: __AIRBYTE_SECRET_NAME__
+    storageSecretName: __AIRBYTE_SECRET_NAME__
+    bucket:
+      log: __AIRBYTE_BUCKET_LOG__
+      state: __AIRBYTE_BUCKET_STATE__
+      workloadOutput: __AIRBYTE_BUCKET_WORKLOAD_OUTPUT__
+      activityPayload: __AIRBYTE_BUCKET_ACTIVITY_PAYLOAD__
+      auditLogging: __AIRBYTE_BUCKET_AUDIT_LOGGING__
+      profilerOutput: __AIRBYTE_BUCKET_PROFILER_OUTPUT__
+    s3:
+      region: __MINIO_REGION__
+      endpoint: __MINIO_ENDPOINT__
+      authenticationType: credentials
+      accessKeyIdSecretKey: aws-s3-access-key-id
+      secretAccessKeySecretKey: aws-s3-secret-access-key
+      pathStyleAccess: __AIRBYTE_S3_PATH_STYLE__
+  env_vars:
+    STORAGE_TYPE: __AIRBYTE_STORAGE_TYPE__
+    POSTGRES_TLS_ENABLED: "__AIRBYTE_POSTGRES_TLS_ENABLED__"
+    POSTGRES_TLS_DISABLE_HOST_VERIFICATION: "__AIRBYTE_POSTGRES_TLS_DISABLE_HOST_VERIFICATION__"
+    SQL_TLS_ENABLED: "__AIRBYTE_SQL_TLS_ENABLED__"
+    SQL_TLS_DISABLE_HOST_VERIFICATION: "__AIRBYTE_SQL_TLS_DISABLE_HOST_VERIFICATION__"
+    AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_SOURCE_STUBS_URL: __AIRBYTE_ENTERPRISE_SOURCE_STUBS_URL__
+    AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENTERPRISE_DESTINATION_STUBS_URL: __AIRBYTE_ENTERPRISE_DESTINATION_STUBS_URL__
+    AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED: "__AIRBYTE_CONNECTOR_REGISTRY_ENTERPRISE_ENABLED__"
+    MINIO_ENDPOINT: __MINIO_ENDPOINT__
+    S3_ENDPOINT: __MINIO_ENDPOINT__
+    AWS_ENDPOINT_URL: __MINIO_ENDPOINT__
+    AWS_ENDPOINT_URL_S3: __MINIO_ENDPOINT__
+    S3_PATH_STYLE_ACCESS: "__AIRBYTE_S3_PATH_STYLE__"
+    S3_REGION: __MINIO_REGION__
+    AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION: __AIRBYTE_FLYWAY_CONFIGS_MINIMUM_MIGRATION_VERSION__
+    AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION: __AIRBYTE_FLYWAY_JOBS_MINIMUM_MIGRATION_VERSION__
+    INTERNAL_API_TOKEN: __INTERNAL_API_TOKEN__
+
+server:
+  extraEnv:
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
+  service:
+    type: ClusterIP
+
+worker:
+  extraEnv:
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
+
+cron:
+  extraEnv:
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
+
+workloadApiServer:
+  extraEnv:
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key
+
+workloadLauncher:
+  extraEnv:
+    - name: AWS_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_DEFAULT_REGION
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-region
+    - name: AWS_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-access-key-id
+    - name: AWS_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: __AIRBYTE_SECRET_NAME__
+          key: aws-s3-secret-access-key

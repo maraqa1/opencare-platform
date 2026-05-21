@@ -1,31 +1,55 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
 import { PageFrame } from "@/components/page-frame";
 
-export default function AdminHomePage() {
+const adminSections = [
+  {
+    href: "/admin/operations",
+    title: "Operations",
+    description: "Service health, pipeline schedule, runtime status, ingestion status, and quality summary.",
+  },
+  {
+    href: "/admin/governance",
+    title: "Governance",
+    description: "Dictionary, lineage DAG, record specs, freshness, impact analysis, tests, contracts, compliance, and audit summary.",
+  },
+  {
+    href: "/admin/configuration",
+    title: "Configuration",
+    description: "Use case enablement, thresholds, alert rules, schedules, and current YAML-driven settings.",
+  },
+  {
+    href: "/admin/audit",
+    title: "Audit",
+    description: "Access logs, data access trail, configuration changes, and exportable audit history.",
+  },
+];
+
+export const metadata: Metadata = {
+  title: "Administration - OpenCare Portal",
+};
+
+export default function AdminPage() {
   return (
     <PageFrame
-      title="Admin Home"
-      description="Administrative oversight for runtime health, refresh cadence, platform services, and terminology stewardship."
+      eyebrow="Administration"
+      title="Operations, governance, configuration, and audit"
+      description="Deep governance is available to platform admins and auditors without competing with operational bed-manager workflows."
       chips={[
-        { label: "Operational visibility", tone: "primary" },
-        { label: "Single-tenant controls", tone: "accent" },
+        { label: "Admin separated from operations", tone: "primary" },
+        { label: "Full 4b preservation", tone: "accent" },
       ]}
     >
-      <section className="grid">
-        <article className="stat span-4">
-          <p className="eyebrow">Runtime Jobs</p>
-          <p className="value">2</p>
-          <p className="subtle">Forecast and anomaly runtimes tracked in-platform.</p>
-        </article>
-        <article className="stat span-4">
-          <p className="eyebrow">Core Services</p>
-          <p className="value">5</p>
-          <p className="subtle">Database, storage, cache, identity, and embedded analytics.</p>
-        </article>
-        <article className="stat span-4">
-          <p className="eyebrow">Refresh Pipelines</p>
-          <p className="value">3</p>
-          <p className="subtle">Ingestion, transformation, and dashboard refresh status.</p>
-        </article>
+      <section className="operations-grid">
+        {adminSections.map((section) => (
+          <Link href={section.href} className="status-card" key={section.href}>
+            <p className="eyebrow">Administration</p>
+            <h3>{section.title}</h3>
+            <p>{section.description}</p>
+            <span className="inline-link">Open {section.title}</span>
+          </Link>
+        ))}
       </section>
     </PageFrame>
   );

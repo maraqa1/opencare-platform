@@ -1,0 +1,75 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: decision-generator
+  namespace: opencare
+spec:
+  schedule: "30 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: decision-generator
+              image: ghcr.io/maraqa1/opencare-backend:latest
+              imagePullPolicy: Always
+              command: ["python", "-m", "app.services.run_decision_engine"]
+              envFrom:
+                - configMapRef:
+                    name: opencare-config
+                - secretRef:
+                    name: opencare-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: decision-escalation-checker
+  namespace: opencare
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: decision-escalation-checker
+              image: ghcr.io/maraqa1/opencare-backend:latest
+              imagePullPolicy: Always
+              command: ["python", "-m", "app.services.run_escalation_checker"]
+              envFrom:
+                - configMapRef:
+                    name: opencare-config
+                - secretRef:
+                    name: opencare-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: decision-outcome-measurer
+  namespace: opencare
+spec:
+  schedule: "45 2 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: decision-outcome-measurer
+              image: ghcr.io/maraqa1/opencare-backend:latest
+              imagePullPolicy: Always
+              command: ["python", "-m", "app.services.run_outcome_measurer"]
+              envFrom:
+                - configMapRef:
+                    name: opencare-config
+                - secretRef:
+                    name: opencare-secrets

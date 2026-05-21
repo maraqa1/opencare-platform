@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 
 import { NavigationShell } from "@/components/navigation-shell";
+import { buildNavigation } from "@/config/navigation";
 
 import "./globals.css";
 
@@ -22,11 +23,14 @@ export default async function RootLayout({
   children: ReactNode;
 }>) {
   const pathname = await getPathname();
+  const navigation = await buildNavigation("admin");
 
   return (
     <html lang="en">
       <body>
-        <NavigationShell pathname={pathname}>{children}</NavigationShell>
+        <NavigationShell pathname={pathname} navigation={navigation}>
+          {children}
+        </NavigationShell>
       </body>
     </html>
   );

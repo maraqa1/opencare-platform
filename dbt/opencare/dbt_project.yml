@@ -6,6 +6,8 @@ profile: opencare
 
 model-paths:
   - models
+macro-paths:
+  - macros
 
 target-path: target
 clean-targets:
@@ -15,8 +17,29 @@ clean-targets:
 models:
   opencare:
     +materialized: view
-    +schema: analytics
     staging:
       +materialized: view
+      +schema: staging
     marts:
       +materialized: table
+      +schema: analytics
+    dictionary:
+      +materialized: table
+      +schema: dictionary
+    revenue_cycle:
+      staging:
+        +materialized: view
+        +schema: staging
+      marts:
+        +materialized: table
+        +schema: analytics
+    talemia:
+      staging:
+        +materialized: view
+        +schema: staging
+      marts:
+        +materialized: table
+        +schema: analytics
+      dictionary:
+        +materialized: table
+        +schema: dictionary

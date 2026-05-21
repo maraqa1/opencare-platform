@@ -1,62 +1,31 @@
+import type { Metadata } from "next";
 import { PageFrame } from "@/components/page-frame";
-import { getApiJson } from "@/lib/api";
-import { forecastRows } from "@/lib/site-data";
+import { RecordSpecification } from "@/components/RecordSpecification";
+import { ForecastView } from "@/components/bed-pressure/ForecastView";
 
-export default async function ForecastPage() {
-  const forecast = await getApiJson<{
-    items?: Array<{
-      forecast_date: string;
-      department_name?: string;
-      department_code?: string;
-      predicted_occupied_beds: number;
-    }>;
-  }>({
-    path: "/api/forecasts/latest",
-    fallback: { items: [] },
-  });
+type SearchParams = Promise<{ ward?: string }>;
 
-  const rows =
-    (forecast.items ?? []).map((row) => ({
-      date: row.forecast_date,
-      department: row.department_name ?? row.department_code ?? "Unknown",
-      predicted: row.predicted_occupied_beds,
-      confidence: "Model",
-    })) || [];
+export const metadata: Metadata = {
+  title: "Forecast - OpenCare Portal",
+};
 
+export default async function ForecastPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
   return (
     <PageFrame
-      title="Forecast"
-      description="Short-horizon occupancy projections derived from curated analytics outputs."
+      title="Forecasts"
+      description="Seven-day ward forecasts with confidence bands and breach-risk cues from the Phase 2 runtime outputs."
       chips={[
         { label: "R runtime aligned", tone: "primary" },
-        { label: "dbt-fed inputs", tone: "accent" },
+        { label: "Confidence intervals included", tone: "accent" },
       ]}
     >
-      <section className="grid">
-        <article className="panel span-12">
-          <p className="eyebrow">Latest Forecast Run</p>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Department</th>
-                <th>Predicted Beds</th>
-                <th>Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(rows.length > 0 ? rows : forecastRows).map((row) => (
-                <tr key={`${row.date}-${row.department}`}>
-                  <td>{row.date}</td>
-                  <td>{row.department}</td>
-                  <td>{row.predicted}</td>
-                  <td>{row.confidence}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </article>
-      </section>
+      <ForecastView selectedWardId={params.ward} />
+      <RecordSpecification table="output.forecast" />
     </PageFrame>
   );
 }

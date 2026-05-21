@@ -1,0 +1,492 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+const NODE_COLOURS = {
+  source: { bg: "#ffebee", border: "#e53935", text: "#b71c1c", label: "Source" },
+  staging: { bg: "#fff3e0", border: "#fb8c00", text: "#e65100", label: "Staging" },
+  analytics: { bg: "#e8f5e9", border: "#43a047", text: "#2e7d32", label: "Analytics" },
+  output: { bg: "#e3f2fd", border: "#1e88e5", text: "#1565c0", label: "Output" },
+  portal: { bg: "#f3e5f5", border: "#8e24aa", text: "#6a1b9a", label: "Portal" },
+} as const;
+
+type Stage = keyof typeof NODE_COLOURS;
+
+type LineageColumn = {
+  type?: string;
+  description?: string;
+  meta?: Record<string, unknown>;
+};
+
+type LineageTest = {
+  name: string;
+  test_type?: string;
+  column?: string | null;
+  severity?: string;
+  status?: string;
+};
+
+type LineageNode = {
+  id: string;
+  name?: string;
+  label: string;
+  stage: Stage;
+  schema?: string;
+  qualified_name?: string;
+  description?: string;
+  columns?: Record<string, LineageColumn>;
+  tests?: LineageTest[];
+  meta?: Record<string, unknown>;
+};
+
+type LineageEdge = {
+  from: string;
+  to: string;
+};
+
+type LineagePayload = {
+  model: string;
+  description?: string;
+  nodes?: LineageNode[];
+  edges?: LineageEdge[];
+  tests?: LineageTest[];
+};
+
+function LineageSkeleton() {
+  return (
+    <section className="governance-card lineage-card" aria-label="Loading lineage">
+      <div className="governance-card-header">
+        <div>
+          <p className="eyebrow">Traceability</p>
+          <h3>Data Lineage</h3>
+        </div>
+      </div>
+      <div className="lineage-skeleton">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <span key={index} className="skeleton-line" style={{ height: 88 }} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function niceLabel(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function normalizeSchema(value?: string) {
+  if (!value) {
+    return "n/a";
+  }
+  if (value.includes("DBT_SOURCE_SCHEMA") || value.includes("RAW_SCHEMA")) {
+    return "raw";
+  }
+  return value;
+}
+
+function normalizeQualifiedName(value?: string, fallback?: string) {
+  if (!value) {
+    return fallback ?? "n/a";
+  }
+  if (value.includes("DBT_SOURCE_SCHEMA") || value.includes("RAW_SCHEMA")) {
+    const tail = value.split("}}.").pop() ?? fallback ?? "n/a";
+    return `raw.${tail.replace(/^raw\./, "")}`;
+  }
+  return value;
+}
+
+function columnClassification(column: LineageColumn) {
+  const meta = column.meta ?? {};
+  if (meta.contains_pii === true) {
+    const level = typeof meta.pii_level === "string" ? meta.pii_level : "UNSPECIFIED";
+    return `Personally Identifiable Data (${level})`;
+  }
+  const classification = typeof meta.classification === "string" ? meta.classification : "";
+  if (classification) {
+    return niceLabel(classification);
+  }
+  return "Not classified";
+}
+
+function isDeclaredSource(node: LineageNode) {
+  return node.id.startsWith("declared-source-") || node.meta?.declared_source === true;
+}
+
+export function LineageDAG({
+  modelName,
+  layout = "split",
+  declaredSources = [],
+}: {
+  modelName: string;
+  layout?: "split" | "stacked";
+  declaredSources?: string[];
+}) {
+  const [payload, setPayload] = useState<LineagePayload | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [hydratedDeclaredSources, setHydratedDeclaredSources] = useState<Record<string, LineageNode>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    setPayload(null);
+    setSelectedNodeId(null);
+    setHydratedDeclaredSources({});
+
+    async function loadLineage() {
+      const response = await fetch(`/api/portal/api/v1/lineage/models/${encodeURIComponent(modelName)}`, {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error("Unable to load lineage.");
+      }
+      const nextPayload = (await response.json()) as LineagePayload;
+      if (!cancelled) {
+        setPayload(nextPayload);
+        setSelectedNodeId(nextPayload.nodes?.[0]?.id ?? null);
+      }
+
+      const existingSourceNames = new Set(
+        (nextPayload.nodes ?? [])
+          .filter((node) => node.stage === "source")
+          .flatMap((node) => [node.label, node.name, node.qualified_name])
+          .filter(Boolean)
+          .map((value) => String(value).toLowerCase()),
+      );
+      const missingDeclaredSources = declaredSources.filter((source) => {
+        const sourceKey = source.toLowerCase();
+        return !Array.from(existingSourceNames).some((value) => value === sourceKey || value.endsWith(`.${sourceKey}`));
+      });
+
+      if (missingDeclaredSources.length > 0) {
+        const resolved = await Promise.all(
+          missingDeclaredSources.map(async (source) => {
+            try {
+              const detailResponse = await fetch(`/api/portal/api/v1/lineage/sources/${encodeURIComponent(source)}`, {
+                cache: "no-store",
+              });
+              if (!detailResponse.ok) {
+                return null;
+              }
+              const detail = (await detailResponse.json()) as LineageNode;
+              return [source, detail] as const;
+            } catch {
+              return null;
+            }
+          }),
+        );
+
+        if (!cancelled) {
+          setHydratedDeclaredSources(
+            Object.fromEntries(
+              resolved.filter((item): item is readonly [string, LineageNode] => item !== null),
+            ),
+          );
+        }
+      }
+    }
+
+    loadLineage().catch(() => {
+      if (!cancelled) {
+        setPayload({ model: modelName, nodes: [], edges: [] });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modelName]);
+
+  const { nodes, edges, positions, width, height } = useMemo(() => {
+    const graphNodes = [...(payload?.nodes ?? [])];
+    const graphEdges = [...(payload?.edges ?? [])];
+    const existingSourceNames = new Set(
+      graphNodes
+        .filter((node) => node.stage === "source")
+        .flatMap((node) => [node.label, node.name, node.qualified_name])
+        .filter(Boolean)
+        .map((value) => String(value).toLowerCase()),
+    );
+    const firstDownstreamNode =
+      graphNodes.find((node) => node.stage === "staging") ??
+      graphNodes.find((node) => node.stage === "analytics") ??
+      graphNodes.find((node) => node.stage === "output") ??
+      null;
+
+    for (const source of declaredSources) {
+      const sourceKey = source.toLowerCase();
+      const alreadyPresent = Array.from(existingSourceNames).some(
+        (value) => value === sourceKey || value.endsWith(`.${sourceKey}`),
+      );
+      if (alreadyPresent) {
+        continue;
+      }
+
+      const hydratedSource = hydratedDeclaredSources[source];
+      if (hydratedSource) {
+        graphNodes.push({
+          ...hydratedSource,
+          meta: { ...hydratedSource.meta, declared_source: true },
+        });
+        if (firstDownstreamNode) {
+          graphEdges.push({
+            from: hydratedSource.id,
+            to: firstDownstreamNode.id,
+          });
+        }
+        continue;
+      }
+
+      const syntheticNodeId = `declared-source-${source}`;
+      graphNodes.push({
+        id: syntheticNodeId,
+        name: source,
+        label: `raw.${source}`,
+        stage: "source",
+        schema: "raw",
+        qualified_name: `raw.${source}`,
+        description: "Declared raw source table for the selected use-case contract. Detailed transformation metadata is not yet connected for this source path.",
+        columns: {},
+        tests: [],
+        meta: { declared_source: true },
+      });
+      if (firstDownstreamNode) {
+        graphEdges.push({
+          from: syntheticNodeId,
+          to: firstDownstreamNode.id,
+        });
+      }
+    }
+
+    const grouped = new Map<Stage, LineageNode[]>();
+    (Object.keys(NODE_COLOURS) as Stage[]).forEach((stage) => grouped.set(stage, []));
+    graphNodes.forEach((node) => grouped.get(node.stage)?.push(node));
+
+    const maxRows = Math.max(...Array.from(grouped.values()).map((value) => value.length || 1), 1);
+    const nextPositions = new Map<string, { x: number; y: number; width: number; height: number }>();
+    const nodeWidth = 188;
+    const nodeHeight = 78;
+    const stageGap = 216;
+    const rowGap = 108;
+    const paddingX = 32;
+    const paddingY = 30;
+    const stages = Object.keys(NODE_COLOURS) as Stage[];
+
+    stages.forEach((stage, stageIdx) => {
+      const stageNodes = grouped.get(stage) ?? [];
+      const offset = Math.max(0, (maxRows - stageNodes.length) * rowGap * 0.5);
+      stageNodes.forEach((node, rowIdx) => {
+        nextPositions.set(node.id, {
+          x: paddingX + stageIdx * stageGap,
+          y: paddingY + offset + rowIdx * rowGap,
+          width: nodeWidth,
+          height: nodeHeight,
+        });
+      });
+    });
+
+    return {
+      nodes: graphNodes,
+      edges: graphEdges,
+      positions: nextPositions,
+      width: paddingX * 2 + nodeWidth + stageGap * (stages.length - 1),
+      height: paddingY * 2 + Math.max(maxRows * rowGap, nodeHeight),
+    };
+  }, [declaredSources, hydratedDeclaredSources, payload]);
+
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
+
+  if (!payload) {
+    return <LineageSkeleton />;
+  }
+
+  return (
+    <section className={layout === "stacked" ? "governance-card lineage-card lineage-card-full" : "governance-card lineage-card"}>
+      <div className="governance-card-header">
+        <div>
+          <p className="eyebrow">Traceability</p>
+          <h3>Data Lineage: {niceLabel(payload.model)}</h3>
+          <p className="section-subtitle">
+            Complete data journey from hospital source tables to the live portal display.
+          </p>
+        </div>
+        <div className="lineage-legend">
+          {(Object.entries(NODE_COLOURS) as Array<[Stage, (typeof NODE_COLOURS)[Stage]]>).map(([key, value]) => (
+            <span key={key} className="legend-item">
+              <span className="legend-dot" style={{ backgroundColor: value.border }} />
+              {value.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className={layout === "stacked" ? "lineage-layout lineage-layout-stacked" : "lineage-layout"}>
+        <div className="lineage-canvas-shell">
+          {nodes.length > 0 ? (
+            <svg
+              className="lineage-canvas"
+              viewBox={`0 0 ${width} ${height}`}
+              role="img"
+              aria-label={`Data lineage graph for ${payload.model}`}
+            >
+              {edges.map((edge) => {
+                const from = positions.get(edge.from);
+                const to = positions.get(edge.to);
+                if (!from || !to) {
+                  return null;
+                }
+                const startX = from.x + from.width;
+                const startY = from.y + from.height / 2;
+                const endX = to.x;
+                const endY = to.y + to.height / 2;
+                const curve = Math.max(48, (endX - startX) / 2);
+                return (
+                  <path
+                    key={`${edge.from}-${edge.to}`}
+                    d={`M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`}
+                    className="lineage-edge"
+                  />
+                );
+              })}
+              {nodes.map((node) => {
+                const position = positions.get(node.id);
+                if (!position) {
+                  return null;
+                }
+                const colours = NODE_COLOURS[node.stage];
+                const isSelected = node.id === selectedNodeId;
+                const isDeclared = isDeclaredSource(node);
+                return (
+                  <g
+                    key={node.id}
+                    className={isSelected ? "lineage-node selected" : "lineage-node"}
+                    onClick={() => setSelectedNodeId(node.id)}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedNodeId(node.id);
+                      }
+                    }}
+                  >
+                    <rect
+                      x={position.x}
+                      y={position.y}
+                      width={position.width}
+                      height={position.height}
+                      rx="18"
+                      fill={colours.bg}
+                      stroke={colours.border}
+                      strokeWidth={isSelected ? 3 : 1.5}
+                      strokeDasharray={isDeclared ? "8 5" : undefined}
+                    />
+                    <rect
+                      x={position.x}
+                      y={position.y}
+                      width="6"
+                      height={position.height}
+                      rx="18"
+                      fill={colours.border}
+                    />
+                    <text x={position.x + 18} y={position.y + 28} className="lineage-node-title" fill={colours.text}>
+                      {node.label}
+                    </text>
+                    <text x={position.x + 18} y={position.y + 48} className="lineage-node-subtitle" fill="#5f6b7a">
+                      {normalizeSchema(node.schema)}
+                    </text>
+                    <text x={position.x + 18} y={position.y + 64} className="lineage-node-meta" fill="#7d8793">
+                      {isDeclared ? "Declared source" : (node.tests ?? []).length > 0 ? `${(node.tests ?? []).length} tests` : colours.label}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          ) : (
+            <div className="empty-state">No lineage metadata is available for this model yet.</div>
+          )}
+        </div>
+
+        {selectedNode ? <NodeDetailPanel node={selectedNode} fullWidth={layout === "stacked"} /> : null}
+      </div>
+    </section>
+  );
+}
+
+function NodeDetailPanel({ node, fullWidth = false }: { node: LineageNode; fullWidth?: boolean }) {
+  const colours = NODE_COLOURS[node.stage];
+  const columns = Object.entries(node.columns ?? {});
+  const declared = isDeclaredSource(node);
+
+  return (
+    <aside className={fullWidth ? "node-detail-panel node-detail-panel-full" : "node-detail-panel"} style={{ borderTopColor: colours.border }}>
+      <div className="node-detail-header">
+        <div>
+          <p className="eyebrow">Selected Node</p>
+          <h4 style={{ color: colours.text }}>{node.label}</h4>
+        </div>
+        <span className="stage-chip" style={{ backgroundColor: colours.bg, color: colours.text }}>
+          {colours.label}
+        </span>
+      </div>
+
+      {node.description ? <p className="node-description">{node.description}</p> : null}
+      {declared ? <p className="subtle">This source is declared in the use-case contract and may not be directly traversed in the discovered dbt lineage for this fact path.</p> : null}
+
+      <div className="node-detail-meta">
+        <div>
+          <dt>Qualified Name</dt>
+          <dd className="mono">{normalizeQualifiedName(node.qualified_name, node.label)}</dd>
+        </div>
+        <div>
+          <dt>Schema</dt>
+          <dd>{normalizeSchema(node.schema)}</dd>
+        </div>
+      </div>
+
+      {columns.length > 0 ? (
+        <div className="node-table-shell">
+          <h5>Columns</h5>
+          <table className="lineage-detail-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Classification</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {columns.map(([name, column]) => (
+                <tr key={name}>
+                  <td>
+                    <code>{name}</code>
+                  </td>
+                  <td>{column.type || "derived"}</td>
+                  <td>{columnClassification(column)}</td>
+                  <td>{column.description || "No column description provided."}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
+      {(node.tests ?? []).length > 0 ? (
+        <div className="test-coverage">
+          <h5>Tests ({node.tests?.length ?? 0})</h5>
+          {(node.tests ?? []).map((test) => (
+            <div key={`${test.name}-${test.column ?? "model"}`} className="test-item">
+              <span className="test-icon">{test.status === "pass" ? "PASS" : "WARN"}</span>
+              <div>
+                <strong>{test.name}</strong>
+                <p>
+                  {test.test_type ?? "generic"}
+                  {test.column ? ` on ${test.column}` : ""}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </aside>
+  );
+}

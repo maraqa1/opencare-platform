@@ -1,6 +1,6 @@
 select
-    cast(department_id as text) as department_id,
-    trim(cast(department_code as text)) as department_code,
-    trim(cast(department_name as text)) as department_name,
-    trim(cast(service_line as text)) as service_line
-from {{ source('raw', 'departments') }}
+    ward_id as department_id,
+    ward_code as department_code,
+    ward_name as department_name,
+    service_line
+from {{ ref('stg_wards') }}

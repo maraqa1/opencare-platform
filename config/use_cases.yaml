@@ -1,0 +1,321 @@
+use_cases:
+  bed_pressure:
+    name: "Bed Pressure Intelligence"
+    description: "Monitor occupancy and forecast ward pressure"
+    enabled: true
+    source_tables:
+      - bed_events
+      - wards
+      - patients
+    portal_pages:
+      - slug: "occupancy"
+        label: "Occupancy"
+        icon: "hospital-bed"
+        tab_order: 1
+      - slug: "forecast"
+        label: "Forecasts"
+        icon: "trending-up"
+        tab_order: 2
+      - slug: "anomalies"
+        label: "Alerts"
+        icon: "alert-triangle"
+        tab_order: 3
+    superset_dashboard_id: "bed-occupancy-trends"
+    api_prefix: "/api/v1"
+    api_endpoints:
+      - path: "/occupancy/current"
+        method: "GET"
+      - path: "/occupancy/historical"
+        method: "GET"
+      - path: "/forecast"
+        method: "GET"
+      - path: "/anomalies"
+        method: "GET"
+      - path: "/anomalies/summary"
+        method: "GET"
+    r_runtimes:
+      - name: "forecast"
+        schedule: "20 * * * *"
+        model: "arima_occupancy"
+      - name: "anomaly"
+        schedule: "25 * * * *"
+        model: "zscore_occupancy"
+    decisions:
+      types:
+        - id: "expedite_discharge"
+          trigger: "occupancy >= 90"
+          impact_formula: "expected_beds * 25"
+          actions_template:
+            - "Notify discharge coordinator for {ward_name}"
+            - "Review {discharge_count} discharge-ready patients"
+            - "Arrange transport and pharmacy for same-day discharge"
+        - id: "activate_surge"
+          trigger: "occupancy >= 95 OR breach < 12h"
+          impact_formula: "surge_beds_available * 20"
+        - id: "defer_elective"
+          trigger: "occupancy >= 90 AND breach < 24h"
+          impact_formula: "electives_deferrable * 30"
+        - id: "escalate_to_manager"
+          trigger: "anomaly = critical AND occupancy >= 85 AND trend rising"
+          impact_formula: "40"
+      notifications:
+        default_team_email: "admin@opendatalake.com"
+        escalation_email: "admin@opendatalake.com"
+        escalation_threshold_minutes: 120
+        max_escalations: 3
+      outcome_measurement:
+        delay_hours: 24
+        accuracy_threshold_pct: 10
+    record_specs:
+      - table: "analytics.fct_bed_occupancy"
+        grain: "One row per ward per day"
+      - table: "output.forecast"
+        grain: "One row per ward per forecast date"
+      - table: "output.anomaly"
+        grain: "One row per ward per anomaly event"
+  staff_scheduling:
+    name: "Staff Scheduling Pressure"
+    description: "Optimize staff allocation across wards"
+    enabled: false
+    source_tables:
+      - staff_shifts
+      - staff_availability
+      - ward_staffing_ratios
+    portal_pages:
+      - slug: "staffing-dashboard"
+        label: "Staff Scheduling"
+        icon: "users"
+        tab_order: 1
+        badge: "NEW"
+    superset_dashboard_id: "staff-utilization"
+    api_prefix: "/api/v1/staffing"
+    api_endpoints:
+      - path: "/current"
+        method: "GET"
+      - path: "/forecast"
+        method: "GET"
+      - path: "/alerts"
+        method: "GET"
+    r_runtimes:
+      - name: "shift_forecast"
+        schedule: "0 2 * * *"
+        model: "arima_staffing"
+  revenue_cycle_management:
+    name: "Revenue Cycle Management"
+    description: "Real-time cash control, revenue recovery, payer accountability, and operational execution."
+    enabled: true
+    source_tables:
+      - claims
+      - financial_postings
+      - denials
+      - payer_contracts
+      - encounters
+      - referrals
+    portal_pages:
+      - slug: "cfo-cash-command"
+        label: "Cash Command"
+        icon: "banknote"
+        tab_order: 1
+      - slug: "recovery-queue"
+        label: "Recovery Queue"
+        icon: "list-checks"
+        tab_order: 2
+      - slug: "payer-control"
+        label: "Payer Control"
+        icon: "shield-alert"
+        tab_order: 3
+      - slug: "revenue-leakage"
+        label: "Leakage"
+        icon: "droplets"
+        tab_order: 4
+      - slug: "team-performance"
+        label: "Team Performance"
+        icon: "users"
+        tab_order: 5
+      - slug: "executive-narrative"
+        label: "Executive Narrative"
+        icon: "scroll-text"
+        tab_order: 6
+    superset_dashboard_id: "revenue-cycle-management"
+    api_prefix: "/api/v1/revenue-cycle"
+    api_endpoints:
+      - path: "/cash-command"
+        method: "GET"
+      - path: "/recovery-queue"
+        method: "GET"
+      - path: "/payer-control"
+        method: "GET"
+      - path: "/leakage"
+        method: "GET"
+      - path: "/team-performance"
+        method: "GET"
+      - path: "/executive-narrative"
+        method: "GET"
+      - path: "/summary"
+        method: "GET"
+    business_objectives:
+      - "Identify recoverable cash for the next 7, 14, and 30 days."
+      - "Reduce AR days."
+      - "Detect revenue leakage."
+      - "Prioritize high-value recovery actions."
+      - "Assign ownership to teams and users."
+      - "Track expected vs actual recovery."
+      - "Enforce payer contract compliance."
+      - "Reconcile HIS encounters to ERP financial postings."
+      - "Link CRM acquisition and referral channels to revenue."
+    decisions:
+      types:
+        - id: "recover_cash_this_week"
+          trigger: "recoverable_cash_next_7d > 0"
+        - id: "prioritize_high_value_denials"
+          trigger: "denials_value_rank in top 10"
+        - id: "payer_underpayment_review"
+          trigger: "underpayment_amount > 0"
+        - id: "late_submission_risk"
+          trigger: "days_to_deadline <= 3"
+        - id: "denial_appeal_priority"
+          trigger: "appeal_deadline_at_risk = true"
+        - id: "payer_contract_breach"
+          trigger: "contract_breach_flag = true"
+        - id: "target_patient_collections"
+          trigger: "patient_balance_segment = actionable"
+        - id: "coding_backlog_escalation"
+          trigger: "coding_backlog_hours > threshold"
+    record_specs:
+      - table: "analytics.fct_cash_recovery_opportunity"
+        grain: "One row per revenue recovery opportunity."
+      - table: "analytics.fct_cash_forecast"
+        grain: "One row per forecast date and payer or department segment."
+      - table: "analytics.fct_payer_contract_performance"
+        grain: "One row per payer per month."
+      - table: "analytics.fct_team_recovery_performance"
+        grain: "One row per owner or team per reporting period."
+      - table: "analytics.fct_revenue_cycle"
+        grain: "One row per claim and encounter revenue lifecycle state."
+      - table: "analytics.fct_financial_posting"
+        grain: "One row per ERP financial posting."
+      - table: "analytics.fct_claim_aging"
+        grain: "One row per claim aging snapshot."
+      - table: "analytics.fct_denials"
+        grain: "One row per denial event."
+      - table: "analytics.fct_revenue_leakage"
+        grain: "One row per leakage finding."
+      - table: "analytics.fct_payer_performance"
+        grain: "One row per payer and period performance summary."
+      - table: "analytics.fct_patient_acquisition"
+        grain: "One row per acquisition or referral channel and period."
+  talemia_business_intelligence:
+    name: "TALEMIA Business Intelligence"
+    description: "Commercial pipeline, win/loss, account ownership, opportunity drilldown, and KPI governance for TALEMIA."
+    enabled: true
+    source_tables:
+      - talemia_opportunities
+      - talemia_awards
+      - talemia_loss_reasons
+      - talemia_opportunity_updates_long
+      - talemia_clients
+      - talemia_client_departments
+      - talemia_account_managers
+      - talemia_business_lines
+      - talemia_dashboard_targets
+      - extraction_quality_report
+    portal_pages:
+      - slug: "overview"
+        label: "Overview"
+        icon: "layout-dashboard"
+        tab_order: 1
+      - slug: "executive"
+        label: "Executive"
+        icon: "gauge"
+        tab_order: 2
+      - slug: "financial"
+        label: "Financial"
+        icon: "banknote"
+        tab_order: 3
+      - slug: "business-lines"
+        label: "Business Lines"
+        icon: "layers"
+        tab_order: 4
+      - slug: "account-managers"
+        label: "Account Managers"
+        icon: "users"
+        tab_order: 5
+      - slug: "commercial"
+        label: "Commercial"
+        icon: "briefcase-business"
+        tab_order: 6
+      - slug: "opportunities"
+        label: "Opportunities"
+        icon: "table"
+        tab_order: 7
+      - slug: "governance"
+        label: "Governance"
+        icon: "shield-check"
+        tab_order: 8
+      - slug: "data-contract"
+        label: "Data Contract"
+        icon: "file-text"
+        tab_order: 9
+    superset_dashboard_id: "talemia-business-intelligence"
+    api_prefix: "/api/v1/talemia"
+    api_endpoints:
+      - path: "/executive-summary"
+        method: "GET"
+      - path: "/pipeline/business-lines"
+        method: "GET"
+      - path: "/pipeline/stages"
+        method: "GET"
+      - path: "/win-loss"
+        method: "GET"
+      - path: "/account-managers"
+        method: "GET"
+      - path: "/opportunities"
+        method: "GET"
+      - path: "/opportunities/{opportunity_id}"
+        method: "GET"
+      - path: "/updates"
+        method: "GET"
+      - path: "/kpis"
+        method: "GET"
+      - path: "/governance/reconciliation"
+        method: "GET"
+    business_objectives:
+      - "Create an executive commercial control tower for pipeline, wins/losses, client coverage, and KPI performance."
+      - "Separate awarded revenue from qualified, active, expected, and forecasted pipeline."
+      - "Expose account ownership, weekly follow-up, and opportunity-level operational drilldown."
+      - "Govern KPI formulas, glossary terms, lineage, extraction quality, and dashboard reconciliation."
+    record_specs:
+      - table: "analytics.fct_talemia_opportunity"
+        grain: "One row per commercial opportunity."
+      - table: "analytics.fct_talemia_pipeline"
+        grain: "One row per active pipeline opportunity."
+      - table: "analytics.fct_talemia_win_loss"
+        grain: "One row per closed opportunity outcome."
+      - table: "analytics.fct_talemia_account_manager_performance"
+        grain: "One row per account manager per reporting year and filterable segment."
+      - table: "analytics.fct_talemia_business_line_performance"
+        grain: "One row per business line per reporting year and filterable segment."
+      - table: "analytics.fct_talemia_opportunity_updates"
+        grain: "One row per opportunity update."
+      - table: "analytics.fct_talemia_dashboard_reconciliation"
+        grain: "One row per dashboard KPI and filter-context reconciliation."
+      - table: "analytics.fct_talemia_kpi_performance"
+        grain: "One row per KPI per reporting period and filter context."
+      - table: "analytics.fct_talemia_pipeline_forecast"
+        grain: "One row per expected award period and filterable segment."
+      - table: "analytics.fct_talemia_sales_growth"
+        grain: "One row per year and filterable segment."
+      - table: "analytics.fct_talemia_pipeline_risk"
+        grain: "One row per opportunity risk classification or business-line risk segment."
+      - table: "analytics.fct_talemia_client_cohort"
+        grain: "One row per client per account manager per cohort and reporting period."
+      - table: "analytics.fct_talemia_sales_cycle"
+        grain: "One row per opportunity with validated sales-cycle date fields."
+      - table: "analytics.fct_talemia_stage_distribution"
+        grain: "One row per stage, workflow state, and reporting segment."
+      - table: "analytics.fct_talemia_extraction_quality"
+        grain: "One row per extraction quality check."
+      - table: "dictionary.dict_talemia_metrics"
+        grain: "One row per TALEMIA KPI or metric."
+      - table: "dictionary.dict_talemia_terms"
+        grain: "One row per TALEMIA business glossary term."

@@ -16,13 +16,13 @@ def runtime_status() -> dict[str, object]:
                 "name": "bed-forecast",
                 "url": settings.forecast_runtime_url,
                 "reads_from": settings.analytics_schema,
-                "writes_to": "analytics.forecast_bed_occupancy",
+                "writes_to": f"{settings.output_schema}.{settings.forecast_output_table}",
             },
             {
                 "name": "anomaly",
                 "url": settings.anomaly_runtime_url,
                 "reads_from": settings.analytics_schema,
-                "writes_to": "analytics.anomaly_bed_occupancy",
+                "writes_to": f"{settings.output_schema}.{settings.anomaly_output_table}",
             },
         ],
     }

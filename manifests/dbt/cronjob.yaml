@@ -1,10 +1,13 @@
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: dbt-runner
   namespace: opencare
 spec:
-  schedule: "*/30 * * * *"
+  schedule: "10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 2
   jobTemplate:
@@ -22,7 +25,8 @@ spec:
                 - /bin/sh
                 - -c
                 - |
-                  mkdir -p /root/.dbt && \
+                  mkdir -p /root/.dbt /workspace && \
+                  cp -R /workspace-src/. /workspace/ && \
                   cp /config/profiles.yml /root/.dbt/profiles.yml && \
                   dbt deps --project-dir /workspace || true && \
                   dbt run --project-dir /workspace && \
@@ -40,25 +44,44 @@ spec:
                   cpu: 300m
                   memory: 256Mi
               volumeMounts:
-                - name: dbt-project
+                - name: dbt-project-src
+                  mountPath: /workspace-src
+                  readOnly: true
+                - name: dbt-workspace
                   mountPath: /workspace
                 - name: dbt-profile
                   mountPath: /config
           volumes:
-            - name: dbt-project
+            - name: dbt-project-src
               configMap:
                 name: dbt-project-files
                 items:
                   - key: dbt_project.yml
                     path: dbt_project.yml
+                  - key: generate_schema_name.sql
+                    path: macros/generate_schema_name.sql
+                  - key: test_expression_is_true.sql
+                    path: macros/test_expression_is_true.sql
+                  - key: talemia_raw_relation.sql
+                    path: macros/talemia_raw_relation.sql
                   - key: sources.yml
                     path: models/sources.yml
                   - key: schema.yml
                     path: models/schema.yml
+                  - key: stg_wards.sql
+                    path: models/staging/stg_wards.sql
+                  - key: stg_patients.sql
+                    path: models/staging/stg_patients.sql
                   - key: stg_bed_events.sql
                     path: models/staging/stg_bed_events.sql
                   - key: stg_departments.sql
                     path: models/staging/stg_departments.sql
+                  - key: dim_ward.sql
+                    path: models/marts/dim_ward.sql
+                  - key: dim_date.sql
+                    path: models/marts/dim_date.sql
+                  - key: fct_bed_occupancy.sql
+                    path: models/marts/fct_bed_occupancy.sql
                   - key: fact_bed_occupancy.sql
                     path: models/marts/fact_bed_occupancy.sql
                   - key: fact_capacity.sql
@@ -67,6 +90,90 @@ spec:
                     path: models/marts/dim_department.sql
                   - key: dim_time.sql
                     path: models/marts/dim_time.sql
+                  - key: dict_metrics.sql
+                    path: models/dictionary/dict_metrics.sql
+                  - key: revenue_cycle_schema.yml
+                    path: models/revenue_cycle/schema.yml
+                  - key: stg_rcm_claims.sql
+                    path: models/revenue_cycle/staging/stg_rcm_claims.sql
+                  - key: stg_rcm_financial_postings.sql
+                    path: models/revenue_cycle/staging/stg_rcm_financial_postings.sql
+                  - key: stg_rcm_referrals.sql
+                    path: models/revenue_cycle/staging/stg_rcm_referrals.sql
+                  - key: fct_revenue_cycle.sql
+                    path: models/revenue_cycle/marts/fct_revenue_cycle.sql
+                  - key: fct_financial_posting.sql
+                    path: models/revenue_cycle/marts/fct_financial_posting.sql
+                  - key: fct_claim_aging.sql
+                    path: models/revenue_cycle/marts/fct_claim_aging.sql
+                  - key: fct_denials.sql
+                    path: models/revenue_cycle/marts/fct_denials.sql
+                  - key: fct_revenue_leakage.sql
+                    path: models/revenue_cycle/marts/fct_revenue_leakage.sql
+                  - key: fct_payer_performance.sql
+                    path: models/revenue_cycle/marts/fct_payer_performance.sql
+                  - key: fct_patient_acquisition.sql
+                    path: models/revenue_cycle/marts/fct_patient_acquisition.sql
+                  - key: fct_cash_recovery_opportunity.sql
+                    path: models/revenue_cycle/marts/fct_cash_recovery_opportunity.sql
+                  - key: fct_cash_forecast.sql
+                    path: models/revenue_cycle/marts/fct_cash_forecast.sql
+                  - key: fct_payer_contract_performance.sql
+                    path: models/revenue_cycle/marts/fct_payer_contract_performance.sql
+                  - key: fct_team_recovery_performance.sql
+                    path: models/revenue_cycle/marts/fct_team_recovery_performance.sql
+                  - key: revenue_cycle_gl_reconciliation.sql
+                    path: tests/revenue_cycle_gl_reconciliation.sql
+                  - key: talemia_schema.yml
+                    path: models/talemia/schema.yml
+                  - key: stg_talemia_opportunities.sql
+                    path: models/talemia/staging/stg_talemia_opportunities.sql
+                  - key: stg_talemia_awards.sql
+                    path: models/talemia/staging/stg_talemia_awards.sql
+                  - key: stg_talemia_losses.sql
+                    path: models/talemia/staging/stg_talemia_losses.sql
+                  - key: stg_talemia_updates.sql
+                    path: models/talemia/staging/stg_talemia_updates.sql
+                  - key: stg_talemia_dimensions.sql
+                    path: models/talemia/staging/stg_talemia_dimensions.sql
+                  - key: stg_talemia_dashboard_targets.sql
+                    path: models/talemia/staging/stg_talemia_dashboard_targets.sql
+                  - key: fct_talemia_opportunity.sql
+                    path: models/talemia/marts/fct_talemia_opportunity.sql
+                  - key: fct_talemia_pipeline.sql
+                    path: models/talemia/marts/fct_talemia_pipeline.sql
+                  - key: fct_talemia_win_loss.sql
+                    path: models/talemia/marts/fct_talemia_win_loss.sql
+                  - key: fct_talemia_account_manager_performance.sql
+                    path: models/talemia/marts/fct_talemia_account_manager_performance.sql
+                  - key: fct_talemia_business_line_performance.sql
+                    path: models/talemia/marts/fct_talemia_business_line_performance.sql
+                  - key: fct_talemia_opportunity_updates.sql
+                    path: models/talemia/marts/fct_talemia_opportunity_updates.sql
+                  - key: fct_talemia_kpi_performance.sql
+                    path: models/talemia/marts/fct_talemia_kpi_performance.sql
+                  - key: fct_talemia_stage_distribution.sql
+                    path: models/talemia/marts/fct_talemia_stage_distribution.sql
+                  - key: fct_talemia_pipeline_risk.sql
+                    path: models/talemia/marts/fct_talemia_pipeline_risk.sql
+                  - key: fct_talemia_client_cohort.sql
+                    path: models/talemia/marts/fct_talemia_client_cohort.sql
+                  - key: fct_talemia_sales_cycle.sql
+                    path: models/talemia/marts/fct_talemia_sales_cycle.sql
+                  - key: fct_talemia_pipeline_forecast.sql
+                    path: models/talemia/marts/fct_talemia_pipeline_forecast.sql
+                  - key: fct_talemia_sales_growth.sql
+                    path: models/talemia/marts/fct_talemia_sales_growth.sql
+                  - key: fct_talemia_dashboard_reconciliation.sql
+                    path: models/talemia/marts/fct_talemia_dashboard_reconciliation.sql
+                  - key: fct_talemia_extraction_quality.sql
+                    path: models/talemia/marts/fct_talemia_extraction_quality.sql
+                  - key: dict_talemia_metrics.sql
+                    path: models/talemia/dictionary/dict_talemia_metrics.sql
+                  - key: dict_talemia_terms.sql
+                    path: models/talemia/dictionary/dict_talemia_terms.sql
+            - name: dbt-workspace
+              emptyDir: {}
             - name: dbt-profile
               configMap:
                 name: dbt-profile-template
@@ -86,6 +193,8 @@ data:
 
     model-paths:
       - models
+    macro-paths:
+      - macros
 
     target-path: target
     clean-targets:
@@ -95,192 +204,247 @@ data:
     models:
       opencare:
         +materialized: view
-        +schema: analytics
         staging:
           +materialized: view
+          +schema: staging
         marts:
           +materialized: table
+          +schema: analytics
+        dictionary:
+          +materialized: table
+          +schema: dictionary
+  generate_schema_name.sql: |
+    {% macro generate_schema_name(custom_schema_name, node) -%}
+        {%- if custom_schema_name is none -%}
+            {{ target.schema }}
+        {%- else -%}
+            {{ custom_schema_name | trim }}
+        {%- endif -%}
+    {%- endmacro %}
   sources.yml: |
     version: 2
 
     sources:
       - name: raw
-        description: Operational landing schema populated from external MySQL ingestion.
-        schema: raw
+        description: Operational landing schema populated by Airbyte from the external hospital MySQL source.
+        schema: "{{ env_var('DBT_SOURCE_SCHEMA', env_var('RAW_SCHEMA', 'raw')) }}"
         tables:
+          - name: wards
+            description: Raw ward reference records from the source system.
+            columns:
+              - name: ward_id
+                tests:
+                  - not_null
+              - name: ward_code
+                tests:
+                  - not_null
+              - name: ward_name
+                tests:
+                  - not_null
+          - name: patients
+            description: Raw patient reference records from the source system.
+            columns:
+              - name: patient_id
+                tests:
+                  - not_null
+              - name: medical_record_number
+                tests:
+                  - not_null
           - name: bed_events
-            description: Raw inpatient bed event records received from ingestion.
+            description: Raw ward occupancy and movement events from the source system.
             columns:
               - name: event_id
-                description: Unique identifier for a bed event in the source system.
+                tests:
+                  - not_null
               - name: event_timestamp
-                description: Timestamp when the bed event was recorded.
-              - name: department_id
-                description: Department reference associated with the event.
-              - name: occupied_beds
-                description: Occupied bed count captured at event time.
-              - name: licensed_beds
-                description: Licensed capacity captured at event time.
-              - name: staffed_beds
-                description: Staffed capacity captured at event time.
-          - name: departments
-            description: Raw department reference data for analytics dimensions.
-            columns:
-              - name: department_id
-                description: Unique identifier for the department.
-              - name: department_code
-                description: Business-facing code for the department.
-              - name: department_name
-                description: Display name for the department.
-              - name: service_line
-                description: Higher-level service grouping for the department.
+                tests:
+                  - not_null
+              - name: ward_id
+                tests:
+                  - not_null
+              - name: event_type
+                tests:
+                  - not_null
   schema.yml: |
     version: 2
 
     models:
-      - name: stg_bed_events
-        description: Standardized bed event records shaped for occupancy marts.
+      - name: stg_wards
+        description: Standardized ward dimension inputs shaped from Airbyte-loaded raw ward records.
         columns:
-          - name: bed_event_key
-            description: Surrogate event key derived from the raw event identifier.
+          - name: ward_id
             tests:
               - not_null
               - unique
-          - name: event_date
-            description: Calendar date extracted from the source event timestamp.
+          - name: ward_code
             tests:
               - not_null
-          - name: department_id
-            description: Department identifier attached to the event.
+              - unique
+          - name: ward_name
+            tests:
+              - not_null
+
+      - name: stg_patients
+        description: Standardized patient reference inputs for downstream healthcare analytics use cases.
+        columns:
+          - name: patient_id
+            tests:
+              - not_null
+              - unique
+          - name: medical_record_number
+            tests:
+              - not_null
+              - unique
+
+      - name: stg_bed_events
+        description: Standardized bed occupancy and movement event records.
+        columns:
+          - name: bed_event_key
+            tests:
+              - not_null
+              - unique
+          - name: ward_id
+            tests:
+              - not_null
+              - relationships:
+                  to: ref('stg_wards')
+                  field: ward_id
+          - name: patient_id
+            tests:
+              - relationships:
+                  to: ref('stg_patients')
+                  field: patient_id
+                  where: "patient_id is not null"
+          - name: event_type
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['midnight_census', 'admission', 'discharge', 'transfer_in', 'transfer_out']
+          - name: event_date
             tests:
               - not_null
           - name: occupied_beds
-            description: Occupied bed count observed for the department and event date.
             tests:
               - not_null
-          - name: licensed_beds
-            description: Licensed bed capacity observed for the department and event date.
-          - name: staffed_beds
-            description: Staffed bed capacity observed for the department and event date.
-          - name: occupancy_rate
-            description: Occupied beds divided by staffed beds when staffed beds are available.
 
       - name: stg_departments
-        description: Standardized department dimension inputs.
+        description: Compatibility staging model that maps wards onto the legacy department shape.
         columns:
           - name: department_id
-            description: Stable department identifier from the source system.
             tests:
               - not_null
               - unique
           - name: department_code
-            description: Short business code for the department.
             tests:
               - not_null
               - unique
           - name: department_name
-            description: Human-readable department display name.
             tests:
               - not_null
-          - name: service_line
-            description: Service line grouping used for rollups and filtering.
 
-      - name: fact_bed_occupancy
-        description: Daily bed occupancy fact table by department in the analytics schema.
+      - name: dim_ward
+        description: Analytics ward dimension for operational reporting and runtime joins.
+        columns:
+          - name: ward_id
+            tests:
+              - not_null
+              - unique
+          - name: ward_code
+            tests:
+              - not_null
+              - unique
+          - name: ward_name
+            tests:
+              - not_null
+
+      - name: dim_date
+        description: Analytics date dimension derived from the bed occupancy event calendar.
+        columns:
+          - name: date_day
+            tests:
+              - not_null
+              - unique
+
+      - name: fct_bed_occupancy
+        description: Daily ward-level occupancy fact used by forecasting and anomaly detection.
         columns:
           - name: occupancy_fact_key
-            description: Grain key for department-day occupancy records.
             tests:
               - not_null
               - unique
           - name: date_day
-            description: Calendar day represented by the occupancy record.
             tests:
               - not_null
-          - name: department_id
-            description: Department identifier for the occupancy record.
+          - name: ward_id
             tests:
               - not_null
-          - name: occupied_beds
-            description: Daily occupied bed count.
-            tests:
-              - not_null
-          - name: staffed_beds
-            description: Daily staffed bed capacity.
+              - relationships:
+                  to: ref('dim_ward')
+                  field: ward_id
           - name: occupancy_rate
-            description: Ratio of occupied beds to staffed beds.
+            tests:
+              - not_null
 
       - name: fact_capacity
-        description: Daily department capacity fact table in the analytics schema.
+        description: Daily ward capacity fact retained for runtime compatibility and capacity KPI calculations.
         columns:
           - name: capacity_fact_key
-            description: Grain key for department-day capacity records.
             tests:
               - not_null
               - unique
-          - name: date_day
-            description: Calendar day represented by the capacity record.
-            tests:
-              - not_null
           - name: department_id
-            description: Department identifier for the capacity record.
-            tests:
-              - not_null
-          - name: licensed_beds
-            description: Daily licensed bed capacity.
-          - name: staffed_beds
-            description: Daily staffed bed capacity.
             tests:
               - not_null
 
       - name: dim_department
-        description: Department dimension used for analytics joins and reporting labels.
+        description: Compatibility alias for runtime consumers that still read analytics.dim_department.
         columns:
           - name: department_id
-            description: Stable department identifier.
             tests:
               - not_null
               - unique
-          - name: department_code
-            description: Business code used in portal and analytics surfaces.
-            tests:
-              - not_null
-              - unique
-          - name: department_name
-            description: Department display name.
-            tests:
-              - not_null
-          - name: service_line
-            description: Service line classification for grouping.
 
       - name: dim_time
-        description: Date dimension derived from available bed event records.
+        description: Compatibility alias for runtime consumers that still read analytics.dim_time.
         columns:
           - name: date_day
-            description: Calendar day serving as the dimension primary key.
             tests:
               - not_null
               - unique
-          - name: day_of_week
-            description: Numeric day of week derived from the date.
-          - name: week_of_year
-            description: ISO week number for the date.
-          - name: month_of_year
-            description: Calendar month number for the date.
-          - name: quarter_of_year
-            description: Calendar quarter number for the date.
-          - name: year_number
-            description: Calendar year for the date.
+      - name: dict_metrics
+        description: Dictionary metrics reference for the Hospital Bed Occupancy Intelligence demo.
+        columns:
+          - name: metric_id
+            tests:
+              - not_null
+              - unique
+          - name: metric_name
+            tests:
+              - not_null
+          - name: metric_schema
+            tests:
+              - not_null
   stg_bed_events.sql: |
     with source_data as (
         select
             cast(event_id as text) as bed_event_key,
             cast(event_timestamp as timestamp) as event_timestamp,
             cast(event_timestamp as date) as event_date,
-            cast(department_id as text) as department_id,
+            cast(ward_id as text) as ward_id,
+            nullif(trim(cast(patient_id as text)), '') as patient_id,
+            lower(trim(cast(event_type as text))) as event_type,
             cast(occupied_beds as integer) as occupied_beds,
             cast(licensed_beds as integer) as licensed_beds,
-            cast(staffed_beds as integer) as staffed_beds
+            cast(staffed_beds as integer) as staffed_beds,
+            nullif(trim(cast(scenario_tag as text)), '') as scenario_tag,
+            row_number() over (
+                partition by cast(event_id as text)
+                order by
+                    cast(event_timestamp as timestamp) desc,
+                    coalesce(nullif(trim(cast(scenario_tag as text)), ''), '') desc,
+                    cast(occupied_beds as integer) desc nulls last,
+                    cast(staffed_beds as integer) desc nulls last
+            ) as dedupe_rank
         from {{ source('raw', 'bed_events') }}
     )
 
@@ -288,73 +452,80 @@ data:
         bed_event_key,
         event_timestamp,
         event_date,
-        department_id,
+        ward_id,
+        patient_id,
+        event_type,
         occupied_beds,
         licensed_beds,
         staffed_beds,
+        scenario_tag,
         case
             when staffed_beds is null or staffed_beds = 0 then null
             else round(occupied_beds::numeric / staffed_beds::numeric, 4)
         end as occupancy_rate
     from source_data
+    where dedupe_rank = 1
+  stg_wards.sql: |
+    with source_data as (
+        select distinct
+            cast(ward_id as text) as ward_id,
+            trim(cast(ward_code as text)) as ward_code,
+            trim(cast(ward_name as text)) as ward_name,
+            trim(cast(service_line as text)) as service_line,
+            cast(licensed_beds as integer) as licensed_beds,
+            cast(staffed_beds_baseline as integer) as staffed_beds_baseline
+        from {{ source('raw', 'wards') }}
+    )
+
+    select
+        ward_id,
+        ward_code,
+        ward_name,
+        service_line,
+        licensed_beds,
+        staffed_beds_baseline
+    from source_data
+  stg_patients.sql: |
+    with source_data as (
+        select distinct
+            cast(patient_id as text) as patient_id,
+            trim(cast(medical_record_number as text)) as medical_record_number,
+            cast(date_of_birth as date) as date_of_birth,
+            upper(trim(cast(sex_at_birth as text))) as sex_at_birth,
+            trim(cast(home_postcode as text)) as home_postcode
+        from {{ source('raw', 'patients') }}
+    )
+
+    select
+        patient_id,
+        medical_record_number,
+        date_of_birth,
+        sex_at_birth,
+        home_postcode
+    from source_data
   stg_departments.sql: |
     select
-        cast(department_id as text) as department_id,
-        trim(cast(department_code as text)) as department_code,
-        trim(cast(department_name as text)) as department_name,
-        trim(cast(service_line as text)) as service_line
-    from {{ source('raw', 'departments') }}
-  fact_bed_occupancy.sql: |
-    with daily_occupancy as (
-        select
-            event_date as date_day,
-            department_id,
-            max(occupied_beds) as occupied_beds,
-            max(staffed_beds) as staffed_beds,
-            max(occupancy_rate) as occupancy_rate
-        from {{ ref('stg_bed_events') }}
-        group by 1, 2
-    )
-
-    select
-        md5(concat(date_day::text, '||', department_id)) as occupancy_fact_key,
-        date_day,
-        department_id,
-        occupied_beds,
-        staffed_beds,
-        occupancy_rate
-    from daily_occupancy
-  fact_capacity.sql: |
-    with daily_capacity as (
-        select
-            event_date as date_day,
-            department_id,
-            max(licensed_beds) as licensed_beds,
-            max(staffed_beds) as staffed_beds
-        from {{ ref('stg_bed_events') }}
-        group by 1, 2
-    )
-
-    select
-        md5(concat(date_day::text, '||', department_id)) as capacity_fact_key,
-        date_day,
-        department_id,
-        licensed_beds,
-        staffed_beds
-    from daily_capacity
-  dim_department.sql: |
-    select
-        department_id,
-        department_code,
-        department_name,
+        ward_id as department_id,
+        ward_code as department_code,
+        ward_name as department_name,
         service_line
-    from {{ ref('stg_departments') }}
-  dim_time.sql: |
+    from {{ ref('stg_wards') }}
+  dim_ward.sql: |
+    select
+        ward_id,
+        ward_code,
+        ward_name,
+        service_line,
+        licensed_beds,
+        staffed_beds_baseline
+    from {{ ref('stg_wards') }}
+  dim_date.sql: |
     with distinct_dates as (
         select distinct
             event_date as date_day
         from {{ ref('stg_bed_events') }}
-        where event_date is not null
+        where event_type = 'midnight_census'
+          and event_date is not null
     )
 
     select
@@ -365,6 +536,104 @@ data:
         extract(quarter from date_day) as quarter_of_year,
         extract(year from date_day) as year_number
     from distinct_dates
+  fct_bed_occupancy.sql: |
+    with census_events as (
+        select
+            event_date as date_day,
+            ward_id,
+            max(occupied_beds) as occupied_beds,
+            max(licensed_beds) as licensed_beds,
+            max(staffed_beds) as staffed_beds,
+            max(occupancy_rate) as occupancy_rate
+        from {{ ref('stg_bed_events') }}
+        where event_type = 'midnight_census'
+        group by 1, 2
+    )
+
+    select
+        md5(concat(date_day::text, '||', ward_id)) as occupancy_fact_key,
+        date_day,
+        ward_id,
+        occupied_beds,
+        licensed_beds,
+        staffed_beds,
+        greatest(staffed_beds - occupied_beds, 0) as available_beds,
+        occupancy_rate,
+        case
+            when occupancy_rate >= 0.9 then true
+            else false
+        end as pressure_flag
+    from census_events
+  fact_bed_occupancy.sql: |
+    select
+        occupancy_fact_key,
+        date_day,
+        ward_id as department_id,
+        occupied_beds,
+        staffed_beds,
+        occupancy_rate,
+        available_beds,
+        pressure_flag
+    from {{ ref('fct_bed_occupancy') }}
+  fact_capacity.sql: |
+    with daily_capacity as (
+        select
+            event_date as date_day,
+            ward_id,
+            max(licensed_beds) as licensed_beds,
+            max(staffed_beds) as staffed_beds
+        from {{ ref('stg_bed_events') }}
+        where event_type = 'midnight_census'
+        group by 1, 2
+    )
+
+    select
+        md5(concat(date_day::text, '||', ward_id)) as capacity_fact_key,
+        date_day,
+        ward_id as department_id,
+        licensed_beds,
+        staffed_beds
+    from daily_capacity
+  dim_department.sql: |
+    select
+        ward_id as department_id,
+        ward_code as department_code,
+        ward_name as department_name,
+        service_line
+    from {{ ref('dim_ward') }}
+  dim_time.sql: |
+    select
+        date_day,
+        extract(isodow from date_day) as day_of_week,
+        extract(week from date_day) as week_of_year,
+        extract(month from date_day) as month_of_year,
+        extract(quarter from date_day) as quarter_of_year,
+        extract(year from date_day) as year_number
+    from {{ ref('dim_date') }}
+  dict_metrics.sql: |
+    select
+        'occupied_beds' as metric_id,
+        'Occupied Beds' as metric_name,
+        'Daily occupied bed count captured from the midnight census event.' as metric_description,
+        'analytics.fct_bed_occupancy' as metric_schema
+    union all
+    select
+        'available_beds' as metric_id,
+        'Available Beds' as metric_name,
+        'Remaining staffed beds available after subtracting the midnight census occupied beds.' as metric_description,
+        'analytics.fct_bed_occupancy' as metric_schema
+    union all
+    select
+        'occupancy_rate' as metric_id,
+        'Occupancy Rate' as metric_name,
+        'Ratio of occupied beds to staffed beds for a ward-day.' as metric_description,
+        'analytics.fct_bed_occupancy' as metric_schema
+    union all
+    select
+        'pressure_flag' as metric_id,
+        'Pressure Flag' as metric_name,
+        'Boolean flag indicating that ward occupancy reached or exceeded 90 percent of staffed beds.' as metric_description,
+        'analytics.fct_bed_occupancy' as metric_schema
 ---
 apiVersion: v1
 kind: ConfigMap

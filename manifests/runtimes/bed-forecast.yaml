@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -28,8 +29,8 @@ spec:
     spec:
       containers:
         - name: bed-forecast
-          image: opencare/bed-forecast:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/maraqa1/opencare-runtime-bed-forecast:dev
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
               name: http
@@ -48,6 +49,13 @@ spec:
             limits:
               cpu: 250m
               memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /healthz
@@ -67,7 +75,9 @@ metadata:
   name: bed-forecast-refresh
   namespace: opencare
 spec:
-  schedule: "15 * * * *"
+  schedule: "20 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 900
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 2
   jobTemplate:

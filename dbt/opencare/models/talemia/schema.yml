@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: stg_talemia_opportunities
+    description: Source-aligned TALEMIA opportunity rows from the V4 extractor.
+    columns:
+      - name: opportunity_id
+        tests:
+          - unique
+      - name: workflow_state
+        tests:
+          - accepted_values:
+              values: ["Awarded", "Lost", "Unknown"]
+
+  - name: fct_talemia_opportunity
+    description: One row per TALEMIA commercial opportunity.
+    columns:
+      - name: opportunity_id
+        tests:
+          - not_null
+          - unique
+      - name: workflow_state
+        tests:
+          - accepted_values:
+              values: ["Awarded", "Lost", "Unknown"]
+
+  - name: fct_talemia_pipeline
+    description: Opportunity-grain pipeline metrics with value and filter dimensions.
+    columns:
+      - name: opportunity_id
+        tests:
+          - not_null
+
+  - name: fct_talemia_win_loss
+    description: Opportunity-grain win/loss outcome mart.
+    columns:
+      - name: opportunity_id
+        tests:
+          - not_null
+
+  - name: fct_talemia_business_line_performance
+    description: Business-line grain performance mart.
+    columns:
+      - name: business_line_name
+        tests:
+          - not_null
+
+  - name: fct_talemia_account_manager_performance
+    description: Account-manager grain performance mart.
+    columns:
+      - name: account_manager_name
+        tests:
+          - not_null
+
+  - name: fct_talemia_kpi_performance
+    description: KPI dictionary-aligned calculated KPI values for TALEMIA dashboards.
+    columns:
+      - name: kpi_name
+        tests:
+          - not_null
+
+  - name: dict_talemia_metrics
+    description: TALEMIA KPI formula dictionary.
+    columns:
+      - name: kpi_name
+        tests:
+          - not_null
+          - unique

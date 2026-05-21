@@ -2,28 +2,89 @@ import type { ReactNode } from "react";
 
 import Link from "next/link";
 
-const navigation = {
-  customer: [
-    { href: "/", label: "Home" },
-    { href: "/occupancy-dashboard", label: "Occupancy Dashboard" },
-    { href: "/forecast", label: "Forecast" },
-    { href: "/anomalies", label: "Anomalies" },
-    { href: "/reports", label: "Reports" },
-    { href: "/dictionary", label: "Dictionary" },
-  ],
-  admin: [
-    { href: "/admin", label: "Admin Home" },
-    { href: "/admin/runtime-status", label: "Runtime Status" },
-    { href: "/admin/data-refresh-status", label: "Data Refresh Status" },
-    { href: "/admin/platform-health", label: "Platform Health" },
-    { href: "/admin/dictionary-management", label: "Dictionary Management" },
-  ],
-};
+import type { NavItem } from "@/config/navigation";
+import { getUseCaseByPath } from "@/lib/use-cases";
 
 type Props = {
   pathname: string;
+  navigation: NavItem[];
   children: ReactNode;
 };
+
+function getTopbarContext(pathname: string) {
+  if (pathname === "/governance") {
+    return {
+      label: "Governance",
+      title: "KPI entry",
+      badge: "Trust mode",
+      actionHref: "/governance/health",
+      actionLabel: "Health",
+    };
+  }
+
+  if (pathname.startsWith("/governance/kpi/") && pathname.endsWith("/trace")) {
+    return {
+      label: "Governance",
+      title: "Technical trace",
+      badge: "Proof view",
+      actionHref: "/governance",
+      actionLabel: "Back",
+    };
+  }
+
+  if (pathname.startsWith("/governance/kpi/")) {
+    return {
+      label: "Governance",
+      title: "KPI trust journey",
+      badge: "Trust mode",
+      actionHref: "/governance/health",
+      actionLabel: "Health",
+    };
+  }
+
+  if (pathname.startsWith("/governance/asset/")) {
+    return {
+      label: "Governance",
+      title: "Asset detail",
+      badge: "Steward view",
+      actionHref: "/governance",
+      actionLabel: "Back",
+    };
+  }
+
+  if (pathname.startsWith("/governance/health")) {
+    return {
+      label: "Governance",
+      title: "Governance health",
+      badge: "Program view",
+      actionHref: "/governance",
+      actionLabel: "Entry",
+    };
+  }
+
+  if (pathname.startsWith("/admin")) {
+    return {
+      label: "Administration",
+      title: "Governance and Platform Control",
+      badge: "Admin Context",
+      actionHref: "/admin",
+      actionLabel: "Admin",
+    };
+  }
+
+  const useCase = getUseCaseByPath(pathname);
+  if (useCase) {
+    return useCase.shell;
+  }
+
+  return {
+    label: "OpenCare",
+    title: "Hospital Operations Intelligence",
+    badge: "Platform",
+    actionHref: "/admin",
+    actionLabel: "Admin",
+  };
+}
 
 function NavSection({
   title,
@@ -31,7 +92,7 @@ function NavSection({
   pathname,
 }: {
   title: string;
-  items: Array<{ href: string; label: string }>;
+  items: NavItem[];
   pathname: string;
 }) {
   return (
@@ -39,14 +100,15 @@ function NavSection({
       <p className="nav-section-title">{title}</p>
       <ul className="nav-list">
         {items.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
                 className={isActive ? "nav-link active" : "nav-link"}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
               </Link>
             </li>
           );
@@ -56,22 +118,52 @@ function NavSection({
   );
 }
 
-export function NavigationShell({ pathname, children }: Props) {
+export function NavigationShell({ pathname, navigation, children }: Props) {
+  const topbar = getTopbarContext(pathname);
+
   return (
     <div className="portal-shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-kicker">OpenCare Insight Platform</span>
-          <h1>Bed Occupancy Intelligence</h1>
+          <div className="brand-logo-shell">
+            <img
+              src="https://yottalogica.com/wp-content/uploads/logo3.png"
+              alt="YottaLogica"
+              className="brand-logo"
+            />
+          </div>
+          <span className="brand-kicker">OpenCare</span>
+          <p className="brand-title">Hospital Operations Intelligence</p>
           <p>
-            Customer views stay inside the portal while analytics, runtimes, and
-            dashboards remain governed behind the scenes.
+            Use case workspaces keep daily operations, decision support, and deep governance
+            in the right place.
           </p>
         </div>
-        <NavSection title="Customer" items={navigation.customer} pathname={pathname} />
-        <NavSection title="Admin" items={navigation.admin} pathname={pathname} />
+        <NavSection title="Global Navigation" items={navigation} pathname={pathname} />
+        <section className="nav-section">
+          <p className="nav-section-title">Pipeline</p>
+          <div className="sidebar-pipeline">
+            <span className="status-dot live" />
+            <span>8m ago</span>
+            <span>6/6 sources</span>
+          </div>
+        </section>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        <header className="main-topbar">
+          <div>
+            <p className="topbar-label">{topbar.label}</p>
+            <h2 className="topbar-title">{topbar.title}</h2>
+          </div>
+          <div className="topbar-actions">
+            <span className="persona-badge">{topbar.badge}</span>
+            <Link className="settings-link" href={topbar.actionHref}>
+              {topbar.actionLabel}
+            </Link>
+          </div>
+        </header>
+        {children}
+      </main>
     </div>
   );
 }
