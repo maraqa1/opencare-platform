@@ -19,6 +19,10 @@ export type UseCaseModule = {
   };
 };
 
+export type UseCaseManifestEntry = {
+  enabled?: boolean;
+};
+
 export type DecisionItem = {
   urgency: string;
   tone: "critical" | "warning";
@@ -136,6 +140,13 @@ export const revenueCycleTabs = [
   { key: "team-performance", label: "Team Performance", href: "/use-cases/revenue-cycle-management/team-performance" },
   { key: "executive-narrative", label: "Executive Narrative", href: "/use-cases/revenue-cycle-management/executive-narrative" },
 ];
+
+export function filterVisibleUseCases(
+  modules: UseCaseModule[],
+  manifest: Record<string, UseCaseManifestEntry> = {},
+) {
+  return modules.filter((module) => manifest[module.id]?.enabled ?? true);
+}
 
 export function getUseCaseByPath(pathname: string): UseCaseModule | null {
   if (pathname.startsWith("/occupancy") || pathname.startsWith("/use-cases/bed-pressure")) {

@@ -9,6 +9,7 @@ import { TabNav } from "@/components/TabNav";
 import { AnomalyAlerts } from "@/components/bed-pressure/AnomalyAlerts";
 import { ForecastView } from "@/components/bed-pressure/ForecastView";
 import { OccupancyGrid } from "@/components/bed-pressure/OccupancyGrid";
+import { assertUseCaseEnabled } from "@/lib/use-case-gates";
 
 type SearchParams = Promise<{
   tab?: string;
@@ -25,6 +26,7 @@ export default async function BedPressureDashboard({
 }: {
   searchParams: SearchParams;
 }) {
+  await assertUseCaseEnabled("bed_pressure");
   const params = await searchParams;
   const activeTab = params.tab ?? "occupancy";
   const tabs = [

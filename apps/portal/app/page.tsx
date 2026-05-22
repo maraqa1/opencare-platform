@@ -4,14 +4,14 @@ import Link from "next/link";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
-import { useCases } from "@/lib/use-cases";
+import { filterVisibleUseCases, useCases } from "@/lib/use-cases";
 
 export const metadata: Metadata = {
   title: "Home - OpenCare Portal",
 };
 
 export default async function HomePage() {
-  const [runtime, health, alerts, occupancy] = await Promise.all([
+  const [runtime, health, alerts, occupancy, useCaseConfig] = await Promise.all([
     getApiJson<{
       runtimes?: Array<{ name: string; last_run?: string | null; row_count?: number }>;
     }>({
@@ -42,7 +42,17 @@ export default async function HomePage() {
       path: "/api/v1/occupancy/current",
       fallback: { summary: {}, items: [] },
     }),
+    getApiJson<{
+      all_use_cases?: Record<string, { enabled?: boolean }>;
+    }>({
+      path: "/api/v1/config/use-cases",
+      fallback: { all_use_cases: {} },
+    }),
   ]);
+
+  const visibleUseCases = filterVisibleUseCases(useCases, useCaseConfig.all_use_cases ?? {});
+  const defaultUseCaseHref =
+    visibleUseCases.find((useCase) => useCase.status === "active")?.defaultHref ?? "/use-cases";
 
   const healthyCount = (health.checks ?? []).filter((item) => item.healthy).length;
   const criticalCount = occupancy.summary?.critical ?? 0;
@@ -82,8 +92,8 @@ export default async function HomePage() {
         <Link key="use-cases" className="button primary" href="/use-cases">
           View Use Cases
         </Link>,
-        <Link key="status" className="secondary-link" href="/use-cases/bed-pressure/status">
-          Enter Bed Pressure
+        <Link key="status" className="secondary-link" href={defaultUseCaseHref}>
+          Open Primary Workspace
         </Link>,
       ]}
     >
@@ -114,7 +124,7 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="use-case-card-grid">
-            {useCases.map((useCase) => (
+            {visibleUseCases.map((useCase) => (
               <Link
                 key={useCase.id}
                 href={

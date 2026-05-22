@@ -2,12 +2,23 @@ import type { Metadata } from "next";
 
 import { PageFrame } from "@/components/page-frame";
 import { UseCaseBriefing } from "@/components/UseCaseBriefing";
+import { getApiJson } from "@/lib/api";
+import { filterVisibleUseCases, useCases } from "@/lib/use-cases";
 
 export const metadata: Metadata = {
   title: "Use Cases - OpenCare Portal",
 };
 
-export default function UseCasesPage() {
+export default async function UseCasesPage() {
+  const config = await getApiJson<{
+    all_use_cases?: Record<string, { enabled?: boolean }>;
+  }>({
+    path: "/api/v1/config/use-cases",
+    fallback: { all_use_cases: {} },
+  });
+
+  const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});
+
   return (
     <PageFrame
       eyebrow="Use Cases"
@@ -19,7 +30,7 @@ export default function UseCasesPage() {
         { label: "Governed outcomes", tone: "primary" },
       ]}
     >
-      <UseCaseBriefing />
+      <UseCaseBriefing useCases={visibleUseCases} />
     </PageFrame>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { getGovernanceUseCases, type GovernanceUseCase } from "@/lib/governance-registry";
-import { useCases, type UseCaseModule } from "@/lib/use-cases";
+import type { UseCaseModule } from "@/lib/use-cases";
 
 const stageLabels: Record<string, string> = {
   source: "Source System",
@@ -44,7 +44,7 @@ function lineageNodes(useCase: GovernanceUseCase | null) {
   }));
 }
 
-export function UseCaseBriefing() {
+export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
   const governedUseCases = useMemo(() => getGovernanceUseCases(), []);
   const [selectedUseCaseId, setSelectedUseCaseId] = useState(useCases[0]?.id ?? "");
   const selectedModule = useCases.find((useCase) => useCase.id === selectedUseCaseId) ?? useCases[0];
@@ -54,7 +54,19 @@ export function UseCaseBriefing() {
   const workspaceLinks = governedUseCase?.workspaceCoverage ?? [];
   const lineage = lineageNodes(governedUseCase);
 
-  if (!selectedModule) return null;
+  if (!selectedModule) {
+    return (
+      <section className="use-case-briefing">
+        <article className="use-case-briefing-panel">
+          <p className="eyebrow">Use Cases</p>
+          <h3>No enabled use cases</h3>
+          <p className="section-subtitle">
+            Enable a use case from Administration to make it available in the customer-facing portal.
+          </p>
+        </article>
+      </section>
+    );
+  }
 
   return (
     <section className="use-case-briefing">
