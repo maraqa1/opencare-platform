@@ -9,11 +9,15 @@ import {
 } from "@/lib/governance-registry";
 import { TrustBadge } from "@/components/governance/TrustBadge";
 
-export function GovernanceHealthOverview() {
+export function GovernanceHealthOverview({
+  useCases = getGovernanceUseCases(),
+  kpis = getGovernanceKpis(),
+}: {
+  useCases?: ReturnType<typeof getGovernanceUseCases>;
+  kpis?: ReturnType<typeof getGovernanceKpis>;
+}) {
   const overview = getGovernanceOverview();
   const details = getGovernanceHealthDetails();
-  const useCases = getGovernanceUseCases();
-  const kpis = getGovernanceKpis();
 
   return (
     <div className="governance-health-shell">

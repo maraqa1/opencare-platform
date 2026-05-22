@@ -1571,6 +1571,16 @@ export function getGovernanceUseCases() {
   return governanceUseCases;
 }
 
+export function filterGovernanceUseCasesByIds(
+  useCases: GovernanceUseCase[],
+  enabledUseCaseIds: string[] | null,
+) {
+  if (!enabledUseCaseIds) {
+    return useCases;
+  }
+  return useCases.filter((useCase) => enabledUseCaseIds.includes(useCase.id));
+}
+
 export function getClassificationRules() {
   return classificationRules;
 }
@@ -1696,6 +1706,16 @@ export function getGovernanceKpis(): GovernanceKpi[] {
         } satisfies GovernanceKpi;
       });
   });
+}
+
+export function filterGovernanceKpisByIds(
+  kpis: GovernanceKpi[],
+  enabledUseCaseIds: string[] | null,
+) {
+  if (!enabledUseCaseIds) {
+    return kpis;
+  }
+  return kpis.filter((kpi) => enabledUseCaseIds.includes(kpi.useCaseId));
 }
 
 export function getGovernanceKpiBySlug(slug: string) {

@@ -23,6 +23,19 @@ export type UseCaseManifestEntry = {
   enabled?: boolean;
 };
 
+export function getManifestEnabledUseCaseIds(
+  manifest: Record<string, UseCaseManifestEntry> = {},
+): string[] | null {
+  const entries = Object.entries(manifest);
+  if (entries.length === 0) {
+    return null;
+  }
+
+  return entries
+    .filter(([, config]) => config?.enabled === true)
+    .map(([useCaseId]) => useCaseId);
+}
+
 export type DecisionItem = {
   urgency: string;
   tone: "critical" | "warning";
@@ -145,7 +158,12 @@ export function filterVisibleUseCases(
   modules: UseCaseModule[],
   manifest: Record<string, UseCaseManifestEntry> = {},
 ) {
-  return modules.filter((module) => manifest[module.id]?.enabled === true);
+  const enabledIds = getManifestEnabledUseCaseIds(manifest);
+  if (enabledIds === null) {
+    return modules;
+  }
+
+  return modules.filter((module) => enabledIds.includes(module.id));
 }
 
 export function getUseCaseByPath(pathname: string): UseCaseModule | null {

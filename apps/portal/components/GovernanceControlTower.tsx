@@ -933,8 +933,11 @@ function DataDictionaryView({ useCases }: { useCases: GovernanceUseCase[] }) {
   );
 }
 
-export function GovernanceControlTower() {
-  const useCases = getGovernanceUseCases();
+export function GovernanceControlTower({
+  useCases = getGovernanceUseCases(),
+}: {
+  useCases?: GovernanceUseCase[];
+}) {
   const [mode, setMode] = useState<GovernanceMode>("trust-map");
   const [query, setQuery] = useState("");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(useCases[0]?.governedDatasets[0]?.id ?? null);
