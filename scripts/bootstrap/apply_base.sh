@@ -20,24 +20,32 @@ resolved_superset_readonly_password="$SUPERSET_READONLY_PASSWORD"
 resolved_superset_admin_password="$SUPERSET_ADMIN_PASSWORD"
 resolved_smtp_pass="$SMTP_PASS"
 
-if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
-  resolved_postgres_password="$(secret_value_or_default opencare-secrets POSTGRES_PASSWORD "$resolved_postgres_password")"
-  resolved_kc_db_password="$(secret_value_or_default opencare-secrets KC_DB_PASSWORD "$resolved_kc_db_password")"
-  resolved_minio_root_user="$(secret_value_or_default opencare-secrets MINIO_ROOT_USER "$resolved_minio_root_user")"
-  resolved_minio_root_password="$(secret_value_or_default opencare-secrets MINIO_ROOT_PASSWORD "$resolved_minio_root_password")"
-  resolved_minio_access_key="$(secret_value_or_default opencare-secrets MINIO_ACCESS_KEY "$resolved_minio_access_key")"
-  resolved_minio_secret_key="$(secret_value_or_default opencare-secrets MINIO_SECRET_KEY "$resolved_minio_secret_key")"
-  resolved_internal_api_token="$(secret_value_or_default opencare-secrets INTERNAL_API_TOKEN "$resolved_internal_api_token")"
-  resolved_keycloak_admin_password="$(secret_value_or_default opencare-secrets KEYCLOAK_ADMIN_PASSWORD "$resolved_keycloak_admin_password")"
-  resolved_demo_mysql_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_PASSWORD "$resolved_demo_mysql_password")"
-  resolved_demo_mysql_root_password="$(secret_value_or_default opencare-secrets DEMO_MYSQL_ROOT_PASSWORD "$resolved_demo_mysql_root_password")"
-  resolved_superset_readonly_password="$(secret_value_or_default opencare-secrets SUPERSET_READONLY_PASSWORD "$resolved_superset_readonly_password")"
-  resolved_superset_admin_password="$(secret_value_or_default opencare-secrets SUPERSET_ADMIN_PASSWORD "$resolved_superset_admin_password")"
-  if [[ -n "$resolved_smtp_pass" ]] && [[ "$resolved_smtp_pass" != "YOUR_REAL_SMTP_PASSWORD" ]]; then
-    log "Using SMTP_PASS from local environment to refresh opencare-secrets"
-  else
-    resolved_smtp_pass="$(secret_value_or_default opencare-secrets SMTP_PASS "$resolved_smtp_pass")"
+resolve_secret_value() {
+  local key="$1"
+  local env_value="$2"
+
+  if [[ -n "$env_value" ]]; then
+    printf '%s' "$env_value"
+    return
   fi
+
+  secret_value_or_default opencare-secrets "$key" "$env_value"
+}
+
+if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
+  resolved_postgres_password="$(resolve_secret_value POSTGRES_PASSWORD "$resolved_postgres_password")"
+  resolved_kc_db_password="$(resolve_secret_value KC_DB_PASSWORD "$resolved_kc_db_password")"
+  resolved_minio_root_user="$(resolve_secret_value MINIO_ROOT_USER "$resolved_minio_root_user")"
+  resolved_minio_root_password="$(resolve_secret_value MINIO_ROOT_PASSWORD "$resolved_minio_root_password")"
+  resolved_minio_access_key="$(resolve_secret_value MINIO_ACCESS_KEY "$resolved_minio_access_key")"
+  resolved_minio_secret_key="$(resolve_secret_value MINIO_SECRET_KEY "$resolved_minio_secret_key")"
+  resolved_internal_api_token="$(resolve_secret_value INTERNAL_API_TOKEN "$resolved_internal_api_token")"
+  resolved_keycloak_admin_password="$(resolve_secret_value KEYCLOAK_ADMIN_PASSWORD "$resolved_keycloak_admin_password")"
+  resolved_demo_mysql_password="$(resolve_secret_value DEMO_MYSQL_PASSWORD "$resolved_demo_mysql_password")"
+  resolved_demo_mysql_root_password="$(resolve_secret_value DEMO_MYSQL_ROOT_PASSWORD "$resolved_demo_mysql_root_password")"
+  resolved_superset_readonly_password="$(resolve_secret_value SUPERSET_READONLY_PASSWORD "$resolved_superset_readonly_password")"
+  resolved_superset_admin_password="$(resolve_secret_value SUPERSET_ADMIN_PASSWORD "$resolved_superset_admin_password")"
+  resolved_smtp_pass="$(resolve_secret_value SMTP_PASS "$resolved_smtp_pass")"
 fi
 
 render_platform_config() {
