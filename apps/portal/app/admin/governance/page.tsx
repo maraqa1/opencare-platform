@@ -5,6 +5,7 @@ import { GovernanceControlTower } from "@/components/GovernanceControlTower";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
 import { getGovernanceUseCases } from "@/lib/governance-registry";
+import { getFallbackUseCaseManifestEntries } from "@/lib/use-cases";
 
 export const metadata: Metadata = {
   title: "Admin Governance - OpenCare Portal",
@@ -19,7 +20,12 @@ export default async function AdminGovernancePage() {
     cacheMode: "no-store",
   });
 
-  const useCases = Object.entries(config.all_use_cases ?? {}).map(([id, useCaseConfig]) => ({
+  const manifestUseCases =
+    Object.keys(config.all_use_cases ?? {}).length > 0
+      ? (config.all_use_cases ?? {})
+      : getFallbackUseCaseManifestEntries();
+
+  const useCases = Object.entries(manifestUseCases).map(([id, useCaseConfig]) => ({
     id,
     config: useCaseConfig,
   }));

@@ -20,6 +20,8 @@ export type UseCaseModule = {
 };
 
 export type UseCaseManifestEntry = {
+  name?: string;
+  description?: string;
   enabled?: boolean;
 };
 
@@ -164,6 +166,19 @@ export function filterVisibleUseCases(
   }
 
   return modules.filter((module) => enabledIds.includes(module.id));
+}
+
+export function getFallbackUseCaseManifestEntries(): Record<string, UseCaseManifestEntry> {
+  return Object.fromEntries(
+    useCases.map((useCase) => [
+      useCase.id,
+      {
+        name: useCase.name,
+        description: useCase.description,
+        enabled: useCase.status === "active",
+      } satisfies UseCaseManifestEntry,
+    ]),
+  );
 }
 
 export function getUseCaseByPath(pathname: string): UseCaseModule | null {
