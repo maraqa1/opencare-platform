@@ -27,6 +27,8 @@ def set_use_case_enabled(use_case_id: str, payload: UseCaseTogglePayload) -> dic
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Unknown use case: {use_case_id}") from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return {
         "status": "ok",

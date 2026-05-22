@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 type UseCaseManifestEntry = {
@@ -27,6 +28,7 @@ export function UseCaseConfigurationPanel({
 }: {
   initialUseCases: UseCaseRecord[];
 }) {
+  const router = useRouter();
   const [useCases, setUseCases] = useState<UseCaseRecord[]>(initialUseCases);
   const [message, setMessage] = useState<string>("");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -68,13 +70,25 @@ export function UseCaseConfigurationPanel({
           throw new Error(payload.detail ?? "Unable to update the use case configuration.");
         }
 
-        const nextUseCases = Object.entries(payload.all_use_cases).map(([id, config]) => ({
-          id,
-          config,
-        }));
+        const nextUseCases = Object.entries(payload.all_use_cases).map(([id, config]) => ({ id, config }));
 
-        setUseCases(nextUseCases);
+        setUseCases((currentUseCases) =>
+          nextUseCases.length > 0
+            ? nextUseCases
+            : currentUseCases.map((useCase) =>
+                useCase.id === useCaseId
+                  ? {
+                      ...useCase,
+                      config: {
+                        ...useCase.config,
+                        enabled,
+                      },
+                    }
+                  : useCase,
+              ),
+        );
         setMessage(`${useCaseId} ${enabled ? "included" : "excluded"} successfully.`);
+        router.refresh();
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "Unable to update the use case configuration.");
       } finally {

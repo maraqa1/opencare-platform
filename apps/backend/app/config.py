@@ -189,9 +189,9 @@ def load_use_case_overrides() -> dict[str, dict[str, object]]:
         with _open_kubernetes_request(req) as response:
             payload = yaml.safe_load(response.read().decode("utf-8")) or {}
     except error.HTTPError as exc:
-        if exc.code == 404:
+        if exc.code in {401, 403, 404}:
             return {}
-        raise
+        return {}
     except OSError:
         return {}
 
@@ -229,8 +229,21 @@ def write_use_case_overrides(overrides: dict[str, dict[str, object]]) -> None:
     if req is None:
         raise FileNotFoundError("Kubernetes request context is unavailable for use-case overrides.")
 
-    with _open_kubernetes_request(req):
-        return None
+    try:
+        with _open_kubernetes_request(req):
+            return None
+    except error.HTTPError as exc:
+        detail = ""
+        try:
+            detail = exc.read().decode("utf-8").strip()
+        except Exception:
+            detail = ""
+        message = "Unable to persist the use-case override."
+        if detail:
+            message = f"{message} {detail}"
+        raise RuntimeError(message) from exc
+    except OSError as exc:
+        raise RuntimeError("Unable to reach the Kubernetes API to persist the use-case override.") from exc
 
 
 def merge_use_case_config(
