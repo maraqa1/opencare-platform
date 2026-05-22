@@ -25,6 +25,7 @@ export default async function AdminConfigurationPage() {
   }>({
     path: "/api/v1/config/use-cases",
     fallback: { all_use_cases: {} },
+    cacheMode: "no-store",
   });
 
   const useCases = Object.entries(config.all_use_cases ?? {}).map(([id, useCaseConfig]) => ({

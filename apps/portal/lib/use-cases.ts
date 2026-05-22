@@ -145,7 +145,7 @@ export function filterVisibleUseCases(
   modules: UseCaseModule[],
   manifest: Record<string, UseCaseManifestEntry> = {},
 ) {
-  return modules.filter((module) => manifest[module.id]?.enabled ?? true);
+  return modules.filter((module) => manifest[module.id]?.enabled === true);
 }
 
 export function getUseCaseByPath(pathname: string): UseCaseModule | null {

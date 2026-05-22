@@ -47,6 +47,7 @@ export default async function HomePage() {
     }>({
       path: "/api/v1/config/use-cases",
       fallback: { all_use_cases: {} },
+      cacheMode: "no-store",
     }),
   ]);
 

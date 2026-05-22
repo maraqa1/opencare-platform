@@ -27,6 +27,7 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: backend-config-writer
       containers:
         - name: backend
           image: ghcr.io/maraqa1/opencare-backend:latest

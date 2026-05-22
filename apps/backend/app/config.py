@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import os
+import ssl
+import json
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from urllib import error, request
 
 import yaml
 
@@ -91,6 +94,9 @@ class Settings:
 
 
 settings = Settings()
+USE_CASE_OVERRIDE_CONFIGMAP = os.getenv("USE_CASE_OVERRIDE_CONFIGMAP", "opencare-use-case-overrides")
+USE_CASE_OVERRIDE_CONFIGMAP_KEY = os.getenv("USE_CASE_OVERRIDE_CONFIGMAP_KEY", "overrides.yaml")
+SERVICE_ACCOUNT_DIR = Path("/var/run/secrets/kubernetes.io/serviceaccount")
 
 
 def _candidate_use_case_paths() -> list[Path]:
@@ -111,6 +117,17 @@ def clear_use_case_caches() -> None:
     load_record_spec_map.cache_clear()
 
 
+def load_use_case_manifest() -> dict[str, object]:
+    path = resolve_use_cases_config_path()
+    if path is None:
+        return {}
+
+    with path.open("r", encoding="utf-8") as handle:
+        payload = yaml.safe_load(handle) or {}
+
+    return payload if isinstance(payload, dict) else {}
+
+
 def resolve_use_cases_config_path() -> Path | None:
     for path in _candidate_use_case_paths():
         if path.is_file():
@@ -118,27 +135,134 @@ def resolve_use_cases_config_path() -> Path | None:
     return None
 
 
+def _service_account_file(name: str) -> Path:
+    return SERVICE_ACCOUNT_DIR / name
+
+
+def _in_cluster_namespace() -> str | None:
+    namespace_path = _service_account_file("namespace")
+    if not namespace_path.is_file():
+        return None
+    return namespace_path.read_text(encoding="utf-8").strip() or None
+
+
+def _build_kubernetes_request(path: str, method: str = "GET", body: bytes | None = None) -> request.Request | None:
+    token_path = _service_account_file("token")
+    ca_path = _service_account_file("ca.crt")
+    namespace = _in_cluster_namespace()
+    host = os.getenv("KUBERNETES_SERVICE_HOST")
+    port = os.getenv("KUBERNETES_SERVICE_PORT", "443")
+
+    if not token_path.is_file() or namespace is None or not host or not ca_path.is_file():
+        return None
+
+    token = token_path.read_text(encoding="utf-8").strip()
+    url = f"https://{host}:{port}{path}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json",
+    }
+    if body is not None:
+        headers["Content-Type"] = "application/merge-patch+json"
+    return request.Request(url, data=body, headers=headers, method=method)
+
+
+def _open_kubernetes_request(req: request.Request):
+    ca_path = _service_account_file("ca.crt")
+    context = ssl.create_default_context(cafile=str(ca_path))
+    return request.urlopen(req, context=context, timeout=5)
+
+
+def load_use_case_overrides() -> dict[str, dict[str, object]]:
+    namespace = _in_cluster_namespace()
+    if namespace is None:
+        return {}
+
+    api_path = (
+        f"/api/v1/namespaces/{namespace}/configmaps/{USE_CASE_OVERRIDE_CONFIGMAP}"
+    )
+    req = _build_kubernetes_request(api_path)
+    if req is None:
+        return {}
+
+    try:
+        with _open_kubernetes_request(req) as response:
+            payload = yaml.safe_load(response.read().decode("utf-8")) or {}
+    except error.HTTPError as exc:
+        if exc.code == 404:
+            return {}
+        raise
+    except OSError:
+        return {}
+
+    raw_data = payload.get("data", {}).get(USE_CASE_OVERRIDE_CONFIGMAP_KEY, "")
+    overrides_payload = yaml.safe_load(raw_data) or {}
+    use_cases = overrides_payload.get("use_cases", {})
+    return use_cases if isinstance(use_cases, dict) else {}
+
+
+def write_use_case_overrides(overrides: dict[str, dict[str, object]]) -> None:
+    namespace = _in_cluster_namespace()
+    if namespace is None:
+        raise FileNotFoundError("Kubernetes namespace context is unavailable for use-case overrides.")
+
+    api_path = (
+        f"/api/v1/namespaces/{namespace}/configmaps/{USE_CASE_OVERRIDE_CONFIGMAP}"
+    )
+    req = _build_kubernetes_request(
+        api_path,
+        method="PATCH",
+        body=json.dumps(
+            {
+                "data": {
+                    USE_CASE_OVERRIDE_CONFIGMAP_KEY: yaml.safe_dump(
+                        {"use_cases": overrides},
+                        sort_keys=False,
+                        allow_unicode=False,
+                    )
+                }
+            },
+            sort_keys=False,
+            ensure_ascii=True,
+        ).encode("utf-8"),
+    )
+    if req is None:
+        raise FileNotFoundError("Kubernetes request context is unavailable for use-case overrides.")
+
+    with _open_kubernetes_request(req):
+        return None
+
+
+def merge_use_case_config(
+    base_use_cases: dict[str, dict[str, object]],
+    overrides: dict[str, dict[str, object]],
+) -> dict[str, dict[str, object]]:
+    merged = deepcopy(base_use_cases)
+    for use_case_id, override in overrides.items():
+        if not isinstance(override, dict):
+            continue
+        target = merged.get(use_case_id)
+        if isinstance(target, dict):
+            target.update(override)
+    return merged
+
+
 @lru_cache(maxsize=1)
 def load_use_cases(include_disabled: bool = True) -> dict[str, dict[str, object]]:
-    path = resolve_use_cases_config_path()
-    if path is not None:
-        with path.open("r", encoding="utf-8") as handle:
-            payload = yaml.safe_load(handle) or {}
+    payload = load_use_case_manifest()
+    use_cases = payload.get("use_cases", {})
+    if not isinstance(use_cases, dict):
+        return {}
 
-        use_cases = payload.get("use_cases", {})
-        if not isinstance(use_cases, dict):
-            return {}
+    merged_use_cases = merge_use_case_config(use_cases, load_use_case_overrides())
+    if include_disabled:
+        return merged_use_cases
 
-        if include_disabled:
-            return use_cases
-
-        return {
-            key: value
-            for key, value in use_cases.items()
-            if isinstance(value, dict) and value.get("enabled", False)
-        }
-
-    return {}
+    return {
+        key: value
+        for key, value in merged_use_cases.items()
+        if isinstance(value, dict) and value.get("enabled", False)
+    }
 
 
 def load_enabled_use_cases() -> dict[str, dict[str, object]]:
@@ -162,34 +286,19 @@ def load_record_spec_map() -> dict[str, dict[str, object]]:
 
 
 def update_use_case_enabled(use_case_id: str, enabled: bool) -> dict[str, object]:
-    path = resolve_use_cases_config_path()
-    if path is None:
-        raise FileNotFoundError("Use-case manifest file could not be found.")
-
-    with path.open("r", encoding="utf-8") as handle:
-        payload = yaml.safe_load(handle) or {}
-
+    payload = load_use_case_manifest()
     use_cases = payload.get("use_cases", {})
     if not isinstance(use_cases, dict) or use_case_id not in use_cases:
         raise KeyError(use_case_id)
 
-    use_case = use_cases.get(use_case_id)
-    if not isinstance(use_case, dict):
-        raise KeyError(use_case_id)
+    overrides = load_use_case_overrides()
+    use_case_override = overrides.get(use_case_id, {})
+    if not isinstance(use_case_override, dict):
+        use_case_override = {}
 
-    use_case["enabled"] = enabled
-
-    with NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        delete=False,
-        dir=path.parent,
-        suffix=".yaml",
-    ) as handle:
-        yaml.safe_dump(payload, handle, sort_keys=False, allow_unicode=False)
-        temp_path = Path(handle.name)
-
-    temp_path.replace(path)
+    use_case_override["enabled"] = enabled
+    overrides[use_case_id] = use_case_override
+    write_use_case_overrides(overrides)
     clear_use_case_caches()
     refreshed = load_use_cases(include_disabled=True).get(use_case_id, {})
     return refreshed if isinstance(refreshed, dict) else {}

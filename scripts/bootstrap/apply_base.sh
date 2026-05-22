@@ -19,6 +19,7 @@ resolved_demo_mysql_root_password="$DEMO_MYSQL_ROOT_PASSWORD"
 resolved_superset_readonly_password="$SUPERSET_READONLY_PASSWORD"
 resolved_superset_admin_password="$SUPERSET_ADMIN_PASSWORD"
 resolved_smtp_pass="$SMTP_PASS"
+resolved_use_case_overrides="use_cases: {}"
 
 resolve_secret_value() {
   local key="$1"
@@ -46,6 +47,13 @@ if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_superset_readonly_password="$(resolve_secret_value SUPERSET_READONLY_PASSWORD "$resolved_superset_readonly_password")"
   resolved_superset_admin_password="$(resolve_secret_value SUPERSET_ADMIN_PASSWORD "$resolved_superset_admin_password")"
   resolved_smtp_pass="$(resolve_secret_value SMTP_PASS "$resolved_smtp_pass")"
+fi
+
+if kubectl -n "$NAMESPACE" get configmap opencare-use-case-overrides >/dev/null 2>&1; then
+  resolved_use_case_overrides="$(kubectl -n "$NAMESPACE" get configmap opencare-use-case-overrides -o jsonpath='{.data.overrides\.yaml}' 2>/dev/null || true)"
+  if [[ -z "$resolved_use_case_overrides" ]]; then
+    resolved_use_case_overrides="use_cases: {}"
+  fi
 fi
 
 render_platform_config() {
@@ -166,6 +174,51 @@ data:
   SUPERSET_ADMIN_USER: ${SUPERSET_ADMIN_USER}
   SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
   SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencare-use-case-overrides
+  namespace: ${NAMESPACE}
+data:
+  overrides.yaml: |-
+EOF
+  while IFS= read -r line; do
+    printf '    %s\n' "$line" >>"$output_file"
+  done <<<"$resolved_use_case_overrides"
+
+  cat >>"$output_file" <<EOF
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend-config-writer
+  namespace: ${NAMESPACE}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backend-config-writer
+  namespace: ${NAMESPACE}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["opencare-use-case-overrides"]
+    verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-config-writer
+  namespace: ${NAMESPACE}
+subjects:
+  - kind: ServiceAccount
+    name: backend-config-writer
+    namespace: ${NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: backend-config-writer
 ---
 apiVersion: v1
 kind: Secret

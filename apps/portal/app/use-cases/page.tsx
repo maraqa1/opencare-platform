@@ -15,6 +15,7 @@ export default async function UseCasesPage() {
   }>({
     path: "/api/v1/config/use-cases",
     fallback: { all_use_cases: {} },
+    cacheMode: "no-store",
   });
 
   const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});

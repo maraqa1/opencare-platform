@@ -14,10 +14,11 @@ export async function assertUseCaseEnabled(useCaseId: string) {
   }>({
     path: "/api/v1/config/use-cases",
     fallback: { all_use_cases: {} },
+    cacheMode: "no-store",
   });
 
   const useCase = config.all_use_cases?.[useCaseId];
-  if (useCase && useCase.enabled === false) {
+  if (useCase?.enabled !== true) {
     notFound();
   }
 }

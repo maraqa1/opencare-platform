@@ -15,14 +15,19 @@ export function getApiUrl(path: string) {
 export async function getApiJson<TData>({
   path,
   fallback,
+  cacheMode = "revalidate",
 }: {
   path: string;
   fallback: TData;
+  cacheMode?: "revalidate" | "no-store";
 }): Promise<TData> {
   try {
-    const response = await fetch(`${getApiBaseUrl()}${path}`, {
-      next: { revalidate: 60 },
-    });
+    const response = await fetch(
+      `${getApiBaseUrl()}${path}`,
+      cacheMode === "no-store"
+        ? { cache: "no-store" }
+        : { next: { revalidate: 60 } },
+    );
 
     if (!response.ok) {
       return fallback;
