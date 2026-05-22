@@ -4,6 +4,7 @@ import os
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import yaml
 
@@ -105,12 +106,22 @@ def _candidate_use_case_paths() -> list[Path]:
     return candidates
 
 
+def clear_use_case_caches() -> None:
+    load_use_cases.cache_clear()
+    load_record_spec_map.cache_clear()
+
+
+def resolve_use_cases_config_path() -> Path | None:
+    for path in _candidate_use_case_paths():
+        if path.is_file():
+            return path
+    return None
+
+
 @lru_cache(maxsize=1)
 def load_use_cases(include_disabled: bool = True) -> dict[str, dict[str, object]]:
-    for path in _candidate_use_case_paths():
-        if not path.is_file():
-            continue
-
+    path = resolve_use_cases_config_path()
+    if path is not None:
         with path.open("r", encoding="utf-8") as handle:
             payload = yaml.safe_load(handle) or {}
 
@@ -148,3 +159,37 @@ def load_record_spec_map() -> dict[str, dict[str, object]]:
                 "table": table,
             }
     return record_specs
+
+
+def update_use_case_enabled(use_case_id: str, enabled: bool) -> dict[str, object]:
+    path = resolve_use_cases_config_path()
+    if path is None:
+        raise FileNotFoundError("Use-case manifest file could not be found.")
+
+    with path.open("r", encoding="utf-8") as handle:
+        payload = yaml.safe_load(handle) or {}
+
+    use_cases = payload.get("use_cases", {})
+    if not isinstance(use_cases, dict) or use_case_id not in use_cases:
+        raise KeyError(use_case_id)
+
+    use_case = use_cases.get(use_case_id)
+    if not isinstance(use_case, dict):
+        raise KeyError(use_case_id)
+
+    use_case["enabled"] = enabled
+
+    with NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        delete=False,
+        dir=path.parent,
+        suffix=".yaml",
+    ) as handle:
+        yaml.safe_dump(payload, handle, sort_keys=False, allow_unicode=False)
+        temp_path = Path(handle.name)
+
+    temp_path.replace(path)
+    clear_use_case_caches()
+    refreshed = load_use_cases(include_disabled=True).get(use_case_id, {})
+    return refreshed if isinstance(refreshed, dict) else {}
