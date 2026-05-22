@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
+import { UseCaseConfigurationPanel } from "@/components/admin/UseCaseConfigurationPanel";
 import { GovernanceControlTower } from "@/components/GovernanceControlTower";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
-import { filterGovernanceUseCasesByIds, getGovernanceUseCases } from "@/lib/governance-registry";
-import { getManifestEnabledUseCaseIds } from "@/lib/use-cases";
+import { getGovernanceUseCases } from "@/lib/governance-registry";
 
 export const metadata: Metadata = {
   title: "Admin Governance - OpenCare Portal",
@@ -19,8 +19,10 @@ export default async function AdminGovernancePage() {
     cacheMode: "no-store",
   });
 
-  const enabledUseCaseIds = getManifestEnabledUseCaseIds(config.all_use_cases ?? {});
-  const useCases = filterGovernanceUseCasesByIds(getGovernanceUseCases(), enabledUseCaseIds);
+  const useCases = Object.entries(config.all_use_cases ?? {}).map(([id, useCaseConfig]) => ({
+    id,
+    config: useCaseConfig,
+  }));
 
   return (
     <PageFrame
@@ -29,7 +31,10 @@ export default async function AdminGovernancePage() {
       description="Trust evidence for operational KPIs, datasets, dashboards, and decisions."
       pageClassName="governance-page"
     >
-      <GovernanceControlTower useCases={useCases} />
+      <section className="grid">
+        <UseCaseConfigurationPanel initialUseCases={useCases} />
+      </section>
+      <GovernanceControlTower useCases={getGovernanceUseCases()} />
     </PageFrame>
   );
 }
