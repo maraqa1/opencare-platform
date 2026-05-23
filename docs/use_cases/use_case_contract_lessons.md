@@ -400,6 +400,16 @@ A future use case should not be called complete unless all of the following are 
 - the workspace exposes a visible path to the executive dashboard where applicable
 - Superset dashboards open and render without visualization errors
 
+## Golden template reference
+
+Future use cases should use the TALEMIA implementation as the best current working pattern, together with the reusable template documents:
+
+- [Use-Case Template Playbook](/C:/R_Home/opencare-platform/docs/use_cases/use_case_template_playbook.md)
+- [Use Case Contract Template](/C:/R_Home/opencare-platform/docs/use_cases/templates/use_case_contract_template.md)
+- [Dashboard Contract Template](/C:/R_Home/opencare-platform/docs/use_cases/templates/dashboard_contract_template.md)
+
+Those files are intended to reduce prompt ambiguity and make new use cases easier to add with the same shape every time.
+
 ## Final takeaway
 
 The platform architecture is sound.
