@@ -26,7 +26,7 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         return response.json()["package"]["id"]
 
-    def test_staged_only_package_blocks_install_but_allows_uninstall(self):
+    def test_staged_only_package_blocks_install_but_allows_activation_and_uninstall(self):
         with package_test_context():
             package_id = self._upload_package()
 
@@ -41,6 +41,20 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
                 headers={"x-opencare-admin-context": "admin"},
             )
             self.assertEqual(install_response.status_code, 400)
+
+            include_response = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/include",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(include_response.status_code, 200)
+            self.assertTrue(include_response.json()["package"]["enabled"])
+
+            exclude_response = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/exclude",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(exclude_response.status_code, 200)
+            self.assertFalse(exclude_response.json()["package"]["enabled"])
 
             uninstall_fail = client().post(
                 f"/api/v1/admin/use-case-templates/{package_id}/uninstall",

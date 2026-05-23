@@ -31,9 +31,7 @@ export default async function UseCasesPage() {
   ]);
 
   const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});
-  const importedPackages = (packageResponse.packages ?? []).filter((pkg) =>
-    ["installed", "applied", "included", "excluded", "operationally_removed"].includes(pkg.status),
-  );
+  const importedPackages = (packageResponse.packages ?? []).filter((pkg) => pkg.enabled === true);
 
   return (
     <PageFrame

@@ -85,8 +85,10 @@ class UseCaseTemplateLifecycleService:
 
     def include(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
-        self._require_full_runtime_support(record)
-        if not record.get("installed_path"):
+        validation_status = record.get("validation_summary", {}).get("status")
+        if validation_status not in {"passed", "warning"}:
+            raise ValueError("Package must pass validation before it can be activated.")
+        if record.get("preview_summary", {}).get("install_impact", {}).get("materialization_mode") == "full_runtime" and not record.get("installed_path"):
             raise ValueError("Package must be installed before it can be included.")
         record["enabled"] = True
         record["status"] = "included"
@@ -101,15 +103,12 @@ class UseCaseTemplateLifecycleService:
             action="include",
             status="included",
             validation_result=record.get("validation_summary", {}).get("status"),
-            log="Package marked included in package registry. Live route/dashboard materialization still depends on future scaffolding/import hooks.",
+            log="Package marked active for portal visibility. Full runtime materialization still depends on package registration mode and future import hooks.",
         )
         return deepcopy(record)
 
     def exclude(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
-        self._require_full_runtime_support(record)
-        if not record.get("installed_path"):
-            raise ValueError("Package must be installed before it can be excluded.")
         record["enabled"] = False
         record["status"] = "excluded"
         record["last_action"] = "exclude"
@@ -129,9 +128,6 @@ class UseCaseTemplateLifecycleService:
 
     def remove_operational(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
-        self._require_full_runtime_support(record)
-        if not record.get("installed_path"):
-            raise ValueError("Package must be installed before it can be removed operationally.")
         record["enabled"] = False
         record["status"] = "operationally_removed"
         record["last_action"] = "remove-operational"

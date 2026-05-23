@@ -62,9 +62,7 @@ export default async function HomePage() {
   ]);
 
   const visibleUseCases = filterVisibleUseCases(useCases, useCaseConfig.all_use_cases ?? {});
-  const importedPackages = (packageResponse.packages ?? []).filter((pkg) =>
-    ["installed", "applied", "included", "excluded", "operationally_removed"].includes(pkg.status),
-  );
+  const importedPackages = (packageResponse.packages ?? []).filter((pkg) => pkg.enabled === true);
   const defaultUseCaseHref =
     visibleUseCases.find((useCase) => useCase.status === "active")?.defaultHref ?? "/use-cases";
 

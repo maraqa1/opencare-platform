@@ -28,15 +28,16 @@ function allowedActions(pkg: UseCaseTemplatePackage) {
       pkg.status === "operationally_removed")
   ) {
     actions.push("apply");
-    if (pkg.enabled) {
-      actions.push("exclude", "remove-operational");
-    } else {
-      actions.push("include");
-    }
-    actions.push("uninstall");
-  } else {
-    actions.push("uninstall");
   }
+  if (pkg.enabled) {
+    actions.push("exclude");
+  } else {
+    actions.push("include");
+  }
+  if (fullRuntimeSupported && (pkg.status === "installed" || pkg.status === "applied" || pkg.status === "included")) {
+    actions.push("remove-operational");
+  }
+  actions.push("uninstall");
   return actions;
 }
 
@@ -86,25 +87,33 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
       <p className="eyebrow">Lifecycle</p>
       <h3 className="section-heading">
         {fullRuntimeSupported
-          ? "Install, apply, validate, include, exclude, remove, or uninstall"
-          : "Validate or uninstall package"}
+          ? "Install, apply, validate, activate, deactivate, remove, or uninstall"
+          : "Validate, activate, deactivate, or uninstall package"}
       </h3>
       {!fullRuntimeSupported ? (
         <p className="section-subtitle">
-          This package is staged-only. The platform cannot fully materialize it into a real OpenCare use case yet, so
-          install/apply/include/exclude controls are intentionally hidden.
+          This package is staged-only. You can activate it for imported-package visibility in the portal, but the
+          platform still cannot fully materialize it into a native OpenCare workspace automatically.
         </p>
       ) : null}
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
         {allowedActions(pkg).map((action) => (
           <button
-            className={action === "install" || action === "include" ? "button primary" : "secondary-link"}
+            className={action === "install" || action === "include" ? "button primary" : action === "uninstall" ? "button secondary" : "secondary-link"}
             disabled={isPending}
             key={action}
             onClick={() => runAction(action)}
             type="button"
           >
-            {pendingAction === action ? "Working..." : action}
+            {pendingAction === action
+              ? "Working..."
+              : action === "include"
+                ? "Activate"
+                : action === "exclude"
+                  ? "Deactivate"
+                  : action === "uninstall"
+                    ? "Delete"
+                    : action}
           </button>
         ))}
       </div>
