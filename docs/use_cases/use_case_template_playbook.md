@@ -2,6 +2,10 @@
 
 This playbook turns the current TALEMIA implementation into the recommended reference pattern for future OpenCare use cases.
 
+For the importable package standard that future cloud-generated ZIPs should follow, see:
+
+- [golden_use_case_package_template.md](C:/R_Home/opencare-platform/docs/use_cases/golden_use_case_package_template.md)
+
 It is intended to answer one practical question:
 
 "If we want to add a new use case next week, what do we create, where does it live, and how do we prove it works?"

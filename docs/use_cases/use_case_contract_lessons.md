@@ -2,6 +2,10 @@
 
 This document captures the lessons from implementing Revenue Cycle Management so future OpenCare use cases are easier to deliver on the shared platform with less patch churn.
 
+For the canonical import-ready package contract, see:
+
+- [golden_use_case_package_template.md](C:/R_Home/opencare-platform/docs/use_cases/golden_use_case_package_template.md)
+
 ## Bottom line
 
 The shared OpenCare platform architecture held up well.
