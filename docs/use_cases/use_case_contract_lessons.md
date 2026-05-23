@@ -230,6 +230,8 @@ Important lessons:
 - stale Kubernetes secrets are a major repeatability risk when `.env` changes are expected to take effect
 - host-run scripts must not assume Kubernetes service DNS names resolve on the VM itself
 - platform install and use-case provisioning are different responsibilities and should not be conflated
+- admin include/exclude controls are not just a frontend feature; they depend on backend RBAC and a writable in-cluster override store
+- image rollout alone is not enough for toggle persistence when the backend service account or ConfigMap wiring changes
 
 ### 11. Runtime gating contract
 
@@ -343,6 +345,7 @@ Important lessons:
 - platform bootstrap should be reusable across use cases, while provisioning should be use-case-specific
 - validation should prove the use case is populated, not just that resources were created
 - if a new use case cannot be described as a repeatable sequence, the contract is still too implicit
+- operational toggles such as include/exclude should have a validation story too: the backend must prove it can persist the override before the UI is considered complete
 
 ## Specific Revenue Cycle Management lessons
 

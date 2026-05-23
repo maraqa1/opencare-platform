@@ -28,11 +28,25 @@ Useful environment flags:
 After bootstrap:
 1. clone the repo onto the VM
 2. copy `.env.template` to `.env` and fill secrets/hosts
-3. run `sudo bash install/install.sh --platform-only`
+3. run one installer command, depending on your goal:
+
+Platform only:
+```bash
+sudo bash install/install.sh --profile platform-only
+```
+
+Full platform + demo use cases + decision layer:
+```bash
+sudo bash install/install.sh --profile full-demo
+```
+
+Important:
+- the admin `Include` / `Exclude` use-case toggles depend on the backend deployment running as `serviceAccountName=backend-config-writer`
+- after pulling manifest changes that touch backend RBAC or toggle persistence, re-run `bash scripts/bootstrap/apply_base.sh` and refresh the backend deployment, not just the GHCR images
 
 ## Recommended install pattern
 
-For repeatable fresh environments:
+If you prefer explicit control, the repeatable phased pattern is still available:
 
 ```bash
 bash install/install.sh --platform-only
@@ -42,9 +56,13 @@ bash install/validation.sh
 ```
 
 Useful install options:
+- `--profile platform-only`
+- `--profile full-demo`
 - `--platform-only`
 - `--with-demo`
 - `--with-decision`
 - `--from <phase>`
 - `--to <phase>`
 - `--skip-validation`
+
+Validation now also checks that the backend deployment is using `backend-config-writer`, because use-case toggle persistence will silently fail if the backend pod falls back to the default service account.

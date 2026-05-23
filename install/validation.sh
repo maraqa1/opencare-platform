@@ -25,6 +25,13 @@ run_cluster_http_check keycloak "${KEYCLOAK_HEALTH_URL}/health/ready" 15 2
 log "Checking backend health"
 run_cluster_http_check backend "${BACKEND_URL}/healthz"
 
+log "Checking backend service account for use-case toggle persistence"
+backend_service_account="$(kubectl -n "$NAMESPACE" get deployment backend -o jsonpath='{.spec.template.spec.serviceAccountName}')"
+if [[ "$backend_service_account" != "backend-config-writer" ]]; then
+  log_error "Backend deployment must use serviceAccountName=backend-config-writer (found: ${backend_service_account:-<empty>})"
+  exit 1
+fi
+
 if [[ "$VALIDATE_DECISION_LAYER" == "true" ]]; then
   log "Checking decision schema"
   run_cluster_command decision-schema postgres:16-alpine sh -c "psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} -Atc \"select to_regclass('decision.decision_queue') is not null and to_regclass('decision.decision_log') is not null;\" | grep -qx t"
