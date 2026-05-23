@@ -45,6 +45,9 @@ class UseCaseTemplatePreviewService:
         slug = metadata.get("slug")
         api_prefix = manifest_yaml.get("api_prefix")
         dashboard_slug = manifest_yaml.get("superset_dashboard_id")
+        registration = package_yaml.get("registration", {}) if isinstance(package_yaml.get("registration"), dict) else {}
+        materialization_mode = str(registration.get("mode") or "staged_only")
+        full_runtime_supported = materialization_mode == "full_runtime"
 
         conflicts: list[str] = []
         warnings: list[str] = []
@@ -61,6 +64,11 @@ class UseCaseTemplatePreviewService:
         ):
             conflicts.append(f"Superset dashboard id already exists: {dashboard_slug}")
 
+        if not full_runtime_supported:
+            warnings.append(
+                "This package can be uploaded and validated, but the platform does not yet support full runtime materialization for it. "
+                "It should be removed completely rather than treated as a live installed use case."
+            )
         if self._feature_enabled(package_yaml, "dbt"):
             warnings.append("dbt assets are staged for materialization; they are not executed automatically by this importer.")
         if self._feature_enabled(package_yaml, "backend"):
@@ -127,8 +135,8 @@ class UseCaseTemplatePreviewService:
             "conflicts": conflicts,
             "warnings": warnings,
             "install_impact": {
-                "materialization_mode": "staged_only",
+                "materialization_mode": materialization_mode,
+                "full_runtime_supported": full_runtime_supported,
                 "notes": warnings,
             },
         }
-

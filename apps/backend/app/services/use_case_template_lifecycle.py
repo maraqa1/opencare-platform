@@ -17,8 +17,19 @@ class UseCaseTemplateLifecycleService:
             raise KeyError(package_id)
         return record
 
+    def _require_full_runtime_support(self, record: dict[str, Any]) -> None:
+        install_impact = record.get("preview_summary", {}).get("install_impact", {})
+        if not isinstance(install_impact, dict):
+            install_impact = {}
+        if install_impact.get("materialization_mode") != "full_runtime":
+            raise ValueError(
+                "This package is not fully materializable by the platform yet. "
+                "Use validation/preview to inspect it, or uninstall it completely."
+            )
+
     def install(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        self._require_full_runtime_support(record)
         validation = record.get("validation_summary", {})
         validation_status = validation.get("status")
         if validation_status == "failed":
@@ -47,6 +58,7 @@ class UseCaseTemplateLifecycleService:
 
     def apply(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        self._require_full_runtime_support(record)
         validation = record.get("validation_summary", {})
         if validation.get("status") == "failed":
             raise ValueError("Validation failed; apply is blocked.")
@@ -73,6 +85,7 @@ class UseCaseTemplateLifecycleService:
 
     def include(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        self._require_full_runtime_support(record)
         if not record.get("installed_path"):
             raise ValueError("Package must be installed before it can be included.")
         record["enabled"] = True
@@ -94,6 +107,7 @@ class UseCaseTemplateLifecycleService:
 
     def exclude(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        self._require_full_runtime_support(record)
         if not record.get("installed_path"):
             raise ValueError("Package must be installed before it can be excluded.")
         record["enabled"] = False
@@ -115,6 +129,7 @@ class UseCaseTemplateLifecycleService:
 
     def remove_operational(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        self._require_full_runtime_support(record)
         if not record.get("installed_path"):
             raise ValueError("Package must be installed before it can be removed operationally.")
         record["enabled"] = False

@@ -43,8 +43,9 @@ export function ImportedUseCasePackages({
               Slug <code>{pkg.slug}</code> | Version {pkg.version}
             </p>
             <p className="section-subtitle">
-              Package installed in managed storage. Live workspace routes and dashboards are not materialized
-              automatically yet.
+              {pkg.preview_summary?.install_impact?.full_runtime_supported
+                ? "Package is eligible for full runtime materialization."
+                : "Package is staged in managed storage only. It is not a live OpenCare use case and should be uninstalled completely if you do not want to keep it."}
             </p>
             <Link className="secondary-link" href={`/admin/use-case-templates/${encodeURIComponent(pkg.id ?? pkg.package_id)}`}>
               Review package

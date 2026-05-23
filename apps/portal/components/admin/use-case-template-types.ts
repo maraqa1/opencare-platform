@@ -47,6 +47,7 @@ export type UseCaseTemplatePreview = {
   warnings?: string[];
   install_impact?: {
     materialization_mode?: string;
+    full_runtime_supported?: boolean;
     notes?: string[];
   };
 };

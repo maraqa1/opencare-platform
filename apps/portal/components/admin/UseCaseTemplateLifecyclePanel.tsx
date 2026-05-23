@@ -6,11 +6,27 @@ import { useState, useTransition } from "react";
 import type { UseCaseTemplatePackage } from "./use-case-template-types";
 
 function allowedActions(pkg: UseCaseTemplatePackage) {
+  const fullRuntimeSupported = pkg.preview_summary?.install_impact?.full_runtime_supported === true;
   const actions = ["validate"];
-  if (pkg.status !== "validation_failed" && pkg.status !== "installed" && pkg.status !== "applied" && pkg.status !== "included" && pkg.status !== "excluded" && pkg.status !== "operationally_removed") {
+  if (
+    fullRuntimeSupported &&
+    pkg.status !== "validation_failed" &&
+    pkg.status !== "installed" &&
+    pkg.status !== "applied" &&
+    pkg.status !== "included" &&
+    pkg.status !== "excluded" &&
+    pkg.status !== "operationally_removed"
+  ) {
     actions.push("install");
   }
-  if (pkg.status === "installed" || pkg.status === "applied" || pkg.status === "included" || pkg.status === "excluded" || pkg.status === "operationally_removed") {
+  if (
+    fullRuntimeSupported &&
+    (pkg.status === "installed" ||
+      pkg.status === "applied" ||
+      pkg.status === "included" ||
+      pkg.status === "excluded" ||
+      pkg.status === "operationally_removed")
+  ) {
     actions.push("apply");
     if (pkg.enabled) {
       actions.push("exclude", "remove-operational");
@@ -30,6 +46,7 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const packageRef = pkg.id ?? pkg.package_id;
+  const fullRuntimeSupported = pkg.preview_summary?.install_impact?.full_runtime_supported === true;
 
   function runAction(action: string) {
     const confirmed =
@@ -67,7 +84,17 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
   return (
     <article className="panel span-12">
       <p className="eyebrow">Lifecycle</p>
-      <h3 className="section-heading">Install, apply, validate, include, exclude, remove, or uninstall</h3>
+      <h3 className="section-heading">
+        {fullRuntimeSupported
+          ? "Install, apply, validate, include, exclude, remove, or uninstall"
+          : "Validate or uninstall package"}
+      </h3>
+      {!fullRuntimeSupported ? (
+        <p className="section-subtitle">
+          This package is staged-only. The platform cannot fully materialize it into a real OpenCare use case yet, so
+          install/apply/include/exclude controls are intentionally hidden.
+        </p>
+      ) : null}
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
         {allowedActions(pkg).map((action) => (
           <button
