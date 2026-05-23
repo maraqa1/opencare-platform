@@ -27,6 +27,22 @@ spec:
       labels:
         app: bed-forecast
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: bed-forecast
+                topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: bed-forecast
       containers:
         - name: bed-forecast
           image: ghcr.io/maraqa1/opencare-runtime-bed-forecast:dev

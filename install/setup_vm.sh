@@ -123,6 +123,11 @@ Next steps:
   4. Run the platform install:
        sudo bash /home/opencare-platform/install/install.sh
 
+Multi-node note:
+  - This bootstrap installs a single-node K3s server.
+  - You can add extra K3s worker nodes later for stateless workload capacity.
+  - This script does not automate worker joins or HA control-plane setup.
+
 Useful checks:
   kubectl get nodes -o wide
   kubectl get pods -A

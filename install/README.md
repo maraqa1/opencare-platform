@@ -44,6 +44,39 @@ Important:
 - the admin `Include` / `Exclude` use-case toggles depend on the backend deployment running as `serviceAccountName=backend-config-writer`
 - after pulling manifest changes that touch backend RBAC or toggle persistence, re-run `bash scripts/bootstrap/apply_base.sh` and refresh the backend deployment, not just the GHCR images
 
+## Multi-node posture
+
+OpenCare can use an additional K3s node today, but the current manifests should be treated as **capacity-ready, not HA-ready**.
+
+Safe current model:
+- keep the original K3s server node as the anchor for stateful workloads
+- add extra K3s worker nodes for stateless scheduling capacity
+- let Kubernetes spread stateless pods such as `backend`, `portal`, `keycloak`, `superset`, and runtime deployments across nodes when available
+
+Current limitations:
+- `postgres`, `minio`, and `mysql-demo` use `ReadWriteOnce` PVCs and should still be treated as node-local in the default K3s storage setup
+- the repo does not yet automate HA control-plane setup
+- most workloads still run with `replicas: 1`, so an extra node improves headroom more than availability
+
+To join an extra worker node manually:
+
+On the existing server node:
+```bash
+sudo cat /var/lib/rancher/k3s/server/node-token
+```
+
+On the new worker node:
+```bash
+curl -sfL https://get.k3s.io | K3S_URL=https://<server-ip>:6443 K3S_TOKEN=<node-token> sh -
+```
+
+Then verify from the server:
+```bash
+kubectl get nodes -o wide
+```
+
+The manifests now include soft anti-affinity and topology spread hints for the main stateless services, so once a second node joins, Kubernetes has a better baseline for distributing those pods without breaking single-node installs.
+
 ## Recommended install pattern
 
 If you prefer explicit control, the repeatable phased pattern is still available:
