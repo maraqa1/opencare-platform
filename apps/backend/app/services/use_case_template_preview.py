@@ -66,8 +66,7 @@ class UseCaseTemplatePreviewService:
 
         if not full_runtime_supported:
             warnings.append(
-                "This package can be uploaded and validated, but the platform does not yet support full runtime materialization for it. "
-                "It should be removed completely rather than treated as a live installed use case."
+                "This package can be uploaded, validated, and activated for imported-package visibility, but the platform does not yet support full runtime materialization for it."
             )
         if self._feature_enabled(package_yaml, "dbt"):
             warnings.append("dbt assets are staged for materialization; they are not executed automatically by this importer.")

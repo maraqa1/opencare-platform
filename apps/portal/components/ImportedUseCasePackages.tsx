@@ -21,11 +21,11 @@ export function ImportedUseCasePackages({
     <section className="panel">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Imported Packages</p>
-          <h3 className="section-heading">Installed use-case packages awaiting full runtime materialization</h3>
+          <p className="eyebrow">Imported Use Cases</p>
+          <h3 className="section-heading">Activated imported use cases awaiting full runtime materialization</h3>
           <p className="section-subtitle">
-            These packages are uploaded, validated, and installed in OpenCare package storage. They are visible here so
-            operators can track them before dynamic backend, portal, dbt, and dashboard materialization is automated.
+            These packages have been activated for portal visibility. They can be reviewed like use cases today, even
+            though dynamic backend, portal, dbt, and dashboard materialization is not automated yet.
           </p>
         </div>
         <Link className="secondary-link" href="/admin/use-case-templates">
@@ -45,10 +45,10 @@ export function ImportedUseCasePackages({
             <p className="section-subtitle">
               {pkg.preview_summary?.install_impact?.full_runtime_supported
                 ? "Package is eligible for full runtime materialization."
-                : "Package is staged in managed storage only. It is not a live OpenCare use case and should be uninstalled completely if you do not want to keep it."}
+                : "Package is active as an imported use case in the portal, but it is not yet a fully materialized native OpenCare workspace."}
             </p>
             <Link className="secondary-link" href={`/admin/use-case-templates/${encodeURIComponent(pkg.id ?? pkg.package_id)}`}>
-              Review package
+              Review imported use case
             </Link>
           </article>
         ))}
