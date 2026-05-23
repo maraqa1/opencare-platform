@@ -43,6 +43,8 @@ sudo bash install/install.sh --profile full-demo
 Important:
 - the admin `Include` / `Exclude` use-case toggles depend on the backend deployment running as `serviceAccountName=backend-config-writer`
 - after pulling manifest changes that touch backend RBAC or toggle persistence, re-run `bash scripts/bootstrap/apply_base.sh` and refresh the backend deployment, not just the GHCR images
+- the `Administration -> Use Case Templates` feature depends on the backend PVC `backend-use-case-packages` plus the backend admin API route `/api/v1/admin/use-case-templates`
+- fresh installs now validate both the package-storage PVC and the admin template API so a green install means the importer surface is present, not just the base portal shell
 
 ## Multi-node posture
 
@@ -99,3 +101,4 @@ Useful install options:
 - `--skip-validation`
 
 Validation now also checks that the backend deployment is using `backend-config-writer`, because use-case toggle persistence will silently fail if the backend pod falls back to the default service account.
+Validation also checks the `backend-use-case-packages` PVC, the backend `Use Case Templates` admin API, and the portal `/admin/use-case-templates` route so new VM installs explicitly prove the package importer surface is live.

@@ -32,6 +32,12 @@ if [[ "$backend_service_account" != "backend-config-writer" ]]; then
   exit 1
 fi
 
+log "Checking backend use-case package storage PVC"
+kubectl -n "$NAMESPACE" get pvc backend-use-case-packages >/dev/null
+
+log "Checking Use Case Templates admin API"
+run_cluster_command use-case-templates-api curlimages/curl:8.12.1 sh -c "curl -fsS -H 'x-opencare-admin-context: admin' ${BACKEND_URL}/api/v1/admin/use-case-templates >/dev/null"
+
 if [[ "$VALIDATE_DECISION_LAYER" == "true" ]]; then
   log "Checking decision schema"
   run_cluster_command decision-schema postgres:16-alpine sh -c "psql postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB} -Atc \"select to_regclass('decision.decision_queue') is not null and to_regclass('decision.decision_log') is not null;\" | grep -qx t"
@@ -71,6 +77,7 @@ fi
 
 log "Checking portal service"
 run_cluster_http_check portal "$PORTAL_URL"
+run_cluster_http_check portal-use-case-templates "${PORTAL_URL}/admin/use-case-templates"
 run_cluster_http_check portal-revenue-cycle-index "${PORTAL_URL}/use-cases/revenue-cycle-management"
 run_cluster_http_check portal-revenue-cycle-cash-command "${PORTAL_URL}/use-cases/revenue-cycle-management/cfo-cash-command"
 
