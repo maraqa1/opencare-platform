@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
+import { ImportedUseCasePackages } from "@/components/ImportedUseCasePackages";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
@@ -11,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [runtime, health, alerts, occupancy, useCaseConfig] = await Promise.all([
+  const [runtime, health, alerts, occupancy, useCaseConfig, packageResponse] = await Promise.all([
     getApiJson<{
       runtimes?: Array<{ name: string; last_run?: string | null; row_count?: number }>;
     }>({
@@ -49,9 +51,20 @@ export default async function HomePage() {
       fallback: { all_use_cases: {} },
       cacheMode: "no-store",
     }),
+    getApiJson<{
+      packages?: UseCaseTemplatePackage[];
+    }>({
+      path: "/api/v1/admin/use-case-templates",
+      fallback: { packages: [] },
+      cacheMode: "no-store",
+      adminContext: true,
+    }),
   ]);
 
   const visibleUseCases = filterVisibleUseCases(useCases, useCaseConfig.all_use_cases ?? {});
+  const importedPackages = (packageResponse.packages ?? []).filter((pkg) =>
+    ["installed", "applied", "included", "excluded", "operationally_removed"].includes(pkg.status),
+  );
   const defaultUseCaseHref =
     visibleUseCases.find((useCase) => useCase.status === "active")?.defaultHref ?? "/use-cases";
 
@@ -184,6 +197,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <ImportedUseCasePackages packages={importedPackages} />
     </PageFrame>
   );
 }

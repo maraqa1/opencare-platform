@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
+import { ImportedUseCasePackages } from "@/components/ImportedUseCasePackages";
 import { PageFrame } from "@/components/page-frame";
 import { UseCaseBriefing } from "@/components/UseCaseBriefing";
 import { getApiJson } from "@/lib/api";
@@ -10,15 +12,28 @@ export const metadata: Metadata = {
 };
 
 export default async function UseCasesPage() {
-  const config = await getApiJson<{
-    all_use_cases?: Record<string, { enabled?: boolean }>;
-  }>({
-    path: "/api/v1/config/use-cases",
-    fallback: { all_use_cases: {} },
-    cacheMode: "no-store",
-  });
+  const [config, packageResponse] = await Promise.all([
+    getApiJson<{
+      all_use_cases?: Record<string, { enabled?: boolean }>;
+    }>({
+      path: "/api/v1/config/use-cases",
+      fallback: { all_use_cases: {} },
+      cacheMode: "no-store",
+    }),
+    getApiJson<{
+      packages?: UseCaseTemplatePackage[];
+    }>({
+      path: "/api/v1/admin/use-case-templates",
+      fallback: { packages: [] },
+      cacheMode: "no-store",
+      adminContext: true,
+    }),
+  ]);
 
   const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});
+  const importedPackages = (packageResponse.packages ?? []).filter((pkg) =>
+    ["installed", "applied", "included", "excluded", "operationally_removed"].includes(pkg.status),
+  );
 
   return (
     <PageFrame
@@ -32,6 +47,7 @@ export default async function UseCasesPage() {
       ]}
     >
       <UseCaseBriefing useCases={visibleUseCases} />
+      <ImportedUseCasePackages packages={importedPackages} />
     </PageFrame>
   );
 }
