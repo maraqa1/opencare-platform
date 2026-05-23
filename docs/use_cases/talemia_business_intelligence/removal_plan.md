@@ -20,20 +20,46 @@ The use case must be removable without disturbing other OpenCare use cases. Ever
 
 Use this when the use case should be hidden but retained.
 
-1. Set `config/use_cases.yaml` key `talemia_business_intelligence.enabled` to `false`.
-2. Keep raw, staging, analytics, dictionary, backend, portal, and Superset assets in place.
-3. Redeploy app configuration using the existing app rollout pattern:
+Preferred disable paths:
+
+1. Administration UI
+   - `Administration -> Configuration`
+   - `Administration -> Governance`
+   - click `Exclude` for `TALEMIA Business Intelligence`
+
+2. CLI
 
 ```bash
-bash scripts/bootstrap/apply_app.sh
+bash scripts/use_cases/remove_use_case.sh talemia_business_intelligence
 ```
 
-4. Confirm the use case no longer appears in active use-case navigation.
-5. Confirm direct API calls return either disabled or empty responses according to the future implementation contract.
+Disable behavior should:
+
+- update the same backend override path used by the admin UI
+- keep raw, staging, analytics, dictionary, backend, portal, and documentation assets in place
+- hide the use case from Home, Use Cases, and public Governance
+- block the main workspace route through the use-case route guard
+
+Validation after disable:
+
+- confirm the use case no longer appears in active navigation
+- confirm `/use-cases/talemia-business-intelligence` is no longer available to non-admin browse flows
+- confirm the use case still appears in admin control surfaces for later restore
+
+Restore paths:
+
+1. Administration UI
+   - click `Include`
+
+2. CLI reprovision
+
+```bash
+bash scripts/use_cases/apply_use_case.sh talemia_business_intelligence
+```
 
 ## 3. Uninstall Procedure
 
-Use this when the branch or use case is being fully removed.
+Use this when the branch or use case is being fully removed from the repository and platform.
 
 ### Documentation
 
@@ -165,8 +191,8 @@ bash scripts/lint.sh
 Then validate manually:
 
 - Use-case card is hidden from active workspace navigation.
-- `/use-cases/talemia-business-intelligence` is not advertised.
-- `/api/v1/talemia/*` does not expose active data when disabled.
+- `/use-cases/talemia-business-intelligence` is not advertised in public entry points.
+- `/api/v1/talemia/*` is not treated as an active use case path in the UI.
 - Existing bed pressure and revenue cycle routes still work.
 
 ## 5. Validation After Uninstall

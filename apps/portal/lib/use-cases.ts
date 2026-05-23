@@ -217,17 +217,10 @@ export function getUseCaseByPath(pathname: string): UseCaseModule | null {
   if (pathname.startsWith("/occupancy") || pathname.startsWith("/use-cases/bed-pressure")) {
     return useCases.find((item) => item.id === "bed_pressure") ?? null;
   }
-  if (pathname.startsWith("/use-cases/revenue-cycle-management")) {
-    return useCases.find((item) => item.id === "revenue_cycle_management") ?? null;
-  }
-  if (pathname.startsWith("/use-cases/talemia-business-intelligence")) {
-    return useCases.find((item) => item.id === "talemia_business_intelligence") ?? null;
-  }
-  if (pathname.startsWith("/use-cases/staff-scheduling")) {
-    return useCases.find((item) => item.id === "staff_scheduling") ?? null;
-  }
-  if (pathname.startsWith("/use-cases/patient-flow")) {
-    return useCases.find((item) => item.id === "patient_flow") ?? null;
+
+  const slugMatch = useCases.find((item) => pathname.startsWith(`/use-cases/${item.slug}`));
+  if (slugMatch) {
+    return slugMatch;
   }
   return null;
 }
