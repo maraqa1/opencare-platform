@@ -33,3 +33,13 @@ models:
       marts:
         +materialized: table
         +schema: analytics
+    talemia:
+      staging:
+        +materialized: view
+        +schema: staging
+      marts:
+        +materialized: table
+        +schema: analytics
+      dictionary:
+        +materialized: table
+        +schema: dictionary
