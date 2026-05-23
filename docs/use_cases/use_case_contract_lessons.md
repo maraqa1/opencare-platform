@@ -330,6 +330,7 @@ Recommended execution pattern:
 2. `bash scripts/airbyte/apply_airbyte.sh`
 3. `bash scripts/use_cases/apply_use_case.sh <use_case>`
 4. `bash scripts/use_cases/validate_use_case.sh <use_case>`
+5. `bash scripts/use_cases/remove_use_case.sh <use_case>` when the use case should be excluded operationally without deleting code or data
 
 If a dedicated per-use-case script does not exist yet, the use case should still be built as if that interface is the target outcome.
 
@@ -346,6 +347,7 @@ Important lessons:
 - validation should prove the use case is populated, not just that resources were created
 - if a new use case cannot be described as a repeatable sequence, the contract is still too implicit
 - operational toggles such as include/exclude should have a validation story too: the backend must prove it can persist the override before the UI is considered complete
+- remove/exclude should use the same persistence path as the admin UI so the CLI workflow and the operator workflow cannot drift apart
 
 ## Specific Revenue Cycle Management lessons
 
