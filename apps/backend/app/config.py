@@ -19,6 +19,18 @@ def _get_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _default_use_case_template_storage_root() -> str:
+    configured = os.getenv("USE_CASE_TEMPLATE_STORAGE_ROOT")
+    if configured:
+        return configured
+
+    if os.name != "nt":
+        return "/var/opencare/use-case-packages"
+
+    resolved_file = Path(__file__).resolve()
+    return str(resolved_file.parents[3] / "data" / "use-case-packages")
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = os.getenv("APP_NAME", "opencare-backend")
@@ -76,6 +88,10 @@ class Settings:
     smtp_password: str = os.getenv("SMTP_PASS", "")
     smtp_from: str = os.getenv("SMTP_FROM", "admin@opendatalake.com")
     smtp_use_tls: bool = _get_bool("SMTP_USE_TLS", True)
+    use_case_template_storage_root: str = _default_use_case_template_storage_root()
+    use_case_template_admin_header: str = os.getenv(
+        "USE_CASE_TEMPLATE_ADMIN_HEADER", "x-opencare-admin-context"
+    )
 
     def postgres_dsn(self) -> str:
         credentials = self.postgres_user

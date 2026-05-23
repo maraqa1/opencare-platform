@@ -24,6 +24,11 @@ const adminSections = [
     title: "Audit",
     description: "Access logs, data access trail, configuration changes, and exportable audit history.",
   },
+  {
+    href: "/admin/use-case-templates",
+    title: "Use Case Templates",
+    description: "Upload, validate, preview, install, include, exclude, and uninstall packaged OpenCare use cases.",
+  },
 ];
 
 export const metadata: Metadata = {

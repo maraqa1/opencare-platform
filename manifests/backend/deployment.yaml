@@ -12,6 +12,18 @@ spec:
       port: 8000
       targetPort: 8000
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-use-case-packages
+  namespace: opencare
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -59,6 +71,8 @@ spec:
           env:
             - name: PORT
               value: "8000"
+            - name: USE_CASE_TEMPLATE_STORAGE_ROOT
+              value: /var/opencare/use-case-packages
           resources:
             requests:
               cpu: 50m
@@ -78,3 +92,10 @@ spec:
               port: 8000
             initialDelaySeconds: 20
             periodSeconds: 20
+          volumeMounts:
+            - name: use-case-packages
+              mountPath: /var/opencare/use-case-packages
+      volumes:
+        - name: use-case-packages
+          persistentVolumeClaim:
+            claimName: backend-use-case-packages

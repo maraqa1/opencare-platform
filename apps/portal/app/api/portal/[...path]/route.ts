@@ -20,6 +20,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   return proxy(request, context);
 }
 
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return proxy(request, context);
+}
+
 async function proxy(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const target = new URL(`${getApiBaseUrl()}/${path.join("/")}`);
@@ -29,13 +33,18 @@ async function proxy(request: NextRequest, context: RouteContext) {
 
   try {
     const method = request.method;
-    const requestBody = method === "GET" || method === "HEAD" ? undefined : await request.text();
+    const isAdminPath = path[0] === "api" && path[1] === "v1" && path[2] === "admin";
+    const requestBody =
+      method === "GET" || method === "HEAD" ? undefined : Buffer.from(await request.arrayBuffer());
     const response = await fetch(target, {
       method,
       body: requestBody,
       cache: "no-store",
       headers: {
-        "content-type": request.headers.get("content-type") ?? "application/json",
+        ...(request.headers.get("content-type")
+          ? { "content-type": request.headers.get("content-type") as string }
+          : {}),
+        ...(isAdminPath ? { "x-opencare-admin-context": "admin" } : {}),
       },
     });
     const contentType = response.headers.get("content-type") ?? "application/json";

@@ -16,17 +16,20 @@ export async function getApiJson<TData>({
   path,
   fallback,
   cacheMode = "revalidate",
+  adminContext = false,
 }: {
   path: string;
   fallback: TData;
   cacheMode?: "revalidate" | "no-store";
+  adminContext?: boolean;
 }): Promise<TData> {
   try {
     const response = await fetch(
       `${getApiBaseUrl()}${path}`,
-      cacheMode === "no-store"
-        ? { cache: "no-store" }
-        : { next: { revalidate: 60 } },
+      {
+        ...(cacheMode === "no-store" ? { cache: "no-store" as const } : { next: { revalidate: 60 } }),
+        headers: adminContext ? { "x-opencare-admin-context": "admin" } : undefined,
+      },
     );
 
     if (!response.ok) {

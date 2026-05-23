@@ -1,0 +1,97 @@
+export type UseCaseTemplateValidationCheck = {
+  category: string;
+  check: string;
+  status: "passed" | "warning" | "failed";
+  message: string;
+};
+
+export type UseCaseTemplateValidationReport = {
+  package_id?: string;
+  slug?: string;
+  version?: string;
+  status: "passed" | "warning" | "failed";
+  summary: {
+    passed: number;
+    warnings: number;
+    failed: number;
+  };
+  checks: UseCaseTemplateValidationCheck[];
+  blocking_errors: string[];
+  warnings: string[];
+};
+
+export type UseCaseTemplatePreview = {
+  package_id?: string;
+  slug?: string;
+  version?: string;
+  name?: string;
+  domain?: string;
+  owner?: string;
+  route_to_be_added?: string | null;
+  api_prefix?: string | null;
+  business_summary?: {
+    problem?: string;
+    personas?: string[];
+    kpis?: string[];
+    decisions?: string[];
+  };
+  dbt_models?: string[];
+  backend_assets?: string[];
+  portal_assets?: string[];
+  dashboard_assets?: string[];
+  governance_assets?: string[];
+  demo_entities?: Array<{ id?: string; type?: string; output_seed?: string }>;
+  synthetic_seed_files?: string[];
+  lifecycle_capabilities?: string[];
+  conflicts?: string[];
+  warnings?: string[];
+  install_impact?: {
+    materialization_mode?: string;
+    notes?: string[];
+  };
+};
+
+export type UseCaseTemplateAction = {
+  event_id: string;
+  actor: string;
+  action: string;
+  package_id: string;
+  slug: string;
+  version: string;
+  status: string;
+  timestamp: string;
+  validation_result?: string | null;
+  error_message?: string | null;
+  log?: string;
+};
+
+export type UseCaseTemplatePackage = {
+  id?: string;
+  package_id: string;
+  slug: string;
+  name: string;
+  version: string;
+  domain?: string;
+  owner?: string;
+  uploaded_by?: string;
+  uploaded_at?: string;
+  status:
+    | "uploaded"
+    | "staged"
+    | "validation_failed"
+    | "validated"
+    | "installed"
+    | "applied"
+    | "included"
+    | "excluded"
+    | "operationally_removed"
+    | "uninstalled"
+    | "failed";
+  enabled?: boolean;
+  validation_summary?: UseCaseTemplateValidationReport;
+  preview_summary?: UseCaseTemplatePreview;
+  last_action?: string;
+  last_action_at?: string;
+  error_message?: string;
+  actions?: UseCaseTemplateAction[];
+};
