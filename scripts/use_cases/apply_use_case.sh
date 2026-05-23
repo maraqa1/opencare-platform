@@ -72,7 +72,7 @@ apply_talemia_business_intelligence() {
 
   [[ -f "$talemia_loader" ]] || fail "TALEMIA loader not present on this branch yet: ${talemia_loader}"
   bash "$talemia_loader"
-  bash "$ROOT_DIR/scripts/dbt/apply_dbt.sh"
+  DBT_SELECT="tag:talemia" DBT_EXCLUDE="" bash "$ROOT_DIR/scripts/dbt/apply_dbt.sh"
   log_success "TALEMIA Business Intelligence use case provisioning completed"
 }
 

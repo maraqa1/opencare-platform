@@ -28,9 +28,15 @@ spec:
                   mkdir -p /root/.dbt /workspace && \
                   cp -R /workspace-src/. /workspace/ && \
                   cp /config/profiles.yml /root/.dbt/profiles.yml && \
+                  DBT_ARGS="" && \
+                  if [ -n "${DBT_SELECT:-}" ]; then DBT_ARGS="$DBT_ARGS --select ${DBT_SELECT}"; fi && \
+                  if [ -n "${DBT_EXCLUDE:-}" ]; then DBT_ARGS="$DBT_ARGS --exclude ${DBT_EXCLUDE}"; fi && \
                   dbt deps --project-dir /workspace || true && \
-                  dbt run --project-dir /workspace && \
-                  dbt test --project-dir /workspace
+                  dbt run --project-dir /workspace $DBT_ARGS && \
+                  dbt test --project-dir /workspace $DBT_ARGS
+              env:
+                - name: DBT_EXCLUDE
+                  value: tag:talemia
               envFrom:
                 - configMapRef:
                     name: opencare-config
@@ -62,6 +68,8 @@ spec:
                     path: macros/generate_schema_name.sql
                   - key: test_expression_is_true.sql
                     path: macros/test_expression_is_true.sql
+                  - key: talemia_raw_relation.sql
+                    path: macros/talemia_raw_relation.sql
                   - key: sources.yml
                     path: models/sources.yml
                   - key: schema.yml
@@ -122,6 +130,54 @@ spec:
                     path: models/revenue_cycle/marts/fct_team_recovery_performance.sql
                   - key: revenue_cycle_gl_reconciliation.sql
                     path: tests/revenue_cycle_gl_reconciliation.sql
+                  - key: talemia_schema.yml
+                    path: models/talemia/schema.yml
+                  - key: stg_talemia_opportunities.sql
+                    path: models/talemia/staging/stg_talemia_opportunities.sql
+                  - key: stg_talemia_awards.sql
+                    path: models/talemia/staging/stg_talemia_awards.sql
+                  - key: stg_talemia_losses.sql
+                    path: models/talemia/staging/stg_talemia_losses.sql
+                  - key: stg_talemia_updates.sql
+                    path: models/talemia/staging/stg_talemia_updates.sql
+                  - key: stg_talemia_dimensions.sql
+                    path: models/talemia/staging/stg_talemia_dimensions.sql
+                  - key: stg_talemia_dashboard_targets.sql
+                    path: models/talemia/staging/stg_talemia_dashboard_targets.sql
+                  - key: fct_talemia_opportunity.sql
+                    path: models/talemia/marts/fct_talemia_opportunity.sql
+                  - key: fct_talemia_pipeline.sql
+                    path: models/talemia/marts/fct_talemia_pipeline.sql
+                  - key: fct_talemia_win_loss.sql
+                    path: models/talemia/marts/fct_talemia_win_loss.sql
+                  - key: fct_talemia_account_manager_performance.sql
+                    path: models/talemia/marts/fct_talemia_account_manager_performance.sql
+                  - key: fct_talemia_business_line_performance.sql
+                    path: models/talemia/marts/fct_talemia_business_line_performance.sql
+                  - key: fct_talemia_opportunity_updates.sql
+                    path: models/talemia/marts/fct_talemia_opportunity_updates.sql
+                  - key: fct_talemia_kpi_performance.sql
+                    path: models/talemia/marts/fct_talemia_kpi_performance.sql
+                  - key: fct_talemia_stage_distribution.sql
+                    path: models/talemia/marts/fct_talemia_stage_distribution.sql
+                  - key: fct_talemia_pipeline_risk.sql
+                    path: models/talemia/marts/fct_talemia_pipeline_risk.sql
+                  - key: fct_talemia_client_cohort.sql
+                    path: models/talemia/marts/fct_talemia_client_cohort.sql
+                  - key: fct_talemia_sales_cycle.sql
+                    path: models/talemia/marts/fct_talemia_sales_cycle.sql
+                  - key: fct_talemia_pipeline_forecast.sql
+                    path: models/talemia/marts/fct_talemia_pipeline_forecast.sql
+                  - key: fct_talemia_sales_growth.sql
+                    path: models/talemia/marts/fct_talemia_sales_growth.sql
+                  - key: fct_talemia_dashboard_reconciliation.sql
+                    path: models/talemia/marts/fct_talemia_dashboard_reconciliation.sql
+                  - key: fct_talemia_extraction_quality.sql
+                    path: models/talemia/marts/fct_talemia_extraction_quality.sql
+                  - key: dict_talemia_metrics.sql
+                    path: models/talemia/dictionary/dict_talemia_metrics.sql
+                  - key: dict_talemia_terms.sql
+                    path: models/talemia/dictionary/dict_talemia_terms.sql
             - name: dbt-workspace
               emptyDir: {}
             - name: dbt-profile
