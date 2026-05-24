@@ -215,6 +215,24 @@ def get_use_case_template_preview(request: Request, package_id: str) -> dict[str
     return {"status": "ok", "package_id": package_id, "preview": preview}
 
 
+@router.get("/{package_id}/dashboard-materialization")
+def get_use_case_template_dashboard_materialization(request: Request, package_id: str) -> dict[str, Any]:
+    _require_admin(request)
+    record = storage.get_package(package_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Unknown package: {package_id}")
+    return {
+        "status": "ok",
+        "package_id": package_id,
+        "slug": record.get("slug"),
+        "version": record.get("version"),
+        "dashboard_materialization_status": record.get("materialization_status"),
+        "activation_status": record.get("activation_status"),
+        "live_verification_status": record.get("live_verification_status"),
+        "report": record.get("materialization_report", {}),
+    }
+
+
 @router.post("/{package_id}/validate")
 def validate_use_case_template(request: Request, package_id: str) -> dict[str, Any]:
     _require_admin(request)

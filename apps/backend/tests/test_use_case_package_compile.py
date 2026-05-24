@@ -31,3 +31,26 @@ class UseCasePackageCompilerTests(unittest.TestCase):
             report = UseCasePackageCompiler(root).compile()
             self.assertEqual(report["status"], "compile_failed")
             self.assertTrue(any("lacks PHI masking rule" in error for error in report["blocking_errors"]))
+
+    def test_with_prefixed_read_only_query_compiles(self):
+        with tempfile.TemporaryDirectory(prefix="compiler-") as temp_dir:
+            root = Path(temp_dir) / "pkg"
+            build_valid_package_tree(root, slug="patient-outcomes")
+            trends_query = root / "backend/queries/trends.sql"
+            trends_query.write_text(
+                "WITH monthly AS (\n"
+                "  SELECT admission_date, readmitted_30d_flag FROM analytics.fct_patient_outcomes\n"
+                ")\n"
+                "SELECT count(*) AS total_rows FROM monthly\n",
+                encoding="utf-8",
+            )
+            report = UseCasePackageCompiler(root).compile()
+            self.assertEqual(report["status"], "compiled")
+
+    def test_component_registry_is_built_from_structured_yaml(self):
+        with tempfile.TemporaryDirectory(prefix="compiler-") as temp_dir:
+            root = Path(temp_dir) / "pkg"
+            build_valid_package_tree(root, slug="patient-outcomes")
+            report = UseCasePackageCompiler(root).compile()
+            registry = report["runtime_definition"]["component_registry"]
+            self.assertIn("readmission_card", registry)

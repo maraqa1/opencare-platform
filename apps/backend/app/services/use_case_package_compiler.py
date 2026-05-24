@@ -67,6 +67,61 @@ class UseCasePackageCompiler:
             return ""
         return path.read_text(encoding="utf-8")
 
+    def _is_read_only_query(self, sql_text: str) -> bool:
+        normalized = sql_text.strip().lower()
+        if not normalized:
+            return False
+        if not (normalized.startswith("select") or normalized.startswith("with")):
+            return False
+
+        forbidden_tokens = [
+            " insert ",
+            " update ",
+            " delete ",
+            " merge ",
+            " alter ",
+            " drop ",
+            " truncate ",
+            " create ",
+            " grant ",
+            " revoke ",
+            " execute ",
+            " call ",
+            " copy ",
+        ]
+        padded = f" {normalized} "
+        return not any(token in padded for token in forbidden_tokens)
+
+    def _component_registry(self, components: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        registry: dict[str, dict[str, Any]] = {}
+        component_sections = {
+            "components",
+            "component_definitions",
+            "card_specs",
+            "chart_specs",
+            "tables",
+        }
+
+        for source_file, payload in components.items():
+            if not isinstance(payload, dict):
+                continue
+            for section_name in component_sections:
+                entries = payload.get(section_name)
+                if not isinstance(entries, list):
+                    continue
+                for entry in entries:
+                    if not isinstance(entry, dict):
+                        continue
+                    component_id = str(entry.get("id") or "").strip()
+                    if not component_id:
+                        continue
+                    registry[component_id] = {
+                        **entry,
+                        "source_file": source_file,
+                        "section": section_name,
+                    }
+        return registry
+
     def _route_from_manifest(self, slug: str) -> str:
         registration = self.package_yaml.get("registration", {})
         if isinstance(registration, dict) and registration.get("portal_workspace_route"):
@@ -141,11 +196,21 @@ class UseCasePackageCompiler:
                 if component_file.name not in supported_component_files:
                     self._add("compile", f"component_file_{component_file.name}", "warning", f"Unsupported optional component file: {component_file.name}")
 
+        component_registry = self._component_registry(components)
+
         for tab in tabs:
             for component_id in tab["components"]:
-                component_found = any(component_id in yaml.safe_dump(payload, sort_keys=False) for payload in components.values())
+                component_found = component_id in component_registry or any(
+                    component_id in yaml.safe_dump(payload, sort_keys=False)
+                    for payload in components.values()
+                )
                 if not component_found:
                     self._add("compile", f"component_binding_{tab['id']}_{component_id}", "failed", f"Tab {tab['id']} references missing component {component_id}")
+            tab["component_specs"] = [
+                component_registry[component_id]
+                for component_id in tab["components"]
+                if component_id in component_registry
+            ]
 
         return {
             "route": route,
@@ -155,6 +220,9 @@ class UseCasePackageCompiler:
             "tabs": tabs,
             "pages": pages,
             "components": components,
+            "component_registry": component_registry,
+            "data_sources": dashboard_build.get("data_sources", []) if isinstance(dashboard_build.get("data_sources"), list) else [],
+            "rendering": dashboard_build.get("rendering", {}) if isinstance(dashboard_build.get("rendering"), dict) else {},
         }
 
     def _compile_endpoints(self, slug: str) -> dict[str, Any]:
@@ -179,7 +247,7 @@ class UseCasePackageCompiler:
                 self._add("compile", f"endpoint_query_{path}", "failed", f"Endpoint {path} references missing query {query}")
                 continue
             sql_text = query_path.read_text(encoding="utf-8").strip().lower()
-            if not sql_text.startswith("select"):
+            if not self._is_read_only_query(sql_text):
                 self._add("compile", f"endpoint_query_select_{path}", "failed", f"Endpoint {path} query must be SELECT-only")
             if " raw." in f" {sql_text}" or " staging." in f" {sql_text}":
                 self._add("compile", f"endpoint_query_sources_{path}", "failed", f"Endpoint {path} query reads raw.* or staging.*")
@@ -287,6 +355,9 @@ class UseCasePackageCompiler:
             "tabs": workspace["tabs"],
             "pages": workspace["pages"],
             "components": workspace["components"],
+            "component_registry": workspace["component_registry"],
+            "data_sources": workspace["data_sources"],
+            "rendering": workspace["rendering"],
             "filters": endpoints["filters"],
             "charts": dashboard_contract.get("dashboards", {}),
             "tables": dashboard_contract.get("operational", {}).get("episode_table", {}),

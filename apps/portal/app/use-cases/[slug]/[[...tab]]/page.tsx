@@ -30,6 +30,18 @@ type WorkspaceDefinition = {
     label?: string;
     route?: string;
     components?: string[];
+    component_specs?: Array<{
+      id?: string;
+      component_type?: string;
+      source_endpoint?: string;
+      endpoint?: string;
+      purpose?: string;
+      empty_state?: string;
+      phi_visibility_rule?: string;
+      validation_expectation?: string;
+      source_file?: string;
+      section?: string;
+    }>;
   }>;
   backend_endpoint_bindings?: {
     endpoints?: Array<{
@@ -43,6 +55,17 @@ type WorkspaceDefinition = {
   };
   kpis?: string[];
   personas?: Array<string | { title?: string; id?: string }>;
+  data_sources?: Array<{
+    name?: string;
+    type?: string;
+    endpoint?: string;
+  }>;
+  rendering?: {
+    component_library?: string;
+    supports_empty_state?: boolean;
+    supports_populated_state?: boolean;
+    supports_governance_drawers?: boolean;
+  };
 };
 
 type EndpointPayload = {
@@ -85,6 +108,13 @@ function previewValue(value: unknown) {
     return JSON.stringify(value);
   }
   return String(value);
+}
+
+function specEndpoint(spec: {
+  source_endpoint?: string;
+  endpoint?: string;
+}) {
+  return spec.source_endpoint ?? spec.endpoint ?? "n/a";
 }
 
 export default async function MaterializedUseCaseWorkspacePage({ params }: RouteContext) {
@@ -143,6 +173,45 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
           </div>
         </article>
 
+        <article className="panel span-8">
+          <p className="eyebrow">Component bindings</p>
+          <h3 className="section-heading">Resolved native BI components</h3>
+          <div className="grid">
+            {(selectedTab?.component_specs ?? []).map((component) => (
+              <article className="panel span-6" key={component.id ?? component.source_file ?? "component"}>
+                <p className="eyebrow">{component.component_type ?? "component"}</p>
+                <h4 className="section-heading">{component.id ?? "Unnamed component"}</h4>
+                <p className="section-subtitle">
+                  {component.purpose ?? component.validation_expectation ?? "Materialized from uploaded package specs."}
+                </p>
+                <dl className="use-case-evidence-list">
+                  <div>
+                    <dt>Endpoint</dt>
+                    <dd>{specEndpoint(component)}</dd>
+                  </div>
+                  <div>
+                    <dt>Visibility</dt>
+                    <dd>{component.phi_visibility_rule ?? "n/a"}</dd>
+                  </div>
+                  <div>
+                    <dt>Empty state</dt>
+                    <dd>{component.empty_state ?? "n/a"}</dd>
+                  </div>
+                  <div>
+                    <dt>Registry source</dt>
+                    <dd>{component.source_file ?? component.section ?? "n/a"}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+            {(selectedTab?.component_specs ?? []).length === 0 ? (
+              <article className="panel span-12">
+                <p className="section-subtitle">No structured component specs were materialized for this tab.</p>
+              </article>
+            ) : null}
+          </div>
+        </article>
+
         <article className="panel span-4">
           <p className="eyebrow">Runtime status</p>
           <h3 className="section-heading">Live checks</h3>
@@ -183,6 +252,41 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
             {(workspace.personas ?? []).map((persona, index) => (
               <span key={`${index}-${typeof persona === "string" ? persona : persona?.id ?? persona?.title ?? "persona"}`}>
                 {typeof persona === "string" ? persona : persona?.title ?? persona?.id ?? "Persona"}
+              </span>
+            ))}
+          </div>
+        </article>
+
+        <article className="panel span-6">
+          <p className="eyebrow">Renderer</p>
+          <h3 className="section-heading">Materialization capabilities</h3>
+          <dl className="use-case-evidence-list">
+            <div>
+              <dt>Component library</dt>
+              <dd>{workspace.rendering?.component_library ?? "n/a"}</dd>
+            </div>
+            <div>
+              <dt>Empty state</dt>
+              <dd>{workspace.rendering?.supports_empty_state ? "supported" : "unknown"}</dd>
+            </div>
+            <div>
+              <dt>Populated state</dt>
+              <dd>{workspace.rendering?.supports_populated_state ? "declared" : "unknown"}</dd>
+            </div>
+            <div>
+              <dt>Governance drawers</dt>
+              <dd>{workspace.rendering?.supports_governance_drawers ? "supported" : "unknown"}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article className="panel span-6">
+          <p className="eyebrow">Data sources</p>
+          <h3 className="section-heading">Declared runtime feeds</h3>
+          <div className="use-case-outcome-list">
+            {(workspace.data_sources ?? []).map((source) => (
+              <span key={`${source.name ?? "source"}-${source.endpoint ?? "endpoint"}`}>
+                {(source.name ?? "source") + " -> " + (source.endpoint ?? "n/a")}
               </span>
             ))}
           </div>
