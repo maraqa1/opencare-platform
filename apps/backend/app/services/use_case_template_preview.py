@@ -23,12 +23,23 @@ class UseCaseTemplatePreviewService:
         features = package_yaml.get("features", {})
         if not isinstance(features, dict):
             return False
-        value = features.get(name)
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, dict):
-            return bool(value.get("enabled", True))
-        return bool(value)
+        alias_map = {
+            "dbt": ["has_dbt"],
+            "backend": ["has_backend_api"],
+            "portal": ["has_portal_workspace"],
+            "dashboards": ["has_superset_dashboard", "has_native_bi_dashboard"],
+            "governance": ["has_governance_views"],
+            "demo_data": ["has_demo_data"],
+        }
+        for candidate in [name, *alias_map.get(name, [])]:
+            value = features.get(candidate)
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, dict):
+                return bool(value.get("enabled", True))
+            if value:
+                return True
+        return False
 
     def build(self) -> dict[str, Any]:
         package_yaml = self._yaml("package.yaml")
@@ -43,10 +54,15 @@ class UseCaseTemplatePreviewService:
         metadata = package_yaml.get("metadata", {}) if isinstance(package_yaml, dict) else {}
         existing_use_cases = load_use_cases(include_disabled=True)
         slug = metadata.get("slug")
-        api_prefix = manifest_yaml.get("api_prefix")
-        dashboard_slug = manifest_yaml.get("superset_dashboard_id")
         registration = package_yaml.get("registration", {}) if isinstance(package_yaml.get("registration"), dict) else {}
-        materialization_mode = str(registration.get("mode") or "staged_only")
+        compatibility = package_yaml.get("compatibility", {}) if isinstance(package_yaml.get("compatibility"), dict) else {}
+        visualization_mode = package_yaml.get("visualization_mode", {}) if isinstance(package_yaml.get("visualization_mode"), dict) else {}
+        api_prefix = manifest_yaml.get("api_prefix") or registration.get("api_prefix")
+        dashboard_slug = manifest_yaml.get("superset_dashboard_id") or registration.get("dashboard_slug")
+        materialization_mode = str(
+            registration.get("mode")
+            or ("full_runtime" if compatibility.get("dashboard_engine") == "opencare_native_bi" or visualization_mode.get("default") == "opencare_native_bi" else "staged_only")
+        )
         full_runtime_supported = materialization_mode == "full_runtime"
 
         conflicts: list[str] = []
@@ -107,7 +123,7 @@ class UseCaseTemplatePreviewService:
                 "kpis": business_contract.get("kpis", []),
                 "decisions": business_contract.get("decisions_supported", []),
             },
-            "route_to_be_added": manifest_yaml.get("route") or f"/use-cases/{slug}" if slug else None,
+            "route_to_be_added": manifest_yaml.get("route") or registration.get("portal_workspace_route") or (f"/use-cases/{slug}" if slug else None),
             "api_prefix": api_prefix,
             "dbt_models": dbt_assets,
             "backend_assets": backend_assets,

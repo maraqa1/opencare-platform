@@ -12,6 +12,7 @@ from app.routes.forecasts import router as forecasts_router
 from app.routes.health import router as health_router
 from app.routes.lineage import router as lineage_router
 from app.routes.occupancy import router as occupancy_router
+from app.routes.package_runtime import router as package_runtime_router
 from app.routes.record_spec import router as record_spec_router
 from app.routes.revenue_cycle import router as revenue_cycle_router
 from app.routes.reports import router as reports_router
@@ -29,6 +30,7 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(config_router)
 app.include_router(occupancy_router)
+app.include_router(package_runtime_router)
 app.include_router(dictionary_router)
 app.include_router(classification_router)
 app.include_router(decisions_router)

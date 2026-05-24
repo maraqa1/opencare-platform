@@ -20,6 +20,38 @@ export type UseCaseTemplateValidationReport = {
   warnings: string[];
 };
 
+export type UseCaseTemplateCompileReport = {
+  status: string;
+  summary?: {
+    passed: number;
+    warnings: number;
+    failed: number;
+  };
+  checks?: Array<{
+    category: string;
+    check: string;
+    status: string;
+    message: string;
+  }>;
+  blocking_errors?: string[];
+  warnings?: string[];
+};
+
+export type UseCaseTemplateMaterializationReport = {
+  status?: string;
+  plan?: Record<string, unknown>;
+  registry?: Record<string, unknown>;
+  blocking_errors?: string[];
+  warnings?: string[];
+  checked_at?: string;
+};
+
+export type UseCaseTemplateLiveVerificationReport = {
+  status?: string;
+  checks?: Record<string, boolean>;
+  checked_at?: string;
+};
+
 export type UseCaseTemplatePreview = {
   package_id?: string;
   slug?: string;
@@ -89,10 +121,19 @@ export type UseCaseTemplatePackage = {
     | "uninstalled"
     | "failed";
   enabled?: boolean;
+  package_validation_status?: string;
+  compile_status?: string;
+  materialization_status?: string;
+  activation_status?: string;
+  live_verification_status?: string;
   validation_summary?: UseCaseTemplateValidationReport;
+  compile_report?: UseCaseTemplateCompileReport;
+  materialization_report?: UseCaseTemplateMaterializationReport;
+  live_verification_report?: UseCaseTemplateLiveVerificationReport;
   preview_summary?: UseCaseTemplatePreview;
   last_action?: string;
   last_action_at?: string;
   error_message?: string;
+  last_error?: string;
   actions?: UseCaseTemplateAction[];
 };

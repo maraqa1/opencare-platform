@@ -4,6 +4,7 @@ import { UseCaseTemplateActionLog } from "@/components/admin/UseCaseTemplateActi
 import { UseCaseTemplateFileTree } from "@/components/admin/UseCaseTemplateFileTree";
 import { UseCaseTemplateLifecyclePanel } from "@/components/admin/UseCaseTemplateLifecyclePanel";
 import { UseCaseTemplatePreviewPanel } from "@/components/admin/UseCaseTemplatePreviewPanel";
+import { UseCaseTemplateRuntimeStatusPanel } from "@/components/admin/UseCaseTemplateRuntimeStatusPanel";
 import { UseCaseTemplateValidationReportPanel } from "@/components/admin/UseCaseTemplateValidationReport";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
@@ -63,6 +64,7 @@ export default async function UseCaseTemplateDetailPage({ params }: RouteContext
       description="Review validation, preview install impact, inspect package files, and run lifecycle actions."
     >
       <section className="grid">
+        <UseCaseTemplateRuntimeStatusPanel pkg={pkg} />
         {pkg ? <UseCaseTemplateLifecyclePanel pkg={pkg} /> : null}
         <UseCaseTemplateValidationReportPanel validation={validationResponse.validation} />
         <UseCaseTemplatePreviewPanel preview={previewResponse.preview} />

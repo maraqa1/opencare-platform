@@ -26,7 +26,7 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         return response.json()["package"]["id"]
 
-    def test_staged_only_package_blocks_install_but_allows_activation_and_uninstall(self):
+    def test_package_moves_through_compile_materialize_activate_flow(self):
         with package_test_context():
             package_id = self._upload_package()
 
@@ -36,11 +36,25 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
             )
             self.assertEqual(validate_response.status_code, 200)
 
-            install_response = client().post(
-                f"/api/v1/admin/use-case-templates/{package_id}/install",
+            activate_before_materialize = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/activate",
                 headers={"x-opencare-admin-context": "admin"},
             )
-            self.assertEqual(install_response.status_code, 400)
+            self.assertEqual(activate_before_materialize.status_code, 400)
+
+            compile_response = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/compile",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(compile_response.status_code, 200)
+            self.assertEqual(compile_response.json()["package"]["compile_status"], "compiled")
+
+            materialize_response = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/materialize",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(materialize_response.status_code, 200)
+            self.assertEqual(materialize_response.json()["package"]["materialization_status"], "materialized")
 
             include_response = client().post(
                 f"/api/v1/admin/use-case-templates/{package_id}/include",
@@ -48,6 +62,14 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
             )
             self.assertEqual(include_response.status_code, 200)
             self.assertTrue(include_response.json()["package"]["enabled"])
+            self.assertEqual(include_response.json()["package"]["activation_status"], "active")
+
+            verify_response = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/verify-live",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(verify_response.status_code, 200)
+            self.assertIn(verify_response.json()["package"]["live_verification_status"], {"degraded", "live_verified"})
 
             exclude_response = client().post(
                 f"/api/v1/admin/use-case-templates/{package_id}/exclude",

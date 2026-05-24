@@ -7,11 +7,29 @@ import { useMemo, useState, useTransition } from "react";
 import type { UseCaseTemplatePackage } from "./use-case-template-types";
 
 function actionLabel(pkg: UseCaseTemplatePackage) {
-  return pkg.enabled ? "Deactivate" : "Activate";
+  if (pkg.activation_status === "active") {
+    return "Exclude";
+  }
+  if (pkg.materialization_status === "materialized") {
+    return "Activate";
+  }
+  if (pkg.compile_status === "compiled") {
+    return "Materialize";
+  }
+  return "Compile";
 }
 
 function actionEndpoint(pkg: UseCaseTemplatePackage) {
-  return pkg.enabled ? "exclude" : "include";
+  if (pkg.activation_status === "active") {
+    return "exclude";
+  }
+  if (pkg.materialization_status === "materialized") {
+    return "activate";
+  }
+  if (pkg.compile_status === "compiled") {
+    return "materialize";
+  }
+  return "compile";
 }
 
 export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePackage[] }) {
@@ -122,6 +140,10 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
             <th>Version</th>
             <th>Domain</th>
             <th>Status</th>
+            <th>Compile</th>
+            <th>Materialize</th>
+            <th>Activation</th>
+            <th>Live</th>
             <th>Uploaded</th>
             <th>Last action</th>
             <th>Action</th>
@@ -130,7 +152,7 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
         <tbody>
           {packages.length === 0 ? (
             <tr>
-              <td colSpan={9}>No use-case template packages uploaded yet.</td>
+              <td colSpan={13}>No use-case template packages uploaded yet.</td>
             </tr>
           ) : (
             packages.map((pkg) => {
@@ -150,6 +172,10 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
                   <td>{pkg.version}</td>
                   <td>{pkg.domain ?? "n/a"}</td>
                   <td>{pkg.status}</td>
+                  <td>{pkg.compile_status ?? "n/a"}</td>
+                  <td>{pkg.materialization_status ?? "n/a"}</td>
+                  <td>{pkg.activation_status ?? "n/a"}</td>
+                  <td>{pkg.live_verification_status ?? "n/a"}</td>
                   <td>{pkg.uploaded_at ?? "n/a"}</td>
                   <td>{pkg.last_action ?? "n/a"}</td>
                   <td>

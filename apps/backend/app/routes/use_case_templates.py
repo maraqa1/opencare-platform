@@ -60,6 +60,7 @@ def _load_validation(package_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"Unknown package: {package_id}")
     validation = UseCaseTemplateValidationService(Path(record["staged_path"])).validate()
     record["validation_summary"] = validation
+    record["package_validation_status"] = validation["status"]
     record["status"] = "validated" if validation["status"] in {"passed", "warning"} else "validation_failed"
     storage.upsert_package(record)
     return validation
@@ -120,6 +121,11 @@ async def upload_use_case_template(
         "uploaded_at": utc_now_iso(),
         "status": status,
         "enabled": False,
+        "package_validation_status": validation["status"],
+        "compile_status": "parsed",
+        "materialization_status": "staged",
+        "activation_status": "previewable",
+        "live_verification_status": "previewable",
         "original_zip_path": str(original_zip_path),
         "staged_path": str(staged_dir),
         "installed_path": "",
@@ -131,6 +137,7 @@ async def upload_use_case_template(
         "last_action": "upload",
         "last_action_at": utc_now_iso(),
         "error_message": "; ".join(validation["blocking_errors"]) if validation["blocking_errors"] else "",
+        "last_error": "; ".join(validation["blocking_errors"]) if validation["blocking_errors"] else "",
         "actions": [],
     }
     storage.upsert_package(record)
@@ -220,6 +227,7 @@ def validate_use_case_template(request: Request, package_id: str) -> dict[str, A
     preview = _load_preview(package_id)
     record = storage.get_package(package_id) or record
     record["preview_summary"] = preview
+    record["package_validation_status"] = validation["status"]
     storage.upsert_package(record)
     storage.record_action(
         package_id=package_id,
@@ -239,7 +247,17 @@ def _run_lifecycle(request: Request, package_id: str, action: str, payload: dict
     _require_admin(request)
     actor = _actor(request)
     try:
-        if action == "install":
+        if action == "compile":
+            record = lifecycle.compile(package_id, actor=actor)
+        elif action == "plan-materialization":
+            record = lifecycle.plan_materialization(package_id, actor=actor)
+        elif action == "materialize":
+            record = lifecycle.materialize(package_id, actor=actor)
+        elif action == "activate":
+            record = lifecycle.activate(package_id, actor=actor)
+        elif action == "verify-live":
+            record = lifecycle.verify_live(package_id, actor=actor)
+        elif action == "install":
             record = lifecycle.install(package_id, actor=actor)
         elif action == "apply":
             record = lifecycle.apply(package_id, actor=actor)
@@ -269,6 +287,31 @@ def _run_lifecycle(request: Request, package_id: str, action: str, payload: dict
 @router.post("/{package_id}/install")
 def install_use_case_template(request: Request, package_id: str) -> dict[str, Any]:
     return _run_lifecycle(request, package_id, "install")
+
+
+@router.post("/{package_id}/compile")
+def compile_use_case_template(request: Request, package_id: str) -> dict[str, Any]:
+    return _run_lifecycle(request, package_id, "compile")
+
+
+@router.post("/{package_id}/plan-materialization")
+def plan_materialization_use_case_template(request: Request, package_id: str) -> dict[str, Any]:
+    return _run_lifecycle(request, package_id, "plan-materialization")
+
+
+@router.post("/{package_id}/materialize")
+def materialize_use_case_template(request: Request, package_id: str) -> dict[str, Any]:
+    return _run_lifecycle(request, package_id, "materialize")
+
+
+@router.post("/{package_id}/activate")
+def activate_use_case_template(request: Request, package_id: str) -> dict[str, Any]:
+    return _run_lifecycle(request, package_id, "activate")
+
+
+@router.post("/{package_id}/verify-live")
+def verify_live_use_case_template(request: Request, package_id: str) -> dict[str, Any]:
+    return _run_lifecycle(request, package_id, "verify-live")
 
 
 @router.post("/{package_id}/apply")

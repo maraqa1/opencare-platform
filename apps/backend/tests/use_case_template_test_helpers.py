@@ -27,10 +27,12 @@ def build_valid_package_tree(root: Path, *, slug: str = "golden-example", query_
     (root / "dbt/marts").mkdir(parents=True, exist_ok=True)
     (root / "dbt/dictionary").mkdir(parents=True, exist_ok=True)
     (root / "backend/queries").mkdir(parents=True, exist_ok=True)
-    (root / "backend/responses").mkdir(parents=True, exist_ok=True)
+    (root / "backend/routes").mkdir(parents=True, exist_ok=True)
+    (root / "backend/schemas").mkdir(parents=True, exist_ok=True)
+    (root / "backend/services").mkdir(parents=True, exist_ok=True)
     (root / "portal/pages").mkdir(parents=True, exist_ok=True)
+    (root / "portal/components").mkdir(parents=True, exist_ok=True)
     (root / "dashboards/charts").mkdir(parents=True, exist_ok=True)
-    (root / "dashboards/sql").mkdir(parents=True, exist_ok=True)
     (root / "governance").mkdir(parents=True, exist_ok=True)
     (root / "demo-data/generator").mkdir(parents=True, exist_ok=True)
     (root / "validation").mkdir(parents=True, exist_ok=True)
@@ -51,17 +53,21 @@ def build_valid_package_tree(root: Path, *, slug: str = "golden-example", query_
                 "  owner: Platform",
                 "compatibility:",
                 "  min_platform_version: 0.1.0",
+                "  dashboard_engine: opencare_native_bi",
                 "entrypoints:",
                 "  portal_route: /use-cases/golden-example",
                 "registration:",
-                "  mode: staged_only",
+                "  mode: full_runtime",
+                f"  portal_workspace_route: /use-cases/{slug}",
+                f"  api_prefix: /api/v1/use-cases/{slug}",
+                f"  dashboard_slug: {slug}",
                 "features:",
-                "  dbt: true",
-                "  backend: true",
-                "  portal: true",
-                "  dashboards: true",
-                "  governance: true",
-                "  demo_data: true",
+                "  has_dbt: true",
+                "  has_backend_api: true",
+                "  has_portal_workspace: true",
+                "  has_native_bi_dashboard: true",
+                "  has_governance_views: true",
+                "  has_demo_data: true",
                 "lifecycle:",
                 "  install: true",
                 "  apply: true",
@@ -79,7 +85,8 @@ def build_valid_package_tree(root: Path, *, slug: str = "golden-example", query_
                 f"slug: {slug}",
                 "name: Golden Example",
                 "description: Test package",
-                "api_prefix: /api/v1/golden-example",
+                f"api_prefix: /api/v1/use-cases/{slug}",
+                f"route: /use-cases/{slug}",
                 "superset_dashboard_id: golden-example-dashboard",
             ]
         ),
@@ -106,26 +113,100 @@ def build_valid_package_tree(root: Path, *, slug: str = "golden-example", query_
     (root / "dbt/marts/fct_example.sql").write_text("select * from {{ ref('stg_example') }}", encoding="utf-8")
     (root / "dbt/dictionary/dict_example.sql").write_text("select 'metric' as name", encoding="utf-8")
 
-    (root / "backend/routes.yaml").write_text("routes:\n  - /summary\n", encoding="utf-8")
-    (root / "backend/responses/summary.yaml").write_text("type: object\n", encoding="utf-8")
-    (root / "backend/queries/summary.sql").write_text(query_sql, encoding="utf-8")
+    (root / "backend/routes" / f"{slug}.router.spec.yaml").write_text(
+        "\n".join(
+            [
+                f"route_prefix: /api/v1/use-cases/{slug}",
+                "role_policy:",
+                "  - customer",
+                "endpoints:",
+                "  - method: GET",
+                "    path: /overview",
+                "    query: backend/queries/overview.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "  - method: GET",
+                "    path: /kpis",
+                "    query: backend/queries/kpis.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "  - method: GET",
+                "    path: /drilldown",
+                "    query: backend/queries/drilldown.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "    phi_handling: masked_patient_id_only",
+                "  - method: GET",
+                "    path: /governance",
+                "    query: backend/queries/governance.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "  - method: GET",
+                "    path: /filters",
+                "    query: backend/queries/filters.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "  - method: GET",
+                "    path: /trends",
+                "    query: backend/queries/trends.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "  - method: GET",
+                "    path: /variation",
+                "    query: backend/queries/variation.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "  - method: GET",
+                "    path: /queues/high-risk",
+                "    query: backend/queries/queue_high_risk.sql",
+                f"    response_schema: backend/schemas/{slug}.response.schema.json",
+                "    phi_handling: masked_patient_id_only",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    for name in ("overview", "kpis", "drilldown", "governance", "filters", "trends", "variation", "queue_high_risk"):
+        (root / "backend/queries" / f"{name}.sql").write_text(query_sql, encoding="utf-8")
+    (root / "backend/schemas" / f"{slug}.response.schema.json").write_text("{}", encoding="utf-8")
 
-    (root / "portal/routes.yaml").write_text("routes:\n  - /use-cases/golden-example\n", encoding="utf-8")
-    (root / "portal/navigation.yaml").write_text("navigation:\n  - golden-example\n", encoding="utf-8")
-    (root / "portal/workspace.yaml").write_text("workspace:\n  title: Golden Example\n", encoding="utf-8")
-    (root / "portal/empty-state.yaml").write_text("message: No data yet\n", encoding="utf-8")
-    (root / "portal/pages/index.md").write_text("# Golden Example\n", encoding="utf-8")
+    (root / "portal/routes.yaml").write_text(f"routes:\n  - path: /use-cases/{slug}\n", encoding="utf-8")
+    (root / "portal/navigation.yaml").write_text(f"navigation:\n  - {slug}\n", encoding="utf-8")
+    (root / "portal/workspace.yaml").write_text("tabs:\n  - Overview\n  - Governance\n  - Drilldown\n", encoding="utf-8")
+    (root / "portal/components/empty-states.yaml").write_text("message: No data yet\n", encoding="utf-8")
+    (root / "portal/components/cards.yaml").write_text("cards:\n  - readmission_card\n", encoding="utf-8")
+    (root / "portal/components/charts.yaml").write_text("charts:\n  - chart_readmission_rate\n", encoding="utf-8")
+    (root / "portal/components/tables.yaml").write_text("tables:\n  - episode_drilldown_table\n", encoding="utf-8")
+    (root / "portal/components/tabs.yaml").write_text("tabs:\n  - overview\n", encoding="utf-8")
+    for name in ("overview.page.yaml", "governance.page.yaml", "drilldown.page.yaml"):
+        (root / "portal/pages" / name).write_text("title: page\n", encoding="utf-8")
 
-    (root / "dashboards/dashboards.yaml").write_text("dashboards:\n  - executive\n", encoding="utf-8")
-    (root / "dashboards/charts/executive.yaml").write_text("title: Executive\n", encoding="utf-8")
-    (root / "dashboards/sql/executive.sql").write_text("select * from analytics.fct_example", encoding="utf-8")
+    (root / "dashboards/executive.dashboard.yaml").write_text("title: Executive\n", encoding="utf-8")
+    (root / "dashboards/charts/chart_readmission_rate.yaml").write_text("title: Chart\n", encoding="utf-8")
+    (root / "dashboards/charts/chart_readmission_rate.sql").write_text("select * from analytics.fct_example", encoding="utf-8")
+    (root / "dashboards/native-dashboard-build.spec.yaml").write_text(
+        "\n".join(
+            [
+                "tabs:",
+                f"  - id: overview",
+                f"    route: /use-cases/{slug}",
+                "    page_spec: portal/pages/overview.page.yaml",
+                "    required_components:",
+                "      - readmission_card",
+                "      - chart_readmission_rate",
+                "  - id: governance",
+                f"    route: /use-cases/{slug}/governance",
+                "    page_spec: portal/pages/governance.page.yaml",
+                "    required_components:",
+                "      - chart_readmission_rate",
+                "  - id: drilldown",
+                f"    route: /use-cases/{slug}/drilldown",
+                "    page_spec: portal/pages/drilldown.page.yaml",
+                "    required_components:",
+                "      - episode_drilldown_table",
+            ]
+        ),
+        encoding="utf-8",
+    )
 
     governance_files = {
         "ownership.yaml": "owner: Platform\n",
         "freshness_sla.yaml": "sla: daily\n",
-        "dq_rules.yaml": "rules:\n  - completeness\n",
+        "quality-rules.yaml": "rules:\n  - completeness\n",
         "lineage.yaml": "lineage:\n  - source\n",
-        "evidence_pack.yaml": "evidence:\n  - qa\n",
+        "evidence-pack.yaml": "evidence:\n  - qa\n",
         "classification.yaml": "classification:\n  - internal\n",
     }
     for name, content in governance_files.items():
@@ -151,6 +232,7 @@ def build_valid_package_tree(root: Path, *, slug: str = "golden-example", query_
     (root / "demo-data/seeds").mkdir(parents=True, exist_ok=True)
     (root / "demo-data/seeds/customers.csv").write_text("id,name\n1,Acme\n", encoding="utf-8")
     (root / "validation/checks.yaml").write_text("checks:\n  - preview\n", encoding="utf-8")
+    (root / "validation/dashboard-materialization.contract.yaml").write_text("required_for_active: true\nstates:\n  - materialized\n", encoding="utf-8")
     for action in ("install", "apply", "include", "exclude", "remove-operational", "uninstall"):
         (root / "lifecycle" / f"{action}.yaml").write_text(f"action: {action}\n", encoding="utf-8")
     (root / "checksums/manifest.sha256").write_text("", encoding="utf-8")
@@ -181,4 +263,3 @@ def client():
     from fastapi.testclient import TestClient
 
     return TestClient(app)
-

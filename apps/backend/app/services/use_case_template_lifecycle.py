@@ -4,12 +4,15 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from app.services.use_case_native_bi_materializer import UseCaseNativeBIMaterializer
+from app.services.use_case_package_compiler import UseCasePackageCompiler
 from app.services.use_case_template_storage import UseCaseTemplateStorage, utc_now_iso
 
 
 class UseCaseTemplateLifecycleService:
     def __init__(self, storage: UseCaseTemplateStorage) -> None:
         self.storage = storage
+        self.materializer = UseCaseNativeBIMaterializer(storage)
 
     def _require_record(self, package_id: str) -> dict[str, Any]:
         record = self.storage.get_package(package_id)
@@ -17,102 +20,112 @@ class UseCaseTemplateLifecycleService:
             raise KeyError(package_id)
         return record
 
-    def _require_full_runtime_support(self, record: dict[str, Any]) -> None:
-        install_impact = record.get("preview_summary", {}).get("install_impact", {})
-        if not isinstance(install_impact, dict):
-            install_impact = {}
-        if install_impact.get("materialization_mode") != "full_runtime":
-            raise ValueError(
-                "This package is not fully materializable by the platform yet. "
-                "Use validation/preview to inspect it, or uninstall it completely."
-            )
-
-    def install(self, package_id: str, *, actor: str) -> dict[str, Any]:
+    def compile(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
-        self._require_full_runtime_support(record)
-        validation = record.get("validation_summary", {})
-        validation_status = validation.get("status")
-        if validation_status == "failed":
-            raise ValueError("Validation failed; install is blocked.")
+        validation_status = record.get("package_validation_status") or record.get("validation_summary", {}).get("status")
         if validation_status not in {"passed", "warning"}:
-            raise ValueError("Package must be validated before install.")
+            raise ValueError("Package must pass validation before compile.")
 
-        installed_path = self.storage.copy_staged_to_installed(package_id, record["version"])
-        record["installed_path"] = str(installed_path)
-        record["status"] = "installed"
-        record["last_action"] = "install"
+        compiler = UseCasePackageCompiler(Path(record["staged_path"]))
+        compile_report = compiler.compile()
+        runtime_definition = compile_report.get("runtime_definition", {})
+        materialization_mode = compile_report.get("materialization_mode", "staged_only")
+
+        record["runtime_definition"] = runtime_definition
+        record["compile_report"] = compile_report
+        record["compile_status"] = compile_report["status"]
+        record["package_validation_status"] = validation_status
+        record["status"] = compile_report["status"]
+        record["materialization_status"] = "staged"
+        record["activation_status"] = "previewable"
+        record["live_verification_status"] = "previewable"
+        record["preview_summary"] = {
+            **record.get("preview_summary", {}),
+            "install_impact": {
+                "materialization_mode": materialization_mode,
+                "full_runtime_supported": materialization_mode == "full_runtime",
+                "notes": compile_report.get("warnings", []),
+            },
+        }
+        record["last_error"] = "; ".join(compile_report.get("blocking_errors", []))
+        record["last_action"] = "compile"
         record["last_action_at"] = utc_now_iso()
-        record.setdefault("materialization", {})["mode"] = "staged_only"
         self.storage.upsert_package(record)
         self.storage.record_action(
             package_id=package_id,
             slug=record["slug"],
             version=record["version"],
             actor=actor,
-            action="install",
-            status="installed",
+            action="compile",
+            status=record["status"],
             validation_result=validation_status,
-            log="Package installed into managed package storage. Runtime materialization remains staged-only in v1.",
+            log="Package compiled into canonical runtime definition."
+            if compile_report["status"] == "compiled"
+            else "Package compile failed.",
+            error_message=record["last_error"] or None,
         )
         return deepcopy(record)
 
-    def apply(self, package_id: str, *, actor: str) -> dict[str, Any]:
+    def plan_materialization(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
-        self._require_full_runtime_support(record)
-        validation = record.get("validation_summary", {})
-        if validation.get("status") == "failed":
-            raise ValueError("Validation failed; apply is blocked.")
-        if not record.get("installed_path"):
-            raise ValueError("Package must be installed before apply.")
+        if record.get("compile_status") != "compiled":
+            raise ValueError("Package must be compiled before materialization planning.")
+        planned = self.materializer.plan(package_id, actor=actor)
+        planned["last_action"] = "plan-materialization"
+        planned["last_action_at"] = utc_now_iso()
+        self.storage.upsert_package(planned)
+        return deepcopy(planned)
 
-        installed_path = self.storage.copy_staged_to_installed(package_id, record["version"])
-        record["installed_path"] = str(installed_path)
-        record["status"] = "applied"
-        record["last_action"] = "apply"
-        record["last_action_at"] = utc_now_iso()
-        self.storage.upsert_package(record)
-        self.storage.record_action(
-            package_id=package_id,
-            slug=record["slug"],
-            version=record["version"],
-            actor=actor,
-            action="apply",
-            status="applied",
-            validation_result=validation.get("status"),
-            log="Staged assets reapplied to managed package storage. Dynamic platform materialization is still pending.",
-        )
-        return deepcopy(record)
-
-    def include(self, package_id: str, *, actor: str) -> dict[str, Any]:
+    def materialize(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
-        validation_status = record.get("validation_summary", {}).get("status")
-        if validation_status not in {"passed", "warning"}:
-            raise ValueError("Package must pass validation before it can be activated.")
-        if record.get("preview_summary", {}).get("install_impact", {}).get("materialization_mode") == "full_runtime" and not record.get("installed_path"):
-            raise ValueError("Package must be installed before it can be included.")
+        if record.get("compile_status") != "compiled":
+            raise ValueError("Package must be compiled before materialization.")
+        return self.materializer.materialize(package_id, actor=actor)
+
+    def activate(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        record = self._require_record(package_id)
+        if record.get("package_validation_status") not in {"passed", "warning"}:
+            raise ValueError("Package must pass validation before activation.")
+        if record.get("compile_status") != "compiled":
+            raise ValueError("Package must compile successfully before activation.")
+        if record.get("compile_report", {}).get("materialization_mode") != "full_runtime":
+            raise ValueError("Package is previewable only and cannot be activated as a live use case.")
+        if record.get("materialization_status") != "materialized":
+            raise ValueError("Package must materialize successfully before activation.")
+        runtime_definition = record.get("runtime_definition", {})
+        if runtime_definition.get("blocking_errors"):
+            raise ValueError("Package still has compile blockers and cannot activate.")
+
         record["enabled"] = True
-        record["status"] = "included"
-        record["last_action"] = "include"
+        record["activation_status"] = "active"
+        record["status"] = "active"
+        record["last_action"] = "activate"
         record["last_action_at"] = utc_now_iso()
+        self.storage.set_active_pointer(record["slug"], str(record.get("id") or record["package_id"]), record["version"])
         self.storage.upsert_package(record)
         self.storage.record_action(
             package_id=package_id,
             slug=record["slug"],
             version=record["version"],
             actor=actor,
-            action="include",
-            status="included",
-            validation_result=record.get("validation_summary", {}).get("status"),
-            log="Package marked active for portal visibility. Full runtime materialization still depends on package registration mode and future import hooks.",
+            action="activate",
+            status="active",
+            validation_result=record.get("package_validation_status"),
+            log="Package activated after successful compile and materialization.",
         )
         return deepcopy(record)
+
+    def verify_live(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        return self.materializer.verify_live(package_id, actor=actor)
 
     def exclude(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
         record["enabled"] = False
         record["status"] = "excluded"
+        record["activation_status"] = "excluded"
         record["last_action"] = "exclude"
         record["last_action_at"] = utc_now_iso()
+        self.storage.clear_active_pointer(record["slug"])
         self.storage.upsert_package(record)
         self.storage.record_action(
             package_id=package_id,
@@ -121,7 +134,7 @@ class UseCaseTemplateLifecycleService:
             actor=actor,
             action="exclude",
             status="excluded",
-            validation_result=record.get("validation_summary", {}).get("status"),
+            validation_result=record.get("package_validation_status"),
             log="Package marked excluded from active package registry views.",
         )
         return deepcopy(record)
@@ -130,8 +143,10 @@ class UseCaseTemplateLifecycleService:
         record = self._require_record(package_id)
         record["enabled"] = False
         record["status"] = "operationally_removed"
+        record["activation_status"] = "operationally_removed"
         record["last_action"] = "remove-operational"
         record["last_action_at"] = utc_now_iso()
+        self.storage.clear_active_pointer(record["slug"])
         self.storage.upsert_package(record)
         self.storage.record_action(
             package_id=package_id,
@@ -140,7 +155,7 @@ class UseCaseTemplateLifecycleService:
             actor=actor,
             action="remove-operational",
             status="operationally_removed",
-            validation_result=record.get("validation_summary", {}).get("status"),
+            validation_result=record.get("package_validation_status"),
             log="Operational visibility disabled while preserving staged assets, audit history, and installed metadata.",
         )
         return deepcopy(record)
@@ -152,11 +167,13 @@ class UseCaseTemplateLifecycleService:
         record = self._require_record(package_id)
         self.storage.mark_uninstalled(package_id, record["version"])
         record["enabled"] = False
+        record["activation_status"] = "uninstalled"
         record["status"] = "uninstalled"
         record["last_action"] = "uninstall"
         record["last_action_at"] = utc_now_iso()
         record["installed_path"] = ""
         record["preserve_audit"] = preserve_audit
+        self.storage.clear_active_pointer(record["slug"])
         self.storage.upsert_package(record)
         self.storage.record_action(
             package_id=package_id,
@@ -165,9 +182,19 @@ class UseCaseTemplateLifecycleService:
             actor=actor,
             action="uninstall",
             status="uninstalled",
-            validation_result=record.get("validation_summary", {}).get("status"),
+            validation_result=record.get("package_validation_status"),
             log="Package uninstalled from managed package storage. Audit history preserved."
             if preserve_audit
             else "Package uninstalled from managed package storage.",
         )
         return deepcopy(record)
+
+    # Backward-compatible aliases.
+    def install(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        return self.plan_materialization(package_id, actor=actor)
+
+    def apply(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        return self.materialize(package_id, actor=actor)
+
+    def include(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        return self.activate(package_id, actor=actor)

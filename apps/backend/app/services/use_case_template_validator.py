@@ -44,12 +44,23 @@ class UseCaseTemplateValidationService:
         features = self.package_yaml.get("features", {})
         if not isinstance(features, dict):
             return False
-        value = features.get(name)
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, dict):
-            return bool(value.get("enabled", True))
-        return bool(value)
+        alias_map = {
+            "dbt": ["has_dbt"],
+            "backend": ["has_backend_api"],
+            "portal": ["has_portal_workspace"],
+            "dashboards": ["has_superset_dashboard", "has_native_bi_dashboard"],
+            "governance": ["has_governance_views"],
+            "demo_data": ["has_demo_data"],
+        }
+        for candidate in [name, *alias_map.get(name, [])]:
+            value = features.get(candidate)
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, dict):
+                return bool(value.get("enabled", True))
+            if value:
+                return True
+        return False
 
     def _check_exists(self, category: str, relative_path: str, kind: str = "file") -> bool:
         path = self.package_root / relative_path
@@ -301,15 +312,17 @@ class UseCaseTemplateValidationService:
             self._add("dbt", "dbt_optional", "warning", "package features do not declare dbt assets")
             return
 
-        required_files = [
-            "dbt/sources.yml",
-            "dbt/selectors.yml",
-        ]
-        for path in required_files:
-            self._check_exists("dbt", path)
+        sources_exists = (self.package_root / "dbt/sources.yml").is_file() or (self.package_root / "dbt/sources/sources.yml").is_file()
+        selectors_exists = (self.package_root / "dbt/selectors.yml").is_file()
+        self._add("dbt", "dbt_sources", "passed" if sources_exists else "failed", "dbt sources file found" if sources_exists else "dbt sources file missing")
+        self._add("dbt", "dbt_selectors", "passed" if selectors_exists else "failed", "dbt selectors file found" if selectors_exists else "dbt selectors file missing")
 
-        for directory in ("dbt/staging", "dbt/marts", "dbt/dictionary"):
-            self._check_exists("dbt", directory, "directory")
+        staging_exists = (self.package_root / "dbt/staging").is_dir() or (self.package_root / "dbt/models/staging").is_dir()
+        marts_exists = (self.package_root / "dbt/marts").is_dir() or (self.package_root / "dbt/models/marts").is_dir()
+        dictionary_exists = (self.package_root / "dbt/dictionary").is_dir() or (self.package_root / "dbt/models/dictionary").is_dir()
+        self._add("dbt", "dbt_staging_dir", "passed" if staging_exists else "failed", "dbt staging directory found" if staging_exists else "dbt staging directory missing")
+        self._add("dbt", "dbt_marts_dir", "passed" if marts_exists else "failed", "dbt marts directory found" if marts_exists else "dbt marts directory missing")
+        self._add("dbt", "dbt_dictionary_dir", "passed" if dictionary_exists else "failed", "dbt dictionary directory found" if dictionary_exists else "dbt dictionary directory missing")
 
         sql_files = list((self.package_root / "dbt").rglob("*.sql"))
         self._add(
@@ -326,8 +339,11 @@ class UseCaseTemplateValidationService:
             self._add("backend", "backend_optional", "warning", "package features do not declare backend assets")
             return
 
-        self._check_exists("backend", "backend/routes.yaml")
-        self._check_exists("backend", "backend/responses", "directory")
+        route_yaml_exists = (self.package_root / "backend/routes.yaml").is_file()
+        route_spec_exists = any((self.package_root / "backend/routes").glob("*.router.spec.yaml")) if (self.package_root / "backend/routes").exists() else False
+        self._add("backend", "backend_routes_spec", "passed" if route_yaml_exists or route_spec_exists else "failed", "backend route spec found" if route_yaml_exists or route_spec_exists else "backend route spec missing")
+        responses_exists = (self.package_root / "backend/responses").is_dir() or (self.package_root / "backend/schemas").is_dir()
+        self._add("backend", "backend_response_specs", "passed" if responses_exists else "failed", "backend response/schema directory found" if responses_exists else "backend response/schema directory missing")
         self._check_exists("backend", "backend/queries", "directory")
 
         query_files = list((self.package_root / "backend/queries").glob("*.sql"))
@@ -349,9 +365,10 @@ class UseCaseTemplateValidationService:
             "portal/routes.yaml",
             "portal/navigation.yaml",
             "portal/workspace.yaml",
-            "portal/empty-state.yaml",
         ):
             self._check_exists("portal", path)
+        empty_state_found = (self.package_root / "portal/empty-state.yaml").is_file() or (self.package_root / "portal/components/empty-states.yaml").is_file()
+        self._add("portal", "portal_empty_state", "passed" if empty_state_found else "failed", "Portal empty-state spec found" if empty_state_found else "Portal empty-state spec missing")
         self._check_exists("portal", "portal/pages", "directory")
 
     def _validate_dashboards(self) -> None:
@@ -359,12 +376,15 @@ class UseCaseTemplateValidationService:
             self._add("dashboards", "dashboards_optional", "warning", "package features do not declare dashboard assets")
             return
 
-        self._check_exists("dashboards", "dashboards/dashboards.yaml")
+        dashboard_manifest_exists = (self.package_root / "dashboards/dashboards.yaml").is_file() or any((self.package_root / "dashboards").glob("*.dashboard.yaml"))
+        self._add("dashboards", "dashboard_manifest", "passed" if dashboard_manifest_exists else "failed", "Dashboard manifest found" if dashboard_manifest_exists else "Dashboard manifest missing")
         self._check_exists("dashboards", "dashboards/charts", "directory")
-        self._check_exists("dashboards", "dashboards/sql", "directory")
+        sql_dir_exists = (self.package_root / "dashboards/sql").is_dir()
+        chart_sql_exists = any((self.package_root / "dashboards/charts").glob("*.sql")) if (self.package_root / "dashboards/charts").exists() else False
+        self._add("dashboards", "dashboard_sql_dir", "passed" if sql_dir_exists or chart_sql_exists else "failed", "Dashboard SQL assets found" if sql_dir_exists or chart_sql_exists else "Dashboard SQL assets missing")
 
         chart_specs = list((self.package_root / "dashboards/charts").glob("*.y*ml"))
-        chart_sql_files = list((self.package_root / "dashboards/sql").glob("*.sql"))
+        chart_sql_files = list((self.package_root / "dashboards/sql").glob("*.sql")) + list((self.package_root / "dashboards/charts").glob("*.sql"))
         self._add(
             "dashboards",
             "dashboard_chart_specs",
@@ -385,15 +405,17 @@ class UseCaseTemplateValidationService:
             self._add("governance", "governance_optional", "warning", "package features do not declare governance assets")
             return
 
-        for path in (
-            "governance/ownership.yaml",
-            "governance/freshness_sla.yaml",
-            "governance/dq_rules.yaml",
-            "governance/lineage.yaml",
-            "governance/evidence_pack.yaml",
-            "governance/classification.yaml",
-        ):
-            self._check_exists("governance", path)
+        governance_candidates = [
+            ("governance/ownership.yaml", "governance/usecase-governance.yaml"),
+            ("governance/freshness_sla.yaml", "governance/usecase-governance.yaml"),
+            ("governance/dq_rules.yaml", "governance/quality-rules.yaml"),
+            ("governance/lineage.yaml", "governance/lineage.yaml"),
+            ("governance/evidence_pack.yaml", "governance/evidence-pack.yaml"),
+            ("governance/classification.yaml", "governance/classification.yaml"),
+        ]
+        for primary, alternate in governance_candidates:
+            exists = (self.package_root / primary).is_file() or (self.package_root / alternate).is_file()
+            self._add("governance", primary.replace("/", "_"), "passed" if exists else "failed", f"{primary if (self.package_root / primary).is_file() else alternate} {'found' if exists else 'missing'}")
 
     def _validate_lifecycle(self) -> None:
         for path in (
@@ -409,6 +431,8 @@ class UseCaseTemplateValidationService:
 
     def _validate_checksums(self) -> None:
         checksum_path = self.package_root / "checksums/manifest.sha256"
+        if not checksum_path.is_file():
+            checksum_path = self.package_root / "checksums/manifest.sha256.txt"
         if not checksum_path.is_file():
             self._add("checksums", "checksum_manifest_present", "warning", "checksums/manifest.sha256 not present")
             return
@@ -475,4 +499,3 @@ class UseCaseTemplateValidationService:
             "blocking_errors": self.blocking_errors,
             "warnings": self.warnings,
         }
-

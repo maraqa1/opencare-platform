@@ -54,12 +54,13 @@ class UseCaseTemplateStorage:
 
     def load_registry(self) -> dict[str, Any]:
         if not self.registry_path.exists():
-            return {"packages": {}}
+            return {"packages": {}, "active_versions": {}}
         with self.registry_path.open("r", encoding="utf-8") as handle:
             payload = yaml.safe_load(handle) or {}
         if not isinstance(payload, dict):
-            return {"packages": {}}
+            return {"packages": {}, "active_versions": {}}
         payload.setdefault("packages", {})
+        payload.setdefault("active_versions", {})
         return payload
 
     def save_registry(self, payload: dict[str, Any]) -> None:
@@ -93,8 +94,69 @@ class UseCaseTemplateStorage:
         matches.sort(key=lambda candidate: str(candidate.get("uploaded_at", "")), reverse=True)
         return deepcopy(matches[0])
 
+    def get_active_pointer(self, slug: str) -> dict[str, Any] | None:
+        registry = self.load_registry()
+        pointers = registry.get("active_versions", {})
+        if not isinstance(pointers, dict):
+            return None
+        pointer = pointers.get(slug)
+        return deepcopy(pointer) if isinstance(pointer, dict) else None
+
+    def set_active_pointer(self, slug: str, package_key: str, version: str) -> None:
+        registry = self.load_registry()
+        pointers = registry.setdefault("active_versions", {})
+        pointers[slug] = {
+            "package_key": package_key,
+            "version": version,
+            "updated_at": utc_now_iso(),
+        }
+        self.save_registry(registry)
+
+    def clear_active_pointer(self, slug: str) -> None:
+        registry = self.load_registry()
+        pointers = registry.get("active_versions", {})
+        if isinstance(pointers, dict) and slug in pointers:
+            pointers.pop(slug, None)
+            self.save_registry(registry)
+
+    def get_active_package_by_slug(self, slug: str) -> dict[str, Any] | None:
+        pointer = self.get_active_pointer(slug)
+        if pointer:
+            package_key = pointer.get("package_key")
+            if isinstance(package_key, str):
+                registry = self.load_registry()
+                packages = registry.get("packages", {})
+                record = packages.get(package_key) if isinstance(packages, dict) else None
+                if isinstance(record, dict):
+                    return deepcopy(record)
+
+        candidates = [
+            record
+            for record in self.list_packages()
+            if record.get("slug") == slug and record.get("activation_status") in {"active", "live_verified"}
+        ]
+        candidates.sort(key=lambda candidate: str(candidate.get("last_action_at", "")), reverse=True)
+        return deepcopy(candidates[0]) if candidates else None
+
+    def list_materialized_packages(self) -> list[dict[str, Any]]:
+        return [
+            record
+            for record in self.list_packages()
+            if record.get("materialization_status") == "materialized"
+        ]
+
     def upsert_package(self, record: dict[str, Any]) -> dict[str, Any]:
         package_key = str(record.get("id") or record["package_id"])
+        record.setdefault("package_validation_status", record.get("validation_summary", {}).get("status", "uploaded"))
+        record.setdefault("compile_status", "uploaded")
+        record.setdefault("materialization_status", "staged")
+        record.setdefault("activation_status", "staged")
+        record.setdefault("live_verification_status", "staged")
+        record.setdefault("runtime_definition", {})
+        record.setdefault("compile_report", {})
+        record.setdefault("materialization_report", {})
+        record.setdefault("live_verification_report", {})
+        record.setdefault("last_error", record.get("error_message", ""))
         registry = self.load_registry()
         packages = registry.setdefault("packages", {})
         packages[package_key] = deepcopy(record)
@@ -146,6 +208,8 @@ class UseCaseTemplateStorage:
             "validation_result": validation_result,
             "error_message": error_message,
             "log": log or "",
+            "previous_state": None,
+            "new_state": None,
         }
 
         log_dir = self.log_dir(package_id, version)
@@ -156,14 +220,35 @@ class UseCaseTemplateStorage:
 
         record = self.get_package(package_id)
         if record is not None:
+            previous_state = {
+                "status": record.get("status"),
+                "package_validation_status": record.get("package_validation_status"),
+                "compile_status": record.get("compile_status"),
+                "materialization_status": record.get("materialization_status"),
+                "activation_status": record.get("activation_status"),
+                "live_verification_status": record.get("live_verification_status"),
+                "enabled": record.get("enabled"),
+            }
             actions = record.setdefault("actions", [])
             if isinstance(actions, list):
-                actions.append(event)
+                event["previous_state"] = previous_state
             record["last_action"] = action
             record["last_action_at"] = event["timestamp"]
             record["status"] = status
             if error_message:
                 record["error_message"] = error_message
+                record["last_error"] = error_message
+            event["new_state"] = {
+                "status": record.get("status"),
+                "package_validation_status": record.get("package_validation_status"),
+                "compile_status": record.get("compile_status"),
+                "materialization_status": record.get("materialization_status"),
+                "activation_status": record.get("activation_status"),
+                "live_verification_status": record.get("live_verification_status"),
+                "enabled": record.get("enabled"),
+            }
+            if isinstance(actions, list):
+                actions.append(event)
             self.upsert_package(record)
 
         return event
