@@ -31,6 +31,7 @@ class UseCaseRuntimeResolver:
             "activation_status": record.get("activation_status"),
             "live_verification_status": record.get("live_verification_status"),
         }
+        runtime_definition["smoke_tests"] = deepcopy(record.get("runtime_definition", {}).get("smoke_tests", {}))
         return runtime_definition
 
     def resolve_endpoint(

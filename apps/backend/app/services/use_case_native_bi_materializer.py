@@ -31,6 +31,18 @@ class UseCaseNativeBIMaterializer:
                 for tab in runtime_definition.get("tabs", [])
                 if isinstance(tab, dict) and isinstance(tab.get("components"), list)
             ),
+            "smoke_tests": {
+                "route_checks": len(runtime_definition.get("smoke_tests", {}).get("route_checks", []))
+                if isinstance(runtime_definition.get("smoke_tests"), dict)
+                else 0,
+                "endpoint_checks": len(runtime_definition.get("smoke_tests", {}).get("endpoint_checks", []))
+                if isinstance(runtime_definition.get("smoke_tests"), dict)
+                else 0,
+                "component_render_checks": len(runtime_definition.get("smoke_tests", {}).get("component_render_checks", []))
+                if isinstance(runtime_definition.get("smoke_tests"), dict)
+                else 0,
+            },
+            "renderer_capabilities": runtime_definition.get("rendering", {}).get("required_runtime_capabilities", {}),
         }
         record["materialization_status"] = "materialization_planned"
         record["materialization_report"] = {
@@ -92,6 +104,7 @@ class UseCaseNativeBIMaterializer:
             "components": list(runtime_definition.get("components", {}).keys()),
             "endpoint_bindings": runtime_definition.get("backend_endpoint_bindings", {}).get("endpoints", []),
             "governance_bindings": list(runtime_definition.get("governance_bindings", {}).keys()),
+            "smoke_tests": runtime_definition.get("smoke_tests", {}),
         }
         record["materialization_status"] = "materialized"
         record["activation_status"] = "activation_ready"
@@ -136,6 +149,21 @@ class UseCaseNativeBIMaterializer:
             "endpoint_bindings_resolved": bool(endpoints),
             "phi_rules_present": bool(phi_rules),
             "governance_links_present": bool(governance),
+            "route_smoke_tests_declared": bool(runtime_definition.get("smoke_tests", {}).get("route_checks", []))
+            if isinstance(runtime_definition.get("smoke_tests"), dict)
+            else False,
+            "endpoint_smoke_tests_declared": bool(runtime_definition.get("smoke_tests", {}).get("endpoint_checks", []))
+            if isinstance(runtime_definition.get("smoke_tests"), dict)
+            else False,
+            "component_render_checks_declared": bool(runtime_definition.get("smoke_tests", {}).get("component_render_checks", []))
+            if isinstance(runtime_definition.get("smoke_tests"), dict)
+            else False,
+            "phi_masking_checks_declared": bool(runtime_definition.get("smoke_tests", {}).get("phi_masking_checks", []))
+            if isinstance(runtime_definition.get("smoke_tests"), dict)
+            else False,
+            "governance_link_checks_declared": bool(runtime_definition.get("smoke_tests", {}).get("governance_link_checks", []))
+            if isinstance(runtime_definition.get("smoke_tests"), dict)
+            else False,
             "empty_state_renderable": True,
             "populated_state_proven": False,
         }

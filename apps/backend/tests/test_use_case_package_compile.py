@@ -54,3 +54,151 @@ class UseCasePackageCompilerTests(unittest.TestCase):
             report = UseCasePackageCompiler(root).compile()
             registry = report["runtime_definition"]["component_registry"]
             self.assertIn("readmission_card", registry)
+
+    def test_v16_native_bi_contracts_are_primary_compile_input(self):
+        with tempfile.TemporaryDirectory(prefix="compiler-") as temp_dir:
+            root = Path(temp_dir) / "pkg"
+            build_valid_package_tree(root, slug="patient-outcomes")
+            (root / "native-bi").mkdir(parents=True, exist_ok=True)
+            (root / "tests").mkdir(parents=True, exist_ok=True)
+            package_yaml = root / "package.yaml"
+            package_yaml.write_text(
+                package_yaml.read_text(encoding="utf-8") + "\npackage_standard: '1.6'\n",
+                encoding="utf-8",
+            )
+            (root / "native-bi/components.yaml").write_text(
+                "\n".join(
+                    [
+                        "schema_version: '1.6'",
+                        "kind: NativeBIComponents",
+                        "components:",
+                        "  - id: kpi_readmission",
+                        "    type: kpi_card",
+                        "    data_binding:",
+                        "      ref: patient_outcomes_overview",
+                        "    display_contract:",
+                        "      title: 30-Day Readmission Rate",
+                        "      subtitle: Headline metric",
+                        "      format: percentage",
+                        "      empty_message: No data.",
+                        "    layout_contract:",
+                        "      zone: summary",
+                        "      section: summary",
+                        "      order: 1",
+                        "    materialization_profile:",
+                        "      renderer: opencare_native_bi",
+                        "      mandatory: true",
+                        "      blocks_activation: true",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "native-bi/data-bindings.yaml").write_text(
+                "\n".join(
+                    [
+                        "schema_version: '1.6'",
+                        "kind: NativeBIDataBindings",
+                        "bindings:",
+                        "  - id: patient_outcomes_overview",
+                        "    type: backend_api",
+                        "    endpoint: /api/v1/use-cases/patient-outcomes/overview",
+                        "    method: GET",
+                        "    expected_fields:",
+                        "      - readmission_30d_rate",
+                        "    filters:",
+                        "      accepts:",
+                        "        - date_range",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "native-bi/layout.yaml").write_text(
+                "\n".join(
+                    [
+                        "schema_version: '1.6'",
+                        "kind: NativeBIPageLayouts",
+                        "pages:",
+                        "  - id: overview",
+                        "    route: /use-cases/patient-outcomes",
+                        "    title: Patient Outcomes Overview",
+                        "    layout:",
+                        "      sections:",
+                        "        - id: summary",
+                        "          zone: summary",
+                        "          title: Summary",
+                        "          components:",
+                        "            - component_id: kpi_readmission",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "native-bi/materialization-profile.yaml").write_text(
+                "\n".join(
+                    [
+                        "schema_version: '1.6'",
+                        "kind: NativeBIMaterializationProfile",
+                        "package_materialization:",
+                        "  renderer: opencare_native_bi",
+                        "  materialization_mode: strict",
+                        "required_runtime_capabilities:",
+                        "  components:",
+                        "    - kpi_card",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "native-bi/governance-bindings.yaml").write_text(
+                "\n".join(
+                    [
+                        "schema_version: '1.6'",
+                        "kind: NativeBIGovernanceBindings",
+                        "component_governance_bindings:",
+                        "  - component_id: kpi_readmission",
+                        "    governance_contract:",
+                        "      classification: confidential",
+                        "      phi_mode: aggregate_only",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "native-bi/interactions.yaml").write_text(
+                "\n".join(
+                    [
+                        "schema_version: '1.6'",
+                        "kind: NativeBIInteractions",
+                        "interactions:",
+                        "  - id: metric_drilldown",
+                        "    component_ids:",
+                        "      - kpi_readmission",
+                        "    click_behavior: drilldown",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (root / "tests/smoke-tests.yaml").write_text(
+                "\n".join(
+                    [
+                        "schema_version: '1.6'",
+                        "kind: UseCaseSmokeTests",
+                        "route_checks:",
+                        "  - id: overview_route",
+                        "    route: /use-cases/patient-outcomes",
+                        "endpoint_checks:",
+                        "  - id: overview_endpoint",
+                        "    endpoint: /api/v1/use-cases/patient-outcomes/overview",
+                        "component_render_checks:",
+                        "  - id: overview_component",
+                        "    page: overview",
+                        "    component_id: kpi_readmission",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            report = UseCasePackageCompiler(root).compile()
+            self.assertEqual(report["status"], "compiled")
+            runtime_definition = report["runtime_definition"]
+            self.assertEqual(runtime_definition["tabs"][0]["id"], "overview")
+            self.assertEqual(runtime_definition["tabs"][0]["component_specs"][0]["display_contract"]["title"], "30-Day Readmission Rate")
+            self.assertEqual(runtime_definition["rendering"]["component_library"], "opencare_native_bi")
+            self.assertEqual(len(runtime_definition["smoke_tests"]["component_render_checks"]), 1)
