@@ -52,13 +52,30 @@ class UseCaseTemplateStorage:
     def original_zip_path(self, package_id: str, version: str) -> Path:
         return self.upload_dir(package_id, version) / "original.zip"
 
+    @staticmethod
+    def _empty_registry() -> dict[str, Any]:
+        return {"packages": {}, "active_versions": {}}
+
+    def _backup_corrupt_registry(self) -> Path | None:
+        if not self.registry_path.exists():
+            return None
+        timestamp = utc_now_iso().replace(":", "-")
+        backup_path = self.registry_path.with_name(f"{self.registry_path.name}.corrupt.{timestamp}.bak")
+        shutil.copy2(self.registry_path, backup_path)
+        return backup_path
+
     def load_registry(self) -> dict[str, Any]:
         if not self.registry_path.exists():
-            return {"packages": {}, "active_versions": {}}
-        with self.registry_path.open("r", encoding="utf-8") as handle:
-            payload = yaml.safe_load(handle) or {}
+            return self._empty_registry()
+        try:
+            with self.registry_path.open("r", encoding="utf-8") as handle:
+                payload = yaml.safe_load(handle) or {}
+        except yaml.YAMLError:
+            self._backup_corrupt_registry()
+            payload = self._empty_registry()
+            self.save_registry(payload)
         if not isinstance(payload, dict):
-            return {"packages": {}, "active_versions": {}}
+            return self._empty_registry()
         payload.setdefault("packages", {})
         payload.setdefault("active_versions", {})
         return payload
