@@ -17,6 +17,55 @@ type RouteContext = {
   }>;
 };
 
+type ComponentSpec = {
+  id?: string;
+  aliases?: string[];
+  contains?: string[];
+  component_type?: string;
+  source_endpoint?: string;
+  endpoint?: string;
+  purpose?: string;
+  empty_state?: string;
+  phi_visibility_rule?: string;
+  validation_expectation?: string;
+  source_file?: string;
+  section?: string;
+  expected_fields?: string[];
+  filter_dependencies?: string[];
+  display_contract?: {
+    title?: string;
+    subtitle?: string;
+    format?: string;
+    unit?: string;
+    empty_message?: string;
+    value_field?: string;
+    precision?: number;
+  };
+  layout_contract?: {
+    zone?: string;
+    section?: string;
+    order?: number;
+  };
+  interaction_contract?: {
+    click_behavior?: string;
+    row_click_behavior?: string;
+    navigation_targets?: string[];
+  };
+  governance_contract?: {
+    classification?: string;
+    phi_mode?: string;
+    evidence_target?: string;
+  };
+  materialization_profile?: {
+    renderer?: string;
+    mandatory?: boolean;
+    blocks_activation?: boolean;
+  };
+  data_binding_resolved?: {
+    data_path?: string;
+  };
+};
+
 type WorkspaceDefinition = {
   identity?: {
     name?: string;
@@ -30,57 +79,8 @@ type WorkspaceDefinition = {
     label?: string;
     route?: string;
     components?: string[];
-    component_specs?: Array<{
-      id?: string;
-      component_type?: string;
-      source_endpoint?: string;
-      endpoint?: string;
-      purpose?: string;
-      empty_state?: string;
-      phi_visibility_rule?: string;
-      validation_expectation?: string;
-      source_file?: string;
-      section?: string;
-      expected_fields?: string[];
-      filter_dependencies?: string[];
-      display_contract?: {
-        title?: string;
-        subtitle?: string;
-        format?: string;
-        unit?: string;
-        empty_message?: string;
-        value_field?: string;
-        precision?: number;
-      };
-      layout_contract?: {
-        zone?: string;
-        section?: string;
-        order?: number;
-      };
-      interaction_contract?: {
-        click_behavior?: string;
-        row_click_behavior?: string;
-      };
-      governance_contract?: {
-        classification?: string;
-        phi_mode?: string;
-        evidence_target?: string;
-      };
-      materialization_profile?: {
-        renderer?: string;
-        mandatory?: boolean;
-        blocks_activation?: boolean;
-      };
-      data_binding_resolved?: {
-        data_path?: string;
-      };
-    }>;
+    component_specs?: ComponentSpec[];
   }>;
-  backend_endpoint_bindings?: {
-    endpoints?: Array<{
-      path?: string;
-    }>;
-  };
   state?: {
     materialization_status?: string;
     activation_status?: string;
@@ -115,26 +115,20 @@ type EndpointPayload = {
     as_of?: string;
     materialization_status?: string;
     filters_applied?: Record<string, string>;
+    data_freshness?: {
+      sla_status?: string;
+      last_loaded_at?: string;
+      max_expected_age_hours?: number;
+    } | null;
   };
   warnings?: string[];
   errors?: string[];
 };
 
-function tabEndpoint(tabId: string) {
-  switch (tabId) {
-    case "overview":
-      return "overview";
-    case "executive":
-    case "operational":
-      return "kpis";
-    case "governance":
-      return "governance";
-    case "drilldown":
-      return "drilldown";
-    default:
-      return "overview";
-  }
-}
+type ChartPoint = {
+  label: string;
+  value: number;
+};
 
 function tabLabel(tabId: string) {
   return tabId.replaceAll("-", " ").replace(/\b\w/g, (match) => match.toUpperCase());
@@ -150,11 +144,15 @@ function previewValue(value: unknown) {
   return String(value);
 }
 
-function specEndpoint(spec: {
-  source_endpoint?: string;
-  endpoint?: string;
-}) {
-  return spec.source_endpoint ?? spec.endpoint ?? "n/a";
+function specEndpoint(spec: ComponentSpec) {
+  return spec.source_endpoint ?? spec.endpoint ?? "";
+}
+
+function normalizeEndpoint(path: string | undefined) {
+  if (!path || path === "n/a") {
+    return "";
+  }
+  return path.startsWith("/api/") ? path : "";
 }
 
 function firstDataRecord(data: EndpointPayload["data"]): Record<string, unknown> {
@@ -166,6 +164,14 @@ function firstDataRecord(data: EndpointPayload["data"]): Record<string, unknown>
     return data as Record<string, unknown>;
   }
   return {};
+}
+
+function dataRows(data: EndpointPayload["data"]): Record<string, unknown>[] {
+  if (Array.isArray(data)) {
+    return data.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === "object" && !Array.isArray(row));
+  }
+  const record = firstDataRecord(data);
+  return Object.keys(record).length > 0 ? [record] : [];
 }
 
 function lookupPath(source: unknown, path: string | undefined): unknown {
@@ -184,7 +190,12 @@ function lookupPath(source: unknown, path: string | undefined): unknown {
   }, source);
 }
 
-function formatMetricValue(value: unknown, format: string | undefined, precision: number | undefined, unit: string | undefined): string {
+function formatMetricValue(
+  value: unknown,
+  format: string | undefined,
+  precision: number | undefined,
+  unit: string | undefined,
+): string {
   if (value === null || value === undefined || value === "") {
     return "No data";
   }
@@ -218,19 +229,112 @@ function metricTone(componentId: string | undefined): "critical" | "warning" | "
   return "neutral";
 }
 
-function componentTitle(spec: {
-  id?: string;
-  display_contract?: { title?: string };
-}) {
+function componentTitle(spec: ComponentSpec) {
   return spec.display_contract?.title ?? spec.id ?? "Unnamed component";
 }
 
-function componentSubtitle(spec: {
-  purpose?: string;
-  validation_expectation?: string;
-  display_contract?: { subtitle?: string };
-}) {
+function componentSubtitle(spec: ComponentSpec) {
   return spec.display_contract?.subtitle ?? spec.purpose ?? spec.validation_expectation ?? "Materialized from uploaded package specs.";
+}
+
+function niceLabel(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function componentPayload(spec: ComponentSpec, payloadByEndpoint: Record<string, EndpointPayload>) {
+  return payloadByEndpoint[normalizeEndpoint(specEndpoint(spec))] ?? {
+    data: [],
+    meta: { empty: true },
+    warnings: [],
+    errors: [],
+  };
+}
+
+function componentValue(spec: ComponentSpec, payloadByEndpoint: Record<string, EndpointPayload>) {
+  const payload = componentPayload(spec, payloadByEndpoint);
+  const source = payload.data;
+  const record = firstDataRecord(source);
+  const bindingValue = lookupPath(
+    source,
+    spec.data_binding_resolved?.data_path ?? spec.display_contract?.value_field,
+  );
+  const directValue = spec.display_contract?.value_field ? record[spec.display_contract.value_field] : undefined;
+  const expectedFieldValue = spec.expected_fields?.length ? record[spec.expected_fields[0]] : undefined;
+  return bindingValue ?? directValue ?? expectedFieldValue;
+}
+
+function chartSeries(spec: ComponentSpec, payloadByEndpoint: Record<string, EndpointPayload>): ChartPoint[] {
+  const rows = dataRows(componentPayload(spec, payloadByEndpoint).data);
+  if (!rows.length) {
+    return [];
+  }
+  const preferredFields = spec.expected_fields ?? [];
+  const lowerId = (spec.id ?? "").toLowerCase();
+  const explicitLabelField =
+    (lowerId.includes("consultant") && "consultant_id") ||
+    (lowerId.includes("procedure") && "procedure_group") ||
+    (lowerId.includes("payer") && "payer_id") ||
+    (lowerId.includes("risk") && "risk_band") ||
+    (lowerId.includes("trend") && "admission_month") ||
+    "";
+  const labelField =
+    explicitLabelField ||
+    preferredFields.find((field) => /month|date|consultant|procedure|payer|band/i.test(field)) ??
+    Object.keys(rows[0]).find((field) => typeof rows[0][field] === "string") ??
+    Object.keys(rows[0])[0];
+  const valueField =
+    preferredFields.find((field) => field !== labelField && typeof rows[0][field] === "number") ??
+    Object.keys(rows[0]).find((field) => field !== labelField && typeof rows[0][field] === "number") ??
+    "";
+  if (!labelField || !valueField) {
+    return [];
+  }
+  return rows
+    .map((row) => ({
+      label: String(row[labelField] ?? "n/a"),
+      value: typeof row[valueField] === "number" ? Number(row[valueField]) : Number.NaN,
+    }))
+    .filter((point) => Number.isFinite(point.value));
+}
+
+function chartSvgPoints(series: ChartPoint[]) {
+  if (!series.length) {
+    return "";
+  }
+  const max = Math.max(...series.map((point) => point.value), 1);
+  return series
+    .map((point, index) => {
+      const x = series.length === 1 ? 50 : (index / (series.length - 1)) * 100;
+      const y = 84 - (point.value / max) * 68;
+      return `${x},${y}`;
+    })
+    .join(" ");
+}
+
+function tableFields(spec: ComponentSpec, payloadByEndpoint: Record<string, EndpointPayload>) {
+  const rows = dataRows(componentPayload(spec, payloadByEndpoint).data);
+  if (!rows.length) {
+    return spec.expected_fields?.slice(0, 5) ?? [];
+  }
+  return (spec.expected_fields?.length ? spec.expected_fields : Object.keys(rows[0])).slice(0, 5);
+}
+
+function governanceBadgeValue(spec: ComponentSpec, payloadByEndpoint: Record<string, EndpointPayload>) {
+  if (spec.component_type === "link_group") {
+    const targets = spec.interaction_contract?.navigation_targets ?? [];
+    return targets.length > 0 ? `${targets.length} evidence links` : "Evidence links ready";
+  }
+  const value = componentValue(spec, payloadByEndpoint);
+  if (typeof value === "boolean") {
+    return value ? "Required" : "Not required";
+  }
+  if (Array.isArray(value)) {
+    return value.join(", ");
+  }
+  return value ? String(value) : "Pending";
 }
 
 export default async function MaterializedUseCaseWorkspacePage({ params }: RouteContext) {
@@ -257,19 +361,37 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
     href: item.id === "overview" ? `/use-cases/${slug}` : `/use-cases/${slug}/${item.id}`,
   }));
   const selectedTab = workspace.tabs?.find((item) => item.id === activeTab) ?? workspace.tabs?.[0];
-  const dataResponse = await getApiJson<EndpointPayload>({
-    path: `/api/v1/use-cases/${slug}/${tabEndpoint(selectedTab?.id ?? "overview")}`,
-    fallback: { data: [], meta: { empty: true }, warnings: [], errors: [] },
-    cacheMode: "no-store",
-  });
   const resolvedComponents = selectedTab?.component_specs ?? [];
-  const kpiComponents = resolvedComponents.filter((component) => component.component_type === "kpi_card");
-  const groupComponents = resolvedComponents.filter((component) => component.component_type === "kpi_card_group");
+
+  const endpointPaths = Array.from(
+    new Set(
+      resolvedComponents
+        .map((component) => normalizeEndpoint(specEndpoint(component)))
+        .filter(Boolean),
+    ),
+  );
+
+  const endpointResponses = await Promise.all(
+    endpointPaths.map(async (path) => {
+      const payload = await getApiJson<EndpointPayload>({
+        path,
+        fallback: { data: [], meta: { empty: true }, warnings: [], errors: [] },
+        cacheMode: "no-store",
+      });
+      return [path, payload] as const;
+    }),
+  );
+  const payloadByEndpoint = Object.fromEntries(endpointResponses);
+  const primaryPayload = endpointPaths.length > 0 ? payloadByEndpoint[endpointPaths[0]] : { data: [], meta: { empty: true } };
+
   const trustStrip = resolvedComponents.find((component) => component.component_type === "trust_strip");
+  const groupComponents = resolvedComponents.filter((component) => component.component_type === "kpi_card_group");
+  const kpiComponents = resolvedComponents.filter((component) => component.component_type === "kpi_card");
   const chartComponents = resolvedComponents.filter((component) => component.component_type?.includes("chart"));
-  const tableComponents = resolvedComponents.filter((component) => component.component_type?.includes("table") || component.component_type === "queue_table");
-  const governanceComponents = resolvedComponents.filter((component) => component.component_type === "governance_badge" || component.component_type === "link_group");
-  const endpointRecord = firstDataRecord(dataResponse.data);
+  const tableComponents = resolvedComponents.filter((component) => component.component_type?.includes("table"));
+  const governanceComponents = resolvedComponents.filter(
+    (component) => component.component_type === "governance_badge" || component.component_type === "link_group",
+  );
 
   return (
     <PageFrame
@@ -288,7 +410,7 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
           <p className="eyebrow">{selectedTab?.label ?? tabLabel(activeTab)}</p>
           <h3 className="section-heading">Native BI workspace</h3>
           <p className="section-subtitle">
-            This page is rendered from the materialized runtime definition rather than a hand-coded workspace.
+            Materialized from the uploaded package contract with component-level runtime feeds and PHI-aware rendering rules.
           </p>
           <div className="use-case-outcome-list">
             {resolvedComponents.map((component) => (
@@ -315,7 +437,7 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
             </div>
             <div>
               <dt>As of</dt>
-              <dd>{dataResponse.meta?.as_of ?? "n/a"}</dd>
+              <dd>{primaryPayload.meta?.as_of ?? "n/a"}</dd>
             </div>
           </dl>
         </article>
@@ -329,33 +451,42 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
                 <p className="section-subtitle">{componentSubtitle(trustStrip)}</p>
               </div>
               <div className="summary-badges">
-                <span className="summary-badge normal">{workspace.state?.materialization_status ?? "unknown"}</span>
+                <span className="summary-badge normal">
+                  {governanceBadgeValue(trustStrip, payloadByEndpoint)}
+                </span>
                 <span className="summary-badge warning">{workspace.state?.live_verification_status ?? "unknown"}</span>
+              </div>
+            </div>
+            <div className="native-bi-trust-grid">
+              <div>
+                <span className="eyebrow">Classification</span>
+                <strong>{String(firstDataRecord(componentPayload(trustStrip, payloadByEndpoint).data).highest_classification ?? "restricted")}</strong>
+              </div>
+              <div>
+                <span className="eyebrow">Audit</span>
+                <strong>{String(firstDataRecord(componentPayload(trustStrip, payloadByEndpoint).data).patient_level_audit_required ?? true)}</strong>
+              </div>
+              <div>
+                <span className="eyebrow">Lineage</span>
+                <strong>{String(firstDataRecord(componentPayload(trustStrip, payloadByEndpoint).data).lineage_expected_path ?? "declared")}</strong>
               </div>
             </div>
           </article>
         ) : null}
 
-        {(kpiComponents.length > 0 || groupComponents.length > 0) ? (
+        {kpiComponents.length > 0 ? (
           <article className="panel span-12">
             <p className="eyebrow">Headline metrics</p>
             <h3 className="section-heading">Dashboard KPI cards</h3>
             <div className="kpi-cards native-bi-kpi-grid">
               {kpiComponents.map((component) => {
-                const bindingValue = lookupPath(
-                  endpointRecord,
-                  component.data_binding_resolved?.data_path ?? component.display_contract?.value_field,
-                );
-                const fallbackValueField = component.display_contract?.value_field;
-                const directValue = fallbackValueField ? endpointRecord[fallbackValueField] : undefined;
-                const expectedFieldValue =
-                  !bindingValue && component.expected_fields?.length ? endpointRecord[component.expected_fields[0]] : undefined;
-                const value = bindingValue ?? directValue ?? expectedFieldValue;
+                const payload = componentPayload(component, payloadByEndpoint);
+                const value = componentValue(component, payloadByEndpoint);
                 return (
                   <article className={`kpi-card kpi-card-${metricTone(component.id)}`} key={component.id ?? "kpi"}>
                     <span className="kpi-card-label">{component.display_contract?.format ?? "kpi"}</span>
                     <span className="kpi-card-value">
-                      {dataResponse.meta?.empty
+                      {payload.meta?.empty
                         ? component.display_contract?.empty_message ?? "No data"
                         : formatMetricValue(
                             value,
@@ -366,8 +497,34 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
                     </span>
                     <span className="kpi-card-subtitle">
                       {component.display_contract?.title ?? component.id}
-                      {component.display_contract?.subtitle ? ` · ${component.display_contract.subtitle}` : ""}
+                      {component.display_contract?.subtitle ? ` / ${component.display_contract.subtitle}` : ""}
                     </span>
+                  </article>
+                );
+              })}
+            </div>
+          </article>
+        ) : null}
+
+        {groupComponents.length > 0 ? (
+          <article className="panel span-12">
+            <p className="eyebrow">Executive summary</p>
+            <h3 className="section-heading">KPI group overview</h3>
+            <div className="grid">
+              {groupComponents.map((component) => {
+                const record = firstDataRecord(componentPayload(component, payloadByEndpoint).data);
+                const metricEntries = Object.entries(record).filter(([, value]) => typeof value === "number").slice(0, 6);
+                return (
+                  <article className="panel span-12 native-bi-governance-card" key={component.id ?? "kpi-group"}>
+                    <h4 className="section-heading">{componentTitle(component)}</h4>
+                    <p className="section-subtitle">{componentSubtitle(component)}</p>
+                    <div className="use-case-outcome-list">
+                      {metricEntries.map(([field, value]) => (
+                        <span key={`${component.id ?? "group"}-${field}`}>
+                          {niceLabel(field)}: {formatMetricValue(value, field.includes("rate") ? "percentage" : field.includes("stay") ? "duration_days" : "integer", field.includes("episode") ? 0 : 1, field.includes("stay") ? "days" : field.includes("rate") ? "%" : "")}
+                        </span>
+                      ))}
+                    </div>
                   </article>
                 );
               })}
@@ -380,26 +537,44 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
             <p className="eyebrow">Charts</p>
             <h3 className="section-heading">Trend and variation widgets</h3>
             <div className="grid">
-              {chartComponents.map((component) => (
-                <article className="panel span-6 native-bi-widget" key={component.id ?? "chart"}>
-                  <p className="eyebrow">{component.component_type ?? "chart"}</p>
-                  <h4 className="section-heading">{componentTitle(component)}</h4>
-                  <p className="section-subtitle">{componentSubtitle(component)}</p>
-                  <div className="native-bi-widget-shell">
-                    <div className="native-bi-chart-placeholder">
-                      <span />
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                    <p className="section-subtitle">
-                      {dataResponse.meta?.empty
-                        ? component.display_contract?.empty_message ?? "No chart data available."
-                        : "Chart rendering will use populated runtime data in the next renderer step."}
-                    </p>
-                  </div>
-                </article>
-              ))}
+              {chartComponents.map((component) => {
+                const payload = componentPayload(component, payloadByEndpoint);
+                const series = chartSeries(component, payloadByEndpoint);
+                const latest = series.at(-1);
+                const baseline = series.at(0);
+                const delta = latest && baseline ? latest.value - baseline.value : 0;
+                return (
+                  <article className="panel span-6 native-bi-widget" key={component.id ?? "chart"}>
+                    <p className="eyebrow">{component.component_type ?? "chart"}</p>
+                    <h4 className="section-heading">{componentTitle(component)}</h4>
+                    <p className="section-subtitle">{componentSubtitle(component)}</p>
+                    {payload.meta?.empty || series.length === 0 ? (
+                      <p className="section-subtitle">
+                        {component.display_contract?.empty_message ?? "No chart data available."}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="native-bi-chart-shell">
+                          <svg viewBox="0 0 100 84" className="native-bi-chart-svg" preserveAspectRatio="none" aria-hidden="true">
+                            <polyline points={chartSvgPoints(series)} />
+                          </svg>
+                        </div>
+                        <div className="native-bi-chart-metrics">
+                          <span>Latest: {formatMetricValue(latest?.value, component.display_contract?.format, component.display_contract?.precision, component.display_contract?.unit)}</span>
+                          <span>{`Delta: ${delta >= 0 ? "+" : ""}${delta.toFixed(1)}`}</span>
+                        </div>
+                        <div className="use-case-outcome-list">
+                          {series.map((point) => (
+                            <span key={`${component.id ?? "chart"}-${point.label}`}>
+                              {point.label}: {formatMetricValue(point.value, component.display_contract?.format, component.display_contract?.precision, component.display_contract?.unit)}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </article>
         ) : null}
@@ -409,23 +584,44 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
             <p className="eyebrow">Operational tables</p>
             <h3 className="section-heading">Queue and drilldown widgets</h3>
             <div className="grid">
-              {tableComponents.map((component) => (
-                <article className="panel span-6 native-bi-widget" key={component.id ?? "table"}>
-                  <p className="eyebrow">{component.component_type ?? "table"}</p>
-                  <h4 className="section-heading">{componentTitle(component)}</h4>
-                  <p className="section-subtitle">{componentSubtitle(component)}</p>
-                  <div className="native-bi-table-placeholder">
-                    <div />
-                    <div />
-                    <div />
-                  </div>
-                  <p className="section-subtitle">
-                    {dataResponse.meta?.empty
-                      ? component.display_contract?.empty_message ?? "No rows returned yet."
-                      : "Table rendering will use populated runtime rows in the next renderer step."}
-                  </p>
-                </article>
-              ))}
+              {tableComponents.map((component) => {
+                const payload = componentPayload(component, payloadByEndpoint);
+                const rows = dataRows(payload.data);
+                const fields = tableFields(component, payloadByEndpoint);
+                return (
+                  <article className="panel span-12 native-bi-widget" key={component.id ?? "table"}>
+                    <p className="eyebrow">{component.component_type ?? "table"}</p>
+                    <h4 className="section-heading">{componentTitle(component)}</h4>
+                    <p className="section-subtitle">{componentSubtitle(component)}</p>
+                    {payload.meta?.empty || rows.length === 0 ? (
+                      <p className="section-subtitle">
+                        {component.display_contract?.empty_message ?? "No rows returned yet."}
+                      </p>
+                    ) : (
+                      <div className="native-bi-table-shell">
+                        <table className="table native-bi-table">
+                          <thead>
+                            <tr>
+                              {fields.map((field) => (
+                                <th key={field}>{niceLabel(field)}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.slice(0, 5).map((row, index) => (
+                              <tr key={`${component.id ?? "row"}-${index}`}>
+                                {fields.map((field) => (
+                                  <td key={`${field}-${index}`}>{previewValue(row[field])}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </article>
         ) : null}
@@ -434,11 +630,19 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
           <article className="panel span-12">
             <p className="eyebrow">Governance posture</p>
             <h3 className="section-heading">Governance widgets</h3>
-            <div className="use-case-outcome-list">
+            <div className="grid">
               {governanceComponents.map((component) => (
-                <span key={component.id ?? "governance"}>
-                  {componentTitle(component)} · {component.governance_contract?.classification ?? "restricted"}
-                </span>
+                <article className="panel span-4 native-bi-governance-card" key={component.id ?? "governance"}>
+                  <p className="eyebrow">{component.component_type ?? "governance"}</p>
+                  <h4 className="section-heading">{componentTitle(component)}</h4>
+                  <p className="section-subtitle">{componentSubtitle(component)}</p>
+                  <strong className="native-bi-badge-value">{governanceBadgeValue(component, payloadByEndpoint)}</strong>
+                  {component.governance_contract?.evidence_target ? (
+                    <a className="inline-link" href={component.governance_contract.evidence_target}>
+                      Review evidence target
+                    </a>
+                  ) : null}
+                </article>
               ))}
             </div>
           </article>
@@ -527,7 +731,7 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
                 <dl className="use-case-evidence-list">
                   <div>
                     <dt>Endpoint</dt>
-                    <dd>{specEndpoint(component)}</dd>
+                    <dd>{normalizeEndpoint(specEndpoint(component)) || "n/a"}</dd>
                   </div>
                   <div>
                     <dt>Zone</dt>
@@ -553,39 +757,6 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
               </article>
             ))}
           </div>
-        </article>
-
-        <article className="panel span-12">
-          <p className="eyebrow">Endpoint binding</p>
-          <h3 className="section-heading">Current tab data response</h3>
-          <p className="section-subtitle">
-            Empty-state rendering is acceptable for active workspaces until populated data is proven. `null` means unknown and `0` means actual zero.
-          </p>
-          {dataResponse.meta?.empty ? (
-            <p className="section-subtitle">Empty state rendered successfully for this tab.</p>
-          ) : null}
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(endpointRecord).length > 0 ? (
-                Object.entries(endpointRecord).map(([key, value]) => (
-                  <tr key={key}>
-                    <td>{key}</td>
-                    <td>{previewValue(value)}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={2}>No populated rows returned for this tab yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
         </article>
       </section>
     </PageFrame>
