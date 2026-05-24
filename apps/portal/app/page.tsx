@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
-import { ImportedUseCasePackages } from "@/components/ImportedUseCasePackages";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
-import { filterVisibleUseCases, useCases } from "@/lib/use-cases";
+import { filterVisibleUseCases, projectImportedPackagesToUseCases, useCases } from "@/lib/use-cases";
 
 export const metadata: Metadata = {
   title: "Home - OpenCare Portal",
@@ -62,9 +61,10 @@ export default async function HomePage() {
   ]);
 
   const visibleUseCases = filterVisibleUseCases(useCases, useCaseConfig.all_use_cases ?? {});
-  const importedPackages = (packageResponse.packages ?? []).filter((pkg) => pkg.enabled === true);
+  const importedUseCases = projectImportedPackagesToUseCases(packageResponse.packages ?? []);
+  const activeUseCases = [...visibleUseCases, ...importedUseCases];
   const defaultUseCaseHref =
-    visibleUseCases.find((useCase) => useCase.status === "active")?.defaultHref ?? "/use-cases";
+    activeUseCases.find((useCase) => useCase.status === "active")?.defaultHref ?? "/use-cases";
 
   const healthyCount = (health.checks ?? []).filter((item) => item.healthy).length;
   const criticalCount = occupancy.summary?.critical ?? 0;
@@ -136,7 +136,7 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="use-case-card-grid">
-            {visibleUseCases.map((useCase) => (
+            {activeUseCases.map((useCase) => (
               <Link
                 key={useCase.id}
                 href={
@@ -149,9 +149,7 @@ export default async function HomePage() {
                 <span className="use-case-icon">{useCase.icon}</span>
                 <h4>{useCase.name}</h4>
                 <p>{useCase.summary}</p>
-                <span className="inline-link">
-                  {useCase.status === "active" ? "Enter workspace" : "Coming soon"}
-                </span>
+                <span className="inline-link">{useCase.status === "active" ? useCase.ctaLabel ?? "Enter workspace" : "Coming soon"}</span>
               </Link>
             ))}
           </div>
@@ -195,8 +193,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      <ImportedUseCasePackages packages={importedPackages} />
     </PageFrame>
   );
 }

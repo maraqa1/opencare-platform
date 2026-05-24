@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 
 import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
-import { ImportedUseCasePackages } from "@/components/ImportedUseCasePackages";
 import { PageFrame } from "@/components/page-frame";
 import { UseCaseBriefing } from "@/components/UseCaseBriefing";
 import { getApiJson } from "@/lib/api";
-import { filterVisibleUseCases, useCases } from "@/lib/use-cases";
+import { filterVisibleUseCases, projectImportedPackagesToUseCases, useCases } from "@/lib/use-cases";
 
 export const metadata: Metadata = {
   title: "Use Cases - OpenCare Portal",
@@ -31,7 +30,8 @@ export default async function UseCasesPage() {
   ]);
 
   const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});
-  const importedPackages = (packageResponse.packages ?? []).filter((pkg) => pkg.enabled === true);
+  const importedUseCases = projectImportedPackagesToUseCases(packageResponse.packages ?? []);
+  const activeUseCases = [...visibleUseCases, ...importedUseCases];
 
   return (
     <PageFrame
@@ -44,8 +44,7 @@ export default async function UseCasesPage() {
         { label: "Governed outcomes", tone: "primary" },
       ]}
     >
-      <UseCaseBriefing useCases={visibleUseCases} />
-      <ImportedUseCasePackages packages={importedPackages} />
+      <UseCaseBriefing useCases={activeUseCases} />
     </PageFrame>
   );
 }

@@ -96,7 +96,7 @@ export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
           </span>
           {selectedModule.status === "active" ? (
             <Link className="button primary" href={selectedModule.defaultHref ?? `/use-cases/${selectedModule.slug}`}>
-              Open Workspace
+              {selectedModule.ctaLabel ?? "Open Workspace"}
             </Link>
           ) : (
             <Link className="button secondary" href="/admin/configuration">

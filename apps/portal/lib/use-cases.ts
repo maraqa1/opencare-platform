@@ -1,3 +1,5 @@
+import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
+
 export type UseCaseStatus = "active" | "coming_soon";
 
 export type UseCaseModule = {
@@ -9,6 +11,7 @@ export type UseCaseModule = {
   status: UseCaseStatus;
   summary: string;
   defaultHref?: string;
+  ctaLabel?: string;
   kpis: Array<{ label: string; value: string; note: string }>;
   shell: {
     label: string;
@@ -223,6 +226,61 @@ export function getUseCaseByPath(pathname: string): UseCaseModule | null {
     return slugMatch;
   }
   return null;
+}
+
+export function projectImportedPackagesToUseCases(
+  packages: UseCaseTemplatePackage[],
+): UseCaseModule[] {
+  return packages
+    .filter((pkg) => pkg.enabled === true && pkg.status !== "uninstalled")
+    .map((pkg) => {
+      const adminHref = `/admin/use-case-templates/${encodeURIComponent(pkg.id ?? pkg.package_id)}`;
+      const preview = pkg.preview_summary;
+      const routeHref = preview?.route_to_be_added ?? adminHref;
+      const kpis = (preview?.business_summary?.kpis ?? []).slice(0, 3);
+
+      return {
+        id: `imported:${pkg.package_id}`,
+        slug: pkg.slug,
+        icon: "Pkg",
+        name: pkg.name,
+        description:
+          preview?.business_summary?.problem ??
+          pkg.domain ??
+          "Imported use-case package activated in the OpenCare portal.",
+        status: "active",
+        summary:
+          pkg.domain ??
+          "Imported use-case package awaiting deeper runtime materialization.",
+        defaultHref: routeHref,
+        ctaLabel: "Review Imported Use Case",
+        kpis:
+          kpis.length > 0
+            ? kpis.map((kpi) => ({
+                label: kpi,
+                value: "Defined",
+                note: "Imported package contract",
+              }))
+            : [
+                { label: "Package Status", value: "Active", note: "Visible in portal" },
+                { label: "Version", value: pkg.version, note: "Imported package version" },
+                {
+                  label: "Runtime Mode",
+                  value: preview?.install_impact?.full_runtime_supported ? "Supported" : "Imported",
+                  note: preview?.install_impact?.full_runtime_supported
+                    ? "Eligible for deeper materialization"
+                    : "Review in admin for next steps",
+                },
+              ],
+        shell: {
+          label: pkg.name,
+          title: `${pkg.name} Imported Package`,
+          badge: "Imported",
+          actionHref: adminHref,
+          actionLabel: "Template Admin",
+        },
+      } satisfies UseCaseModule;
+    });
 }
 
 export const decisionQueue: DecisionItem[] = [
