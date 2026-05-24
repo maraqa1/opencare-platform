@@ -52,6 +52,10 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
           throw new Error(payload.detail ?? `Unable to ${action} package.`);
         }
         setMessage(`Action "${action}" completed.`);
+        if (action === "uninstall") {
+          router.push("/admin/use-case-templates");
+          return;
+        }
         router.refresh();
       } catch (error) {
         setMessage(error instanceof Error ? error.message : `Unable to ${action} package.`);

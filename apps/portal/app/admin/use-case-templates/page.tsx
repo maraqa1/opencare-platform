@@ -17,6 +17,9 @@ export default async function UseCaseTemplatesPage() {
     cacheMode: "no-store",
     adminContext: true,
   });
+  const visiblePackages = (response.packages ?? []).filter(
+    (pkg) => pkg.status !== "uninstalled",
+  );
 
   return (
     <PageFrame
@@ -26,9 +29,8 @@ export default async function UseCaseTemplatesPage() {
     >
       <section className="grid">
         <UseCaseTemplateUploadPanel />
-        <UseCaseTemplateTable packages={response.packages ?? []} />
+        <UseCaseTemplateTable packages={visiblePackages} />
       </section>
     </PageFrame>
   );
 }
-
