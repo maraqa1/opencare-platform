@@ -4,6 +4,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from app.config import settings
 from app.services.use_case_native_bi_materializer import UseCaseNativeBIMaterializer
 from app.services.use_case_package_compiler import UseCasePackageCompiler
 from app.services.use_case_template_storage import UseCaseTemplateStorage, utc_now_iso
@@ -19,6 +20,13 @@ class UseCaseTemplateLifecycleService:
         if record is None:
             raise KeyError(package_id)
         return record
+
+    def _ensure_materialization_enabled(self) -> None:
+        if not settings.use_case_materialization_enabled:
+            raise ValueError(
+                "The use-case materialization module is disabled. "
+                "Preview and package management remain available, but materialize/activate/live actions are unavailable."
+            )
 
     def compile(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
@@ -67,6 +75,7 @@ class UseCaseTemplateLifecycleService:
         return deepcopy(record)
 
     def plan_materialization(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        self._ensure_materialization_enabled()
         record = self._require_record(package_id)
         if record.get("compile_status") != "compiled":
             raise ValueError("Package must be compiled before materialization planning.")
@@ -77,12 +86,14 @@ class UseCaseTemplateLifecycleService:
         return deepcopy(planned)
 
     def materialize(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        self._ensure_materialization_enabled()
         record = self._require_record(package_id)
         if record.get("compile_status") != "compiled":
             raise ValueError("Package must be compiled before materialization.")
         return self.materializer.materialize(package_id, actor=actor)
 
     def activate(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        self._ensure_materialization_enabled()
         record = self._require_record(package_id)
         if record.get("package_validation_status") not in {"passed", "warning"}:
             raise ValueError("Package must pass validation before activation.")
@@ -116,6 +127,7 @@ class UseCaseTemplateLifecycleService:
         return deepcopy(record)
 
     def verify_live(self, package_id: str, *, actor: str) -> dict[str, Any]:
+        self._ensure_materialization_enabled()
         return self.materializer.verify_live(package_id, actor=actor)
 
     def exclude(self, package_id: str, *, actor: str) -> dict[str, Any]:

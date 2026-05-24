@@ -92,6 +92,9 @@ class Settings:
     use_case_template_admin_header: str = os.getenv(
         "USE_CASE_TEMPLATE_ADMIN_HEADER", "x-opencare-admin-context"
     )
+    use_case_materialization_enabled: bool = _get_bool(
+        "USE_CASE_MATERIALIZATION_ENABLED", True
+    )
 
     def postgres_dsn(self) -> str:
         credentials = self.postgres_user

@@ -30,7 +30,8 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(config_router)
 app.include_router(occupancy_router)
-app.include_router(package_runtime_router)
+if settings.use_case_materialization_enabled:
+    app.include_router(package_runtime_router)
 app.include_router(dictionary_router)
 app.include_router(classification_router)
 app.include_router(decisions_router)

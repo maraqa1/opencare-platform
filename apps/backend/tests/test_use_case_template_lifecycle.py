@@ -10,6 +10,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tests.use_case_template_test_helpers import build_valid_package_tree, build_zip_bytes, client, package_test_context
+from app.config import settings
 
 
 class UseCaseTemplateLifecycleTests(unittest.TestCase):
@@ -92,3 +93,38 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
             )
             self.assertEqual(uninstall_ok.status_code, 200)
             self.assertEqual(uninstall_ok.json()["package"]["status"], "uninstalled")
+
+    def test_materialization_module_can_be_disabled_without_breaking_preview_flow(self):
+        with package_test_context():
+            package_id = self._upload_package()
+
+            validate_response = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/validate",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(validate_response.status_code, 200)
+
+            compile_response = client().post(
+                f"/api/v1/admin/use-case-templates/{package_id}/compile",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(compile_response.status_code, 200)
+
+            original = settings.use_case_materialization_enabled
+            object.__setattr__(settings, "use_case_materialization_enabled", False)
+            try:
+                materialize_response = client().post(
+                    f"/api/v1/admin/use-case-templates/{package_id}/materialize",
+                    headers={"x-opencare-admin-context": "admin"},
+                )
+                self.assertEqual(materialize_response.status_code, 400)
+                self.assertIn("materialization module is disabled", materialize_response.json()["detail"])
+
+                activate_response = client().post(
+                    f"/api/v1/admin/use-case-templates/{package_id}/activate",
+                    headers={"x-opencare-admin-context": "admin"},
+                )
+                self.assertEqual(activate_response.status_code, 400)
+                self.assertIn("materialization module is disabled", activate_response.json()["detail"])
+            finally:
+                object.__setattr__(settings, "use_case_materialization_enabled", original)
