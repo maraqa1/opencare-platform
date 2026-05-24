@@ -282,9 +282,11 @@ function chartSeries(spec: ComponentSpec, payloadByEndpoint: Record<string, Endp
     "";
   const labelField =
     explicitLabelField ||
-    preferredFields.find((field) => /month|date|consultant|procedure|payer|band/i.test(field)) ??
-    Object.keys(rows[0]).find((field) => typeof rows[0][field] === "string") ??
-    Object.keys(rows[0])[0];
+    (
+      preferredFields.find((field) => /month|date|consultant|procedure|payer|band/i.test(field)) ??
+      Object.keys(rows[0]).find((field) => typeof rows[0][field] === "string") ??
+      Object.keys(rows[0])[0]
+    );
   const valueField =
     preferredFields.find((field) => field !== labelField && typeof rows[0][field] === "number") ??
     Object.keys(rows[0]).find((field) => field !== labelField && typeof rows[0][field] === "number") ??
