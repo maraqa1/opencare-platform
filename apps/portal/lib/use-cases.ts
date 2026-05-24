@@ -236,7 +236,9 @@ export function projectImportedPackagesToUseCases(
     .map((pkg) => {
       const adminHref = `/admin/use-case-templates/${encodeURIComponent(pkg.id ?? pkg.package_id)}`;
       const preview = pkg.preview_summary;
-      const routeHref = preview?.route_to_be_added ?? adminHref;
+      const routeHref = preview?.install_impact?.full_runtime_supported
+        ? preview?.route_to_be_added ?? adminHref
+        : adminHref;
       const kpis = (preview?.business_summary?.kpis ?? []).slice(0, 3);
 
       return {
