@@ -236,9 +236,10 @@ export function projectImportedPackagesToUseCases(
     .map((pkg) => {
       const adminHref = `/admin/use-case-templates/${encodeURIComponent(pkg.id ?? pkg.package_id)}`;
       const preview = pkg.preview_summary;
+      const importedWorkspaceHref = `/use-cases/imported/${encodeURIComponent(pkg.id ?? pkg.package_id)}`;
       const routeHref = preview?.install_impact?.full_runtime_supported
-        ? preview?.route_to_be_added ?? adminHref
-        : adminHref;
+        ? preview?.route_to_be_added ?? importedWorkspaceHref
+        : importedWorkspaceHref;
       const kpis = (preview?.business_summary?.kpis ?? []).slice(0, 3);
 
       return {
@@ -255,7 +256,7 @@ export function projectImportedPackagesToUseCases(
           pkg.domain ??
           "Imported use-case package awaiting deeper runtime materialization.",
         defaultHref: routeHref,
-        ctaLabel: "Review Imported Use Case",
+        ctaLabel: "Open Imported Workspace",
         kpis:
           kpis.length > 0
             ? kpis.map((kpi) => ({
