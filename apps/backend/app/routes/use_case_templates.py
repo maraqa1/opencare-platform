@@ -46,6 +46,61 @@ def _record_id(package_id: str, version: str) -> str:
     return f"{package_id}@{version}"
 
 
+def _runtime_diagnostics(record: dict[str, Any]) -> dict[str, Any]:
+    compile_report = record.get("compile_report", {}) if isinstance(record.get("compile_report"), dict) else {}
+    runtime_definition = compile_report.get("runtime_definition", {}) if isinstance(compile_report.get("runtime_definition"), dict) else {}
+    backend_registry = runtime_definition.get("backend_registry", {}) if isinstance(runtime_definition.get("backend_registry"), dict) else {}
+    tabs = runtime_definition.get("tabs", []) if isinstance(runtime_definition.get("tabs"), list) else []
+    endpoint_bindings = backend_registry.get("endpoint_bindings", {}) if isinstance(backend_registry.get("endpoint_bindings"), dict) else {}
+    slug = str(record.get("slug") or "")
+    return {
+        "slug": slug,
+        "workspace_route": f"/api/v1/use-cases/{slug}/workspace" if slug else "",
+        "api_prefix": runtime_definition.get("api_prefix") or runtime_definition.get("route_prefix") or "",
+        "tab_routes": [
+            {
+                "id": tab.get("id"),
+                "route": tab.get("route"),
+                "component_count": len(tab.get("components", [])) if isinstance(tab.get("components"), list) else 0,
+            }
+            for tab in tabs
+            if isinstance(tab, dict)
+        ],
+        "backend_registry": {
+            "route_prefix": backend_registry.get("route_prefix") or runtime_definition.get("route_prefix"),
+            "endpoint_count": len(endpoint_bindings),
+            "endpoints": sorted(endpoint_bindings.keys()),
+        },
+    }
+
+
+def _registry_diagnostics(record: dict[str, Any]) -> dict[str, Any]:
+    slug = str(record.get("slug") or "")
+    registry = storage.load_registry()
+    packages = registry.get("packages", {}) if isinstance(registry.get("packages"), dict) else {}
+    active_versions = registry.get("active_versions", {}) if isinstance(registry.get("active_versions"), dict) else {}
+    active_pointer = storage.get_active_pointer(slug) if slug else None
+    active_package = storage.get_active_package_by_slug(slug) if slug else None
+    return {
+        "package_key": record.get("id") or record.get("package_id"),
+        "package_present": bool(packages.get(record.get("id") or record.get("package_id"))),
+        "package_count": len(packages),
+        "package_keys": sorted(packages.keys()),
+        "active_pointer": active_pointer,
+        "active_slug_count": len(active_versions),
+        "active_slugs": sorted(active_versions.keys()),
+        "active_package_id": active_package.get("id") if isinstance(active_package, dict) else None,
+        "active_package_status": {
+            "status": active_package.get("status"),
+            "materialization_status": active_package.get("materialization_status"),
+            "activation_status": active_package.get("activation_status"),
+            "live_verification_status": active_package.get("live_verification_status"),
+        }
+        if isinstance(active_package, dict)
+        else None,
+    }
+
+
 def _load_preview(package_id: str) -> dict[str, Any]:
     record = storage.get_package(package_id)
     if record is None:
@@ -237,6 +292,52 @@ def get_use_case_template_dashboard_materialization(request: Request, package_id
         "activation_status": record.get("activation_status"),
         "live_verification_status": record.get("live_verification_status"),
         "report": record.get("materialization_report", {}),
+    }
+
+
+@router.get("/{package_id}/diagnostics")
+def get_use_case_template_diagnostics(request: Request, package_id: str) -> dict[str, Any]:
+    _require_admin(request)
+    record = storage.get_package(package_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Unknown package: {package_id}")
+
+    return {
+        "status": "ok",
+        "package_id": package_id,
+        "diagnostics": {
+            "package": {
+                "id": record.get("id"),
+                "package_id": record.get("package_id"),
+                "slug": record.get("slug"),
+                "name": record.get("name"),
+                "version": record.get("version"),
+                "status": record.get("status"),
+                "enabled": record.get("enabled"),
+                "package_validation_status": record.get("package_validation_status"),
+                "compile_status": record.get("compile_status"),
+                "materialization_status": record.get("materialization_status"),
+                "activation_status": record.get("activation_status"),
+                "live_verification_status": record.get("live_verification_status"),
+                "archive_sha256": record.get("archive_sha256"),
+                "last_action": record.get("last_action"),
+                "last_action_at": record.get("last_action_at"),
+                "last_error": record.get("last_error"),
+            },
+            "registry": _registry_diagnostics(record),
+            "runtime": _runtime_diagnostics(record),
+            "extraction_summary": record.get("extraction_summary", {}),
+            "validation_summary": record.get("validation_summary", {}),
+            "preview_summary": record.get("preview_summary", {}),
+            "compile_report": record.get("compile_report", {}),
+            "materialization_report": record.get("materialization_report", {}),
+            "live_verification_report": record.get("live_verification_report", {}),
+            "actions": record.get("actions", []),
+            "files": {
+                "staged": storage.safe_file_tree(package_id, record["version"], state="staged"),
+                "installed": storage.safe_file_tree(package_id, record["version"], state="installed"),
+            },
+        },
     }
 
 

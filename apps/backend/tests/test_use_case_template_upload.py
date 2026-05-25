@@ -63,6 +63,21 @@ class UseCaseTemplateApiTests(unittest.TestCase):
                 self.assertEqual(actions_response.status_code, 200)
                 self.assertEqual(actions_response.json()["actions"][0]["action"], "upload")
 
+                diagnostics_response = client().get(
+                    f"/api/v1/admin/use-case-templates/{package_id}/diagnostics",
+                    headers={"x-opencare-admin-context": "admin"},
+                )
+                self.assertEqual(diagnostics_response.status_code, 200)
+                diagnostics = diagnostics_response.json()["diagnostics"]
+                self.assertEqual(diagnostics["package"]["id"], package_id)
+                self.assertIn("validation_summary", diagnostics)
+                self.assertIn("compile_report", diagnostics)
+                self.assertIn("materialization_report", diagnostics)
+                self.assertIn("live_verification_report", diagnostics)
+                self.assertIn("registry", diagnostics)
+                self.assertTrue(any(file["path"] == "package.yaml" for file in diagnostics["files"]["staged"]))
+                self.assertEqual(diagnostics["actions"][0]["action"], "upload")
+
     def test_upload_keeps_distinct_versions_of_same_package(self):
         with tempfile.TemporaryDirectory(prefix="package-") as temp_dir:
             root = Path(temp_dir) / "golden-package"
