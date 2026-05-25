@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { UseCaseTemplatePackage } from "./use-case-template-types";
 
@@ -127,6 +127,14 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
   const steps = useMemo(() => workflowSteps(currentPackage), [currentPackage]);
   const progressCount = steps.filter((step) => step.complete).length;
   const progressPercent = Math.round((progressCount / steps.length) * 100);
+
+  useEffect(() => {
+    setCurrentPackage(pkg);
+    setMessage("");
+    setPendingAction(null);
+    setWorkflowError("");
+    setWorkflowRunning(false);
+  }, [pkg]);
 
   async function readJsonSafely(response: Response) {
     const text = await response.text();
