@@ -44,7 +44,12 @@ function isCompileSatisfied(pkg: UseCaseTemplatePackage) {
 }
 
 function isMaterializationPlanned(pkg: UseCaseTemplatePackage) {
-  return Boolean(pkg.materialization_report?.plan);
+  return (
+    Boolean(pkg.materialization_report?.plan) ||
+    pkg.materialization_status === "materialized" ||
+    isActivated(pkg) ||
+    isLiveVerified(pkg)
+  );
 }
 
 function isMaterialized(pkg: UseCaseTemplatePackage) {
@@ -113,15 +118,39 @@ function actionLabel(action: string) {
 
 export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePackage }) {
   const router = useRouter();
+  const [currentPackage, setCurrentPackage] = useState(pkg);
   const [message, setMessage] = useState("");
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [workflowError, setWorkflowError] = useState("");
   const [workflowRunning, setWorkflowRunning] = useState(false);
-  const [completedActions, setCompletedActions] = useState<string[]>([]);
-  const packageRef = pkg.id ?? pkg.package_id;
-  const steps = useMemo(() => workflowSteps(pkg), [pkg]);
-  const progressCount = steps.filter((step) => step.complete).length + completedActions.filter((action) => !steps.some((step) => step.action === action && step.complete)).length;
+  const packageRef = currentPackage.id ?? currentPackage.package_id;
+  const steps = useMemo(() => workflowSteps(currentPackage), [currentPackage]);
+  const progressCount = steps.filter((step) => step.complete).length;
   const progressPercent = Math.round((progressCount / steps.length) * 100);
+
+  async function readJsonSafely(response: Response) {
+    const text = await response.text();
+    if (!text.trim()) {
+      return {};
+    }
+    try {
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      throw new Error(text.trim() || "The server returned an invalid response.");
+    }
+  }
+
+  async function refreshPackageState() {
+    const response = await fetch(`/api/portal/api/v1/admin/use-case-templates/${encodeURIComponent(packageRef)}`, {
+      cache: "no-store",
+    });
+    const payload = (await readJsonSafely(response)) as UseCaseTemplatePackage & { detail?: string };
+    if (!response.ok) {
+      throw new Error(payload.detail ?? "Unable to refresh package state.");
+    }
+    setCurrentPackage(payload);
+    return payload;
+  }
 
   async function executeAction(action: string) {
     setPendingAction(action);
@@ -133,12 +162,11 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
         },
         body: action === "uninstall" ? JSON.stringify({ confirm: true, preserve_audit: true }) : undefined,
       });
-      const payload = (await response.json()) as { status?: string; detail?: string };
+      const payload = (await readJsonSafely(response)) as { status?: string; detail?: string };
       if (!response.ok || payload.status !== "ok") {
         throw new Error(payload.detail ?? `Unable to ${action} package.`);
       }
-      setCompletedActions((current) => (current.includes(action) ? current : [...current, action]));
-      return true;
+      return refreshPackageState();
     } finally {
       setPendingAction(null);
     }
@@ -147,17 +175,14 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
   async function runWorkflow() {
     setMessage("");
     setWorkflowError("");
-    setCompletedActions([]);
     setWorkflowRunning(true);
     try {
-      for (const step of steps) {
+      let nextPackage = currentPackage;
+      for (const step of workflowSteps(nextPackage)) {
         if (step.complete) {
           continue;
         }
-        const ok = await executeAction(step.action);
-        if (!ok) {
-          break;
-        }
+        nextPackage = await executeAction(step.action);
       }
       setMessage("Automated materialization workflow completed.");
       router.refresh();
@@ -181,15 +206,13 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
     setMessage("");
     setWorkflowError("");
     try {
-      const ok = await executeAction(action);
-      if (ok) {
-        setMessage(`Action "${action}" completed.`);
-        if (action === "uninstall") {
-          router.push("/admin/use-case-templates");
-          return;
-        }
-        router.refresh();
+      await executeAction(action);
+      setMessage(`Action "${action}" completed.`);
+      if (action === "uninstall") {
+        router.push("/admin/use-case-templates");
+        return;
       }
+      router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : `Unable to ${action} package.`);
     }
@@ -238,7 +261,7 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
         <div className="native-workflow-steps">
           {steps.map((step) => {
             const isRunning = pendingAction === step.action;
-            const isComplete = step.complete || completedActions.includes(step.action);
+            const isComplete = step.complete;
             const state = isRunning ? "running" : isComplete ? "complete" : "pending";
             return (
               <div className={`native-workflow-step ${state}`} key={step.key}>
@@ -256,16 +279,16 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
         {workflowError ? <p className="section-subtitle">{workflowError}</p> : null}
       </div>
       <div className="metric-grid compact">
-        <div className="forecast-stat"><p className="eyebrow">Validation</p><strong>{pkg.package_validation_status ?? "n/a"}</strong></div>
-        <div className="forecast-stat"><p className="eyebrow">Compile</p><strong>{pkg.compile_status ?? "n/a"}</strong></div>
-        <div className="forecast-stat"><p className="eyebrow">Materialization</p><strong>{pkg.materialization_status ?? "n/a"}</strong></div>
-        <div className="forecast-stat"><p className="eyebrow">Activation</p><strong>{pkg.activation_status ?? "n/a"}</strong></div>
-        <div className="forecast-stat"><p className="eyebrow">Live verify</p><strong>{pkg.live_verification_status ?? "n/a"}</strong></div>
+        <div className="forecast-stat"><p className="eyebrow">Validation</p><strong>{currentPackage.package_validation_status ?? "n/a"}</strong></div>
+        <div className="forecast-stat"><p className="eyebrow">Compile</p><strong>{currentPackage.compile_status ?? "n/a"}</strong></div>
+        <div className="forecast-stat"><p className="eyebrow">Materialization</p><strong>{currentPackage.materialization_status ?? "n/a"}</strong></div>
+        <div className="forecast-stat"><p className="eyebrow">Activation</p><strong>{currentPackage.activation_status ?? "n/a"}</strong></div>
+        <div className="forecast-stat"><p className="eyebrow">Live verify</p><strong>{currentPackage.live_verification_status ?? "n/a"}</strong></div>
       </div>
       <details className="native-workflow-advanced">
         <summary>Advanced step controls</summary>
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
-        {allowedActions(pkg).map((action) => (
+        {allowedActions(currentPackage).map((action) => (
           <button
             className={action === "activate" || action === "materialize" ? "button primary" : action === "uninstall" ? "button secondary" : "secondary-link"}
             disabled={workflowRunning}
