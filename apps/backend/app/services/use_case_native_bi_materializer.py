@@ -107,11 +107,16 @@ class UseCaseNativeBIMaterializer:
 
     def _component_receipt(self, runtime_definition: dict[str, Any]) -> dict[str, Any]:
         bindings = runtime_definition.get("backend_endpoint_bindings", {})
-        endpoint_bindings = {
-            str(endpoint.get("path") or ""): endpoint
-            for endpoint in bindings.get("endpoints", [])
-            if isinstance(endpoint, dict)
-        }
+        route_prefix = str(bindings.get("route_prefix") or "").rstrip("/")
+        endpoint_bindings: dict[str, dict[str, Any]] = {}
+        for endpoint in bindings.get("endpoints", []):
+            if not isinstance(endpoint, dict):
+                continue
+            relative_path = str(endpoint.get("path") or "")
+            if relative_path:
+                endpoint_bindings[relative_path] = endpoint
+                if route_prefix and relative_path.startswith("/"):
+                    endpoint_bindings[f"{route_prefix}{relative_path}"] = endpoint
         role_policy = bindings.get("role_policy", []) if isinstance(bindings.get("role_policy"), list) else []
         supports_empty_state = bool(runtime_definition.get("rendering", {}).get("supports_empty_state", True))
         components: list[dict[str, Any]] = []

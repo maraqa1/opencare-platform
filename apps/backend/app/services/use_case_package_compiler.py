@@ -519,6 +519,7 @@ class UseCasePackageCompiler:
         }
 
         endpoints: list[dict[str, Any]] = []
+        route_prefix = str(route_spec.get("route_prefix") or api_contract.get("api", {}).get("prefix") or f"/api/v1/use-cases/{slug}")
         discovered_filters: list[str] = []
         for endpoint in route_spec.get("endpoints", []) if isinstance(route_spec.get("endpoints"), list) else []:
             if not isinstance(endpoint, dict):
@@ -569,6 +570,45 @@ class UseCasePackageCompiler:
                 }
             )
 
+        known_paths = {
+            str(endpoint.get("path") or "")
+            for endpoint in endpoints
+            if isinstance(endpoint, dict)
+        }
+        for binding in binding_registry.values():
+            if not isinstance(binding, dict):
+                continue
+            full_endpoint = str(binding.get("endpoint") or "").strip()
+            if not full_endpoint:
+                continue
+            relative_path = full_endpoint
+            if route_prefix and full_endpoint.startswith(route_prefix):
+                relative_path = full_endpoint[len(route_prefix):] or "/"
+            if relative_path in known_paths:
+                continue
+
+            native_filters = binding.get("filters", {}) if isinstance(binding.get("filters"), dict) else {}
+            if isinstance(native_filters.get("accepts"), list):
+                for filter_name in native_filters["accepts"]:
+                    filter_text = str(filter_name).strip()
+                    if filter_text and filter_text not in discovered_filters:
+                        discovered_filters.append(filter_text)
+
+            governance = binding.get("governance", {}) if isinstance(binding.get("governance"), dict) else {}
+            endpoints.append(
+                {
+                    "method": str(binding.get("method") or "GET"),
+                    "path": relative_path if relative_path.startswith("/") else f"/{relative_path}",
+                    "query": str(binding.get("query") or ""),
+                    "response_schema": str(binding.get("response_schema") or ""),
+                    "phi_handling": governance.get("phi_mode"),
+                    "native_bi_binding": True,
+                    "expected_fields": binding.get("expected_fields", []),
+                    "data_binding": binding,
+                }
+            )
+            known_paths.add(relative_path if relative_path.startswith("/") else f"/{relative_path}")
+
         if not endpoints:
             self._add("compile", "endpoints_missing", "failed", "No backend endpoint bindings were compiled")
 
@@ -579,7 +619,7 @@ class UseCasePackageCompiler:
                 combined_filters.append(item)
 
         return {
-            "route_prefix": str(route_spec.get("route_prefix") or api_contract.get("api", {}).get("prefix") or f"/api/v1/use-cases/{slug}"),
+            "route_prefix": route_prefix,
             "role_policy": route_spec.get("role_policy", []),
             "endpoints": endpoints,
             "response_patterns": api_contract.get("api", {}).get("response_patterns", {}),

@@ -236,7 +236,10 @@ class UseCaseNativeBIMaterializerTests(unittest.TestCase):
             self.assertFalse(receipt["blocked_reasons"])
             component_receipt = receipt["component_receipt"]["components"]
             self.assertEqual(len(component_receipt), 2)
+            kpi_component = next(item for item in component_receipt if item["component_id"] == "kpi_readmission")
+            self.assertEqual(kpi_component["gates"]["data_bound"]["status"], "passed")
             queue_component = next(item for item in component_receipt if item["component_id"] == "episode_queue")
+            self.assertEqual(queue_component["gates"]["data_bound"]["status"], "passed")
             self.assertEqual(queue_component["gates"]["governance_enforced"]["status"], "passed")
 
     def test_materialize_blocks_unsupported_component_type(self):

@@ -202,3 +202,18 @@ class UseCasePackageCompilerTests(unittest.TestCase):
             self.assertEqual(runtime_definition["tabs"][0]["component_specs"][0]["display_contract"]["title"], "30-Day Readmission Rate")
             self.assertEqual(runtime_definition["rendering"]["component_library"], "opencare_native_bi")
             self.assertEqual(len(runtime_definition["smoke_tests"]["component_render_checks"]), 1)
+
+    def test_v16_native_bindings_are_emitted_into_backend_registry(self):
+        with tempfile.TemporaryDirectory(prefix="compiler-") as temp_dir:
+            root = Path(temp_dir) / "pkg"
+            build_valid_package_tree(root, slug="patient-outcomes")
+            report = UseCasePackageCompiler(root).compile()
+
+            self.assertEqual(report["status"], "compiled")
+            endpoints = report["runtime_definition"]["backend_endpoint_bindings"]["endpoints"]
+            endpoint_by_path = {endpoint["path"]: endpoint for endpoint in endpoints}
+
+            self.assertIn("/queues/high-risk", endpoint_by_path)
+            self.assertIn("/drilldown", endpoint_by_path)
+            self.assertEqual(endpoint_by_path["/queues/high-risk"]["phi_handling"], "masked_patient_level")
+            self.assertTrue(endpoint_by_path["/queues/high-risk"]["native_bi_binding"])
