@@ -6723,6 +6723,131 @@ code {
   gap: 10px;
 }
 
+.native-workflow-shell {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0 22px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(248, 250, 253, 0.94);
+}
+
+.native-workflow-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.native-workflow-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.native-workflow-clock,
+.native-workflow-step.running .native-workflow-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: native-workflow-spin 1s linear infinite;
+  transform-origin: center;
+}
+
+.native-workflow-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.native-workflow-progress-bar {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(31, 56, 100, 0.09);
+}
+
+.native-workflow-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--oc-blue) 0%, var(--oc-teal) 100%);
+  transition: width 220ms ease;
+}
+
+.native-workflow-progress-label {
+  color: var(--oc-gray-600);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.native-workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.native-workflow-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.native-workflow-step strong,
+.native-workflow-step p {
+  margin: 0;
+}
+
+.native-workflow-step p {
+  color: var(--oc-gray-600);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.native-workflow-step.complete {
+  border-color: rgba(46, 125, 50, 0.18);
+  background: rgba(232, 245, 233, 0.88);
+}
+
+.native-workflow-step.running {
+  border-color: rgba(46, 117, 182, 0.22);
+  background: rgba(227, 242, 253, 0.88);
+}
+
+.native-workflow-step-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: var(--oc-blue);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.native-workflow-advanced {
+  margin-top: 8px;
+}
+
+.native-workflow-advanced summary {
+  cursor: pointer;
+  color: var(--oc-blue);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@keyframes native-workflow-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 1200px) {
   .governance-kpi-hero,
   .governance-entry-grid,
@@ -6734,6 +6859,10 @@ code {
 
   .native-bi-trust-grid {
     grid-template-columns: 1fr;
+  }
+
+  .native-workflow-header {
+    align-items: flex-start;
   }
 }
 
