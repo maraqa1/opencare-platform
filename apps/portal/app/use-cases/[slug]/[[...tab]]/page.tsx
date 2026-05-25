@@ -134,6 +134,14 @@ function tabLabel(tabId: string) {
   return tabId.replaceAll("-", " ").replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function tabPathSegment(route: string | undefined) {
+  if (!route) {
+    return "";
+  }
+  const segments = route.split("/").filter(Boolean);
+  return segments.at(-1) ?? "";
+}
+
 function previewValue(value: unknown) {
   if (value === null || value === undefined) {
     return "null";
@@ -357,12 +365,30 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
     notFound();
   }
 
-  const tabs = (workspace.tabs ?? []).map((item) => ({
-    key: item.id ?? "overview",
-    label: item.label ?? tabLabel(item.id ?? "overview"),
-    href: item.id === "overview" ? `/use-cases/${slug}` : `/use-cases/${slug}/${item.id}`,
-  }));
-  const selectedTab = workspace.tabs?.find((item) => item.id === activeTab) ?? workspace.tabs?.[0];
+  const tabs = (workspace.tabs ?? []).map((item, index) => {
+    const tabId = item.id ?? "overview";
+    const routeSegment = tabPathSegment(item.route);
+    const href =
+      item.route && item.route.startsWith("/use-cases/")
+        ? item.route
+        : index === 0 || tabId === "overview"
+          ? `/use-cases/${slug}`
+          : `/use-cases/${slug}/${routeSegment || tabId}`;
+    const routeKey = index === 0 ? "overview" : routeSegment || tabId;
+    return {
+      key: routeKey,
+      label: item.label ?? tabLabel(tabId),
+      href,
+    };
+  });
+  const selectedTab =
+    workspace.tabs?.find((item, index) => {
+      const tabId = item.id ?? "overview";
+      const routeSegment = tabPathSegment(item.route);
+      return index === 0
+        ? activeTab === "overview" || activeTab === tabId || activeTab === routeSegment
+        : activeTab === tabId || activeTab === routeSegment;
+    }) ?? workspace.tabs?.[0];
   const resolvedComponents = selectedTab?.component_specs ?? [];
 
   const endpointPaths = Array.from(
@@ -722,43 +748,47 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
         </article>
 
         <article className="panel span-12">
-          <p className="eyebrow">Technical detail</p>
-          <h3 className="section-heading">Resolved native BI components</h3>
-          <div className="grid">
-            {resolvedComponents.map((component) => (
-              <article className="panel span-6" key={component.id ?? component.source_file ?? "component"}>
-                <p className="eyebrow">{component.component_type ?? "component"}</p>
-                <h4 className="section-heading">{componentTitle(component)}</h4>
-                <p className="section-subtitle">{componentSubtitle(component)}</p>
-                <dl className="use-case-evidence-list">
-                  <div>
-                    <dt>Endpoint</dt>
-                    <dd>{normalizeEndpoint(specEndpoint(component)) || "n/a"}</dd>
-                  </div>
-                  <div>
-                    <dt>Zone</dt>
-                    <dd>{component.layout_contract?.zone ?? "n/a"}</dd>
-                  </div>
-                  <div>
-                    <dt>Visibility</dt>
-                    <dd>{component.governance_contract?.phi_mode ?? component.phi_visibility_rule ?? "n/a"}</dd>
-                  </div>
-                  <div>
-                    <dt>Empty state</dt>
-                    <dd>{component.display_contract?.empty_message ?? component.empty_state ?? "n/a"}</dd>
-                  </div>
-                  <div>
-                    <dt>Interaction</dt>
-                    <dd>{component.interaction_contract?.click_behavior ?? component.interaction_contract?.row_click_behavior ?? "n/a"}</dd>
-                  </div>
-                  <div>
-                    <dt>Registry source</dt>
-                    <dd>{component.source_file ?? component.section ?? "n/a"}</dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
+          <details className="native-bi-technical-disclosure">
+            <summary>
+              <span className="eyebrow">Technical detail</span>
+              <span className="section-heading">Resolved native BI components</span>
+            </summary>
+            <div className="grid">
+              {resolvedComponents.map((component) => (
+                <article className="panel span-6" key={component.id ?? component.source_file ?? "component"}>
+                  <p className="eyebrow">{component.component_type ?? "component"}</p>
+                  <h4 className="section-heading">{componentTitle(component)}</h4>
+                  <p className="section-subtitle">{componentSubtitle(component)}</p>
+                  <dl className="use-case-evidence-list">
+                    <div>
+                      <dt>Endpoint</dt>
+                      <dd>{normalizeEndpoint(specEndpoint(component)) || "n/a"}</dd>
+                    </div>
+                    <div>
+                      <dt>Zone</dt>
+                      <dd>{component.layout_contract?.zone ?? "n/a"}</dd>
+                    </div>
+                    <div>
+                      <dt>Visibility</dt>
+                      <dd>{component.governance_contract?.phi_mode ?? component.phi_visibility_rule ?? "n/a"}</dd>
+                    </div>
+                    <div>
+                      <dt>Empty state</dt>
+                      <dd>{component.display_contract?.empty_message ?? component.empty_state ?? "n/a"}</dd>
+                    </div>
+                    <div>
+                      <dt>Interaction</dt>
+                      <dd>{component.interaction_contract?.click_behavior ?? component.interaction_contract?.row_click_behavior ?? "n/a"}</dd>
+                    </div>
+                    <div>
+                      <dt>Registry source</dt>
+                      <dd>{component.source_file ?? component.section ?? "n/a"}</dd>
+                    </div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </details>
         </article>
       </section>
     </PageFrame>

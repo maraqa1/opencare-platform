@@ -6672,6 +6672,22 @@ code {
   gap: 16px;
 }
 
+.native-bi-technical-disclosure {
+  display: grid;
+  gap: 18px;
+}
+
+.native-bi-technical-disclosure > summary {
+  display: grid;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.native-bi-technical-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
 .native-bi-chart-shell {
   min-height: 210px;
   padding: 16px;
