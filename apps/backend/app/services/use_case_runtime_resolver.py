@@ -61,8 +61,7 @@ class UseCaseRuntimeResolver:
             },
         }
 
-    @staticmethod
-    def _sample_trend_payload() -> dict[str, Any]:
+    def _sample_trend_payload(self) -> dict[str, Any]:
         return {
             "data": [
                 {
@@ -89,8 +88,7 @@ class UseCaseRuntimeResolver:
             },
         }
 
-    @staticmethod
-    def _sample_variation_payload() -> dict[str, Any]:
+    def _sample_variation_payload(self) -> dict[str, Any]:
         return {
             "data": [
                 {
@@ -117,8 +115,7 @@ class UseCaseRuntimeResolver:
             },
         }
 
-    @staticmethod
-    def _sample_governance_payload(slug: str) -> dict[str, Any]:
+    def _sample_governance_payload(self, slug: str) -> dict[str, Any]:
         return {
             "data": {
                 "use_case_slug": slug,
@@ -140,8 +137,7 @@ class UseCaseRuntimeResolver:
             },
         }
 
-    @staticmethod
-    def _sample_filters_payload() -> dict[str, Any]:
+    def _sample_filters_payload(self) -> dict[str, Any]:
         return {
             "data": [
                 {"filter_id": "specialty", "value": "Orthopaedics", "record_count": 428},
@@ -155,8 +151,7 @@ class UseCaseRuntimeResolver:
             },
         }
 
-    @staticmethod
-    def _sample_kpis_payload() -> dict[str, Any]:
+    def _sample_kpis_payload(self) -> dict[str, Any]:
         return {
             "data": [
                 {
@@ -193,8 +188,7 @@ class UseCaseRuntimeResolver:
             },
         }
 
-    @staticmethod
-    def _sample_queue_payload(queue_name: str) -> dict[str, Any]:
+    def _sample_queue_payload(self, queue_name: str) -> dict[str, Any]:
         prefix = queue_name.upper().replace("-", "")[:4] or "CASE"
         base_rows = []
         for index, specialty, consultant, payer, procedure, risk in [
