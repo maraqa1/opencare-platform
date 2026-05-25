@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import os
 import shutil
+import threading
+import time
 import uuid
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import yaml
 
@@ -22,6 +26,10 @@ class UseCaseTemplateStorage:
         self.installed_root = self.root / "installed"
         self.logs_root = self.root / "logs"
         self.registry_path = self.root / "registry.yaml"
+        self.registry_snapshot_path = self.root / "registry.last-good.yaml"
+        self.registry_lock_path = self.root / "registry.lock"
+        self._registry_thread_lock = threading.RLock()
+        self._registry_lock_state = threading.local()
         self.ensure_layout()
 
     def ensure_layout(self) -> None:
@@ -35,7 +43,7 @@ class UseCaseTemplateStorage:
             path.mkdir(parents=True, exist_ok=True)
 
         if not self.registry_path.exists():
-            self.save_registry({"packages": {}})
+            self.save_registry(self._empty_registry())
 
     def upload_dir(self, package_id: str, version: str) -> Path:
         return self.uploads_root / package_id / version
@@ -64,26 +72,80 @@ class UseCaseTemplateStorage:
         shutil.copy2(self.registry_path, backup_path)
         return backup_path
 
-    def load_registry(self) -> dict[str, Any]:
-        if not self.registry_path.exists():
+    @contextmanager
+    def _registry_guard(self, timeout_seconds: float = 5.0) -> Iterator[None]:
+        with self._registry_thread_lock:
+            depth = int(getattr(self._registry_lock_state, "depth", 0))
+            if depth == 0:
+                deadline = time.monotonic() + timeout_seconds
+                while True:
+                    try:
+                        lock_fd = os.open(
+                            self.registry_lock_path,
+                            os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+                        )
+                        os.write(lock_fd, str(os.getpid()).encode("ascii", "ignore"))
+                        self._registry_lock_state.lock_fd = lock_fd
+                        break
+                    except FileExistsError:
+                        if time.monotonic() >= deadline:
+                            raise TimeoutError("Timed out waiting for the use-case registry lock.")
+                        time.sleep(0.05)
+            self._registry_lock_state.depth = depth + 1
+            try:
+                yield
+            finally:
+                new_depth = int(getattr(self._registry_lock_state, "depth", 1)) - 1
+                self._registry_lock_state.depth = new_depth
+                if new_depth == 0:
+                    lock_fd = getattr(self._registry_lock_state, "lock_fd", None)
+                    if lock_fd is not None:
+                        os.close(lock_fd)
+                    self._registry_lock_state.lock_fd = None
+                    try:
+                        self.registry_lock_path.unlink()
+                    except FileNotFoundError:
+                        pass
+
+    def _load_registry_file(self, path: Path) -> dict[str, Any]:
+        if not path.exists():
             return self._empty_registry()
-        try:
-            with self.registry_path.open("r", encoding="utf-8") as handle:
-                payload = yaml.safe_load(handle) or {}
-        except yaml.YAMLError:
-            self._backup_corrupt_registry()
-            payload = self._empty_registry()
-            self.save_registry(payload)
+        with path.open("r", encoding="utf-8") as handle:
+            payload = yaml.safe_load(handle) or {}
         if not isinstance(payload, dict):
             return self._empty_registry()
         payload.setdefault("packages", {})
         payload.setdefault("active_versions", {})
         return payload
 
-    def save_registry(self, payload: dict[str, Any]) -> None:
-        self.registry_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.registry_path.open("w", encoding="utf-8") as handle:
+    def _write_yaml_atomic(self, path: Path, payload: dict[str, Any]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = path.with_name(f"{path.name}.{uuid.uuid4().hex}.tmp")
+        with temp_path.open("w", encoding="utf-8") as handle:
             yaml.safe_dump(payload, handle, sort_keys=False, allow_unicode=False)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, path)
+
+    def load_registry(self) -> dict[str, Any]:
+        with self._registry_guard():
+            try:
+                return self._load_registry_file(self.registry_path)
+            except yaml.YAMLError:
+                self._backup_corrupt_registry()
+                if self.registry_snapshot_path.exists():
+                    payload = self._load_registry_file(self.registry_snapshot_path)
+                    self._write_yaml_atomic(self.registry_path, payload)
+                    return payload
+                return self._empty_registry()
+
+    def save_registry(self, payload: dict[str, Any]) -> None:
+        normalized = deepcopy(payload)
+        normalized.setdefault("packages", {})
+        normalized.setdefault("active_versions", {})
+        with self._registry_guard():
+            self._write_yaml_atomic(self.registry_path, normalized)
+            self._write_yaml_atomic(self.registry_snapshot_path, normalized)
 
     def list_packages(self) -> list[dict[str, Any]]:
         registry = self.load_registry()
@@ -120,21 +182,25 @@ class UseCaseTemplateStorage:
         return deepcopy(pointer) if isinstance(pointer, dict) else None
 
     def set_active_pointer(self, slug: str, package_key: str, version: str) -> None:
-        registry = self.load_registry()
-        pointers = registry.setdefault("active_versions", {})
-        pointers[slug] = {
-            "package_key": package_key,
-            "version": version,
-            "updated_at": utc_now_iso(),
-        }
-        self.save_registry(registry)
+        with self._registry_guard():
+            registry = self._load_registry_file(self.registry_path)
+            pointers = registry.setdefault("active_versions", {})
+            pointers[slug] = {
+                "package_key": package_key,
+                "version": version,
+                "updated_at": utc_now_iso(),
+            }
+            self._write_yaml_atomic(self.registry_path, registry)
+            self._write_yaml_atomic(self.registry_snapshot_path, registry)
 
     def clear_active_pointer(self, slug: str) -> None:
-        registry = self.load_registry()
-        pointers = registry.get("active_versions", {})
-        if isinstance(pointers, dict) and slug in pointers:
-            pointers.pop(slug, None)
-            self.save_registry(registry)
+        with self._registry_guard():
+            registry = self._load_registry_file(self.registry_path)
+            pointers = registry.get("active_versions", {})
+            if isinstance(pointers, dict) and slug in pointers:
+                pointers.pop(slug, None)
+                self._write_yaml_atomic(self.registry_path, registry)
+                self._write_yaml_atomic(self.registry_snapshot_path, registry)
 
     def get_active_package_by_slug(self, slug: str) -> dict[str, Any] | None:
         pointer = self.get_active_pointer(slug)
@@ -174,10 +240,12 @@ class UseCaseTemplateStorage:
         record.setdefault("materialization_report", {})
         record.setdefault("live_verification_report", {})
         record.setdefault("last_error", record.get("error_message", ""))
-        registry = self.load_registry()
-        packages = registry.setdefault("packages", {})
-        packages[package_key] = deepcopy(record)
-        self.save_registry(registry)
+        with self._registry_guard():
+            registry = self._load_registry_file(self.registry_path)
+            packages = registry.setdefault("packages", {})
+            packages[package_key] = deepcopy(record)
+            self._write_yaml_atomic(self.registry_path, registry)
+            self._write_yaml_atomic(self.registry_snapshot_path, registry)
         return deepcopy(record)
 
     def save_original_zip(self, package_id: str, version: str, content: bytes) -> Path:
@@ -235,38 +303,60 @@ class UseCaseTemplateStorage:
         with log_path.open("w", encoding="utf-8") as handle:
             yaml.safe_dump(event, handle, sort_keys=False, allow_unicode=False)
 
-        record = self.get_package(package_id)
-        if record is not None:
-            previous_state = {
-                "status": record.get("status"),
-                "package_validation_status": record.get("package_validation_status"),
-                "compile_status": record.get("compile_status"),
-                "materialization_status": record.get("materialization_status"),
-                "activation_status": record.get("activation_status"),
-                "live_verification_status": record.get("live_verification_status"),
-                "enabled": record.get("enabled"),
-            }
-            actions = record.setdefault("actions", [])
-            if isinstance(actions, list):
-                event["previous_state"] = previous_state
-            record["last_action"] = action
-            record["last_action_at"] = event["timestamp"]
-            record["status"] = status
-            if error_message:
-                record["error_message"] = error_message
-                record["last_error"] = error_message
-            event["new_state"] = {
-                "status": record.get("status"),
-                "package_validation_status": record.get("package_validation_status"),
-                "compile_status": record.get("compile_status"),
-                "materialization_status": record.get("materialization_status"),
-                "activation_status": record.get("activation_status"),
-                "live_verification_status": record.get("live_verification_status"),
-                "enabled": record.get("enabled"),
-            }
-            if isinstance(actions, list):
-                actions.append(event)
-            self.upsert_package(record)
+        with self._registry_guard():
+            registry = self._load_registry_file(self.registry_path)
+            packages = registry.get("packages", {})
+            package_key = None
+            record = None
+            if isinstance(packages, dict):
+                direct = packages.get(package_id)
+                if isinstance(direct, dict):
+                    package_key = package_id
+                    record = deepcopy(direct)
+                else:
+                    matches = [
+                        (key, candidate)
+                        for key, candidate in packages.items()
+                        if isinstance(candidate, dict) and candidate.get("package_id") == package_id
+                    ]
+                    if matches:
+                        matches.sort(key=lambda item: str(item[1].get("uploaded_at", "")), reverse=True)
+                        package_key, source = matches[0]
+                        record = deepcopy(source)
+
+            if record is not None and isinstance(packages, dict) and package_key is not None:
+                previous_state = {
+                    "status": record.get("status"),
+                    "package_validation_status": record.get("package_validation_status"),
+                    "compile_status": record.get("compile_status"),
+                    "materialization_status": record.get("materialization_status"),
+                    "activation_status": record.get("activation_status"),
+                    "live_verification_status": record.get("live_verification_status"),
+                    "enabled": record.get("enabled"),
+                }
+                actions = record.setdefault("actions", [])
+                if isinstance(actions, list):
+                    event["previous_state"] = previous_state
+                record["last_action"] = action
+                record["last_action_at"] = event["timestamp"]
+                record["status"] = status
+                if error_message:
+                    record["error_message"] = error_message
+                    record["last_error"] = error_message
+                event["new_state"] = {
+                    "status": record.get("status"),
+                    "package_validation_status": record.get("package_validation_status"),
+                    "compile_status": record.get("compile_status"),
+                    "materialization_status": record.get("materialization_status"),
+                    "activation_status": record.get("activation_status"),
+                    "live_verification_status": record.get("live_verification_status"),
+                    "enabled": record.get("enabled"),
+                }
+                if isinstance(actions, list):
+                    actions.append(event)
+                packages[package_key] = deepcopy(record)
+                self._write_yaml_atomic(self.registry_path, registry)
+                self._write_yaml_atomic(self.registry_snapshot_path, registry)
 
         return event
 
