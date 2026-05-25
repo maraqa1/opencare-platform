@@ -131,6 +131,13 @@ async def upload_use_case_template(
         "installed_path": "",
         "package_yaml": package_yaml,
         "manifest_yaml": _read_yaml(staged_dir / "manifest/usecase.yaml"),
+        "archive_sha256": extraction.sha256,
+        "extraction_summary": {
+            "root_folder": extraction.root_folder,
+            "file_count": extraction.file_count,
+            "extracted_bytes": extraction.extracted_bytes,
+            "files": extraction.files,
+        },
         "validation_summary": validation,
         "preview_summary": preview,
         "checksum_status": validation["status"],

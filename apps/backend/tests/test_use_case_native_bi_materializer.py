@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -196,10 +197,12 @@ def add_native_bi_v16_contract(root: Path, *, component_type: str = "kpi_card") 
 
 
 class UseCaseNativeBIMaterializerTests(unittest.TestCase):
-    def _compiled_record(self, root: Path) -> dict[str, object]:
+    def _compiled_record(self, root: Path, storage: UseCaseTemplateStorage) -> dict[str, object]:
         report = UseCasePackageCompiler(root).compile()
         self.assertEqual(report["status"], "compiled")
         runtime_definition = report["runtime_definition"]
+        archive_bytes = b"package-archive"
+        original_zip = storage.save_original_zip("opencare.usecase.patient-outcomes@1.6.0", "1.6.0", archive_bytes)
         return {
             "id": "pkg-1",
             "package_id": "opencare.usecase.patient-outcomes@1.6.0",
@@ -211,6 +214,8 @@ class UseCaseNativeBIMaterializerTests(unittest.TestCase):
             "compile_report": report,
             "preview_summary": {"install_impact": {"materialization_mode": "full_runtime"}},
             "runtime_definition": runtime_definition,
+            "original_zip_path": str(original_zip),
+            "archive_sha256": hashlib.sha256(archive_bytes).hexdigest(),
         }
 
     def test_materialization_receipt_tracks_component_gates(self):
@@ -219,13 +224,14 @@ class UseCaseNativeBIMaterializerTests(unittest.TestCase):
             build_valid_package_tree(root, slug="patient-outcomes")
             add_native_bi_v16_contract(root)
             storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
-            storage.upsert_package(self._compiled_record(root))
+            storage.upsert_package(self._compiled_record(root, storage))
 
             materializer = UseCaseNativeBIMaterializer(storage)
             record = materializer.materialize("pkg-1", actor="test")
 
             receipt = record["materialization_report"]["receipt"]
             self.assertEqual(receipt["status"], "materialized")
+            self.assertTrue(receipt["checksum_verified"])
             self.assertEqual(receipt["capability_matrix"]["renderer"]["required"], "opencare_native_bi")
             self.assertFalse(receipt["blocked_reasons"])
             component_receipt = receipt["component_receipt"]["components"]
@@ -239,13 +245,35 @@ class UseCaseNativeBIMaterializerTests(unittest.TestCase):
             build_valid_package_tree(root, slug="patient-outcomes")
             add_native_bi_v16_contract(root, component_type="heatmap")
             storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
-            storage.upsert_package(self._compiled_record(root))
+            storage.upsert_package(self._compiled_record(root, storage))
 
             materializer = UseCaseNativeBIMaterializer(storage)
             record = materializer.materialize("pkg-1", actor="test")
 
             self.assertEqual(record["materialization_status"], "materialization_failed")
             self.assertIn("unsupported_component_type:heatmap", record["last_error"])
+            blocked_codes = [reason["code"] for reason in record["materialization_report"]["receipt"]["blocked_reasons"]]
+            self.assertIn("unsupported_component_type", blocked_codes)
+
+    def test_materialize_blocks_checksum_mismatch(self):
+        with tempfile.TemporaryDirectory(prefix="materializer-") as temp_dir:
+            root = Path(temp_dir) / "pkg"
+            build_valid_package_tree(root, slug="patient-outcomes")
+            add_native_bi_v16_contract(root)
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            record = self._compiled_record(root, storage)
+            original_zip = storage.save_original_zip("opencare.usecase.patient-outcomes@1.6.0", "1.6.0", b"original-zip")
+            original_zip.write_bytes(b"tampered-zip")
+            record["original_zip_path"] = str(original_zip)
+            record["archive_sha256"] = "deadbeef"
+            storage.upsert_package(record)
+
+            materializer = UseCaseNativeBIMaterializer(storage)
+            result = materializer.materialize("pkg-1", actor="test")
+
+            self.assertEqual(result["materialization_status"], "materialization_failed")
+            blocked_codes = [reason["code"] for reason in result["materialization_report"]["receipt"]["blocked_reasons"]]
+            self.assertIn("checksum_mismatch", blocked_codes)
 
     def test_verify_live_includes_receipt_and_remains_honest(self):
         with tempfile.TemporaryDirectory(prefix="materializer-") as temp_dir:
@@ -253,7 +281,7 @@ class UseCaseNativeBIMaterializerTests(unittest.TestCase):
             build_valid_package_tree(root, slug="patient-outcomes")
             add_native_bi_v16_contract(root)
             storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
-            storage.upsert_package(self._compiled_record(root))
+            storage.upsert_package(self._compiled_record(root, storage))
 
             materializer = UseCaseNativeBIMaterializer(storage)
             record = materializer.materialize("pkg-1", actor="test")
@@ -266,6 +294,7 @@ class UseCaseNativeBIMaterializerTests(unittest.TestCase):
             self.assertEqual(verified["live_verification_status"], "degraded")
             self.assertTrue(verified["live_verification_report"]["checks"]["components_resolved"])
             self.assertTrue(verified["live_verification_report"]["checks"]["governance_enforced"])
+            self.assertTrue(verified["live_verification_report"]["checks"]["checksum_verified"])
             self.assertIn("receipt", verified["live_verification_report"])
 
 

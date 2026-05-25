@@ -1,42 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
+from app.services.materialization_contract import (
+    PLATFORM_CAPABILITY_MANIFEST,
+    dedupe_reasons,
+    make_block_reason,
+    serialize_reason,
+)
 from app.services.use_case_template_storage import UseCaseTemplateStorage, utc_now_iso
-
-
-PLATFORM_CAPABILITY_MANIFEST = {
-    "renderers": {"opencare_native_bi"},
-    "components": {
-        "trust_strip",
-        "kpi_card",
-        "kpi_card_group",
-        "line_chart",
-        "bar_chart",
-        "area_chart",
-        "queue_table",
-        "drilldown_table",
-        "governance_badge",
-        "link_group",
-    },
-    "interactions": {
-        "drilldown",
-        "row_drilldown",
-        "open_governance_drawer",
-        "governance_drawer",
-        "navigate",
-    },
-    "governance_modes": {
-        "aggregate_only",
-        "aggregated_only_no_patient_identifiers",
-        "dictionary_only_no_patient_identifiers",
-        "governance_metadata_only",
-        "masked_patient_id_only",
-        "no_patient_identifiers",
-        "patient_level_audited_reveal",
-    },
-}
 
 
 class UseCaseNativeBIMaterializer:
@@ -84,11 +59,51 @@ class UseCaseNativeBIMaterializer:
                 "supported": supported,
                 "unsupported": unsupported,
             }
+            code = {
+                "components": "missing_required_component",
+                "interactions": "unsupported_interaction",
+                "governance_modes": "unsupported_governance_mode",
+            }[domain]
             for value in unsupported:
-                matrix["unsupported"].append(f"unsupported_{domain}:{value}")
+                matrix["unsupported"].append(
+                    make_block_reason(
+                        code,
+                        message=f"Required {domain[:-1] if domain.endswith('s') else domain} '{value}' is not supported by the platform.",
+                        remediation="Extend the platform capability manifest or remove the unsupported requirement from the package.",
+                    )
+                )
         if not matrix["renderer"]["supported"] and matrix["renderer"]["required"]:
-            matrix["unsupported"].append(f"unsupported_renderer:{matrix['renderer']['required']}")
+            matrix["unsupported"].append(
+                make_block_reason(
+                    "unsupported_renderer",
+                    message=f"Renderer '{matrix['renderer']['required']}' is not supported by the platform.",
+                    remediation="Add the renderer to the platform capability manifest or change the package materialization profile.",
+                )
+            )
         return matrix
+
+    @staticmethod
+    def _verify_package_integrity(record: dict[str, Any]) -> tuple[bool, dict[str, Any] | None]:
+        archive_path = Path(str(record.get("original_zip_path") or ""))
+        expected_sha = str(record.get("archive_sha256") or "").strip().lower()
+        if not archive_path.is_file() or not expected_sha:
+            return False, make_block_reason(
+                "checksum_mismatch",
+                message="The original package ZIP or stored archive checksum is missing.",
+                remediation="Re-upload the package so the original artifact and checksum are both present.",
+            )
+        digest = hashlib.sha256()
+        with archive_path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        actual_sha = digest.hexdigest().lower()
+        if actual_sha != expected_sha:
+            return False, make_block_reason(
+                "checksum_mismatch",
+                message=f"Expected archive sha256 {expected_sha} but found {actual_sha}.",
+                remediation="Re-upload the package and rerun validation before materialization.",
+            )
+        return True, None
 
     def _component_receipt(self, runtime_definition: dict[str, Any]) -> dict[str, Any]:
         bindings = runtime_definition.get("backend_endpoint_bindings", {})
@@ -100,8 +115,8 @@ class UseCaseNativeBIMaterializer:
         role_policy = bindings.get("role_policy", []) if isinstance(bindings.get("role_policy"), list) else []
         supports_empty_state = bool(runtime_definition.get("rendering", {}).get("supports_empty_state", True))
         components: list[dict[str, Any]] = []
-        blocked_reasons: list[str] = []
-        degraded_reasons: list[str] = []
+        blocked_reasons: list[dict[str, Any]] = []
+        degraded_reasons: list[dict[str, Any]] = []
 
         for tab in runtime_definition.get("tabs", []):
             if not isinstance(tab, dict):
@@ -140,46 +155,88 @@ class UseCaseNativeBIMaterializer:
                 if not self._component_supported(component_type):
                     gates["capability_supported"] = {
                         "status": "blocked",
-                        "reason": f"unsupported_component_type:{component_type}",
+                        "reason": make_block_reason(
+                            "unsupported_component_type",
+                            component_id=component_id,
+                            message=f"Component type '{component_type}' is not supported.",
+                        ),
                     }
                 elif required_renderer and required_renderer not in PLATFORM_CAPABILITY_MANIFEST["renderers"]:
                     gates["capability_supported"] = {
                         "status": "blocked",
-                        "reason": f"unsupported_renderer:{required_renderer}",
+                        "reason": make_block_reason(
+                            "unsupported_renderer",
+                            component_id=component_id,
+                            message=f"Renderer '{required_renderer}' is not supported.",
+                        ),
                     }
 
                 if click_behavior and click_behavior not in PLATFORM_CAPABILITY_MANIFEST["interactions"]:
                     gates["capability_supported"] = {
                         "status": "blocked",
-                        "reason": f"unsupported_interaction:{click_behavior}",
+                        "reason": make_block_reason(
+                            "unsupported_interaction",
+                            component_id=component_id,
+                            message=f"Interaction '{click_behavior}' is not supported.",
+                        ),
                     }
 
                 if endpoint_path:
                     if endpoint_binding is None:
                         gates["data_bound"] = {
                             "status": "degraded",
-                            "reason": f"missing_endpoint_binding:{endpoint_path}",
+                            "reason": make_block_reason(
+                                "missing_endpoint_binding",
+                                component_id=component_id,
+                                message=f"Endpoint binding '{endpoint_path}' was not found in the compiled backend registry.",
+                            ),
                         }
                     elif patient_level and not endpoint_binding.get("phi_handling"):
                         gates["governance_enforced"] = {
                             "status": "blocked",
-                            "reason": f"missing_phi_masking_for_patient_level_component:{component_id}",
+                            "reason": make_block_reason(
+                                "missing_phi_masking_for_patient_level_component",
+                                component_id=component_id,
+                                message=f"Patient-level component '{component_id}' does not have endpoint-level PHI masking enforced.",
+                            ),
                         }
                     elif patient_level and not role_policy:
                         gates["governance_enforced"] = {
                             "status": "blocked",
-                            "reason": f"missing_audit_policy_for_patient_level_component:{component_id}",
+                            "reason": make_block_reason(
+                                "missing_audit_policy_for_patient_level_component",
+                                component_id=component_id,
+                                message=f"Patient-level component '{component_id}' has no audit policy on its endpoint.",
+                            ),
                         }
                 elif component_type not in {"link_group"}:
                     gates["data_bound"] = {
                         "status": "degraded",
-                        "reason": f"missing_data_binding:{component_id}",
+                        "reason": make_block_reason(
+                            "missing_data_binding",
+                            component_id=component_id,
+                            message=f"Component '{component_id}' has no usable data binding.",
+                        ),
                     }
 
                 if phi_mode and phi_mode not in PLATFORM_CAPABILITY_MANIFEST["governance_modes"]:
                     gates["governance_enforced"] = {
                         "status": "blocked",
-                        "reason": f"unsupported_governance_mode:{phi_mode}",
+                        "reason": make_block_reason(
+                            "unsupported_governance_mode",
+                            component_id=component_id,
+                            message=f"Governance mode '{phi_mode}' is not supported.",
+                        ),
+                    }
+
+                if component_type in {"governance_badge", "link_group", "trust_strip"} and not governance_contract.get("evidence_target"):
+                    gates["governance_enforced"] = {
+                        "status": "blocked",
+                        "reason": make_block_reason(
+                            "missing_governance_evidence_link",
+                            component_id=component_id,
+                            message=f"Governance component '{component_id}' has no evidence target.",
+                        ),
                     }
 
                 gate_states = [gate["status"] for gate in gates.values()]
@@ -223,6 +280,7 @@ class UseCaseNativeBIMaterializer:
                         "endpoint": endpoint_path,
                         "phi_mode": phi_mode or "n/a",
                         "patient_level": patient_level,
+                        "data_rows": None,
                         "gates": gates,
                         "overall_status": overall_status,
                     }
@@ -230,22 +288,33 @@ class UseCaseNativeBIMaterializer:
 
         return {
             "components": components,
-            "blocked_reasons": sorted(set(blocked_reasons)),
-            "degraded_reasons": sorted(set(degraded_reasons)),
+            "blocked_reasons": dedupe_reasons(blocked_reasons),
+            "degraded_reasons": dedupe_reasons(degraded_reasons),
         }
 
-    def _materialization_receipt(self, runtime_definition: dict[str, Any]) -> dict[str, Any]:
+    def _materialization_receipt(self, runtime_definition: dict[str, Any], record: dict[str, Any]) -> dict[str, Any]:
         capability_matrix = self._required_capability_matrix(runtime_definition)
         component_receipt = self._component_receipt(runtime_definition)
-        blocked_reasons = list(runtime_definition.get("blocking_errors", []))
+        checksum_ok, checksum_reason = self._verify_package_integrity(record)
+        blocked_reasons = [
+            make_block_reason(
+                "missing_required_component",
+                message=message,
+                remediation="Fix the compile blocker in the package before rerunning materialization.",
+            )
+            for message in runtime_definition.get("blocking_errors", [])
+        ]
         blocked_reasons.extend(capability_matrix.get("unsupported", []))
         blocked_reasons.extend(component_receipt.get("blocked_reasons", []))
+        if not checksum_ok and checksum_reason:
+            blocked_reasons.append(checksum_reason)
         return {
             "status": "blocked" if blocked_reasons else "materialized",
             "platform_capabilities": deepcopy(PLATFORM_CAPABILITY_MANIFEST),
             "capability_matrix": capability_matrix,
             "component_receipt": component_receipt,
-            "blocked_reasons": sorted(set(blocked_reasons)),
+            "checksum_verified": checksum_ok,
+            "blocked_reasons": dedupe_reasons(blocked_reasons),
             "degraded_reasons": component_receipt.get("degraded_reasons", []),
         }
 
@@ -282,7 +351,7 @@ class UseCaseNativeBIMaterializer:
                 else 0,
             },
             "renderer_capabilities": runtime_definition.get("rendering", {}).get("required_runtime_capabilities", {}),
-            "receipt_preview": self._materialization_receipt(runtime_definition),
+            "receipt_preview": self._materialization_receipt(runtime_definition, record),
         }
         record["materialization_status"] = "materialization_planned"
         record["materialization_report"] = {
@@ -318,17 +387,19 @@ class UseCaseNativeBIMaterializer:
         materialization_mode = record.get("compile_report", {}).get("materialization_mode") or record.get("preview_summary", {}).get("install_impact", {}).get("materialization_mode")
         if materialization_mode != "full_runtime":
             raise ValueError("Package is previewable but not eligible for strict live materialization.")
-        receipt = self._materialization_receipt(runtime_definition)
+        receipt = self._materialization_receipt(runtime_definition, record)
         if receipt.get("blocked_reasons"):
             record["materialization_status"] = "materialization_failed"
             record["activation_status"] = "staged"
             record["status"] = "materialization_failed"
-            record["last_error"] = "; ".join(receipt.get("blocked_reasons", []))
+            record["last_error"] = "; ".join(
+                serialize_reason(reason) for reason in receipt.get("blocked_reasons", [])
+            )
             record["materialization_report"] = {
                 "status": "materialization_failed",
                 "receipt": receipt,
                 "checked_at": utc_now_iso(),
-                "blocking_errors": receipt.get("blocked_reasons", []),
+                "blocking_errors": [serialize_reason(reason) for reason in receipt.get("blocked_reasons", [])],
                 "warnings": runtime_definition.get("warnings", []),
             }
             self.storage.upsert_package(record)
@@ -355,6 +426,7 @@ class UseCaseNativeBIMaterializer:
             "smoke_tests": runtime_definition.get("smoke_tests", {}),
             "receipt": receipt,
         }
+        previous_registry = record.get("materialization_report", {}).get("registry", {})
         record["materialization_status"] = "materialized"
         record["activation_status"] = "activation_ready"
         record["status"] = "materialized"
@@ -362,6 +434,13 @@ class UseCaseNativeBIMaterializer:
             "status": "materialized",
             "registry": materialized_registry,
             "receipt": receipt,
+            "diff": {
+                "previous_status": record.get("materialization_report", {}).get("status"),
+                "previous_component_count": len(previous_registry.get("receipt", {}).get("component_receipt", {}).get("components", []))
+                if isinstance(previous_registry, dict)
+                else 0,
+                "current_component_count": len(receipt.get("component_receipt", {}).get("components", [])),
+            },
             "checked_at": utc_now_iso(),
             "warnings": runtime_definition.get("warnings", []),
         }
@@ -407,13 +486,14 @@ class UseCaseNativeBIMaterializer:
             "components_resolved": bool(component_entries),
             "capabilities_supported": not bool(blocked_reasons),
             "governance_enforced": not any(
-                "phi" in reason or "audit" in reason or "governance" in reason
+                str(reason.get("code") or "").startswith(("missing_phi", "missing_audit", "missing_governance", "unsupported_governance"))
                 for reason in blocked_reasons
             ),
             "data_binding_resolved": not any(
-                reason.startswith("missing_endpoint_binding") or reason.startswith("missing_data_binding")
+                str(reason.get("code") or "") in {"missing_endpoint_binding", "missing_data_binding"}
                 for reason in degraded_reasons
             ),
+            "checksum_verified": bool(materialization_receipt.get("checksum_verified")) if isinstance(materialization_receipt, dict) else False,
             "route_smoke_tests_declared": bool(runtime_definition.get("smoke_tests", {}).get("route_checks", []))
             if isinstance(runtime_definition.get("smoke_tests"), dict)
             else False,
