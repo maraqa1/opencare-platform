@@ -205,6 +205,10 @@ function tableFields(spec: ComponentSpec, endpointState: Record<string, Endpoint
   return (spec.expected_fields?.length ? spec.expected_fields : Object.keys(rows[0])).slice(0, 5);
 }
 
+function metricEntriesFromRecord(record: Record<string, unknown>) {
+  return Object.entries(record).filter(([, value]) => typeof value === "number");
+}
+
 function governanceBadgeValue(spec: ComponentSpec, endpointState: Record<string, EndpointState>) {
   if (spec.component_type === "link_group") {
     const targets = spec.interaction_contract?.navigation_targets ?? [];
@@ -431,8 +435,23 @@ export function MaterializedWorkspaceClient({
     (component) => component.component_type === "governance_badge" || component.component_type === "link_group",
   );
 
-  const primaryEndpoint = endpointPaths[0];
-  const primaryPayload = primaryEndpoint ? endpointState[primaryEndpoint]?.payload : undefined;
+  const handledIds = new Set(
+    [
+      trustStrip?.id,
+      ...groupComponents.map((component) => component.id),
+      ...kpiComponents.map((component) => component.id),
+      ...chartComponents.map((component) => component.id),
+      ...tableComponents.map((component) => component.id),
+      ...governanceComponents.map((component) => component.id),
+    ].filter((value): value is string => Boolean(value)),
+  );
+  const fallbackComponents = selectedComponents.filter((component) => !component.id || !handledIds.has(component.id));
+
+  const primaryPayload =
+    endpointPaths
+      .map((path) => endpointState[path]?.payload)
+      .find((payload) => payload?.meta?.as_of) ??
+    (endpointPaths[0] ? endpointState[endpointPaths[0]]?.payload : undefined);
 
   return (
     <section className="grid">
@@ -709,6 +728,93 @@ export function MaterializedWorkspaceClient({
                     </>
                   ) : widgetState.status === "empty" ? (
                     <p className="section-subtitle">{component.display_contract?.empty_message ?? "No governance evidence available yet."}</p>
+                  ) : (
+                    <WidgetStatus state={widgetState} diagnosticsHref={diagnosticsHref} />
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </article>
+      ) : null}
+
+      {fallbackComponents.length > 0 ? (
+        <article className="panel span-12">
+          <p className="eyebrow">Dashboard widgets</p>
+          <h3 className="section-heading">Display contract widgets</h3>
+          <div className="grid">
+            {fallbackComponents.map((component) => {
+              const widgetState = componentEndpointState(component, endpointState);
+              const rows = dataRows(widgetState.payload.data);
+              const record = firstDataRecord(widgetState.payload.data);
+              const metricEntries = metricEntriesFromRecord(record);
+              const value = componentValue(component, endpointState);
+              const series = chartSeries(component, endpointState);
+              const fields = tableFields(component, endpointState);
+              const renderAsTable = rows.length > 1 && fields.length > 1;
+              const renderAsChart = series.length > 1;
+              const renderAsMetricGroup = !renderAsChart && !renderAsTable && metricEntries.length > 1;
+              const renderAsMetric = !renderAsChart && !renderAsTable && !renderAsMetricGroup;
+
+              return (
+                <article className={`panel ${renderAsTable ? "span-12" : "span-6"} native-bi-widget native-bi-product-card`} key={component.id ?? componentTitle(component)}>
+                  <div className="native-bi-card-topline">
+                    <div>
+                      <h4 className="section-heading">{componentTitle(component)}</h4>
+                      <p className="section-subtitle">{componentSubtitle(component)}</p>
+                    </div>
+                    <TrustOverlay trusted={trusted} />
+                  </div>
+                  {widgetState.status === "loading" ? (
+                    <Placeholder kind={renderAsTable ? "table" : "chart"} />
+                  ) : widgetState.status === "rendered" ? (
+                    renderAsTable ? (
+                      <div className="native-bi-table-shell">
+                        <table className="table native-bi-table">
+                          <thead>
+                            <tr>
+                              {fields.map((field) => (
+                                <th key={field}>{niceLabel(field)}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.slice(0, 5).map((row, index) => (
+                              <tr key={`${component.id ?? "row"}-${index}`}>
+                                {fields.map((field) => (
+                                  <td key={`${field}-${index}`}>{String(row[field] ?? "Unknown")}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : renderAsChart ? (
+                      <div className="native-bi-chart-shell">
+                        <svg viewBox="0 0 100 84" className="native-bi-chart-svg" preserveAspectRatio="none" aria-hidden="true">
+                          <polyline points={chartSvgPoints(series)} />
+                        </svg>
+                      </div>
+                    ) : renderAsMetricGroup ? (
+                      <div className="use-case-outcome-list">
+                        {metricEntries.slice(0, 6).map(([field, metricValue]) => (
+                          <span key={`${component.id ?? "metric"}-${field}`}>
+                            {niceLabel(field)}: {formatMetricValue(metricValue, field.includes("rate") ? "percentage" : component.display_contract?.format, component.display_contract?.precision, field.includes("rate") ? "%" : component.display_contract?.unit)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="kpi-card-value">
+                        {formatMetricValue(
+                          value,
+                          component.display_contract?.format,
+                          component.display_contract?.precision,
+                          component.display_contract?.unit,
+                        )}
+                      </span>
+                    )
+                  ) : widgetState.status === "empty" ? (
+                    <p className="section-subtitle">{component.display_contract?.empty_message ?? "No data available."}</p>
                   ) : (
                     <WidgetStatus state={widgetState} diagnosticsHref={diagnosticsHref} />
                   )}
