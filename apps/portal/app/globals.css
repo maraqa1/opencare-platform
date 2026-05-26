@@ -6721,6 +6721,41 @@ code {
   font-weight: 600;
 }
 
+.native-bi-metric-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.native-bi-mini-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.native-bi-mini-metric {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(248, 250, 253, 0.88);
+}
+
+.native-bi-mini-metric span {
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.native-bi-mini-metric strong {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
 .native-bi-table-shell {
   overflow-x: auto;
   border-radius: 18px;
