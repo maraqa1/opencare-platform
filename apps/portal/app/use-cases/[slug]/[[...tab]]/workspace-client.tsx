@@ -209,6 +209,25 @@ function metricEntriesFromRecord(record: Record<string, unknown>) {
   return Object.entries(record).filter(([, value]) => typeof value === "number");
 }
 
+function componentSortValue(component: ComponentSpec) {
+  return component.layout_contract?.order ?? 999;
+}
+
+function componentZoneLabel(component: ComponentSpec) {
+  const zone = component.layout_contract?.zone ?? component.layout_contract?.section ?? component.component_type ?? "widget";
+  return niceLabel(zone);
+}
+
+function componentCardSpan(component: ComponentSpec, rows: Record<string, unknown>[], series: ChartPoint[]) {
+  if (component.component_type?.includes("table") || rows.length > 1) {
+    return "span-12";
+  }
+  if (component.component_type?.includes("chart") || series.length > 1) {
+    return "span-6";
+  }
+  return "span-4";
+}
+
 function governanceBadgeValue(spec: ComponentSpec, endpointState: Record<string, EndpointState>) {
   if (spec.component_type === "link_group") {
     const targets = spec.interaction_contract?.navigation_targets ?? [];
@@ -446,6 +465,10 @@ export function MaterializedWorkspaceClient({
     ].filter((value): value is string => Boolean(value)),
   );
   const fallbackComponents = selectedComponents.filter((component) => !component.id || !handledIds.has(component.id));
+  const canvasComponents = selectedComponents
+    .filter((component) => component.component_type !== "trust_strip")
+    .slice()
+    .sort((left, right) => componentSortValue(left) - componentSortValue(right));
 
   const primaryPayload =
     endpointPaths
@@ -516,6 +539,100 @@ export function MaterializedWorkspaceClient({
               <span className="eyebrow">Lineage</span>
               <strong>{trusted ? "Verified" : "Needs review"}</strong>
             </div>
+          </div>
+        </article>
+      ) : null}
+
+      {canvasComponents.length > 0 ? (
+        <article className="panel span-12">
+          <p className="eyebrow">Live dashboard</p>
+          <h3 className="section-heading">Display contract canvas</h3>
+          <div className="grid">
+            {canvasComponents.map((component) => {
+              const widgetState = componentEndpointState(component, endpointState);
+              const rows = dataRows(widgetState.payload.data);
+              const record = firstDataRecord(widgetState.payload.data);
+              const metricEntries = metricEntriesFromRecord(record);
+              const value = componentValue(component, endpointState);
+              const series = chartSeries(component, endpointState);
+              const fields = tableFields(component, endpointState);
+              const renderAsTable = component.component_type?.includes("table") || (rows.length > 1 && fields.length > 1);
+              const renderAsChart = component.component_type?.includes("chart") || series.length > 1;
+              const renderAsMetricGroup = !renderAsChart && !renderAsTable && metricEntries.length > 1;
+              return (
+                <article className={`panel ${componentCardSpan(component, rows, series)} native-bi-widget native-bi-product-card`} key={`canvas-${component.id ?? componentTitle(component)}`}>
+                  <div className="native-bi-card-topline">
+                    <div>
+                      <p className="eyebrow">{componentZoneLabel(component)}</p>
+                      <h4 className="section-heading">{componentTitle(component)}</h4>
+                      <p className="section-subtitle">{componentSubtitle(component)}</p>
+                    </div>
+                    <TrustOverlay trusted={trusted} />
+                  </div>
+                  {widgetState.status === "loading" ? (
+                    <Placeholder kind={renderAsTable ? "table" : "chart"} />
+                  ) : widgetState.status === "rendered" ? (
+                    renderAsTable ? (
+                      <div className="native-bi-table-shell">
+                        <table className="table native-bi-table">
+                          <thead>
+                            <tr>
+                              {fields.map((field) => (
+                                <th key={field}>{niceLabel(field)}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.slice(0, 5).map((row, index) => (
+                              <tr key={`${component.id ?? "canvas-row"}-${index}`}>
+                                {fields.map((field) => (
+                                  <td key={`${field}-${index}`}>{String(row[field] ?? "Unknown")}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : renderAsChart ? (
+                      <>
+                        <div className="native-bi-chart-shell">
+                          <svg viewBox="0 0 100 84" className="native-bi-chart-svg" preserveAspectRatio="none" aria-hidden="true">
+                            <polyline points={chartSvgPoints(series)} />
+                          </svg>
+                        </div>
+                        {series.at(-1) ? (
+                          <div className="native-bi-chart-metrics">
+                            <span>Latest: {formatMetricValue(series.at(-1)?.value, component.display_contract?.format, component.display_contract?.precision, component.display_contract?.unit)}</span>
+                            <span>{`Points: ${series.length}`}</span>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : renderAsMetricGroup ? (
+                      <div className="use-case-outcome-list">
+                        {metricEntries.slice(0, 6).map(([field, metricValue]) => (
+                          <span key={`${component.id ?? "canvas-metric"}-${field}`}>
+                            {niceLabel(field)}: {formatMetricValue(metricValue, field.includes("rate") ? "percentage" : component.display_contract?.format, component.display_contract?.precision, field.includes("rate") ? "%" : component.display_contract?.unit)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="kpi-card-value">
+                        {formatMetricValue(
+                          value,
+                          component.display_contract?.format,
+                          component.display_contract?.precision,
+                          component.display_contract?.unit,
+                        )}
+                      </span>
+                    )
+                  ) : widgetState.status === "empty" ? (
+                    <p className="section-subtitle">{component.display_contract?.empty_message ?? "No data available."}</p>
+                  ) : (
+                    <WidgetStatus state={widgetState} diagnosticsHref={diagnosticsHref} />
+                  )}
+                </article>
+              );
+            })}
           </div>
         </article>
       ) : null}

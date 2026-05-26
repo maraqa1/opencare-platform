@@ -28,6 +28,11 @@ export type ComponentSpec = {
   purpose?: string;
   empty_state?: string;
   expected_fields?: string[];
+  layout_contract?: {
+    zone?: string;
+    section?: string;
+    order?: number;
+  };
   display_contract?: {
     title?: string;
     subtitle?: string;
