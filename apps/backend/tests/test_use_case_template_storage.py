@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -49,6 +51,26 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
                 repaired = yaml.safe_load(handle)
             self.assertIn("pkg-1", repaired["packages"])
             self.assertTrue(storage.registry_snapshot_path.is_file())
+
+    def test_stale_registry_lock_is_recovered(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            storage.registry_lock_path.write_text("stale", encoding="utf-8")
+            old_timestamp = time.time() - (storage._STALE_LOCK_MAX_AGE_SECONDS + 5)
+            os.utime(storage.registry_lock_path, (old_timestamp, old_timestamp))
+
+            saved = storage.upsert_package(
+                {
+                    "id": "pkg-2",
+                    "package_id": "pkg-2",
+                    "slug": "revenue-cycle",
+                    "version": "1.0.0",
+                    "status": "uploaded",
+                }
+            )
+
+            self.assertEqual(saved["id"], "pkg-2")
+            self.assertFalse(storage.registry_lock_path.exists())
 
 
 if __name__ == "__main__":

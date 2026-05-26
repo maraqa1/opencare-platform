@@ -19,6 +19,8 @@ def utc_now_iso() -> str:
 
 
 class UseCaseTemplateStorage:
+    _STALE_LOCK_MAX_AGE_SECONDS = 30.0
+
     def __init__(self, root: Path) -> None:
         self.root = root
         self.uploads_root = self.root / "uploads"
@@ -88,6 +90,16 @@ class UseCaseTemplateStorage:
                         self._registry_lock_state.lock_fd = lock_fd
                         break
                     except FileExistsError:
+                        try:
+                            lock_age = time.time() - self.registry_lock_path.stat().st_mtime
+                        except FileNotFoundError:
+                            continue
+                        if lock_age > self._STALE_LOCK_MAX_AGE_SECONDS:
+                            try:
+                                self.registry_lock_path.unlink()
+                            except FileNotFoundError:
+                                pass
+                            continue
                         if time.monotonic() >= deadline:
                             raise TimeoutError("Timed out waiting for the use-case registry lock.")
                         time.sleep(0.05)
