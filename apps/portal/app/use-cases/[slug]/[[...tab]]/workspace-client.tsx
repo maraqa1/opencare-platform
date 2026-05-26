@@ -39,6 +39,7 @@ type WidgetKind = "metric" | "metric-group" | "chart" | "table" | "governance";
 const ENDPOINT_CACHE_TTL_MS = 2 * 60 * 1000;
 
 const endpointStateCache = new Map<string, { state: EndpointState; fetchedAt: number }>();
+const endpointRequestCache = new Map<string, Promise<EndpointState>>();
 
 function normalizeEndpoint(path: string | undefined) {
   if (!path || path === "n/a") {
@@ -422,6 +423,78 @@ function setCachedEndpointState(slug: string, path: string, state: EndpointState
   });
 }
 
+function fetchEndpointState({
+  slug,
+  path,
+  workspace,
+}: {
+  slug: string;
+  path: string;
+  workspace: WorkspaceDefinition;
+}) {
+  const cached = getCachedEndpointState(slug, path);
+  if (cached) {
+    return Promise.resolve(cached);
+  }
+
+  const requestKey = cacheKey(slug, path);
+  const existing = endpointRequestCache.get(requestKey);
+  if (existing) {
+    return existing;
+  }
+
+  const correlationId = crypto.randomUUID().slice(0, 8);
+  const request = fetch(`/api/portal${path}`, { cache: "no-store" })
+    .then(async (response) => {
+      if (!response.ok) {
+        const defectClass = classifyDefect(workspace);
+        const nextState = {
+          status: defectClass === "package-defect" ? "blocked" : "degraded",
+          payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+          defectClass,
+          operatorMessage: operatorMessage(workspace, "Widget data could not be loaded.", response.status),
+          correlationId,
+        } satisfies EndpointState;
+        setCachedEndpointState(slug, path, nextState);
+        return nextState;
+      }
+      const payload = (await response.json()) as EndpointPayload;
+      const rows = dataRows(payload.data);
+      const status =
+        payload.meta?.empty || rows.length === 0
+          ? "empty"
+          : payload.errors?.length
+            ? "degraded"
+            : "rendered";
+      const nextState = {
+        status,
+        payload,
+        defectClass: status === "degraded" ? "runtime-defect" : undefined,
+        operatorMessage: status === "degraded" ? "Runtime returned a degraded widget response." : undefined,
+        correlationId: status === "degraded" ? correlationId : undefined,
+      } satisfies EndpointState;
+      setCachedEndpointState(slug, path, nextState);
+      return nextState;
+    })
+    .catch(() => {
+      const nextState = {
+        status: "degraded",
+        payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+        defectClass: "runtime-defect",
+        operatorMessage: "Runtime request did not complete. The package contract is present, but the live feed is unavailable.",
+        correlationId,
+      } satisfies EndpointState;
+      setCachedEndpointState(slug, path, nextState);
+      return nextState;
+    })
+    .finally(() => {
+      endpointRequestCache.delete(requestKey);
+    });
+
+  endpointRequestCache.set(requestKey, request);
+  return request;
+}
+
 function endpointsForComponents(components: ComponentSpec[]) {
   return Array.from(
     new Set(
@@ -504,72 +577,15 @@ export function MaterializedWorkspaceClient({
 
     let cancelled = false;
     endpointPaths.forEach((path) => {
-      const correlationId = crypto.randomUUID().slice(0, 8);
-      fetch(`/api/portal${path}`, { cache: "no-store" })
-        .then(async (response) => {
-          if (cancelled) {
-            return;
-          }
-          if (!response.ok) {
-            const defectClass = classifyDefect(workspace);
-            setEndpointState((current) => {
-              const nextState = {
-                status: defectClass === "package-defect" ? "blocked" : "degraded",
-                payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
-                defectClass,
-                operatorMessage: operatorMessage(workspace, "Widget data could not be loaded.", response.status),
-                correlationId,
-              } satisfies EndpointState;
-              setCachedEndpointState(slug, path, nextState);
-              return {
-                ...current,
-                [path]: nextState,
-              };
-            });
-            return;
-          }
-          const payload = (await response.json()) as EndpointPayload;
-          const rows = dataRows(payload.data);
-          const status =
-            payload.meta?.empty || rows.length === 0
-              ? "empty"
-              : payload.errors?.length
-                ? "degraded"
-                : "rendered";
-          setEndpointState((current) => {
-            const nextState = {
-              status,
-              payload,
-              defectClass: status === "degraded" ? "runtime-defect" : undefined,
-              operatorMessage: status === "degraded" ? "Runtime returned a degraded widget response." : undefined,
-              correlationId: status === "degraded" ? correlationId : undefined,
-            } satisfies EndpointState;
-            setCachedEndpointState(slug, path, nextState);
-            return {
-              ...current,
-              [path]: nextState,
-            };
-          });
-        })
-        .catch(() => {
-          if (cancelled) {
-            return;
-          }
-          setEndpointState((current) => {
-            const nextState = {
-              status: "degraded",
-              payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
-              defectClass: "runtime-defect",
-              operatorMessage: "Runtime request did not complete. The package contract is present, but the live feed is unavailable.",
-              correlationId,
-            } satisfies EndpointState;
-            setCachedEndpointState(slug, path, nextState);
-            return {
-              ...current,
-              [path]: nextState,
-            };
-          });
-        });
+      void fetchEndpointState({ slug, path, workspace }).then((nextState) => {
+        if (cancelled) {
+          return;
+        }
+        setEndpointState((current) => ({
+          ...current,
+          [path]: nextState,
+        }));
+      });
     });
 
     return () => {
@@ -583,35 +599,15 @@ export function MaterializedWorkspaceClient({
     }
     let cancelled = false;
     prefetchedPaths.forEach((path) => {
-      if (getCachedEndpointState(slug, path)) {
+      if (cancelled) {
         return;
       }
-      fetch(`/api/portal${path}`, { cache: "no-store" })
-        .then(async (response) => {
-          if (cancelled || !response.ok) {
-            return;
-          }
-          const payload = (await response.json()) as EndpointPayload;
-          const rows = dataRows(payload.data);
-          const status =
-            payload.meta?.empty || rows.length === 0
-              ? "empty"
-              : payload.errors?.length
-                ? "degraded"
-                : "rendered";
-          setCachedEndpointState(slug, path, {
-            status,
-            payload,
-            defectClass: status === "degraded" ? "runtime-defect" : undefined,
-            operatorMessage: status === "degraded" ? "Runtime returned a degraded widget response." : undefined,
-          });
-        })
-        .catch(() => undefined);
+      void fetchEndpointState({ slug, path, workspace }).then(() => undefined);
     });
     return () => {
       cancelled = true;
     };
-  }, [packageBlocked, prefetchedPaths, slug]);
+  }, [packageBlocked, prefetchedPaths, slug, workspace]);
 
   const trustStrip = selectedComponents.find((component) => component.component_type === "trust_strip");
   const canvasComponents = selectedComponents
