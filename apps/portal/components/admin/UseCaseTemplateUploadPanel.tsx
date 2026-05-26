@@ -9,6 +9,24 @@ export function UseCaseTemplateUploadPanel() {
   const [message, setMessage] = useState<string>("");
   const [isPending, startTransition] = useTransition();
 
+  function parseUploadPayload(raw: string) {
+    if (!raw.trim()) {
+      return {};
+    }
+    try {
+      return JSON.parse(raw) as {
+        status?: string;
+        package_id?: string;
+        record_id?: string;
+        package?: { id?: string };
+        detail?: string;
+        message?: string;
+      };
+    } catch {
+      return { detail: raw.trim() };
+    }
+  }
+
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -25,16 +43,10 @@ export function UseCaseTemplateUploadPanel() {
           method: "POST",
           body: formData,
         });
-        const payload = (await response.json()) as {
-          status?: string;
-          package_id?: string;
-          record_id?: string;
-          package?: { id?: string };
-          detail?: string;
-        };
+        const payload = parseUploadPayload(await response.text());
         const targetId = payload.package?.id ?? payload.record_id ?? payload.package_id;
         if (!response.ok || payload.status !== "ok" || !targetId) {
-          throw new Error(payload.detail ?? "Upload failed.");
+          throw new Error(payload.detail ?? payload.message ?? `Upload failed (${response.status}).`);
         }
         setMessage("Package uploaded successfully.");
         router.push(`/admin/use-case-templates/${encodeURIComponent(targetId)}`);
