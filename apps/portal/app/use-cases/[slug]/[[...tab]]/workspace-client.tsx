@@ -36,6 +36,8 @@ type ChartPoint = {
 
 type WidgetKind = "metric" | "metric-group" | "chart" | "table" | "governance";
 
+const endpointStateCache = new Map<string, EndpointState>();
+
 function normalizeEndpoint(path: string | undefined) {
   if (!path || path === "n/a") {
     return "";
@@ -395,8 +397,12 @@ function displayTimestamp(payload: EndpointPayload) {
   return payload.meta?.data_freshness?.last_loaded_at ?? payload.meta?.as_of ?? "Awaiting live data";
 }
 
+function cacheKey(slug: string, path: string) {
+  return `${slug}:${path}`;
+}
+
 export function MaterializedWorkspaceClient({
-  slug: _slug,
+  slug,
   workspace,
   selectedTabLabel,
   selectedComponents,
@@ -408,11 +414,6 @@ export function MaterializedWorkspaceClient({
   selectedComponents: ComponentSpec[];
   diagnosticsHref?: string;
 }) {
-  const [endpointState, setEndpointState] = useState<Record<string, EndpointState>>({});
-
-  const packageBlocked = workspace.state?.materialization_status !== "materialized" || workspace.state?.activation_status !== "active";
-  const trusted = workspace.state?.live_verification_status === "live_verified";
-
   const endpointPaths = useMemo(
     () =>
       Array.from(
@@ -424,6 +425,16 @@ export function MaterializedWorkspaceClient({
       ),
     [selectedComponents],
   );
+  const [endpointState, setEndpointState] = useState<Record<string, EndpointState>>(() =>
+    Object.fromEntries(
+      endpointPaths
+        .map((path) => [path, endpointStateCache.get(cacheKey(slug, path))] as const)
+        .filter((entry): entry is readonly [string, EndpointState] => Boolean(entry[1])),
+    ),
+  );
+
+  const packageBlocked = workspace.state?.materialization_status !== "materialized" || workspace.state?.activation_status !== "active";
+  const trusted = workspace.state?.live_verification_status === "live_verified";
 
   useEffect(() => {
     if (packageBlocked) {
@@ -439,6 +450,9 @@ export function MaterializedWorkspaceClient({
           },
         ]),
       );
+      Object.entries(blockedEntries).forEach(([path, state]) => {
+        endpointStateCache.set(cacheKey(slug, path), state);
+      });
       setEndpointState(blockedEntries);
       return;
     }
@@ -447,10 +461,11 @@ export function MaterializedWorkspaceClient({
       Object.fromEntries(
         endpointPaths.map((path) => [
           path,
-          current[path] ?? {
-            status: "loading" as const,
-            payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
-          },
+          current[path] ??
+            endpointStateCache.get(cacheKey(slug, path)) ?? {
+              status: "loading" as const,
+              payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+            },
         ]),
       ),
     );
@@ -465,16 +480,20 @@ export function MaterializedWorkspaceClient({
           }
           if (!response.ok) {
             const defectClass = classifyDefect(workspace);
-            setEndpointState((current) => ({
-              ...current,
-              [path]: {
+            setEndpointState((current) => {
+              const nextState = {
                 status: defectClass === "package-defect" ? "blocked" : "degraded",
                 payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
                 defectClass,
                 operatorMessage: operatorMessage(workspace, "Widget data could not be loaded.", response.status),
                 correlationId,
-              },
-            }));
+              } satisfies EndpointState;
+              endpointStateCache.set(cacheKey(slug, path), nextState);
+              return {
+                ...current,
+                [path]: nextState,
+              };
+            });
             return;
           }
           const payload = (await response.json()) as EndpointPayload;
@@ -485,38 +504,46 @@ export function MaterializedWorkspaceClient({
               : payload.errors?.length
                 ? "degraded"
                 : "rendered";
-          setEndpointState((current) => ({
-            ...current,
-            [path]: {
+          setEndpointState((current) => {
+            const nextState = {
               status,
               payload,
               defectClass: status === "degraded" ? "runtime-defect" : undefined,
               operatorMessage: status === "degraded" ? "Runtime returned a degraded widget response." : undefined,
               correlationId: status === "degraded" ? correlationId : undefined,
-            },
-          }));
+            } satisfies EndpointState;
+            endpointStateCache.set(cacheKey(slug, path), nextState);
+            return {
+              ...current,
+              [path]: nextState,
+            };
+          });
         })
         .catch(() => {
           if (cancelled) {
             return;
           }
-          setEndpointState((current) => ({
-            ...current,
-            [path]: {
+          setEndpointState((current) => {
+            const nextState = {
               status: "degraded",
               payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
               defectClass: "runtime-defect",
               operatorMessage: "Runtime request did not complete. The package contract is present, but the live feed is unavailable.",
               correlationId,
-            },
-          }));
+            } satisfies EndpointState;
+            endpointStateCache.set(cacheKey(slug, path), nextState);
+            return {
+              ...current,
+              [path]: nextState,
+            };
+          });
         });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [endpointPaths, packageBlocked, workspace]);
+  }, [endpointPaths, packageBlocked, slug, workspace]);
 
   const trustStrip = selectedComponents.find((component) => component.component_type === "trust_strip");
   const canvasComponents = selectedComponents
