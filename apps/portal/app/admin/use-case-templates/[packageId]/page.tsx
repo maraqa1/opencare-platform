@@ -62,6 +62,16 @@ export default async function UseCaseTemplateDetailPage({ params }: RouteContext
       eyebrow="Administration"
       title={pkg?.name ?? packageId}
       description="Review validation, preview install impact, inspect package files, and run lifecycle actions."
+      actions={
+        pkg ? (
+          <a
+            className="settings-link"
+            href={`/api/portal/api/v1/admin/use-case-templates/${encodeURIComponent(packageId)}/display-contract`}
+          >
+            Download display_contract
+          </a>
+        ) : null
+      }
     >
       <section className="grid">
         <UseCaseTemplateRuntimeStatusPanel pkg={pkg} />

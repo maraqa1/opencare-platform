@@ -3,11 +3,13 @@ from __future__ import annotations
 import shutil
 import tempfile
 import uuid
+import json
 from pathlib import Path
 from typing import Any
 
 import yaml
 from fastapi import APIRouter, File, Header, HTTPException, Query, Request, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.config import settings
@@ -98,6 +100,40 @@ def _registry_diagnostics(record: dict[str, Any]) -> dict[str, Any]:
         }
         if isinstance(active_package, dict)
         else None,
+    }
+
+
+def _display_contract_export(record: dict[str, Any]) -> dict[str, Any]:
+    compile_report = record.get("compile_report", {}) if isinstance(record.get("compile_report"), dict) else {}
+    runtime_definition = compile_report.get("runtime_definition", {}) if isinstance(compile_report.get("runtime_definition"), dict) else {}
+    tabs = runtime_definition.get("tabs", []) if isinstance(runtime_definition.get("tabs"), list) else []
+    return {
+        "package": {
+            "id": record.get("id"),
+            "package_id": record.get("package_id"),
+            "slug": record.get("slug"),
+            "name": record.get("name"),
+            "version": record.get("version"),
+        },
+        "workspace_route": runtime_definition.get("workspace_route"),
+        "tabs": [
+            {
+                "id": tab.get("id"),
+                "label": tab.get("label"),
+                "route": tab.get("route"),
+                "components": [
+                    {
+                        "id": spec.get("id"),
+                        "component_type": spec.get("component_type"),
+                        "display_contract": spec.get("display_contract", {}),
+                    }
+                    for spec in tab.get("component_specs", [])
+                    if isinstance(spec, dict)
+                ],
+            }
+            for tab in tabs
+            if isinstance(tab, dict)
+        ],
     }
 
 
@@ -339,6 +375,26 @@ def get_use_case_template_diagnostics(request: Request, package_id: str) -> dict
             },
         },
     }
+
+
+@router.get("/{package_id}/display-contract")
+def download_use_case_template_display_contract(request: Request, package_id: str) -> Response:
+    _require_admin(request)
+    record = storage.get_package(package_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Unknown package: {package_id}")
+    if not isinstance(record.get("compile_report"), dict) or not record.get("compile_report", {}).get("runtime_definition"):
+        raise HTTPException(status_code=409, detail="Compile the package before exporting display_contract.")
+
+    payload = _display_contract_export(record)
+    slug = record.get("slug") or record.get("package_id") or package_id
+    version = record.get("version") or "unknown"
+    filename = f"{slug}-display-contract-{version}.json"
+    return Response(
+        content=json.dumps(payload, indent=2),
+        media_type="application/json",
+        headers={"content-disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/{package_id}/validate")
