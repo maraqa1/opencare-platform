@@ -6739,6 +6739,76 @@ code {
   gap: 10px;
 }
 
+.native-bi-product-card {
+  align-content: start;
+}
+
+.native-bi-card-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.native-bi-trust-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.native-bi-trust-pill.trusted {
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--oc-normal);
+}
+
+.native-bi-trust-pill.governance-review {
+  background: rgba(230, 81, 0, 0.12);
+  color: var(--oc-warning);
+}
+
+.native-bi-widget-state {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(248, 250, 253, 0.95);
+}
+
+.native-bi-widget-state p {
+  margin: 0;
+  color: var(--oc-gray-600);
+  line-height: 1.5;
+}
+
+.native-bi-widget-state-empty {
+  border-color: rgba(31, 56, 100, 0.08);
+}
+
+.native-bi-widget-state-degraded {
+  border-color: rgba(230, 81, 0, 0.24);
+  background: rgba(255, 248, 225, 0.96);
+}
+
+.native-bi-widget-state-blocked {
+  border-color: rgba(183, 28, 28, 0.18);
+  background: rgba(255, 235, 238, 0.96);
+}
+
+.native-bi-widget-state-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .native-workflow-shell {
   display: grid;
   gap: 16px;
