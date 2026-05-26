@@ -87,6 +87,13 @@ export type WorkspaceDefinition = {
   personas?: Array<string | { title?: string; id?: string }>;
 };
 
+export type WorkspaceTabDefinition = {
+  id?: string;
+  label?: string;
+  route?: string;
+  component_specs?: ComponentSpec[];
+};
+
 function tabLabel(tabId: string) {
   return tabId.replaceAll("-", " ").replace(/\b\w/g, (match) => match.toUpperCase());
 }
@@ -110,7 +117,7 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
   const workspaceResponse = await getApiJson<{ workspace?: WorkspaceDefinition }>({
     path: `/api/v1/use-cases/${slug}/workspace`,
     fallback: { workspace: undefined },
-    cacheMode: "no-store",
+    cacheMode: "revalidate",
   });
   const workspace = workspaceResponse.workspace;
   if (!workspace) {
@@ -172,6 +179,7 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
         workspace={workspace}
         selectedTabLabel={selectedTab?.label ?? tabLabel(activeTab)}
         selectedComponents={selectedTab?.component_specs ?? []}
+        allTabs={workspace.tabs ?? []}
         diagnosticsHref={diagnosticsHref}
       />
     </PageFrame>

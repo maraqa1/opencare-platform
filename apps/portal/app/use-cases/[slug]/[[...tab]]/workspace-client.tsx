@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { ComponentSpec, WorkspaceDefinition } from "./page";
+import type { ComponentSpec, WorkspaceDefinition, WorkspaceTabDefinition } from "./page";
 
 type EndpointPayload = {
   data?: unknown[] | Record<string, unknown> | null;
@@ -36,7 +36,9 @@ type ChartPoint = {
 
 type WidgetKind = "metric" | "metric-group" | "chart" | "table" | "governance";
 
-const endpointStateCache = new Map<string, EndpointState>();
+const ENDPOINT_CACHE_TTL_MS = 2 * 60 * 1000;
+
+const endpointStateCache = new Map<string, { state: EndpointState; fetchedAt: number }>();
 
 function normalizeEndpoint(path: string | undefined) {
   if (!path || path === "n/a") {
@@ -401,34 +403,64 @@ function cacheKey(slug: string, path: string) {
   return `${slug}:${path}`;
 }
 
+function getCachedEndpointState(slug: string, path: string) {
+  const entry = endpointStateCache.get(cacheKey(slug, path));
+  if (!entry) {
+    return undefined;
+  }
+  if (Date.now() - entry.fetchedAt > ENDPOINT_CACHE_TTL_MS) {
+    endpointStateCache.delete(cacheKey(slug, path));
+    return undefined;
+  }
+  return entry.state;
+}
+
+function setCachedEndpointState(slug: string, path: string, state: EndpointState) {
+  endpointStateCache.set(cacheKey(slug, path), {
+    state,
+    fetchedAt: Date.now(),
+  });
+}
+
+function endpointsForComponents(components: ComponentSpec[]) {
+  return Array.from(
+    new Set(
+      components
+        .map((component) => normalizeEndpoint(specEndpoint(component)))
+        .filter(Boolean),
+    ),
+  );
+}
+
 export function MaterializedWorkspaceClient({
   slug,
   workspace,
   selectedTabLabel,
   selectedComponents,
+  allTabs,
   diagnosticsHref,
 }: {
   slug: string;
   workspace: WorkspaceDefinition;
   selectedTabLabel: string;
   selectedComponents: ComponentSpec[];
+  allTabs: WorkspaceTabDefinition[];
   diagnosticsHref?: string;
 }) {
-  const endpointPaths = useMemo(
+  const endpointPaths = useMemo(() => endpointsForComponents(selectedComponents), [selectedComponents]);
+  const prefetchedPaths = useMemo(
     () =>
       Array.from(
         new Set(
-          selectedComponents
-            .map((component) => normalizeEndpoint(specEndpoint(component)))
-            .filter(Boolean),
+          allTabs.flatMap((tab) => endpointsForComponents(tab.component_specs ?? [])),
         ),
-      ),
-    [selectedComponents],
+      ).filter((path) => !endpointPaths.includes(path)),
+    [allTabs, endpointPaths],
   );
   const [endpointState, setEndpointState] = useState<Record<string, EndpointState>>(() =>
     Object.fromEntries(
       endpointPaths
-        .map((path) => [path, endpointStateCache.get(cacheKey(slug, path))] as const)
+        .map((path) => [path, getCachedEndpointState(slug, path)] as const)
         .filter((entry): entry is readonly [string, EndpointState] => Boolean(entry[1])),
     ),
   );
@@ -451,7 +483,7 @@ export function MaterializedWorkspaceClient({
         ]),
       );
       Object.entries(blockedEntries).forEach(([path, state]) => {
-        endpointStateCache.set(cacheKey(slug, path), state);
+        setCachedEndpointState(slug, path, state);
       });
       setEndpointState(blockedEntries);
       return;
@@ -462,7 +494,7 @@ export function MaterializedWorkspaceClient({
         endpointPaths.map((path) => [
           path,
           current[path] ??
-            endpointStateCache.get(cacheKey(slug, path)) ?? {
+            getCachedEndpointState(slug, path) ?? {
               status: "loading" as const,
               payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
             },
@@ -488,7 +520,7 @@ export function MaterializedWorkspaceClient({
                 operatorMessage: operatorMessage(workspace, "Widget data could not be loaded.", response.status),
                 correlationId,
               } satisfies EndpointState;
-              endpointStateCache.set(cacheKey(slug, path), nextState);
+              setCachedEndpointState(slug, path, nextState);
               return {
                 ...current,
                 [path]: nextState,
@@ -512,7 +544,7 @@ export function MaterializedWorkspaceClient({
               operatorMessage: status === "degraded" ? "Runtime returned a degraded widget response." : undefined,
               correlationId: status === "degraded" ? correlationId : undefined,
             } satisfies EndpointState;
-            endpointStateCache.set(cacheKey(slug, path), nextState);
+            setCachedEndpointState(slug, path, nextState);
             return {
               ...current,
               [path]: nextState,
@@ -531,7 +563,7 @@ export function MaterializedWorkspaceClient({
               operatorMessage: "Runtime request did not complete. The package contract is present, but the live feed is unavailable.",
               correlationId,
             } satisfies EndpointState;
-            endpointStateCache.set(cacheKey(slug, path), nextState);
+            setCachedEndpointState(slug, path, nextState);
             return {
               ...current,
               [path]: nextState,
@@ -544,6 +576,42 @@ export function MaterializedWorkspaceClient({
       cancelled = true;
     };
   }, [endpointPaths, packageBlocked, slug, workspace]);
+
+  useEffect(() => {
+    if (packageBlocked) {
+      return;
+    }
+    let cancelled = false;
+    prefetchedPaths.forEach((path) => {
+      if (getCachedEndpointState(slug, path)) {
+        return;
+      }
+      fetch(`/api/portal${path}`, { cache: "no-store" })
+        .then(async (response) => {
+          if (cancelled || !response.ok) {
+            return;
+          }
+          const payload = (await response.json()) as EndpointPayload;
+          const rows = dataRows(payload.data);
+          const status =
+            payload.meta?.empty || rows.length === 0
+              ? "empty"
+              : payload.errors?.length
+                ? "degraded"
+                : "rendered";
+          setCachedEndpointState(slug, path, {
+            status,
+            payload,
+            defectClass: status === "degraded" ? "runtime-defect" : undefined,
+            operatorMessage: status === "degraded" ? "Runtime returned a degraded widget response." : undefined,
+          });
+        })
+        .catch(() => undefined);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [packageBlocked, prefetchedPaths, slug]);
 
   const trustStrip = selectedComponents.find((component) => component.component_type === "trust_strip");
   const canvasComponents = selectedComponents
