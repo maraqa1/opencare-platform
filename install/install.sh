@@ -125,7 +125,7 @@ done
 
 if [[ -n "$from_phase" || -n "$to_phase" ]]; then
   filtered_phases=()
-  include_entry=true
+  include_entry=false
   found_from=false
   found_to=false
 

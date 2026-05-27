@@ -37,7 +37,8 @@ Useful environment flags:
 After bootstrap:
 1. clone the repo onto the VM
 2. copy `.env.template` to `.env` and fill secrets/hosts
-3. run one installer command, depending on your goal:
+3. confirm `TLS_EMAIL` is populated for Let's Encrypt certificate registration
+4. run one installer command, depending on your goal:
 
 Foundation install (default, no bundled demo use cases):
 ```bash
@@ -108,6 +109,12 @@ Useful install options:
 - `--from <phase>`
 - `--to <phase>`
 - `--skip-validation`
+
+Resume examples:
+```bash
+sudo bash install/install.sh --from tls
+sudo bash install/install.sh --from app
+```
 
 Validation now also checks that the backend deployment is using `backend-config-writer`, because use-case toggle persistence will silently fail if the backend pod falls back to the default service account.
 Validation also checks the `backend-use-case-packages` PVC, the backend `Use Case Templates` admin API, and the portal `/admin/use-case-templates` route so new VM installs explicitly prove the package importer surface is live.
