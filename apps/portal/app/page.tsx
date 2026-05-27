@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [runtime, health, alerts, occupancy, useCaseConfig, packageResponse] = await Promise.all([
+  const [runtime, health, alerts, occupancy, useCaseConfig] = await Promise.all([
     getApiJson<{
       runtimes?: Array<{ name: string; last_run?: string | null; row_count?: number }>;
     }>({
@@ -45,23 +45,16 @@ export default async function HomePage() {
     }),
     getApiJson<{
       all_use_cases?: Record<string, { enabled?: boolean }>;
+      active_imported_use_cases?: UseCaseTemplatePackage[];
     }>({
       path: "/api/v1/config/use-cases",
       fallback: { all_use_cases: {} },
       cacheMode: "no-store",
     }),
-    getApiJson<{
-      packages?: UseCaseTemplatePackage[];
-    }>({
-      path: "/api/v1/admin/use-case-templates",
-      fallback: { packages: [] },
-      cacheMode: "no-store",
-      adminContext: true,
-    }),
   ]);
 
   const visibleUseCases = filterVisibleUseCases(useCases, useCaseConfig.all_use_cases ?? {});
-  const importedUseCases = projectImportedPackagesToUseCases(packageResponse.packages ?? []);
+  const importedUseCases = projectImportedPackagesToUseCases(useCaseConfig.active_imported_use_cases ?? []);
   const activeUseCases = [...visibleUseCases, ...importedUseCases];
   const defaultUseCaseHref =
     activeUseCases.find((useCase) => useCase.status === "active")?.defaultHref ?? "/use-cases";

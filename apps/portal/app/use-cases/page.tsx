@@ -11,26 +11,17 @@ export const metadata: Metadata = {
 };
 
 export default async function UseCasesPage() {
-  const [config, packageResponse] = await Promise.all([
-    getApiJson<{
-      all_use_cases?: Record<string, { enabled?: boolean }>;
-    }>({
+  const config = await getApiJson<{
+    all_use_cases?: Record<string, { enabled?: boolean }>;
+    active_imported_use_cases?: UseCaseTemplatePackage[];
+  }>({
       path: "/api/v1/config/use-cases",
       fallback: { all_use_cases: {} },
       cacheMode: "no-store",
-    }),
-    getApiJson<{
-      packages?: UseCaseTemplatePackage[];
-    }>({
-      path: "/api/v1/admin/use-case-templates",
-      fallback: { packages: [] },
-      cacheMode: "no-store",
-      adminContext: true,
-    }),
-  ]);
+    });
 
   const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});
-  const importedUseCases = projectImportedPackagesToUseCases(packageResponse.packages ?? []);
+  const importedUseCases = projectImportedPackagesToUseCases(config.active_imported_use_cases ?? []);
   const activeUseCases = [...visibleUseCases, ...importedUseCases];
 
   return (

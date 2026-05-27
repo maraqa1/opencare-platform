@@ -240,6 +240,39 @@ class UseCaseTemplateStorage:
             if record.get("materialization_status") == "materialized"
         ]
 
+    def list_active_packages(self) -> list[dict[str, Any]]:
+        registry = self.load_registry()
+        packages = registry.get("packages", {})
+        active_versions = registry.get("active_versions", {})
+        active_records: list[dict[str, Any]] = []
+        seen_keys: set[str] = set()
+
+        if isinstance(active_versions, dict) and isinstance(packages, dict):
+            for pointer in active_versions.values():
+                if not isinstance(pointer, dict):
+                    continue
+                package_key = pointer.get("package_key")
+                if not isinstance(package_key, str):
+                    continue
+                record = packages.get(package_key)
+                if isinstance(record, dict):
+                    active_records.append(deepcopy(record))
+                    seen_keys.add(package_key)
+
+        if isinstance(packages, dict):
+            for package_key, record in packages.items():
+                if package_key in seen_keys or not isinstance(record, dict):
+                    continue
+                if (
+                    record.get("enabled") is True
+                    and record.get("materialization_status") == "materialized"
+                    and record.get("activation_status") in {"active", "live_verified"}
+                ):
+                    active_records.append(deepcopy(record))
+
+        active_records.sort(key=lambda candidate: str(candidate.get("last_action_at", "")), reverse=True)
+        return active_records
+
     def upsert_package(self, record: dict[str, Any]) -> dict[str, Any]:
         package_key = str(record.get("id") or record["package_id"])
         record.setdefault("package_validation_status", record.get("validation_summary", {}).get("status", "uploaded"))
