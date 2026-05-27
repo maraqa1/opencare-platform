@@ -200,6 +200,9 @@ class UseCasePackageCompilerTests(unittest.TestCase):
             runtime_definition = report["runtime_definition"]
             self.assertEqual(runtime_definition["tabs"][0]["id"], "overview")
             self.assertEqual(runtime_definition["tabs"][0]["component_specs"][0]["display_contract"]["title"], "30-Day Readmission Rate")
+            self.assertEqual(runtime_definition["tabs"][0]["component_specs"][0]["component_type"], "kpi_card")
+            self.assertEqual(runtime_definition["dashboard_model"]["tabs"][0]["widgets"][0]["widget_kind"], "metric")
+            self.assertEqual(runtime_definition["dashboard_model"]["tabs"][0]["widgets"][0]["value_field"], None)
             self.assertEqual(runtime_definition["rendering"]["component_library"], "opencare_native_bi")
             self.assertEqual(len(runtime_definition["smoke_tests"]["component_render_checks"]), 1)
 

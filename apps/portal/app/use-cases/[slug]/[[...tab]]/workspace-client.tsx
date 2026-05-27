@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { ComponentSpec, WorkspaceDefinition, WorkspaceTabDefinition } from "./page";
+import type { ComponentSpec, DashboardWidgetModel, WorkspaceDefinition, WorkspaceTabDefinition } from "./page";
 
 type EndpointPayload = {
   data?: unknown[] | Record<string, unknown> | null;
@@ -34,7 +34,7 @@ type ChartPoint = {
   value: number;
 };
 
-type WidgetKind = "metric" | "metric-group" | "chart" | "table" | "governance";
+type WidgetKind = "metric" | "metric-group" | "chart" | "table" | "governance" | "filter-group";
 
 const ENDPOINT_CACHE_TTL_MS = 2 * 60 * 1000;
 
@@ -125,6 +125,14 @@ function componentTitle(spec: ComponentSpec) {
 
 function componentSubtitle(spec: ComponentSpec) {
   return spec.display_contract?.subtitle ?? spec.purpose ?? "Materialized from uploaded package specs.";
+}
+
+function widgetTitle(widget: DashboardWidgetModel, spec: ComponentSpec) {
+  return widget.title ?? componentTitle(spec);
+}
+
+function widgetSubtitle(widget: DashboardWidgetModel, spec: ComponentSpec) {
+  return widget.subtitle ?? componentSubtitle(spec);
 }
 
 function componentEndpointState(spec: ComponentSpec, endpointState: Record<string, EndpointState>) {
@@ -240,6 +248,20 @@ function governanceBadgeValue(spec: ComponentSpec, endpointState: Record<string,
   return value ? String(value) : "Pending";
 }
 
+function filterEntries(rows: Record<string, unknown>[]) {
+  return rows
+    .map((row) => {
+      const filterId = row.filter_id ?? row.id ?? row.name;
+      const value = row.value ?? row.label ?? row.option ?? row.record_count;
+      if (!filterId || value === undefined || value === null || value === "") {
+        return undefined;
+      }
+      return `${niceLabel(String(filterId))}: ${String(value)}`;
+    })
+    .filter((entry): entry is string => Boolean(entry))
+    .slice(0, 8);
+}
+
 function classifyDefect(workspace: WorkspaceDefinition) {
   if (workspace.state?.materialization_status !== "materialized" || workspace.state?.activation_status !== "active") {
     return "package-defect" as const;
@@ -324,7 +346,7 @@ function endpointHint(spec: ComponentSpec) {
   return normalizeEndpoint(specEndpoint(spec)).toLowerCase();
 }
 
-function inferWidgetKind(
+function fallbackWidgetKind(
   spec: ComponentSpec,
   value: unknown,
   rows: Record<string, unknown>[],
@@ -363,7 +385,7 @@ function inferWidgetKind(
 }
 
 function widgetCardSpan(kind: WidgetKind) {
-  if (kind === "table") {
+  if (kind === "table" || kind === "filter-group") {
     return "span-12";
   }
   if (kind === "chart" || kind === "metric-group" || kind === "governance") {
@@ -510,6 +532,7 @@ export function MaterializedWorkspaceClient({
   workspace,
   selectedTabLabel,
   selectedComponents,
+  selectedWidgetModels,
   allTabs,
   diagnosticsHref,
 }: {
@@ -517,6 +540,7 @@ export function MaterializedWorkspaceClient({
   workspace: WorkspaceDefinition;
   selectedTabLabel: string;
   selectedComponents: ComponentSpec[];
+  selectedWidgetModels: DashboardWidgetModel[];
   allTabs: WorkspaceTabDefinition[];
   diagnosticsHref?: string;
 }) {
@@ -540,6 +564,15 @@ export function MaterializedWorkspaceClient({
 
   const packageBlocked = workspace.state?.materialization_status !== "materialized" || workspace.state?.activation_status !== "active";
   const trusted = workspace.state?.live_verification_status === "live_verified";
+  const widgetModelById = useMemo(
+    () =>
+      Object.fromEntries(
+        selectedWidgetModels
+          .filter((widget) => widget.component_id)
+          .map((widget) => [widget.component_id as string, widget] as const),
+      ),
+    [selectedWidgetModels],
+  );
 
   useEffect(() => {
     if (packageBlocked) {
@@ -614,6 +647,33 @@ export function MaterializedWorkspaceClient({
     .filter((component) => component.component_type !== "trust_strip")
     .slice()
     .sort((left, right) => componentSortValue(left) - componentSortValue(right));
+  const canvasWidgets =
+    selectedWidgetModels.length > 0
+      ? selectedWidgetModels
+          .filter((widget) => widget.component_type !== "trust_strip")
+          .slice()
+          .sort((left, right) => (left.layout?.order ?? 999) - (right.layout?.order ?? 999))
+      : canvasComponents.map((component) => ({
+          id: component.id,
+          component_id: component.id,
+          component_type: component.component_type,
+          widget_kind: undefined,
+          title: component.display_contract?.title,
+          subtitle: component.display_contract?.subtitle,
+          endpoint: specEndpoint(component),
+          value_field: component.display_contract?.value_field,
+          format: component.display_contract?.format,
+          precision: component.display_contract?.precision,
+          unit: component.display_contract?.unit,
+          empty_message: component.display_contract?.empty_message,
+          status_badge: component.display_contract?.status_badge,
+          zero_semantics: component.display_contract?.zero_semantics,
+          expected_fields: component.expected_fields,
+          table_fields: component.expected_fields?.slice(0, 5),
+          layout: component.layout_contract,
+          governance: component.governance_contract,
+          interactions: component.interaction_contract,
+        }));
 
   const primaryPayload =
     endpointPaths
@@ -688,21 +748,29 @@ export function MaterializedWorkspaceClient({
         </article>
       ) : null}
 
-      {canvasComponents.length > 0 ? (
+      {canvasWidgets.length > 0 ? (
         <article className="panel span-12">
           <p className="eyebrow">Live dashboard</p>
           <h3 className="section-heading">Display contract canvas</h3>
           <div className="grid">
-            {canvasComponents.map((component) => {
+            {canvasWidgets.map((widget) => {
+              const component = widget.component_id ? selectedComponents.find((item) => item.id === widget.component_id) : undefined;
+              if (!component) {
+                return null;
+              }
               const widgetState = componentEndpointState(component, endpointState);
               const rows = dataRows(widgetState.payload.data);
               const record = firstDataRecord(widgetState.payload.data);
               const metricEntries = metricEntriesFromRecord(record);
               const value = componentValue(component, endpointState);
               const series = chartSeries(component, endpointState);
-              const fields = tableFields(component, endpointState);
+              const fields = (widget.table_fields && widget.table_fields.length > 0 ? widget.table_fields : tableFields(component, endpointState)).slice(0, 5);
               const highlights = metricHighlights(component, record);
-              const kind = inferWidgetKind(component, value, rows, series, metricEntries);
+              const filterPills = filterEntries(rows);
+              const kind =
+                widget.widget_kind ??
+                widgetModelById[component.id ?? ""]?.widget_kind ??
+                fallbackWidgetKind(component, value, rows, series, metricEntries);
               const latest = series.at(-1);
               const baseline = series.at(0);
               const delta = latest && baseline ? latest.value - baseline.value : 0;
@@ -711,13 +779,37 @@ export function MaterializedWorkspaceClient({
                   <div className="native-bi-card-topline">
                     <div>
                       <p className="eyebrow">{componentZoneLabel(component)}</p>
-                      <h4 className="section-heading">{componentTitle(component)}</h4>
-                      <p className="section-subtitle">{componentSubtitle(component)}</p>
+                      <h4 className="section-heading">{widgetTitle(widget, component)}</h4>
+                      <p className="section-subtitle">{widgetSubtitle(widget, component)}</p>
                     </div>
                     <TrustOverlay trusted={trusted} />
                   </div>
                   {widgetState.status === "loading" ? (
-                    <Placeholder kind={kind === "table" ? "table" : "chart"} />
+                    kind === "metric" ? (
+                      <div className="native-bi-metric-stack">
+                        <span className="kpi-card-value">...</span>
+                        <div className="native-bi-chart-metrics">
+                          <span>{niceLabel(widget.value_field ?? metricFieldLabel(component))}</span>
+                          <span>Loading</span>
+                        </div>
+                      </div>
+                    ) : kind === "metric-group" ? (
+                      <div className="native-bi-mini-metrics">
+                        <div className="native-bi-mini-metric"><span>Loading</span><strong>...</strong></div>
+                        <div className="native-bi-mini-metric"><span>Loading</span><strong>...</strong></div>
+                        <div className="native-bi-mini-metric"><span>Loading</span><strong>...</strong></div>
+                      </div>
+                    ) : kind === "governance" ? (
+                      <div className="native-bi-governance-card">
+                        <strong className="native-bi-badge-value">Resolving governance evidence</strong>
+                      </div>
+                    ) : kind === "filter-group" ? (
+                      <div className="use-case-outcome-list">
+                        <span>Loading filters</span>
+                      </div>
+                    ) : (
+                      <Placeholder kind={kind === "table" ? "table" : "chart"} />
+                    )
                   ) : widgetState.status === "rendered" ? (
                     kind === "table" ? (
                       <div className="native-bi-table-shell">
@@ -739,6 +831,14 @@ export function MaterializedWorkspaceClient({
                             ))}
                           </tbody>
                         </table>
+                      </div>
+                    ) : kind === "filter-group" ? (
+                      <div className="use-case-outcome-list">
+                        {filterPills.length > 0 ? (
+                          filterPills.map((pill) => <span key={`${component.id ?? "filter"}-${pill}`}>{pill}</span>)
+                        ) : (
+                          <span>{widget.empty_message ?? component.display_contract?.empty_message ?? "No filters available."}</span>
+                        )}
                       </div>
                     ) : kind === "chart" ? (
                       <>
@@ -785,8 +885,8 @@ export function MaterializedWorkspaceClient({
                             <strong>{displayTimestamp(widgetState.payload)}</strong>
                           </div>
                         </div>
-                        {component.governance_contract?.evidence_target ? (
-                          <a className="inline-link" href={component.governance_contract.evidence_target}>
+                        {widget.governance?.evidence_target || component.governance_contract?.evidence_target ? (
+                          <a className="inline-link" href={String(widget.governance?.evidence_target ?? component.governance_contract?.evidence_target)}>
                             Review evidence
                           </a>
                         ) : null}
@@ -796,19 +896,19 @@ export function MaterializedWorkspaceClient({
                         <span className="kpi-card-value">
                           {formatMetricValue(
                             value,
-                            component.display_contract?.format,
-                            component.display_contract?.precision,
-                            component.display_contract?.unit,
+                            widget.format ?? component.display_contract?.format,
+                            widget.precision ?? component.display_contract?.precision,
+                            widget.unit ?? component.display_contract?.unit,
                           )}
                         </span>
                         <div className="native-bi-chart-metrics">
-                          <span>{metricFieldLabel(component)}</span>
+                          <span>{niceLabel(widget.value_field ?? metricFieldLabel(component))}</span>
                           <span>{displayTimestamp(widgetState.payload)}</span>
                         </div>
                       </div>
                     )
                   ) : widgetState.status === "empty" ? (
-                    <p className="section-subtitle">{component.display_contract?.empty_message ?? "No data available."}</p>
+                    <p className="section-subtitle">{widget.empty_message ?? component.display_contract?.empty_message ?? "No data available."}</p>
                   ) : (
                     <WidgetStatus state={widgetState} diagnosticsHref={diagnosticsHref} />
                   )}

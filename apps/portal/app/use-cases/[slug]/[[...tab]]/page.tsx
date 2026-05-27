@@ -42,6 +42,7 @@ export type ComponentSpec = {
     value_field?: string;
     precision?: number;
     status_badge?: string;
+    zero_semantics?: string;
   };
   interaction_contract?: {
     click_behavior?: string;
@@ -63,6 +64,40 @@ export type ComponentSpec = {
   };
 };
 
+export type DashboardWidgetModel = {
+  id?: string;
+  component_id?: string;
+  component_type?: string;
+  widget_kind?: "metric" | "metric-group" | "chart" | "table" | "governance" | "filter-group";
+  title?: string;
+  subtitle?: string;
+  endpoint?: string;
+  value_field?: string | null;
+  format?: string;
+  precision?: number;
+  unit?: string;
+  empty_message?: string;
+  status_badge?: string;
+  zero_semantics?: string;
+  expected_fields?: string[];
+  table_fields?: string[];
+  layout?: {
+    zone?: string;
+    section?: string;
+    order?: number;
+  };
+  governance?: {
+    classification?: string;
+    phi_mode?: string;
+    evidence_target?: string;
+  };
+  interactions?: {
+    click_behavior?: string;
+    row_click_behavior?: string;
+    navigation_targets?: string[];
+  };
+};
+
 export type WorkspaceDefinition = {
   identity?: {
     package_id?: string;
@@ -78,6 +113,15 @@ export type WorkspaceDefinition = {
     route?: string;
     component_specs?: ComponentSpec[];
   }>;
+  dashboard_model?: {
+    version?: number;
+    tabs?: Array<{
+      id?: string;
+      label?: string;
+      route?: string;
+      widgets?: DashboardWidgetModel[];
+    }>;
+  };
   state?: {
     materialization_status?: string;
     activation_status?: string;
@@ -155,6 +199,13 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
   const diagnosticsHref = workspace.identity?.package_id
     ? `/admin/use-case-templates/${encodeURIComponent(workspace.identity.package_id)}`
     : undefined;
+  const selectedWidgetModels =
+    workspace.dashboard_model?.tabs?.find((item, index) => {
+      const routeSegment = tabPathSegment(item.route);
+      return index === 0
+        ? activeTab === "overview" || activeTab === item.id || activeTab === routeSegment
+        : activeTab === item.id || activeTab === routeSegment;
+    })?.widgets ?? [];
 
   return (
     <PageFrame
@@ -179,6 +230,7 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
         workspace={workspace}
         selectedTabLabel={selectedTab?.label ?? tabLabel(activeTab)}
         selectedComponents={selectedTab?.component_specs ?? []}
+        selectedWidgetModels={selectedWidgetModels}
         allTabs={workspace.tabs ?? []}
         diagnosticsHref={diagnosticsHref}
       />

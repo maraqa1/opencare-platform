@@ -67,6 +67,86 @@ class UseCasePackageCompiler:
             return ""
         return path.read_text(encoding="utf-8")
 
+    def _normalized_component_type(self, entry: dict[str, Any]) -> str:
+        explicit_type = entry.get("component_type")
+        if isinstance(explicit_type, str) and explicit_type.strip():
+            return explicit_type.strip()
+        legacy_type = entry.get("type")
+        if isinstance(legacy_type, str) and legacy_type.strip():
+            return legacy_type.strip()
+        return "widget"
+
+    def _widget_kind_for_component(self, component_type: str) -> str:
+        normalized = component_type.strip().lower()
+        if normalized in {"trust_strip", "governance_card", "governance_panel", "link_group"}:
+            return "governance"
+        if normalized in {"filter_chip_group", "filter_bar", "filter_group"}:
+            return "filter-group"
+        if normalized in {"queue_table", "data_table", "table", "drilldown_table"}:
+            return "table"
+        if normalized in {"kpi_group", "metric_group", "summary_metrics", "metric_grid"}:
+            return "metric-group"
+        if normalized in {
+            "line_chart",
+            "bar_chart",
+            "area_chart",
+            "variation_chart",
+            "native_chart",
+            "chart",
+            "trend_chart",
+        }:
+            return "chart"
+        return "metric"
+
+    def _dashboard_widget_model(self, spec: dict[str, Any]) -> dict[str, Any]:
+        display_contract = spec.get("display_contract", {}) if isinstance(spec.get("display_contract"), dict) else {}
+        layout_contract = spec.get("layout_contract", {}) if isinstance(spec.get("layout_contract"), dict) else {}
+        governance_contract = spec.get("governance_contract", {}) if isinstance(spec.get("governance_contract"), dict) else {}
+        interaction_contract = spec.get("interaction_contract", {}) if isinstance(spec.get("interaction_contract"), dict) else {}
+        component_type = str(spec.get("component_type") or "widget")
+        expected_fields = spec.get("expected_fields", []) if isinstance(spec.get("expected_fields"), list) else []
+        value_field = display_contract.get("value_field")
+        table_fields = [str(field) for field in expected_fields if isinstance(field, str)]
+        return {
+            "id": spec.get("id"),
+            "component_id": spec.get("id"),
+            "component_type": component_type,
+            "widget_kind": self._widget_kind_for_component(component_type),
+            "title": display_contract.get("title") or spec.get("id"),
+            "subtitle": display_contract.get("subtitle") or spec.get("purpose"),
+            "endpoint": spec.get("source_endpoint") or spec.get("endpoint"),
+            "value_field": value_field if isinstance(value_field, str) else None,
+            "format": display_contract.get("format"),
+            "precision": display_contract.get("precision"),
+            "unit": display_contract.get("unit"),
+            "empty_message": display_contract.get("empty_message") or spec.get("empty_state"),
+            "status_badge": display_contract.get("status_badge"),
+            "zero_semantics": display_contract.get("zero_semantics"),
+            "expected_fields": table_fields,
+            "table_fields": table_fields[:5],
+            "layout": layout_contract,
+            "governance": governance_contract,
+            "interactions": interaction_contract,
+        }
+
+    def _dashboard_model(self, tabs: list[dict[str, Any]]) -> dict[str, Any]:
+        model_tabs: list[dict[str, Any]] = []
+        for tab in tabs:
+            component_specs = tab.get("component_specs", []) if isinstance(tab.get("component_specs"), list) else []
+            widgets = [self._dashboard_widget_model(spec) for spec in component_specs if isinstance(spec, dict)]
+            model_tabs.append(
+                {
+                    "id": tab.get("id"),
+                    "label": tab.get("label"),
+                    "route": tab.get("route"),
+                    "widgets": widgets,
+                }
+            )
+        return {
+            "version": 1,
+            "tabs": model_tabs,
+        }
+
     def _is_read_only_query(self, sql_text: str) -> bool:
         normalized = sql_text.strip().lower()
         if not normalized:
@@ -191,6 +271,7 @@ class UseCasePackageCompiler:
         governance_map: dict[str, dict[str, Any]],
     ) -> dict[str, Any]:
         component_id = str(entry.get("id") or "").strip()
+        component_type = self._normalized_component_type(entry)
         binding_ref = ""
         data_binding = entry.get("data_binding")
         if isinstance(data_binding, dict):
@@ -214,6 +295,7 @@ class UseCasePackageCompiler:
         return {
             **entry,
             "id": component_id,
+            "component_type": component_type,
             "aliases": aliases,
             "source_file": "native-bi/components.yaml",
             "section": "components",
@@ -385,6 +467,7 @@ class UseCasePackageCompiler:
                 "smoke_tests_declared": smoke_tests_payload,
             },
             "layout_rules": layout_payload.get("layout_rules", {}),
+            "dashboard_model": self._dashboard_model(tabs),
         }
 
     def _legacy_workspace(self, slug: str, route: str) -> dict[str, Any]:
@@ -477,6 +560,7 @@ class UseCasePackageCompiler:
             "data_sources": dashboard_build.get("data_sources", []) if isinstance(dashboard_build.get("data_sources"), list) else [],
             "rendering": dashboard_build.get("rendering", {}) if isinstance(dashboard_build.get("rendering"), dict) else {},
             "layout_rules": {},
+            "dashboard_model": self._dashboard_model(tabs),
         }
 
     def _compile_workspace(self, slug: str) -> dict[str, Any]:
@@ -714,6 +798,7 @@ class UseCasePackageCompiler:
             "data_sources": workspace["data_sources"],
             "rendering": workspace["rendering"],
             "layout_rules": workspace.get("layout_rules", {}),
+            "dashboard_model": workspace.get("dashboard_model", {"version": 1, "tabs": []}),
             "filters": endpoints["filters"],
             "charts": dashboard_contract.get("dashboards", {}),
             "tables": dashboard_contract.get("operational", {}).get("episode_table", {}),
