@@ -38,7 +38,7 @@ export default async function AdminGovernancePage() {
       pageClassName="governance-page"
     >
       <section className="grid">
-        <UseCaseConfigurationPanel initialUseCases={useCases} />
+        <UseCaseConfigurationPanel initialUseCases={useCases} initialImportedPackages={[]} />
       </section>
       <GovernanceControlTower useCases={getGovernanceUseCases()} />
     </PageFrame>
