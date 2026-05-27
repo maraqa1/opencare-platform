@@ -61,8 +61,7 @@ export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
           <p className="eyebrow">Use Cases</p>
           <h3>No enabled use cases</h3>
           <p className="section-subtitle">
-            This project is running as an OpenCare foundation shell. Define and enable the Jazan use case when the
-            source systems, outcomes, and governance contract are ready.
+            Enable the Jazan municipal performance modules from Administration to make them available in the portal.
           </p>
         </article>
       </section>
