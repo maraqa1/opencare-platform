@@ -16,6 +16,25 @@ class UseCaseTogglePayload(BaseModel):
 
 @router.get("/use-cases")
 def get_use_cases() -> dict[str, object]:
+    imported_packages = [
+        {
+            "id": record.get("id"),
+            "package_id": record.get("package_id"),
+            "slug": record.get("slug"),
+            "name": record.get("name"),
+            "version": record.get("version"),
+            "domain": record.get("domain"),
+            "status": record.get("status"),
+            "enabled": record.get("enabled"),
+            "materialization_status": record.get("materialization_status"),
+            "activation_status": record.get("activation_status"),
+            "live_verification_status": record.get("live_verification_status"),
+            "preview_summary": record.get("preview_summary"),
+            "last_action_at": record.get("last_action_at"),
+        }
+        for record in template_storage.list_packages()
+        if record.get("status") != "uninstalled"
+    ]
     active_imported = [
         {
             "id": record.get("id"),
@@ -38,6 +57,7 @@ def get_use_cases() -> dict[str, object]:
         "status": "ok",
         "use_cases": load_enabled_use_cases(),
         "all_use_cases": load_use_cases(include_disabled=True),
+        "imported_use_cases": imported_packages,
         "active_imported_use_cases": active_imported,
     }
 

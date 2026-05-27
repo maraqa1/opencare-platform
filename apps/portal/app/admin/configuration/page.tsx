@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
 import { UseCaseConfigurationPanel } from "@/components/admin/UseCaseConfigurationPanel";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
@@ -23,6 +24,7 @@ type UseCaseManifestEntry = {
 export default async function AdminConfigurationPage() {
   const config = await getApiJson<{
     all_use_cases?: Record<string, UseCaseManifestEntry>;
+    imported_use_cases?: UseCaseTemplatePackage[];
   }>({
     path: "/api/v1/config/use-cases",
     fallback: { all_use_cases: {} },
@@ -46,7 +48,7 @@ export default async function AdminConfigurationPage() {
       description="Current use case settings, thresholds, alert rules, and enablement state."
     >
       <section className="grid">
-        <UseCaseConfigurationPanel initialUseCases={useCases} />
+        <UseCaseConfigurationPanel initialUseCases={useCases} initialImportedPackages={config.imported_use_cases ?? []} />
         <article className="panel span-6">
           <p className="eyebrow">Thresholds and Rules</p>
           <table className="table">

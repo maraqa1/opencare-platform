@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
+import type { UseCaseTemplatePackage } from "./use-case-template-types";
+
 type UseCaseManifestEntry = {
   name?: string;
   description?: string;
@@ -25,11 +27,14 @@ function toStatusTone(enabled: boolean) {
 
 export function UseCaseConfigurationPanel({
   initialUseCases,
+  initialImportedPackages,
 }: {
   initialUseCases: UseCaseRecord[];
+  initialImportedPackages: UseCaseTemplatePackage[];
 }) {
   const router = useRouter();
   const [useCases, setUseCases] = useState<UseCaseRecord[]>(initialUseCases);
+  const [importedPackages, setImportedPackages] = useState<UseCaseTemplatePackage[]>(initialImportedPackages);
   const [message, setMessage] = useState<string>("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -45,6 +50,19 @@ export function UseCaseConfigurationPanel({
         return left.id.localeCompare(right.id);
       }),
     [useCases],
+  );
+
+  const sortedImportedPackages = useMemo(
+    () =>
+      [...importedPackages].sort((left, right) => {
+        const leftEnabled = Boolean(left.enabled);
+        const rightEnabled = Boolean(right.enabled);
+        if (leftEnabled !== rightEnabled) {
+          return leftEnabled ? -1 : 1;
+        }
+        return (left.slug ?? left.package_id).localeCompare(right.slug ?? right.package_id);
+      }),
+    [importedPackages],
   );
 
   function toggleUseCase(useCaseId: string, enabled: boolean) {
@@ -97,6 +115,40 @@ export function UseCaseConfigurationPanel({
     });
   }
 
+  function toggleImportedPackage(pkg: UseCaseTemplatePackage, enabled: boolean) {
+    const packageRef = pkg.id ?? pkg.package_id;
+    const endpoint = enabled ? "include" : "exclude";
+    setPendingId(packageRef);
+    setMessage("");
+    startTransition(async () => {
+      try {
+        const response = await fetch(`/api/portal/api/v1/admin/use-case-templates/${encodeURIComponent(packageRef)}/${endpoint}`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+        });
+        const payload = (await response.json()) as {
+          status?: string;
+          package?: UseCaseTemplatePackage;
+          detail?: string;
+        };
+        if (!response.ok || payload.status !== "ok" || !payload.package) {
+          throw new Error(payload.detail ?? `Unable to ${endpoint} imported use case.`);
+        }
+        setImportedPackages((current) =>
+          current.map((entry) => ((entry.id ?? entry.package_id) === packageRef ? payload.package! : entry)),
+        );
+        setMessage(`${pkg.name} ${enabled ? "included" : "excluded"} successfully.`);
+        router.refresh();
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : `Unable to ${endpoint} imported use case.`);
+      } finally {
+        setPendingId(null);
+      }
+    });
+  }
+
   return (
     <>
       <article className="panel span-6">
@@ -128,6 +180,42 @@ export function UseCaseConfigurationPanel({
               </div>
             );
           })}
+        </div>
+      </article>
+
+      <article className="panel span-6">
+        <p className="eyebrow">Imported Use Cases</p>
+        <h3 className="section-heading">ZIP package lifecycle visibility</h3>
+        <div className="compact-feed">
+          {sortedImportedPackages.length === 0 ? (
+            <p className="section-subtitle">No imported use-case packages available.</p>
+          ) : (
+            sortedImportedPackages.map((pkg) => {
+              const packageRef = pkg.id ?? pkg.package_id;
+              const enabled = Boolean(pkg.enabled) && pkg.activation_status === "active";
+              const pending = pendingId === packageRef && isPending;
+              return (
+                <div className="compact-alert" key={packageRef}>
+                  <span className={`status-dot ${toStatusTone(enabled)}`} />
+                  <div style={{ flex: 1 }}>
+                    <strong>{pkg.name}</strong>
+                    <p>
+                      <code>{pkg.slug}</code> | {enabled ? "enabled: true" : "enabled: false"} | {pkg.materialization_status ?? "staged"} |{" "}
+                      {pkg.activation_status ?? "previewable"}
+                    </p>
+                  </div>
+                  <button
+                    className={enabled ? "secondary-link" : "button primary"}
+                    disabled={pending}
+                    onClick={() => toggleImportedPackage(pkg, !enabled)}
+                    type="button"
+                  >
+                    {pending ? "Saving..." : enabled ? "Exclude" : "Include"}
+                  </button>
+                </div>
+              );
+            })
+          )}
         </div>
       </article>
 

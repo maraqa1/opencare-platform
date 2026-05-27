@@ -137,6 +137,32 @@ def _display_contract_export(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _package_summary(record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": record.get("id"),
+        "package_id": record.get("package_id"),
+        "slug": record.get("slug"),
+        "name": record.get("name"),
+        "version": record.get("version"),
+        "domain": record.get("domain"),
+        "owner": record.get("owner"),
+        "uploaded_by": record.get("uploaded_by"),
+        "uploaded_at": record.get("uploaded_at"),
+        "status": record.get("status"),
+        "enabled": record.get("enabled"),
+        "package_validation_status": record.get("package_validation_status"),
+        "compile_status": record.get("compile_status"),
+        "materialization_status": record.get("materialization_status"),
+        "activation_status": record.get("activation_status"),
+        "live_verification_status": record.get("live_verification_status"),
+        "last_action": record.get("last_action"),
+        "last_action_at": record.get("last_action_at"),
+        "error_message": record.get("error_message"),
+        "last_error": record.get("last_error"),
+        "preview_summary": record.get("preview_summary"),
+    }
+
+
 def _load_preview(package_id: str) -> dict[str, Any]:
     record = storage.get_package(package_id)
     if record is None:
@@ -278,7 +304,7 @@ def list_use_case_templates(
     if slug:
         packages = [package for package in packages if package.get("slug") == slug]
     packages.sort(key=lambda package: package.get("uploaded_at", ""), reverse=True)
-    return {"status": "ok", "packages": packages}
+    return {"status": "ok", "packages": [_package_summary(package) for package in packages]}
 
 
 @router.get("/{package_id}")
