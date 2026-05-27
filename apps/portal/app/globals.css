@@ -643,7 +643,7 @@ code {
 }
 
 .jazan-pillar-card {
-  min-height: 106px;
+  min-height: 196px;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
   gap: 8px;
@@ -651,6 +651,7 @@ code {
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid rgba(31, 56, 100, 0.16);
+  color: inherit;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -684,6 +685,61 @@ code {
   font-weight: 800;
 }
 
+.jazan-pillar-card p {
+  margin: 0 0 8px;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.jazan-pillar-meta,
+.jazan-route-card dl,
+.jazan-detail-panel dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.jazan-pillar-meta div,
+.jazan-route-card dl div,
+.jazan-detail-panel dl div {
+  display: grid;
+  grid-template-columns: minmax(76px, 0.45fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.jazan-pillar-meta dt,
+.jazan-route-card dt,
+.jazan-detail-panel dt {
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.jazan-pillar-meta dd,
+.jazan-route-card dd,
+.jazan-detail-panel dd {
+  margin: 0;
+  color: #07194a;
+  font-size: 11px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.jazan-empty-state {
+  grid-column: 1 / -1;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px dashed rgba(31, 56, 100, 0.24);
+  background: #f7fbff;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .jazan-pillar-card.blue > span { background: #0b4daf; }
 .jazan-pillar-card.teal > span { background: #0d95a0; }
 .jazan-pillar-card.green > span { background: #60aa36; }
@@ -697,6 +753,73 @@ code {
 .jazan-pillar-card.cyan { border-color: rgba(7, 143, 153, 0.35); }
 .jazan-pillar-card.purple { border-color: rgba(77, 44, 160, 0.35); }
 .jazan-pillar-card.orange { border-color: rgba(244, 123, 19, 0.35); }
+
+.jazan-route-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.jazan-route-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.14);
+  background: #ffffff;
+  box-shadow: var(--surface-shadow);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.jazan-route-card:hover,
+.jazan-route-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--surface-shadow-strong);
+  outline: none;
+}
+
+.jazan-route-card > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #071f5d;
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.jazan-route-card h2,
+.jazan-detail-panel h2 {
+  margin: 0 0 8px;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.jazan-route-card p,
+.jazan-detail-panel p {
+  margin: 0 0 12px;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.jazan-detail-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 14px;
+}
+
+.jazan-detail-panel {
+  padding: 18px;
+}
 
 .jazan-value-cycle {
   grid-area: cycle;
@@ -1195,6 +1318,11 @@ code {
 .jazan-status-legend .at-risk {
   background: #ffe8e8;
   border: 1px solid #e16c6c;
+}
+
+.jazan-status-legend .unavailable {
+  background: #eef2f7;
+  border: 1px solid #94a3b8;
 }
 
 .governance-page {
@@ -5027,6 +5155,8 @@ code {
 
   .rcm-kpi-grid,
   .rcm-dashboard-grid,
+  .jazan-route-grid,
+  .jazan-detail-grid,
   .jazan-rhythm-panel > div,
   .jazan-measures-panel > div,
   .jazan-governance-tree div,
