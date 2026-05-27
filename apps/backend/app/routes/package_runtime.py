@@ -33,6 +33,28 @@ def get_use_case_workspace(slug: str) -> dict[str, Any]:
     return {"status": "ok", "workspace": workspace}
 
 
+@router.get("/{slug}/tabs/{tab_id}")
+def get_use_case_tab_payload(
+    slug: str,
+    tab_id: str,
+    request: Request,
+    prefetch: bool = Query(default=False),
+) -> dict[str, Any]:
+    try:
+        payload = resolver.get_tab_payload(
+            slug,
+            tab_id,
+            filters=_filters(request),
+            actor=_actor(request),
+            log_phi=not prefetch,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"status": "ok", "tab_payload": payload}
+
+
 @router.get("/{slug}/overview")
 def get_use_case_overview(slug: str, request: Request) -> dict[str, Any]:
     return _resolve(slug, "/overview", request)

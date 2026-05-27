@@ -98,6 +98,47 @@ export type DashboardWidgetModel = {
   };
 };
 
+export type TabPayload = {
+  tab?: {
+    id?: string;
+    label?: string;
+    route?: string;
+  };
+  widgets?: Array<{
+    component_id?: string;
+    component_type?: string;
+    widget_kind?: "metric" | "metric-group" | "chart" | "table" | "governance" | "filter-group";
+    endpoint?: string | null;
+    state?: "loading" | "empty" | "degraded" | "blocked" | "rendered";
+    payload?: {
+      data?: unknown[] | Record<string, unknown> | null;
+      meta?: {
+        empty?: boolean;
+        as_of?: string;
+        materialization_status?: string;
+        activation_status?: string;
+        live_verification_status?: string;
+        filters_applied?: Record<string, string>;
+        data_freshness?: {
+          sla_status?: string;
+          last_loaded_at?: string;
+          max_expected_age_hours?: number;
+        } | null;
+      };
+      warnings?: string[];
+      errors?: string[];
+    };
+  }>;
+  meta?: {
+    as_of?: string;
+    use_case_slug?: string;
+    materialization_status?: string;
+    activation_status?: string;
+    live_verification_status?: string;
+    widget_count?: number;
+  };
+};
+
 export type WorkspaceDefinition = {
   identity?: {
     package_id?: string;
@@ -228,6 +269,7 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
       <MaterializedWorkspaceClient
         slug={slug}
         workspace={workspace}
+        selectedTabId={selectedTab?.id ?? activeTab}
         selectedTabLabel={selectedTab?.label ?? tabLabel(activeTab)}
         selectedComponents={selectedTab?.component_specs ?? []}
         selectedWidgetModels={selectedWidgetModels}

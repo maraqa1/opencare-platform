@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { ComponentSpec, DashboardWidgetModel, WorkspaceDefinition, WorkspaceTabDefinition } from "./page";
+import type { ComponentSpec, DashboardWidgetModel, TabPayload, WorkspaceDefinition, WorkspaceTabDefinition } from "./page";
 
 type EndpointPayload = {
   data?: unknown[] | Record<string, unknown> | null;
@@ -29,6 +29,10 @@ type EndpointState = {
   correlationId?: string;
 };
 
+type TabPayloadResult = TabPayload & {
+  _error?: Pick<EndpointState, "defectClass" | "operatorMessage" | "correlationId">;
+};
+
 type ChartPoint = {
   label: string;
   value: number;
@@ -36,10 +40,10 @@ type ChartPoint = {
 
 type WidgetKind = "metric" | "metric-group" | "chart" | "table" | "governance" | "filter-group";
 
-const ENDPOINT_CACHE_TTL_MS = 2 * 60 * 1000;
+const TAB_CACHE_TTL_MS = 2 * 60 * 1000;
 
-const endpointStateCache = new Map<string, { state: EndpointState; fetchedAt: number }>();
-const endpointRequestCache = new Map<string, Promise<EndpointState>>();
+const tabPayloadCache = new Map<string, { payload: TabPayload; fetchedAt: number }>();
+const tabRequestCache = new Map<string, Promise<TabPayloadResult>>();
 
 function normalizeEndpoint(path: string | undefined) {
   if (!path || path === "n/a") {
@@ -135,7 +139,14 @@ function widgetSubtitle(widget: DashboardWidgetModel, spec: ComponentSpec) {
   return widget.subtitle ?? componentSubtitle(spec);
 }
 
-function componentEndpointState(spec: ComponentSpec, endpointState: Record<string, EndpointState>) {
+function componentEndpointState(
+  spec: ComponentSpec,
+  endpointState: Record<string, EndpointState>,
+  componentState: Record<string, EndpointState>,
+) {
+  if (spec.id && componentState[spec.id]) {
+    return componentState[spec.id];
+  }
   const endpoint = normalizeEndpoint(specEndpoint(spec));
   if (!endpoint) {
     return {
@@ -149,8 +160,12 @@ function componentEndpointState(spec: ComponentSpec, endpointState: Record<strin
   };
 }
 
-function componentValue(spec: ComponentSpec, endpointState: Record<string, EndpointState>) {
-  const payload = componentEndpointState(spec, endpointState).payload;
+function componentValue(
+  spec: ComponentSpec,
+  endpointState: Record<string, EndpointState>,
+  componentState: Record<string, EndpointState>,
+) {
+  const payload = componentEndpointState(spec, endpointState, componentState).payload;
   const source = payload.data;
   const record = firstDataRecord(source);
   const bindingValue = lookupPath(
@@ -162,8 +177,12 @@ function componentValue(spec: ComponentSpec, endpointState: Record<string, Endpo
   return bindingValue ?? directValue ?? expectedFieldValue;
 }
 
-function chartSeries(spec: ComponentSpec, endpointState: Record<string, EndpointState>): ChartPoint[] {
-  const rows = dataRows(componentEndpointState(spec, endpointState).payload.data);
+function chartSeries(
+  spec: ComponentSpec,
+  endpointState: Record<string, EndpointState>,
+  componentState: Record<string, EndpointState>,
+): ChartPoint[] {
+  const rows = dataRows(componentEndpointState(spec, endpointState, componentState).payload.data);
   if (!rows.length) {
     return [];
   }
@@ -212,8 +231,12 @@ function chartSvgPoints(series: ChartPoint[]) {
     .join(" ");
 }
 
-function tableFields(spec: ComponentSpec, endpointState: Record<string, EndpointState>) {
-  const rows = dataRows(componentEndpointState(spec, endpointState).payload.data);
+function tableFields(
+  spec: ComponentSpec,
+  endpointState: Record<string, EndpointState>,
+  componentState: Record<string, EndpointState>,
+) {
+  const rows = dataRows(componentEndpointState(spec, endpointState, componentState).payload.data);
   if (!rows.length) {
     return spec.expected_fields?.slice(0, 5) ?? [];
   }
@@ -233,12 +256,16 @@ function componentZoneLabel(component: ComponentSpec) {
   return niceLabel(zone);
 }
 
-function governanceBadgeValue(spec: ComponentSpec, endpointState: Record<string, EndpointState>) {
+function governanceBadgeValue(
+  spec: ComponentSpec,
+  endpointState: Record<string, EndpointState>,
+  componentState: Record<string, EndpointState>,
+) {
   if (spec.component_type === "link_group") {
     const targets = spec.interaction_contract?.navigation_targets ?? [];
     return targets.length > 0 ? `${targets.length} evidence links` : "Evidence links ready";
   }
-  const value = componentValue(spec, endpointState);
+  const value = componentValue(spec, endpointState, componentState);
   if (typeof value === "boolean") {
     return value ? "Required" : "Not required";
   }
@@ -422,114 +449,114 @@ function displayTimestamp(payload: EndpointPayload) {
   return payload.meta?.data_freshness?.last_loaded_at ?? payload.meta?.as_of ?? "Awaiting live data";
 }
 
-function cacheKey(slug: string, path: string) {
-  return `${slug}:${path}`;
+function tabCacheKey(slug: string, tabId: string) {
+  return `${slug}:${tabId}`;
 }
 
-function getCachedEndpointState(slug: string, path: string) {
-  const entry = endpointStateCache.get(cacheKey(slug, path));
+function getCachedTabPayload(slug: string, tabId: string) {
+  const entry = tabPayloadCache.get(tabCacheKey(slug, tabId));
   if (!entry) {
     return undefined;
   }
-  if (Date.now() - entry.fetchedAt > ENDPOINT_CACHE_TTL_MS) {
-    endpointStateCache.delete(cacheKey(slug, path));
+  if (Date.now() - entry.fetchedAt > TAB_CACHE_TTL_MS) {
+    tabPayloadCache.delete(tabCacheKey(slug, tabId));
     return undefined;
   }
-  return entry.state;
+  return entry.payload;
 }
 
-function setCachedEndpointState(slug: string, path: string, state: EndpointState) {
-  endpointStateCache.set(cacheKey(slug, path), {
-    state,
+function setCachedTabPayload(slug: string, tabId: string, payload: TabPayload) {
+  tabPayloadCache.set(tabCacheKey(slug, tabId), {
+    payload,
     fetchedAt: Date.now(),
   });
 }
 
-function fetchEndpointState({
+function toEndpointState(
+  workspace: WorkspaceDefinition,
+  widgetPayload: NonNullable<TabPayload["widgets"]>[number],
+): EndpointState {
+  const correlationId = crypto.randomUUID().slice(0, 8);
+  const state = widgetPayload.state ?? "degraded";
+  return {
+    status: state,
+    payload: widgetPayload.payload ?? { data: [], meta: { empty: state === "empty" }, warnings: [], errors: [] },
+    defectClass: state === "blocked" ? "package-defect" : state === "degraded" ? "runtime-defect" : undefined,
+    operatorMessage:
+      state === "blocked"
+        ? operatorMessage(workspace, "Package activation is blocked.", undefined)
+        : state === "degraded"
+          ? "Runtime returned a degraded widget response."
+          : undefined,
+    correlationId: state === "blocked" || state === "degraded" ? correlationId : undefined,
+  };
+}
+
+function fetchTabPayload({
   slug,
-  path,
+  tabId,
   workspace,
+  prefetch = false,
 }: {
   slug: string;
-  path: string;
+  tabId: string;
   workspace: WorkspaceDefinition;
+  prefetch?: boolean;
 }) {
-  const cached = getCachedEndpointState(slug, path);
+  const cached = getCachedTabPayload(slug, tabId);
   if (cached) {
     return Promise.resolve(cached);
   }
 
-  const requestKey = cacheKey(slug, path);
-  const existing = endpointRequestCache.get(requestKey);
+  const requestKey = tabCacheKey(slug, tabId);
+  const existing = tabRequestCache.get(requestKey);
   if (existing) {
     return existing;
   }
 
   const correlationId = crypto.randomUUID().slice(0, 8);
-  const request = fetch(`/api/portal${path}`, { cache: "no-store" })
+  const query = prefetch ? "?prefetch=1" : "";
+  const request = fetch(`/api/portal/api/v1/use-cases/${slug}/tabs/${tabId}${query}`, { cache: "no-store" })
     .then(async (response) => {
       if (!response.ok) {
-        const defectClass = classifyDefect(workspace);
-        const nextState = {
-          status: defectClass === "package-defect" ? "blocked" : "degraded",
-          payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
-          defectClass,
-          operatorMessage: operatorMessage(workspace, "Widget data could not be loaded.", response.status),
-          correlationId,
-        } satisfies EndpointState;
-        setCachedEndpointState(slug, path, nextState);
-        return nextState;
+        throw new Error(`${response.status}:${correlationId}`);
       }
-      const payload = (await response.json()) as EndpointPayload;
-      const rows = dataRows(payload.data);
-      const status =
-        payload.meta?.empty || rows.length === 0
-          ? "empty"
-          : payload.errors?.length
-            ? "degraded"
-            : "rendered";
-      const nextState = {
-        status,
-        payload,
-        defectClass: status === "degraded" ? "runtime-defect" : undefined,
-        operatorMessage: status === "degraded" ? "Runtime returned a degraded widget response." : undefined,
-        correlationId: status === "degraded" ? correlationId : undefined,
-      } satisfies EndpointState;
-      setCachedEndpointState(slug, path, nextState);
-      return nextState;
+      const payload = ((await response.json()) as { tab_payload?: TabPayload }).tab_payload ?? {};
+      setCachedTabPayload(slug, tabId, payload);
+      return payload;
     })
     .catch(() => {
-      const nextState = {
-        status: "degraded",
-        payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
-        defectClass: "runtime-defect",
-        operatorMessage: "Runtime request did not complete. The package contract is present, but the live feed is unavailable.",
-        correlationId,
-      } satisfies EndpointState;
-      setCachedEndpointState(slug, path, nextState);
-      return nextState;
+      const defectClass = classifyDefect(workspace);
+      return {
+        tab: { id: tabId },
+        widgets: [],
+        meta: {
+          as_of: new Date().toISOString(),
+          use_case_slug: slug,
+          materialization_status: workspace.state?.materialization_status,
+          activation_status: workspace.state?.activation_status,
+          live_verification_status: workspace.state?.live_verification_status,
+          widget_count: 0,
+        },
+        _error: {
+          defectClass,
+          operatorMessage: operatorMessage(workspace, "Widget data could not be loaded.", undefined),
+          correlationId,
+        },
+      } satisfies TabPayloadResult;
     })
     .finally(() => {
-      endpointRequestCache.delete(requestKey);
+      tabRequestCache.delete(requestKey);
     });
 
-  endpointRequestCache.set(requestKey, request);
+  tabRequestCache.set(requestKey, request);
   return request;
-}
-
-function endpointsForComponents(components: ComponentSpec[]) {
-  return Array.from(
-    new Set(
-      components
-        .map((component) => normalizeEndpoint(specEndpoint(component)))
-        .filter(Boolean),
-    ),
-  );
 }
 
 export function MaterializedWorkspaceClient({
   slug,
   workspace,
+  selectedTabId,
   selectedTabLabel,
   selectedComponents,
   selectedWidgetModels,
@@ -538,28 +565,35 @@ export function MaterializedWorkspaceClient({
 }: {
   slug: string;
   workspace: WorkspaceDefinition;
+  selectedTabId: string;
   selectedTabLabel: string;
   selectedComponents: ComponentSpec[];
   selectedWidgetModels: DashboardWidgetModel[];
   allTabs: WorkspaceTabDefinition[];
   diagnosticsHref?: string;
 }) {
-  const endpointPaths = useMemo(() => endpointsForComponents(selectedComponents), [selectedComponents]);
-  const prefetchedPaths = useMemo(
+  const prefetchedTabIds = useMemo(
     () =>
-      Array.from(
-        new Set(
-          allTabs.flatMap((tab) => endpointsForComponents(tab.component_specs ?? [])),
-        ),
-      ).filter((path) => !endpointPaths.includes(path)),
-    [allTabs, endpointPaths],
+      allTabs
+        .map((tab, index) => tab.id ?? (index === 0 ? "overview" : ""))
+        .filter((tabId): tabId is string => Boolean(tabId) && tabId !== selectedTabId),
+    [allTabs, selectedTabId],
   );
   const [endpointState, setEndpointState] = useState<Record<string, EndpointState>>(() =>
-    Object.fromEntries(
-      endpointPaths
-        .map((path) => [path, getCachedEndpointState(slug, path)] as const)
-        .filter((entry): entry is readonly [string, EndpointState] => Boolean(entry[1])),
-    ),
+    (getCachedTabPayload(slug, selectedTabId)?.widgets ?? []).reduce<Record<string, EndpointState>>((accumulator, widget) => {
+      if (widget.endpoint) {
+        accumulator[widget.endpoint] = toEndpointState(workspace, widget);
+      }
+      return accumulator;
+    }, {}),
+  );
+  const [componentState, setComponentState] = useState<Record<string, EndpointState>>(() =>
+    (getCachedTabPayload(slug, selectedTabId)?.widgets ?? []).reduce<Record<string, EndpointState>>((accumulator, widget) => {
+      if (widget.component_id) {
+        accumulator[widget.component_id] = toEndpointState(workspace, widget);
+      }
+      return accumulator;
+    }, {}),
   );
 
   const packageBlocked = workspace.state?.materialization_status !== "materialized" || workspace.state?.activation_status !== "active";
@@ -576,71 +610,139 @@ export function MaterializedWorkspaceClient({
 
   useEffect(() => {
     if (packageBlocked) {
-      const blockedEntries = Object.fromEntries(
-        endpointPaths.map((path) => [
-          path,
-          {
-            status: "blocked" as const,
-            payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+      const blockedComponents = Object.fromEntries(
+        selectedComponents
+          .filter((component) => component.id)
+          .map((component) => [
+            component.id as string,
+            {
+              status: "blocked" as const,
+              payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+              defectClass: "package-defect" as const,
+              operatorMessage: operatorMessage(workspace, "Package activation is blocked.", undefined),
+              correlationId: crypto.randomUUID().slice(0, 8),
+            },
+          ]),
+      );
+      const blockedEndpoints = Object.fromEntries(
+        selectedComponents
+          .map((component) => normalizeEndpoint(specEndpoint(component)))
+          .filter(Boolean)
+          .map((path) => [
+            path,
+            {
+              status: "blocked" as const,
+              payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
             defectClass: "package-defect" as const,
             operatorMessage: operatorMessage(workspace, "Package activation is blocked.", undefined),
             correlationId: crypto.randomUUID().slice(0, 8),
           },
-        ]),
+          ]),
       );
-      Object.entries(blockedEntries).forEach(([path, state]) => {
-        setCachedEndpointState(slug, path, state);
-      });
-      setEndpointState(blockedEntries);
+      setComponentState(blockedComponents);
+      setEndpointState(blockedEndpoints);
       return;
     }
 
-    setEndpointState((current) =>
-      Object.fromEntries(
-        endpointPaths.map((path) => [
-          path,
-          current[path] ??
-            getCachedEndpointState(slug, path) ?? {
-              status: "loading" as const,
-              payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
-            },
-        ]),
-      ),
-    );
+    const cached = getCachedTabPayload(slug, selectedTabId);
+    if (cached?.widgets?.length) {
+      setComponentState(
+        cached.widgets.reduce<Record<string, EndpointState>>((accumulator, widget) => {
+          if (widget.component_id) {
+            accumulator[widget.component_id] = toEndpointState(workspace, widget);
+          }
+          return accumulator;
+        }, {}),
+      );
+      setEndpointState(
+        cached.widgets.reduce<Record<string, EndpointState>>((accumulator, widget) => {
+          if (widget.endpoint) {
+            accumulator[widget.endpoint] = toEndpointState(workspace, widget);
+          }
+          return accumulator;
+        }, {}),
+      );
+    } else {
+      setEndpointState({});
+      setComponentState(
+        Object.fromEntries(
+          selectedComponents
+            .filter((component) => component.id)
+            .map((component) => [
+              component.id as string,
+              {
+                status: "loading" as const,
+                payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+              },
+            ]),
+        ),
+      );
+    }
 
     let cancelled = false;
-    endpointPaths.forEach((path) => {
-      void fetchEndpointState({ slug, path, workspace }).then((nextState) => {
-        if (cancelled) {
-          return;
+    void fetchTabPayload({ slug, tabId: selectedTabId, workspace }).then((tabPayload) => {
+      if (cancelled) {
+        return;
+      }
+      const widgets = tabPayload.widgets ?? [];
+      const tabError = tabPayload._error;
+      if (widgets.length === 0 && selectedComponents.length > 0) {
+        const fallbackStatus = tabError?.defectClass === "package-defect" ? "blocked" : "degraded";
+        const fallbackEntries = Object.fromEntries(
+          selectedComponents
+            .filter((component) => component.id)
+            .map((component) => [
+              component.id as string,
+              {
+                status: fallbackStatus,
+                payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+                defectClass: tabError?.defectClass,
+                operatorMessage: tabError?.operatorMessage,
+                correlationId: tabError?.correlationId,
+              },
+            ]),
+        );
+        setComponentState(fallbackEntries);
+        setEndpointState({});
+        return;
+      }
+
+      const nextComponentState = widgets.reduce<Record<string, EndpointState>>((accumulator, widget) => {
+        if (widget.component_id) {
+          accumulator[widget.component_id] = toEndpointState(workspace, widget);
         }
-        setEndpointState((current) => ({
-          ...current,
-          [path]: nextState,
-        }));
-      });
+        return accumulator;
+      }, {});
+      const nextEndpointState = widgets.reduce<Record<string, EndpointState>>((accumulator, widget) => {
+        if (widget.endpoint) {
+          accumulator[widget.endpoint] = toEndpointState(workspace, widget);
+        }
+        return accumulator;
+      }, {});
+      setComponentState(nextComponentState);
+      setEndpointState(nextEndpointState);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [endpointPaths, packageBlocked, slug, workspace]);
+  }, [packageBlocked, selectedComponents, selectedTabId, slug, workspace]);
 
   useEffect(() => {
     if (packageBlocked) {
       return;
     }
     let cancelled = false;
-    prefetchedPaths.forEach((path) => {
+    prefetchedTabIds.forEach((tabId) => {
       if (cancelled) {
         return;
       }
-      void fetchEndpointState({ slug, path, workspace }).then(() => undefined);
+      void fetchTabPayload({ slug, tabId, workspace, prefetch: true }).then(() => undefined);
     });
     return () => {
       cancelled = true;
     };
-  }, [packageBlocked, prefetchedPaths, slug, workspace]);
+  }, [packageBlocked, prefetchedTabIds, slug, workspace]);
 
   const trustStrip = selectedComponents.find((component) => component.component_type === "trust_strip");
   const canvasComponents = selectedComponents
@@ -676,10 +778,12 @@ export function MaterializedWorkspaceClient({
         }));
 
   const primaryPayload =
-    endpointPaths
-      .map((path) => endpointState[path]?.payload)
+    selectedComponents
+      .map((component) => (component.id ? componentState[component.id]?.payload : undefined))
       .find((payload) => payload?.meta?.as_of) ??
-    (endpointPaths[0] ? endpointState[endpointPaths[0]]?.payload : undefined);
+    selectedComponents
+      .map((component) => endpointState[normalizeEndpoint(specEndpoint(component))]?.payload)
+      .find((payload) => payload?.meta?.as_of);
 
   return (
     <section className="grid">
@@ -734,11 +838,11 @@ export function MaterializedWorkspaceClient({
           <div className="native-bi-trust-grid">
             <div>
               <span className="eyebrow">Classification</span>
-              <strong>{String(firstDataRecord(componentEndpointState(trustStrip, endpointState).payload.data).highest_classification ?? "restricted")}</strong>
+              <strong>{String(firstDataRecord(componentEndpointState(trustStrip, endpointState, componentState).payload.data).highest_classification ?? "restricted")}</strong>
             </div>
             <div>
               <span className="eyebrow">Audit</span>
-              <strong>{String(firstDataRecord(componentEndpointState(trustStrip, endpointState).payload.data).patient_level_audit_required ?? true)}</strong>
+              <strong>{String(firstDataRecord(componentEndpointState(trustStrip, endpointState, componentState).payload.data).patient_level_audit_required ?? true)}</strong>
             </div>
             <div>
               <span className="eyebrow">Lineage</span>
@@ -758,13 +862,17 @@ export function MaterializedWorkspaceClient({
               if (!component) {
                 return null;
               }
-              const widgetState = componentEndpointState(component, endpointState);
+              const widgetState = componentEndpointState(component, endpointState, componentState);
               const rows = dataRows(widgetState.payload.data);
               const record = firstDataRecord(widgetState.payload.data);
               const metricEntries = metricEntriesFromRecord(record);
-              const value = componentValue(component, endpointState);
-              const series = chartSeries(component, endpointState);
-              const fields = (widget.table_fields && widget.table_fields.length > 0 ? widget.table_fields : tableFields(component, endpointState)).slice(0, 5);
+              const value = componentValue(component, endpointState, componentState);
+              const series = chartSeries(component, endpointState, componentState);
+              const fields = (
+                widget.table_fields && widget.table_fields.length > 0
+                  ? widget.table_fields
+                  : tableFields(component, endpointState, componentState)
+              ).slice(0, 5);
               const highlights = metricHighlights(component, record);
               const filterPills = filterEntries(rows);
               const kind =
@@ -874,7 +982,7 @@ export function MaterializedWorkspaceClient({
                       </div>
                     ) : kind === "governance" ? (
                       <div className="native-bi-governance-card">
-                        <strong className="native-bi-badge-value">{governanceBadgeValue(component, endpointState)}</strong>
+                        <strong className="native-bi-badge-value">{governanceBadgeValue(component, endpointState, componentState)}</strong>
                         <div className="native-bi-mini-metrics">
                           <div className="native-bi-mini-metric">
                             <span>Trust</span>

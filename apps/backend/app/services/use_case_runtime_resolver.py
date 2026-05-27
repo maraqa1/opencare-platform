@@ -16,12 +16,20 @@ class UseCaseRuntimeResolver:
             raise KeyError(slug)
         return record
 
+    def _ensure_runtime_active(
+        self,
+        record: dict[str, Any],
+        *,
+        allow_preview: bool = False,
+    ) -> None:
+        if record.get("materialization_status") != "materialized" and not allow_preview:
+            raise ValueError("Use case workspace is not materialized.")
+        if record.get("activation_status") not in {"active", "live_verified"} and not allow_preview:
+            raise ValueError("Use case workspace is not active.")
+
     def get_workspace_definition(self, slug: str) -> dict[str, Any]:
         record = self._resolve_record(slug)
-        if record.get("materialization_status") != "materialized":
-            raise ValueError("Use case workspace is not materialized.")
-        if record.get("activation_status") not in {"active", "live_verified"}:
-            raise ValueError("Use case workspace is not active.")
+        self._ensure_runtime_active(record)
 
         runtime_definition = deepcopy(record.get("runtime_definition", {}))
         runtime_definition["state"] = {
@@ -245,25 +253,21 @@ class UseCaseRuntimeResolver:
             },
         }
 
-    def resolve_endpoint(
-        self,
-        slug: str,
-        endpoint: str,
-        *,
-        filters: dict[str, Any] | None = None,
-        actor: str = "anonymous",
-        allow_preview: bool = False,
-    ) -> dict[str, Any]:
-        record = self._resolve_record(slug)
-        if record.get("materialization_status") != "materialized" and not allow_preview:
-            raise ValueError("Use case endpoints are not materialized.")
-        if record.get("activation_status") not in {"active", "live_verified"} and not allow_preview:
-            raise ValueError("Use case is not active.")
+    @staticmethod
+    def _normalize_endpoint(endpoint: str) -> str:
+        return endpoint if endpoint.startswith("/") else f"/{endpoint}"
 
-        runtime_definition = record.get("runtime_definition", {})
+    @staticmethod
+    def _route_segment(route: str | None) -> str:
+        if not route:
+            return ""
+        segments = [segment for segment in route.split("/") if segment]
+        return segments[-1] if segments else ""
+
+    def _endpoint_binding(self, runtime_definition: dict[str, Any], endpoint: str) -> dict[str, Any]:
         bindings = runtime_definition.get("backend_endpoint_bindings", {})
         endpoints = bindings.get("endpoints", [])
-        normalized_endpoint = endpoint if endpoint.startswith("/") else f"/{endpoint}"
+        normalized_endpoint = self._normalize_endpoint(endpoint)
         match = next(
             (
                 candidate
@@ -274,50 +278,221 @@ class UseCaseRuntimeResolver:
         )
         if match is None:
             raise KeyError(f"Endpoint not found: {normalized_endpoint}")
+        return match
 
-        applied_filters = filters or {}
+    def _build_endpoint_response(
+        self,
+        record: dict[str, Any],
+        runtime_definition: dict[str, Any],
+        slug: str,
+        endpoint: str,
+        filters: dict[str, Any] | None,
+        actor: str,
+        *,
+        log_phi: bool = True,
+    ) -> dict[str, Any]:
+        bindings = runtime_definition.get("backend_endpoint_bindings", {})
         allowed_filters = bindings.get("filters", [])
+        normalized_endpoint = self._normalize_endpoint(endpoint)
+        match = self._endpoint_binding(runtime_definition, normalized_endpoint)
+        applied_filters = filters or {}
         if isinstance(allowed_filters, list):
-            unsupported_filters = sorted(
-                key for key in applied_filters.keys() if key not in allowed_filters
-            )
+            unsupported_filters = sorted(key for key in applied_filters.keys() if key not in allowed_filters)
             if unsupported_filters:
                 raise ValueError(
                     f"Unsupported filters for {normalized_endpoint}: {', '.join(unsupported_filters)}"
                 )
+
         payload = self._sample_endpoint_payload(slug, normalized_endpoint)
-        data = payload.get("data", [])
+        meta_payload = payload.get("meta", {})
         meta = {
-            **(payload.get("meta", {}) if isinstance(payload.get("meta"), dict) else {}),
-            "empty": bool(payload.get("meta", {}).get("empty", False)) if isinstance(payload.get("meta"), dict) else False,
+            **(meta_payload if isinstance(meta_payload, dict) else {}),
+            "empty": bool(meta_payload.get("empty", False)) if isinstance(meta_payload, dict) else False,
             "as_of": utc_now_iso(),
             "use_case_slug": slug,
             "endpoint": normalized_endpoint,
             "filters_applied": applied_filters,
             "materialization_status": record.get("materialization_status"),
-            "data_freshness": (
-                payload.get("meta", {}).get("data_freshness")
-                if isinstance(payload.get("meta"), dict)
-                else None
-            ),
+            "activation_status": record.get("activation_status"),
+            "live_verification_status": record.get("live_verification_status"),
+            "data_freshness": meta_payload.get("data_freshness") if isinstance(meta_payload, dict) else None,
         }
 
         phi_handling = match.get("phi_handling")
-        if phi_handling:
+        if phi_handling and log_phi:
             self.storage.record_action(
                 package_id=record["package_id"],
                 slug=record["slug"],
                 version=record["version"],
                 actor=actor,
-                action="patient-level drilldown access" if "drilldown" in normalized_endpoint else "restricted PHI attribute access",
+                action="patient-level drilldown access"
+                if "drilldown" in normalized_endpoint
+                else "restricted PHI attribute access",
                 status=record.get("status", "active"),
                 validation_result=record.get("package_validation_status"),
                 log=f"Runtime endpoint {normalized_endpoint} accessed with PHI policy {phi_handling}.",
             )
 
         return {
-            "data": data,
+            "data": payload.get("data", []),
             "meta": meta,
             "errors": [],
             "warnings": [],
+        }
+
+    def _find_tab_definition(
+        self,
+        runtime_definition: dict[str, Any],
+        tab_id: str,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        tabs = runtime_definition.get("tabs", [])
+        dashboard_tabs = runtime_definition.get("dashboard_model", {}).get("tabs", [])
+        normalized_tab_id = tab_id or "overview"
+
+        def _matches(item: dict[str, Any], index: int) -> bool:
+            item_id = item.get("id") or ("overview" if index == 0 else "")
+            route_segment = self._route_segment(item.get("route"))
+            if index == 0 and normalized_tab_id == "overview":
+                return True
+            return normalized_tab_id in {item_id, route_segment}
+
+        tab = next(
+            (item for index, item in enumerate(tabs) if isinstance(item, dict) and _matches(item, index)),
+            None,
+        )
+        if tab is None:
+            raise KeyError(f"Tab not found: {normalized_tab_id}")
+
+        dashboard_tab = next(
+            (
+                item
+                for index, item in enumerate(dashboard_tabs)
+                if isinstance(item, dict) and _matches(item, index)
+            ),
+            None,
+        )
+        return tab, dashboard_tab
+
+    @staticmethod
+    def _widget_state_from_response(response: dict[str, Any]) -> str:
+        meta = response.get("meta", {})
+        errors = response.get("errors", [])
+        data = response.get("data")
+        if meta.get("empty"):
+            return "empty"
+        if errors:
+            return "degraded"
+        if isinstance(data, list) and len(data) == 0:
+            return "empty"
+        if isinstance(data, dict) and len(data) == 0:
+            return "empty"
+        return "rendered"
+
+    def resolve_endpoint(
+        self,
+        slug: str,
+        endpoint: str,
+        *,
+        filters: dict[str, Any] | None = None,
+        actor: str = "anonymous",
+        allow_preview: bool = False,
+    ) -> dict[str, Any]:
+        record = self._resolve_record(slug)
+        self._ensure_runtime_active(record, allow_preview=allow_preview)
+        runtime_definition = record.get("runtime_definition", {})
+        return self._build_endpoint_response(
+            record,
+            runtime_definition,
+            slug,
+            endpoint,
+            filters,
+            actor,
+        )
+
+    def get_tab_payload(
+        self,
+        slug: str,
+        tab_id: str,
+        *,
+        filters: dict[str, Any] | None = None,
+        actor: str = "anonymous",
+        allow_preview: bool = False,
+        log_phi: bool = True,
+    ) -> dict[str, Any]:
+        record = self._resolve_record(slug)
+        self._ensure_runtime_active(record, allow_preview=allow_preview)
+        runtime_definition = deepcopy(record.get("runtime_definition", {}))
+        tab, dashboard_tab = self._find_tab_definition(runtime_definition, tab_id)
+        component_specs = tab.get("component_specs", [])
+        widget_models = {
+            widget.get("component_id"): widget
+            for widget in (dashboard_tab or {}).get("widgets", [])
+            if isinstance(widget, dict) and widget.get("component_id")
+        }
+        endpoint_payloads: dict[str, dict[str, Any]] = {}
+        widgets: list[dict[str, Any]] = []
+
+        for component in component_specs:
+            if not isinstance(component, dict):
+                continue
+            component_id = component.get("id")
+            endpoint = component.get("source_endpoint") or component.get("endpoint")
+            normalized_endpoint = self._normalize_endpoint(endpoint) if endpoint else ""
+            widget_model = widget_models.get(component_id, {})
+
+            state = "rendered"
+            payload = {
+                "data": [],
+                "meta": {
+                    "empty": False,
+                    "as_of": utc_now_iso(),
+                    "use_case_slug": slug,
+                    "materialization_status": record.get("materialization_status"),
+                    "activation_status": record.get("activation_status"),
+                    "live_verification_status": record.get("live_verification_status"),
+                },
+                "errors": [],
+                "warnings": [],
+            }
+
+            if normalized_endpoint:
+                if normalized_endpoint not in endpoint_payloads:
+                    endpoint_payloads[normalized_endpoint] = self._build_endpoint_response(
+                        record,
+                        runtime_definition,
+                        slug,
+                        normalized_endpoint,
+                        filters,
+                        actor,
+                        log_phi=log_phi,
+                    )
+                payload = deepcopy(endpoint_payloads[normalized_endpoint])
+                state = self._widget_state_from_response(payload)
+
+            widgets.append(
+                {
+                    "component_id": component_id,
+                    "component_type": component.get("component_type"),
+                    "widget_kind": widget_model.get("widget_kind"),
+                    "endpoint": normalized_endpoint or None,
+                    "state": state,
+                    "payload": payload,
+                }
+            )
+
+        return {
+            "tab": {
+                "id": tab.get("id") or "overview",
+                "label": tab.get("label") or "Overview",
+                "route": tab.get("route"),
+            },
+            "widgets": widgets,
+            "meta": {
+                "as_of": utc_now_iso(),
+                "use_case_slug": slug,
+                "materialization_status": record.get("materialization_status"),
+                "activation_status": record.get("activation_status"),
+                "live_verification_status": record.get("live_verification_status"),
+                "widget_count": len(widgets),
+            },
         }
