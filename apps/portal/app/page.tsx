@@ -22,42 +22,36 @@ const pillars = [
     number: "1",
     title: "Governance & Leadership",
     tone: "blue",
-    diagramHref: "#kpi-governance-diagram",
     lines: ["Clear roles and accountabilities", "Performance Management Office", "Policies, standards, and frameworks"],
   },
   {
     number: "2",
     title: "Strategy & Alignment",
     tone: "teal",
-    diagramHref: "#kpi-governance-diagram",
     lines: ["Strategic objectives cascading", "Balanced scorecard and KPIs", "OKR alignment"],
   },
   {
     number: "3",
     title: "Data & Analytics",
     tone: "green",
-    diagramHref: "#early-warning-diagram",
     lines: ["One source of truth", "Data quality and governance", "Advanced analytics and AI"],
   },
   {
     number: "4",
     title: "Processes & Methodology",
     tone: "cyan",
-    diagramHref: "#early-warning-diagram",
     lines: ["Standardized processes", "Performance planning cycle", "Reviews and decision forums"],
   },
   {
     number: "5",
     title: "Technology & Tools",
     tone: "purple",
-    diagramHref: "#early-warning-diagram",
     lines: ["Integrated PM platform", "Dashboards and self-service", "Automation and workflow"],
   },
   {
     number: "6",
     title: "People & Culture",
     tone: "orange",
-    diagramHref: "#early-warning-diagram",
     lines: ["Capability building", "Change management", "Performance culture and incentives"],
   },
 ];
@@ -265,16 +259,11 @@ export default async function HomePage() {
             </h2>
           </section>
 
-          <nav className="jazan-diagram-jump-row" aria-label="Operating model diagram navigation">
-            <Link href="#early-warning-diagram">Open Early Warning Diagram</Link>
-            <Link href="#kpi-governance-diagram">Open KPI Governance Diagram</Link>
-          </nav>
-
           <section className="jazan-pillars">
             <h2>Target Operating Model - 6 Pillars</h2>
             <div className="jazan-pillar-grid">
               {pillars.map((pillar) => (
-                <Link className={`jazan-pillar-card ${pillar.tone}`} href={pillar.diagramHref} key={pillar.number}>
+                <article className={`jazan-pillar-card ${pillar.tone}`} key={pillar.number}>
                   <span>{pillar.number}</span>
                   <div>
                     <h3>{pillar.title}</h3>
@@ -284,7 +273,7 @@ export default async function HomePage() {
                       ))}
                     </ul>
                   </div>
-                </Link>
+                </article>
               ))}
             </div>
             <div className="jazan-value-cycle" aria-label="Performance management value cycle">
@@ -317,51 +306,6 @@ export default async function HomePage() {
             </article>
           ))}
         </aside>
-      </section>
-
-      <section className="jazan-operating-diagrams">
-        <article className="jazan-flow-panel" id="early-warning-diagram">
-          <div className="jazan-diagram-heading">
-            <p>Jazan municipal performance early warning</p>
-            <span lang="ar" dir="rtl">الإنذار المبكر لتعثر المشاريع وتأخر الأداء</span>
-            <strong>OpenCare performance operating model - continuous refresh loop</strong>
-          </div>
-          <div className="jazan-flow-stack">
-            {earlyWarningLayers.map((layer) => (
-              <section className={`jazan-flow-layer ${layer.tone}`} key={layer.title}>
-                <div>
-                  <h3>{layer.title}</h3>
-                  <p>{layer.detail}</p>
-                </div>
-                <span lang="ar" dir="rtl">{layer.arabic}</span>
-              </section>
-            ))}
-          </div>
-        </article>
-
-        <article className="jazan-flow-panel" id="kpi-governance-diagram">
-          <div className="jazan-diagram-heading">
-            <p>Strategy & KPI governance layer</p>
-            <span lang="ar" dir="rtl">حوكمة الأهداف ومؤشرات الأداء</span>
-            <strong>Strategic objectives cascade to governed municipal scorecards</strong>
-          </div>
-          <div className="jazan-cascade">
-            {["Vision", "Ministry", "Amanah", "Agency", "Municipality"].map((level) => (
-              <span key={level}>{level}</span>
-            ))}
-          </div>
-          <div className="jazan-flow-stack compact">
-            {governanceBlocks.map((block) => (
-              <section className={`jazan-flow-layer ${block.tone}`} key={block.title}>
-                <div>
-                  <h3>{block.title}</h3>
-                  <p>{block.detail}</p>
-                </div>
-                <span lang="ar" dir="rtl">{block.arabic}</span>
-              </section>
-            ))}
-          </div>
-        </article>
       </section>
 
       <section className="jazan-bottom-grid">

@@ -651,7 +651,6 @@ code {
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid rgba(31, 56, 100, 0.16);
-  cursor: pointer;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
