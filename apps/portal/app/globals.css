@@ -821,6 +821,292 @@ code {
   padding: 18px;
 }
 
+.jazan-workspace-page {
+  gap: 14px;
+}
+
+.jazan-workspace-page > .hero {
+  padding: 16px 18px;
+  border-radius: 18px;
+}
+
+.jazan-workspace-page > .hero h1 {
+  margin-bottom: 6px;
+  font-size: clamp(24px, 2.4vw, 36px);
+  letter-spacing: 0;
+}
+
+.jazan-workspace-page > .hero p:not(.eyebrow) {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.jazan-workspace-section {
+  padding: 18px;
+}
+
+.jazan-workspace-section > p {
+  max-width: 1120px;
+  margin: 0;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.jazan-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.jazan-section-header h2 {
+  margin: 0;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.jazan-method-chain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.jazan-method-chain span {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #e5f5ef;
+  border: 1px solid rgba(7, 86, 79, 0.2);
+  color: #07564f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.jazan-method-chain span:not(:last-child)::after {
+  content: "->";
+  margin-left: 14px;
+  color: #6b7280;
+}
+
+.jazan-two-column-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.jazan-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+}
+
+.jazan-metric-card {
+  min-height: 116px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f7fbff;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+}
+
+.jazan-metric-card.target {
+  background: #fffdf6;
+  border-color: rgba(185, 111, 19, 0.18);
+}
+
+.jazan-metric-card span {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #4b5563;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.jazan-metric-card h3 {
+  margin: 0;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.jazan-metric-card strong {
+  color: #07564f;
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+
+.jazan-cascade-map {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.jazan-cascade-node {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-height: 188px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 56, 100, 0.12);
+  background: #ffffff;
+}
+
+.jazan-cascade-node:not(:last-child)::after {
+  content: "->";
+  position: absolute;
+  top: 50%;
+  right: -10px;
+  color: #6b7280;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+.jazan-cascade-node h3,
+.jazan-deliverable-card h3,
+.jazan-dependency-groups h3,
+.jazan-municipality-tile h3 {
+  margin: 0;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.jazan-cascade-node dl,
+.jazan-municipality-tile dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.jazan-cascade-node dl div,
+.jazan-municipality-tile dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.jazan-cascade-node dt,
+.jazan-municipality-tile dt {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.jazan-cascade-node dd,
+.jazan-municipality-tile dd {
+  margin: 0;
+  color: #07194a;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.jazan-status-chip {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #4b5563;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.jazan-status-chip.aligned,
+.jazan-status-chip.complete {
+  background: #e5f5ef;
+  color: #07564f;
+}
+
+.jazan-status-chip.partially_aligned,
+.jazan-status-chip.partial {
+  background: #fff4dc;
+  color: #7a4a0b;
+}
+
+.jazan-status-chip.missing_kpi,
+.jazan-status-chip.missing_owner,
+.jazan-status-chip.missing_initiative,
+.jazan-status-chip.at_risk {
+  background: #ffe8e8;
+  color: #9f1239;
+}
+
+.jazan-table-wrap {
+  overflow-x: auto;
+}
+
+.jazan-data-table {
+  min-width: 960px;
+}
+
+.jazan-data-table th,
+.jazan-data-table td {
+  padding-right: 16px;
+  vertical-align: top;
+}
+
+.jazan-municipality-grid,
+.jazan-deliverable-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.jazan-municipality-tile,
+.jazan-deliverable-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+}
+
+.jazan-deliverable-card p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.jazan-dependency-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.jazan-dependency-groups section {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  background: #ffffff;
+}
+
+.jazan-dependency-groups ul,
+.jazan-detail-panel ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .jazan-value-cycle {
   grid-area: cycle;
   position: relative;
@@ -5164,6 +5450,8 @@ code {
   .rcm-dashboard-grid,
   .jazan-route-grid,
   .jazan-detail-grid,
+  .jazan-two-column-grid,
+  .jazan-cascade-map,
   .jazan-rhythm-panel > div,
   .jazan-measures-panel > div,
   .jazan-governance-tree div,
