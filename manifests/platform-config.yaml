@@ -51,7 +51,7 @@ data:
   KEYCLOAK_REALM: opencare
   FORECAST_RUNTIME_URL: http://bed-forecast:8000
   ANOMALY_RUNTIME_URL: http://anomaly:8000
-  SUPERSET_EMBED_URL: https://analytics.opencare.opendatalake.com
+  SUPERSET_EMBED_URL: https://analytics.jazan.opendatalake.com
   AIRBYTE_URL: http://airbyte-airbyte-server-svc:8001
   REPORTS_PREFIX: reports
   DICTIONARY_VERSION: "2026.04"
@@ -66,14 +66,14 @@ data:
   SMTP_USER: admin@opendatalake.com
   SMTP_FROM: admin@opendatalake.com
   SMTP_USE_TLS: "true"
-  NEXT_PUBLIC_API_BASE_URL: http://backend:8000
+  NEXT_PUBLIC_API_BASE_URL: https://api.jazan.opendatalake.com
   BACKEND_URL: http://backend:8000
-  PORTAL_URL: http://portal:3000
-  BASE_DOMAIN: opendatalake.com
-  PORTAL_HOST: opencare.opendatalake.com
-  API_HOST: api.opencare.opendatalake.com
-  AUTH_HOST: auth.opencare.opendatalake.com
-  ANALYTICS_HOST: analytics.opencare.opendatalake.com
+  PORTAL_URL: https://jazan.opendatalake.com
+  BASE_DOMAIN: jazan.opendatalake.com
+  PORTAL_HOST: jazan.opendatalake.com
+  API_HOST: api.jazan.opendatalake.com
+  AUTH_HOST: auth.jazan.opendatalake.com
+  ANALYTICS_HOST: analytics.jazan.opendatalake.com
   TLS_EMAIL: admin@opendatalake.com
   CERT_MANAGER_NAMESPACE: cert-manager
   CERT_MANAGER_RELEASE_NAME: cert-manager
@@ -85,7 +85,7 @@ data:
   EXTERNAL_HOST: ""
   INGRESS_CLASS_NAME: traefik
   TRAEFIK_ENTRYPOINTS: websecure
-  EXTERNAL_TLS_SECRET_NAME: opencare-tls
+  EXTERNAL_TLS_SECRET_NAME: jazan-opencare-tls
   CERT_MANAGER_CLUSTER_ISSUER: letsencrypt-http01
   SUPERSET_READONLY_USER: superset_readonly
   SUPERSET_ADMIN_USER: admin

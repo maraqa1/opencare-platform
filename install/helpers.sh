@@ -541,6 +541,11 @@ EOF
 - External Analytics: ${external_scheme}://${ANALYTICS_HOST}/
 EOF
       fi
+      if [[ -n "$AUTH_HOST" ]]; then
+        cat <<EOF
+- External Auth: ${external_scheme}://${AUTH_HOST}/
+EOF
+      fi
     fi
   fi
 }

@@ -8,8 +8,8 @@ import { buildNavigation } from "@/config/navigation";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OpenCare Portal",
-  description: "Customer and admin portal for bed occupancy intelligence.",
+  title: "Jazan Municipality Performance Platform",
+  description: "Performance management and civic intelligence foundation for Jazan Municipality.",
 };
 
 async function getPathname() {

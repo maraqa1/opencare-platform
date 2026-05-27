@@ -78,8 +78,8 @@ function getTopbarContext(pathname: string) {
   }
 
   return {
-    label: "OpenCare",
-    title: "Hospital Operations Intelligence",
+    label: "Jazan Municipality",
+    title: "Civic Intelligence Foundation",
     badge: "Platform",
     actionHref: "/admin",
     actionLabel: "Admin",
@@ -126,17 +126,13 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-logo-shell">
-            <img
-              src="https://yottalogica.com/wp-content/uploads/logo3.png"
-              alt="YottaLogica"
-              className="brand-logo"
-            />
+            <span className="brand-logo-mark">JM</span>
           </div>
-          <span className="brand-kicker">OpenCare</span>
-          <p className="brand-title">Hospital Operations Intelligence</p>
+          <span className="brand-kicker">Jazan Municipality</span>
+          <p className="brand-title">Civic Intelligence Foundation</p>
           <p>
-            Use case workspaces keep daily operations, decision support, and deep governance
-            in the right place.
+            A clean municipal shell for configuring source systems, governance, analytics, and citizen-service
+            workspaces.
           </p>
         </div>
         <NavSection title="Global Navigation" items={navigation} pathname={pathname} />

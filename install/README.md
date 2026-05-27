@@ -6,6 +6,15 @@ Scripts here should print useful endpoints and verify service health with clear 
 
 ## Fresh VM bootstrap
 
+For the Jazan deployment target, point these DNS `A` records to `78.47.100.139` before running the installer:
+
+```text
+jazan.opendatalake.com
+api.jazan.opendatalake.com
+auth.jazan.opendatalake.com
+analytics.jazan.opendatalake.com
+```
+
 For a brand-new Ubuntu VM, run the host bootstrap first:
 
 ```bash
@@ -30,9 +39,9 @@ After bootstrap:
 2. copy `.env.template` to `.env` and fill secrets/hosts
 3. run one installer command, depending on your goal:
 
-Platform only:
+Foundation install (default, no bundled demo use cases):
 ```bash
-sudo bash install/install.sh --profile platform-only
+sudo bash install/install.sh
 ```
 
 Full platform + demo use cases + decision layer:
@@ -85,8 +94,8 @@ If you prefer explicit control, the repeatable phased pattern is still available
 
 ```bash
 bash install/install.sh --platform-only
-bash scripts/demo/apply_demo_proof.sh
-bash scripts/decisions/apply_decisions.sh
+bash scripts/demo/apply_demo_proof.sh      # optional demo data/use cases
+bash scripts/decisions/apply_decisions.sh  # optional decision layer
 bash install/validation.sh
 ```
 

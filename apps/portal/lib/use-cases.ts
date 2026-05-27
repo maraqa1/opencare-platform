@@ -30,10 +30,10 @@ export type UseCaseManifestEntry = {
 
 export function getManifestEnabledUseCaseIds(
   manifest: Record<string, UseCaseManifestEntry> = {},
-): string[] | null {
+): string[] {
   const entries = Object.entries(manifest);
   if (entries.length === 0) {
-    return null;
+    return [];
   }
 
   return entries
@@ -196,10 +196,6 @@ export function filterVisibleUseCases(
   manifest: Record<string, UseCaseManifestEntry> = {},
 ) {
   const enabledIds = getManifestEnabledUseCaseIds(manifest);
-  if (enabledIds === null) {
-    return modules;
-  }
-
   return modules.filter((module) => enabledIds.includes(module.id));
 }
 
@@ -210,7 +206,7 @@ export function getFallbackUseCaseManifestEntries(): Record<string, UseCaseManif
       {
         name: useCase.name,
         description: useCase.description,
-        enabled: useCase.status === "active",
+        enabled: false,
       } satisfies UseCaseManifestEntry,
     ]),
   );

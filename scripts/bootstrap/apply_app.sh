@@ -52,6 +52,11 @@ EOF
         - ${ANALYTICS_HOST}
 EOF
     fi
+    if [[ -n "$AUTH_HOST" && "$AUTH_HOST" != "$PORTAL_HOST" && "$AUTH_HOST" != "$API_HOST" && "$AUTH_HOST" != "$ANALYTICS_HOST" ]]; then
+      cat >>"$output_file" <<EOF
+        - ${AUTH_HOST}
+EOF
+    fi
     if [[ -z "$PORTAL_HOST" && -z "$API_HOST" && -n "$EXTERNAL_HOST" ]]; then
       cat >>"$output_file" <<EOF
         - ${EXTERNAL_HOST}
@@ -186,6 +191,21 @@ EOF
                 name: superset
                 port:
                   number: 8088
+EOF
+  fi
+
+  if [[ -n "$AUTH_HOST" ]]; then
+    cat >>"$output_file" <<EOF
+    - host: ${AUTH_HOST}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
 EOF
   fi
 }

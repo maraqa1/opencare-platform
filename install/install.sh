@@ -15,7 +15,8 @@ usage() {
 Usage: bash install/install.sh [options]
 
 Options:
-  --platform-only     Install only the shared platform through ingestion (skip demo and decision phases).
+  --profile <name>    Named install profile: platform-only, full-demo.
+  --platform-only     Install only the shared platform through ingestion (default).
   --with-demo         Include the demo/use-case provisioning phase.
   --with-decision     Include the decision phase.
   --from <phase>      Start from the named phase.
@@ -41,14 +42,20 @@ ALL_PHASES=(
   "decision:$ROOT_DIR/scripts/decisions/apply_decisions.sh"
 )
 
-include_demo=true
-include_decision=true
+include_demo=false
+include_decision=false
 skip_validation=false
 from_phase=""
 to_phase=""
+profile_name=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --profile)
+      [[ $# -ge 2 ]] || fail "--profile requires a profile name"
+      profile_name="$2"
+      shift 2
+      ;;
     --platform-only)
       include_demo=false
       include_decision=false
@@ -85,6 +92,22 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ -n "$profile_name" ]]; then
+  case "$profile_name" in
+    platform-only)
+      include_demo=false
+      include_decision=false
+      ;;
+    full-demo)
+      include_demo=true
+      include_decision=true
+      ;;
+    *)
+      fail "Unknown profile: $profile_name"
+      ;;
+  esac
+fi
 
 log "Installing OpenCare Insight Platform into namespace $NAMESPACE"
 

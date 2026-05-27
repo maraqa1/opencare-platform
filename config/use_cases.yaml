@@ -2,7 +2,7 @@ use_cases:
   bed_pressure:
     name: "Bed Pressure Intelligence"
     description: "Monitor occupancy and forecast ward pressure"
-    enabled: true
+    enabled: false
     source_tables:
       - bed_events
       - wards
@@ -103,7 +103,7 @@ use_cases:
   revenue_cycle_management:
     name: "Revenue Cycle Management"
     description: "Real-time cash control, revenue recovery, payer accountability, and operational execution."
-    enabled: true
+    enabled: false
     source_tables:
       - claims
       - financial_postings
@@ -207,7 +207,7 @@ use_cases:
   talemia_business_intelligence:
     name: "TALEMIA Business Intelligence"
     description: "Commercial pipeline, win/loss, account ownership, opportunity drilldown, and KPI governance for TALEMIA."
-    enabled: true
+    enabled: false
     source_tables:
       - talemia_opportunities
       - talemia_awards
