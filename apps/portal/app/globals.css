@@ -363,6 +363,7 @@ code {
 }
 
 .jazan-tom-page {
+  width: 100%;
   gap: 10px;
   max-width: 1500px;
 }
@@ -459,7 +460,7 @@ code {
 
 .jazan-tom-layout {
   display: grid;
-  grid-template-columns: 260px minmax(720px, 1fr) 300px;
+  grid-template-columns: minmax(190px, 0.78fr) minmax(0, 2.35fr) minmax(210px, 0.9fr);
   gap: 10px;
   align-items: stretch;
 }
@@ -554,6 +555,7 @@ code {
 .jazan-operating-model {
   display: grid;
   gap: 0;
+  container: jazan-model / inline-size;
 }
 
 .jazan-vision {
@@ -746,6 +748,78 @@ code {
 .jazan-value-cycle span:nth-child(4) { bottom: 52px; left: 112px; }
 .jazan-value-cycle span:nth-child(5) { left: 46px; bottom: 96px; }
 .jazan-value-cycle span:nth-child(6) { top: 96px; left: 34px; }
+
+@container jazan-model (max-width: 760px) {
+  .jazan-vision {
+    padding: 10px 12px;
+  }
+
+  .jazan-vision p {
+    font-size: 16px;
+  }
+
+  .jazan-vision h2 {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .jazan-pillars {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "title"
+      "cycle"
+      "p1"
+      "p2"
+      "p3"
+      "p4"
+      "p5"
+      "p6";
+    padding: 10px;
+  }
+
+  .jazan-pillars > h2 {
+    font-size: 17px;
+    line-height: 1.15;
+  }
+
+  .jazan-pillar-card {
+    min-height: auto;
+    grid-template-columns: 32px minmax(0, 1fr);
+    padding: 10px;
+  }
+
+  .jazan-pillar-card > span {
+    width: 30px;
+    height: 30px;
+    font-size: 17px;
+  }
+
+  .jazan-value-cycle {
+    width: 230px;
+    height: 230px;
+    margin: 2px auto;
+  }
+
+  .jazan-value-cycle::before {
+    inset: 60px;
+  }
+
+  .jazan-value-cycle strong {
+    width: 106px;
+    font-size: 11px;
+  }
+
+  .jazan-value-cycle span {
+    font-size: 11px;
+  }
+
+  .jazan-value-cycle span:nth-child(1) { top: 40px; left: 90px; }
+  .jazan-value-cycle span:nth-child(2) { top: 72px; right: 24px; }
+  .jazan-value-cycle span:nth-child(3) { right: 25px; bottom: 72px; }
+  .jazan-value-cycle span:nth-child(4) { bottom: 40px; left: 86px; }
+  .jazan-value-cycle span:nth-child(5) { left: 35px; bottom: 74px; }
+  .jazan-value-cycle span:nth-child(6) { top: 74px; left: 27px; }
+}
 
 .jazan-enablers {
   border-top: 1px solid rgba(31, 56, 100, 0.12);
