@@ -135,7 +135,7 @@ export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
             <p className="section-subtitle">Source tables will be confirmed during enablement.</p>
           )}
           <p className="section-subtitle">
-            Ingestion pattern: MySQL source to Airbyte to Postgres raw landing, then dbt staging and analytics.
+            Source systems, staging, analytics marts, and governed workspace outputs are resolved from the platform runtime.
           </p>
         </section>
 

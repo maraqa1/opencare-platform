@@ -28,6 +28,39 @@ export type UseCaseManifestEntry = {
   enabled?: boolean;
 };
 
+function importedUseCaseIcon(pkg: UseCaseTemplatePackage) {
+  const source = pkg.name || pkg.slug || pkg.package_id;
+  const letters = source
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+  return letters || "UC";
+}
+
+function firstMeaningfulText(values: Array<string | null | undefined>) {
+  return values.find((value) => Boolean(value && value.trim())) ?? null;
+}
+
+function importedUseCaseSummary(pkg: UseCaseTemplatePackage) {
+  const preview = pkg.preview_summary;
+  const personas = preview?.business_summary?.personas ?? [];
+  const decisions = preview?.business_summary?.decisions ?? [];
+  const kpis = preview?.business_summary?.kpis ?? [];
+
+  return (
+    firstMeaningfulText([
+      preview?.business_summary?.problem,
+      decisions.length > 0 ? `Supports ${decisions[0]}.` : null,
+      kpis.length > 0 ? `Tracks ${kpis.slice(0, 2).join(" and ")}.` : null,
+      personas.length > 0 ? `Designed for ${personas.slice(0, 2).join(" and ")}.` : null,
+      pkg.domain,
+    ]) ??
+    "Imported use case activated in the OpenCare runtime."
+  );
+}
+
 export function getManifestEnabledUseCaseIds(
   manifest: Record<string, UseCaseManifestEntry> = {},
 ): string[] | null {
@@ -240,47 +273,53 @@ export function projectImportedPackagesToUseCases(
       const routeHref = preview?.install_impact?.full_runtime_supported
         ? preview?.route_to_be_added ?? importedWorkspaceHref
         : importedWorkspaceHref;
+      const personas = preview?.business_summary?.personas ?? [];
       const kpis = (preview?.business_summary?.kpis ?? []).slice(0, 3);
+      const decisions = (preview?.business_summary?.decisions ?? []).slice(0, 2);
+      const routeLabel = preview?.route_to_be_added?.split("/").filter(Boolean).pop();
+      const summary = importedUseCaseSummary(pkg);
 
       return {
         id: `imported:${pkg.package_id}`,
         slug: pkg.slug,
-        icon: "Pkg",
+        icon: importedUseCaseIcon(pkg),
         name: pkg.name,
         description:
-          preview?.business_summary?.problem ??
-          pkg.domain ??
-          "Imported use-case package activated in the OpenCare portal.",
+          firstMeaningfulText([
+            preview?.business_summary?.problem,
+            personas.length > 0 ? `Designed for ${personas.join(", ")}.` : null,
+            pkg.domain,
+          ]) ?? "Imported use case activated in the OpenCare portal.",
         status: "active",
-        summary:
-          pkg.domain ??
-          "Imported use-case package awaiting deeper runtime materialization.",
+        summary,
         defaultHref: routeHref,
-        ctaLabel: "Open Imported Workspace",
+        ctaLabel: `Open ${pkg.name}`,
         kpis:
           kpis.length > 0
             ? kpis.map((kpi) => ({
                 label: kpi,
                 value: "Defined",
-                note: "Imported package contract",
+                note: pkg.domain ?? "Package contract",
               }))
             : [
                 { label: "Package Status", value: "Active", note: "Visible in portal" },
                 { label: "Version", value: pkg.version, note: "Imported package version" },
                 {
-                  label: "Runtime Mode",
-                  value: preview?.install_impact?.full_runtime_supported ? "Supported" : "Imported",
-                  note: preview?.install_impact?.full_runtime_supported
-                    ? "Eligible for deeper materialization"
-                    : "Review in admin for next steps",
+                  label: "Runtime Route",
+                  value: routeLabel ?? pkg.slug,
+                  note:
+                    decisions[0] ??
+                    (preview?.install_impact?.full_runtime_supported
+                      ? "Materialized runtime route available"
+                      : "Review in admin for next steps"),
                 },
               ],
         shell: {
           label: pkg.name,
-          title: `${pkg.name} Imported Package`,
-          badge: "Imported",
+          title: pkg.name,
+          badge: pkg.domain ?? "Imported",
           actionHref: adminHref,
-          actionLabel: "Template Admin",
+          actionLabel: "Use Case Admin",
         },
       } satisfies UseCaseModule;
     });
