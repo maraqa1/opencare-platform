@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
 import {
+  emptyJazanPillarsResponse,
   formatJazanFreshness,
   formatJazanMetric,
   formatJazanRisks,
@@ -21,13 +22,14 @@ type PillarResponse = {
 };
 
 async function getPillar(pillarId: string) {
+  const fallback = emptyJazanPillarsResponse.pillars.find((item) => item.id === pillarId) ?? null;
   const data = await getApiJson<PillarResponse>({
     path: `/api/v1/jazan/pillars/${pillarId}`,
-    fallback: { pillar: null },
+    fallback: { pillar: fallback },
     cacheMode: "no-store",
   });
 
-  return data.pillar;
+  return data.pillar?.bullets?.length ? data.pillar : fallback;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -50,10 +52,10 @@ export default async function JazanPerformancePillarPage({ params }: PageProps) 
     <PageFrame
       eyebrow="Jazan Performance Pillar"
       title={pillar.title}
-      description={pillar.summary}
+      description={pillar.bullets.join(" | ")}
       chips={[
         { label: `Status: ${formatJazanStatus(pillar.status)}`, tone: "primary" },
-        { label: `Control: ${pillar.responsible_control}`, tone: "accent" },
+        { label: `Route: ${pillar.route}`, tone: "accent" },
       ]}
       actions={
         <Link className="secondary-link" href="/">
@@ -62,6 +64,15 @@ export default async function JazanPerformancePillarPage({ params }: PageProps) 
       }
     >
       <section className="jazan-detail-grid">
+        <article className="panel jazan-detail-panel">
+          <h2>Pillar Scope</h2>
+          <ul>
+            {pillar.bullets.map((bullet) => (
+              <li key={bullet}>{bullet}</li>
+            ))}
+          </ul>
+        </article>
+
         <article className="panel jazan-detail-panel">
           <h2>Use-Case Contract</h2>
           <dl>

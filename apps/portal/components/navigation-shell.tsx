@@ -79,9 +79,9 @@ function getTopbarContext(pathname: string) {
 
   return {
     label: "Jazan Municipality",
-    title: "Civic Intelligence Foundation",
+    title: "Jazan Performance Management",
     badge: "Platform",
-    actionHref: "/admin",
+    actionHref: "/jazan-performance/admin",
     actionLabel: "Admin",
   };
 }
@@ -129,19 +129,19 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
             <span className="brand-logo-mark">JM</span>
           </div>
           <span className="brand-kicker">Jazan Municipality</span>
-          <p className="brand-title">Civic Intelligence Foundation</p>
+          <p className="brand-title">Jazan Performance Management</p>
           <p>
-            A clean municipal shell for configuring source systems, governance, analytics, and citizen-service
-            workspaces.
+            RFP-aligned performance management for objectives, KPIs, municipalities, early warning, and corrective
+            actions.
           </p>
         </div>
         <NavSection title="Global Navigation" items={navigation} pathname={pathname} />
         <section className="nav-section">
           <p className="nav-section-title">Pipeline</p>
           <div className="sidebar-pipeline">
-            <span className="status-dot live" />
-            <span>8m ago</span>
-            <span>6/6 sources</span>
+            <span className="status-dot" />
+            <span>Not connected</span>
+            <span>No data loaded</span>
           </div>
         </section>
       </aside>

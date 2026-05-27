@@ -36,124 +36,168 @@ PILLARS = [
         "number": 1,
         "title": "Strategic Alignment & Objective Cascade",
         "tone": "blue",
-        "summary": "Cascade regional objectives into municipal scorecards, initiatives, and accountable outcomes.",
-        "primary_kpi": {"label": "Objectives with approved KPI mapping", "value": None, "unit": None},
+        "bullets": [
+            "Vision 2030 / ministry / Amanah alignment",
+            "Objective cascade to agencies and municipalities",
+            "Initiative linkage to strategic outcomes",
+            "Alignment matrix and coverage tracking",
+        ],
+        "primary_kpi": {"label": "Alignment coverage", "value": None, "unit": None},
         "status": "unavailable",
         "open_risks": None,
         "data_freshness": None,
         "route": "/jazan-performance/strategic-alignment-objective-cascade",
-        "responsible_control": "Strategy cascade review",
     },
     {
         "id": "kpi-performance-governance",
         "number": 2,
         "title": "KPI & Performance Governance",
         "tone": "teal",
-        "summary": "Define KPI ownership, formulas, thresholds, evidence, and review accountability.",
-        "primary_kpi": {"label": "Governed KPIs with owner and formula", "value": None, "unit": None},
+        "bullets": [
+            "KPI dictionary and formulas",
+            "Baselines, targets, thresholds",
+            "KPI owners and data owners",
+            "Adaa-aligned performance scorecards",
+        ],
+        "primary_kpi": {"label": "KPI dictionary completeness", "value": None, "unit": None},
         "status": "unavailable",
         "open_risks": None,
         "data_freshness": None,
         "route": "/jazan-performance/kpi-performance-governance",
-        "responsible_control": "KPI dictionary control",
     },
     {
         "id": "data-analytics-dashboards",
         "number": 3,
         "title": "Data, Analytics & Dashboards",
         "tone": "green",
-        "summary": "Create trusted data products, dashboards, lineage, and decision-ready analytics.",
-        "primary_kpi": {"label": "Certified dashboard data products", "value": None, "unit": None},
+        "bullets": [
+            "Unified performance data sources",
+            "Executive and operational dashboards",
+            "Strategic / monthly / quarterly reports",
+            "Data quality, freshness, and lineage",
+        ],
+        "primary_kpi": {"label": "Certified dashboard coverage", "value": None, "unit": None},
         "status": "unavailable",
         "open_risks": None,
         "data_freshness": None,
         "route": "/jazan-performance/data-analytics-dashboards",
-        "responsible_control": "Data product certification",
     },
     {
         "id": "municipal-project-early-warning",
         "number": 4,
         "title": "Municipal & Project Early Warning",
         "tone": "cyan",
-        "summary": "Detect municipal service, project delivery, and performance risks early enough to act.",
-        "primary_kpi": {"label": "Risks detected before escalation", "value": None, "unit": None},
+        "bullets": [
+            "Municipality risk ranking",
+            "Project delay prediction",
+            "Revenue decline warning",
+            "Service and visual distortion alerts",
+        ],
+        "primary_kpi": {"label": "High-risk projects with action plans", "value": None, "unit": None},
         "status": "unavailable",
         "open_risks": None,
         "data_freshness": None,
         "route": "/jazan-performance/municipal-project-early-warning",
-        "responsible_control": "Early warning triage",
     },
     {
         "id": "decision-rhythm-corrective-actions",
         "number": 5,
         "title": "Decision Rhythm & Corrective Actions",
         "tone": "purple",
-        "summary": "Convert performance signals into review packs, ownership, decisions, and closure.",
-        "primary_kpi": {"label": "Corrective actions closed on time", "value": None, "unit": None},
+        "bullets": [
+            "Weekly / monthly / quarterly reviews",
+            "Deviation and root-cause analysis",
+            "Corrective-action queue",
+            "Escalation and decision log",
+        ],
+        "primary_kpi": {"label": "Corrective-action closure rate", "value": None, "unit": None},
         "status": "unavailable",
         "open_risks": None,
         "data_freshness": None,
         "route": "/jazan-performance/decision-rhythm-corrective-actions",
-        "responsible_control": "Decision log and closure control",
     },
     {
         "id": "quality-knowledge-transfer-sustainability",
         "number": 6,
         "title": "Quality, Knowledge Transfer & Sustainability",
         "tone": "orange",
-        "summary": "Sustain adoption through quality assurance, capability transfer, and operating cadence.",
-        "primary_kpi": {"label": "Knowledge transfer milestones accepted", "value": None, "unit": None},
+        "bullets": [
+            "Quality and excellence procedures",
+            "Gap analysis and improvement plans",
+            "Training and on-the-job coaching",
+            "Handover and sustainability evidence",
+        ],
+        "primary_kpi": {"label": "Training completion", "value": None, "unit": None},
         "status": "unavailable",
         "open_risks": None,
         "data_freshness": None,
         "route": "/jazan-performance/quality-knowledge-transfer-sustainability",
-        "responsible_control": "Sustainability acceptance review",
     },
 ]
+
+OVERVIEW = {
+    "region": "Jazan Region",
+    "platform": "Performance Management Platform",
+    "vision": (
+        "A unified performance management ecosystem that drives strategic alignment, "
+        "data-driven decisions, accountability, and measurable impact for Jazan Region."
+    ),
+    "stakeholders": [
+        {"title": "Decision Makers", "coverage": ["Mayor / Secretary", "Deputies", "Steering Committee"]},
+        {
+            "title": "Performance Owners",
+            "coverage": ["Agency leaders", "Department heads", "KPI owners", "Initiative owners"],
+        },
+        {
+            "title": "Municipality Network",
+            "coverage": ["25 linked municipalities", "Municipality coordinators", "Field operations teams"],
+            "municipalities": MUNICIPALITIES,
+        },
+        {
+            "title": "Enablement Teams",
+            "coverage": ["PMO", "Data and analytics", "IT and digital", "Quality and excellence", "Finance and investment"],
+        },
+        {
+            "title": "External Interfaces",
+            "coverage": ["Ministry", "National entities", "Vendors and contractors", "Auditors and regulators"],
+        },
+    ],
+    "foundation_enablers": [
+        "PMO & Governance",
+        "Data Governance",
+        "Change Management",
+        "Communications",
+        "Capability Building",
+        "Risk & Compliance",
+        "Smart Technology & Tools",
+        "Integration & Security",
+    ],
+    "governance": {
+        "top": "Steering Committee",
+        "description": "Strategic oversight and decisions",
+        "boxes": [
+            "PMO / Performance Office",
+            "Performance Owners",
+            "Data & Analytics",
+            "Municipality Coordinators",
+            "Quality & Excellence",
+        ],
+    },
+    "success_measures": [
+        {"label": "KPI dictionary completeness", "value": "100%"},
+        {"label": "Municipality scorecard coverage", "value": "25 / 25"},
+        {"label": "Timely monthly reports", "value": ">95%"},
+        {"label": "Data freshness SLA", "value": ">90%"},
+        {"label": "High-risk projects with action plans", "value": "100%"},
+        {"label": "Corrective-action closure rate", "value": ">85%"},
+        {"label": "Training completion", "value": ">90%"},
+    ],
+}
 
 
 @router.get("/overview")
 def overview() -> dict[str, object]:
-    return {
-        "region": "Jazan Region",
-        "platform": "Performance Management Platform",
-        "vision": (
-            "A unified performance management ecosystem that drives strategic alignment, "
-            "data-driven decisions, accountability, and measurable impact for Jazan Region."
-        ),
-        "stakeholders": [
-            {"title": "Decision Makers", "coverage": ["Executive leadership", "Steering committee"]},
-            {"title": "Performance Owners", "coverage": ["Sector leaders", "Department heads"]},
-            {"title": "Municipal Coverage", "coverage": MUNICIPALITIES},
-            {"title": "Users", "coverage": ["Employees", "Managers", "Citizens and beneficiaries"]},
-            {"title": "External Partners", "coverage": ["National entities", "Vendors and partners", "Auditors and regulators"]},
-        ],
-        "foundation_enablers": [
-            "Technology & Tools",
-            "PMO & Governance",
-            "Data Governance",
-            "Change Management",
-            "Communications",
-            "Capability Building",
-            "Risk & Compliance",
-        ],
-        "governance_controls": [
-            "Governance & Leadership",
-            "Steering Committee",
-            "PMO",
-            "Performance Owners",
-            "Data & Analytics",
-            "Decision log",
-            "Evidence audit",
-        ],
-        "success_measures": [
-            {"label": "Strategic objectives with KPIs", "value": None},
-            {"label": "Timely performance reports", "value": None},
-            {"label": "Data quality score", "value": None},
-            {"label": "Initiatives on-track", "value": None},
-            {"label": "Citizen satisfaction", "value": None},
-        ],
-    }
+    return OVERVIEW
 
 
 @router.get("/pillars")

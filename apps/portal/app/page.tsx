@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
 import { getApiJson } from "@/lib/api";
 import {
   emptyJazanOverview,
@@ -13,30 +12,42 @@ import {
   type JazanOverview,
   type JazanPillarsResponse,
 } from "@/lib/jazan";
-import { filterVisibleUseCases, projectImportedPackagesToUseCases, useCases } from "@/lib/use-cases";
 
 export const metadata: Metadata = {
   title: "Jazan RFP - Performance Management Target Operating Model",
 };
 
 const outcomes = [
-  { icon: "SA", title: "Strategic Alignment", note: "Every initiative linked to strategy" },
-  { icon: "DD", title: "Data-Driven Decisions", note: "Insights that drive smarter actions" },
-  { icon: "AC", title: "Accountability", note: "Clear ownership and performance visibility" },
-  { icon: "OE", title: "Operational Excellence", note: "Improved efficiency and productivity" },
-  { icon: "CI", title: "Citizen Impact", note: "Better services and measurable outcomes" },
+  { icon: "SA", title: "Strategic Alignment", note: "Every initiative linked to objectives and KPIs" },
+  {
+    icon: "PG",
+    title: "Performance Governance",
+    note: "Every approved KPI has formula, owner, target, source, and threshold",
+  },
+  {
+    icon: "DD",
+    title: "Data-Driven Decisions",
+    note: "Executive dashboards and review packs generated from governed data",
+  },
+  {
+    icon: "EW",
+    title: "Early Warning",
+    note: "Project delay, revenue decline, service deterioration, and visual distortion risks flagged early",
+  },
+  { icon: "AC", title: "Accountability", note: "Corrective actions assigned, tracked, escalated, and closed" },
+  { icon: "SU", title: "Sustainability", note: "Amanah and municipality teams trained to operate the model" },
 ];
 
 const rhythm = [
-  ["Plan", "Annually"],
-  ["Monitor", "Monthly"],
-  ["Review", "Quarterly"],
-  ["Analyze", "Quarterly"],
-  ["Act & Improve", "Continuous"],
+  ["Daily / Weekly", "Operational follow-up"],
+  ["Monthly", "KPI and corrective-action review"],
+  ["Quarterly", "Strategic performance review"],
+  ["Annually", "KPI, target, and initiative refresh"],
+  ["Continuous", "Data quality, risk monitoring, and improvement"],
 ];
 
 export default async function HomePage() {
-  const [overview, pillarData, runtime, health, useCaseConfig] = await Promise.all([
+  const [overviewResponse, pillarDataResponse] = await Promise.all([
     getApiJson<JazanOverview>({
       path: "/api/v1/jazan/overview",
       fallback: emptyJazanOverview,
@@ -47,35 +58,16 @@ export default async function HomePage() {
       fallback: emptyJazanPillarsResponse,
       cacheMode: "no-store",
     }),
-    getApiJson<{
-      runtimes?: Array<{ name: string; last_run?: string | null; row_count?: number }>;
-    }>({
-      path: "/api/v1/admin/runtime-status",
-      fallback: { runtimes: [] },
-    }),
-    getApiJson<{
-      checks?: Array<{ name: string; healthy: boolean }>;
-    }>({
-      path: "/api/v1/admin/health",
-      fallback: { checks: [] },
-    }),
-    getApiJson<{
-      all_use_cases?: Record<string, { enabled?: boolean }>;
-      active_imported_use_cases?: UseCaseTemplatePackage[];
-    }>({
-      path: "/api/v1/config/use-cases",
-      fallback: { all_use_cases: {} },
-      cacheMode: "no-store",
-    }),
   ]);
 
-  const visibleUseCases = filterVisibleUseCases(useCases, useCaseConfig.all_use_cases ?? {});
-  const importedUseCases = projectImportedPackagesToUseCases(useCaseConfig.active_imported_use_cases ?? []);
-  const activeUseCases = [...visibleUseCases, ...importedUseCases];
-  const healthyCount = (health.checks ?? []).filter((item) => item.healthy).length;
-  const healthTotal = health.checks?.length ?? 0;
-  const runtimeCount = runtime.runtimes?.length ?? 0;
-  const pillars = pillarData.pillars ?? [];
+  const overview =
+    overviewResponse.governance && overviewResponse.foundation_enablers.includes("Integration & Security")
+      ? overviewResponse
+      : emptyJazanOverview;
+  const pillars =
+    pillarDataResponse.pillars?.[0]?.title === "Strategic Alignment & Objective Cascade"
+      ? pillarDataResponse.pillars
+      : emptyJazanPillarsResponse.pillars;
 
   return (
     <div className="page jazan-tom-page">
@@ -102,23 +94,19 @@ export default async function HomePage() {
       <section className="jazan-tom-layout">
         <aside className="jazan-stakeholders">
           <h2>Stakeholder Coverage</h2>
-          {overview.stakeholders.length === 0 ? (
-            <div className="jazan-empty-state">Stakeholder coverage will appear after the Jazan overview feed is available.</div>
-          ) : (
-            overview.stakeholders.map((group, index) => (
-              <article key={group.title}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <h3>{group.title}</h3>
-                  <ul>
-                    {group.coverage.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                </div>
-              </article>
-            ))
-          )}
+          {overview.stakeholders.map((group, index) => (
+            <article key={group.title}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <div>
+                <h3>{group.title}</h3>
+                <ul>
+                  {group.coverage.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            </article>
+          ))}
         </aside>
 
         <main className="jazan-operating-model">
@@ -128,50 +116,50 @@ export default async function HomePage() {
           </section>
 
           <section className="jazan-pillars">
-            <h2>Target Operating Model - 6 RFP Pillars</h2>
+            <h2>Jazan Performance Management - 6 RFP Pillars</h2>
             <div className="jazan-pillar-grid">
-              {pillars.length === 0 ? (
-                <div className="jazan-empty-state">Pillar data is not available yet.</div>
-              ) : (
-                pillars.map((pillar) => (
-                  <Link className={`jazan-pillar-card ${pillar.tone}`} href={pillar.route} key={pillar.id}>
-                    <span>{pillar.number}</span>
-                    <div>
-                      <h3>{pillar.title}</h3>
-                      <p>{pillar.summary}</p>
-                      <dl className="jazan-pillar-meta">
-                        <div>
-                          <dt>Status</dt>
-                          <dd>{formatJazanStatus(pillar.status)}</dd>
-                        </div>
-                        <div>
-                          <dt>Primary KPI</dt>
-                          <dd>{pillar.primary_kpi.label}</dd>
-                        </div>
-                        <div>
-                          <dt>KPI Value</dt>
-                          <dd>{formatJazanMetric(pillar.primary_kpi)}</dd>
-                        </div>
-                        <div>
-                          <dt>Open Risks</dt>
-                          <dd>{formatJazanRisks(pillar.open_risks)}</dd>
-                        </div>
-                        <div>
-                          <dt>Data Freshness</dt>
-                          <dd>{formatJazanFreshness(pillar.data_freshness)}</dd>
-                        </div>
-                        <div>
-                          <dt>Route</dt>
-                          <dd>{pillar.route}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                  </Link>
-                ))
-              )}
+              {pillars.map((pillar) => (
+                <Link className={`jazan-pillar-card ${pillar.tone}`} href={pillar.route} key={pillar.id}>
+                  <span>{pillar.number}</span>
+                  <div>
+                    <h3>{pillar.title}</h3>
+                    <ul>
+                      {pillar.bullets.map((bullet) => (
+                        <li key={bullet}>{bullet}</li>
+                      ))}
+                    </ul>
+                    <dl className="jazan-pillar-meta">
+                      <div>
+                        <dt>Status</dt>
+                        <dd>{formatJazanStatus(pillar.status)}</dd>
+                      </div>
+                      <div>
+                        <dt>Primary KPI</dt>
+                        <dd>{pillar.primary_kpi.label}</dd>
+                      </div>
+                      <div>
+                        <dt>KPI Value</dt>
+                        <dd>{formatJazanMetric(pillar.primary_kpi)}</dd>
+                      </div>
+                      <div>
+                        <dt>Open Risks</dt>
+                        <dd>{formatJazanRisks(pillar.open_risks)}</dd>
+                      </div>
+                      <div>
+                        <dt>Data Freshness</dt>
+                        <dd>{formatJazanFreshness(pillar.data_freshness)}</dd>
+                      </div>
+                      <div>
+                        <dt>Route</dt>
+                        <dd>{pillar.route}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </Link>
+              ))}
             </div>
             <div className="jazan-value-cycle" aria-label="Performance management value cycle">
-              {["Plan", "Measure", "Monitor", "Analyze", "Act", "Improve"].map((step) => (
+              {["Align", "Define", "Collect", "Analyze", "Decide", "Act & Improve"].map((step) => (
                 <span key={step}>{step}</span>
               ))}
               <strong>Performance Management Value Cycle</strong>
@@ -181,11 +169,9 @@ export default async function HomePage() {
           <section className="jazan-enablers">
             <h2>Foundation Enablers</h2>
             <div>
-              {overview.foundation_enablers.length === 0 ? (
-                <span>Awaiting foundation configuration</span>
-              ) : (
-                overview.foundation_enablers.map((enabler) => <span key={enabler}>{enabler}</span>)
-              )}
+              {overview.foundation_enablers.map((enabler) => (
+                <span key={enabler}>{enabler}</span>
+              ))}
             </div>
           </section>
         </main>
@@ -221,13 +207,12 @@ export default async function HomePage() {
         <article className="jazan-governance-panel">
           <h2>Governance Structure / Controls</h2>
           <div className="jazan-governance-tree">
-            <strong>Governance & Leadership</strong>
+            <strong>{overview.governance.top}</strong>
+            <p>{overview.governance.description}</p>
             <div>
-              {overview.governance_controls.length === 0 ? (
-                <span>Awaiting controls feed</span>
-              ) : (
-                overview.governance_controls.map((control) => <span key={control}>{control}</span>)
-              )}
+              {overview.governance.boxes.map((control) => (
+                <span key={control}>{control}</span>
+              ))}
             </div>
           </div>
         </article>
@@ -235,47 +220,39 @@ export default async function HomePage() {
         <article className="jazan-measures-panel">
           <h2>Success Measures</h2>
           <div>
-            {overview.success_measures.length === 0 ? (
-              <section>
-                <p>Measures unavailable</p>
-                <strong>Awaiting data</strong>
+            {overview.success_measures.map((measure) => (
+              <section key={measure.label}>
+                <p>{measure.label}</p>
+                <strong>{formatJazanMetric(measure)}</strong>
               </section>
-            ) : (
-              overview.success_measures.map((measure) => (
-                <section key={measure.label}>
-                  <p>{measure.label}</p>
-                  <strong>{formatJazanMetric(measure)}</strong>
-                </section>
-              ))
-            )}
+            ))}
           </div>
         </article>
       </section>
 
       <footer className="jazan-tom-footer">
         <span>Aligned Strategy</span>
+        <span>Governed KPIs</span>
         <span>Trusted Data</span>
-        <span>Empowered People</span>
-        <span>Integrated Processes</span>
-        <span>Technology & Tools</span>
-        <strong>Sustainable Impact for Jazan</strong>
+        <span>Early Warning</span>
+        <span>Accountable Actions</span>
+        <span>Sustainable Capability</span>
+        <span>=</span>
+        <strong>Measurable Impact for Jazan</strong>
         <div>
-          <Link className="button primary" href="/admin/configuration">
+          <Link className="button primary" href="/jazan-performance/admin">
             Configure Foundation
           </Link>
-          <Link className="secondary-link" href="/admin/use-case-templates">
+          <Link className="secondary-link" href="/jazan-performance/early-warning">
             Prepare Use Case
           </Link>
         </div>
-        <p>
-          Active municipal use cases: {activeUseCases.length} | Services healthy: {healthyCount}/{healthTotal} |
-          Runtimes tracked: {runtimeCount}
-        </p>
+        <p>Platform data status: Not connected</p>
         <div className="jazan-status-legend" aria-label="Operating model status legend">
           <span><i className="on-track" /> on track</span>
           <span><i className="watch" /> watch</span>
           <span><i className="at-risk" /> at risk</span>
-          <span><i className="unavailable" /> awaiting data</span>
+          <span><i className="unavailable" /> needs data</span>
         </div>
       </footer>
     </div>

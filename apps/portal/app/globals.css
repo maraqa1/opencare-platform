@@ -1165,7 +1165,7 @@ code {
 .jazan-rhythm-panel > div,
 .jazan-measures-panel > div {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 8px;
   padding: 14px;
 }
@@ -1226,9 +1226,16 @@ code {
   color: var(--oc-white);
 }
 
+.jazan-governance-tree > p {
+  margin: -10px 0 0;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .jazan-governance-tree div {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 10px;
 }
 
