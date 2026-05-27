@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Use Cases - OpenCare Portal",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function UseCasesPage() {
   const config = await getApiJson<{
     all_use_cases?: Record<string, { enabled?: boolean }>;

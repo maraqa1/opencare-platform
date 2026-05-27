@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Use Case Templates - OpenCare Portal",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function UseCaseTemplatesPage() {
   const response = await getApiJson<{ packages?: UseCaseTemplatePackage[] }>({
     path: "/api/v1/admin/use-case-templates",

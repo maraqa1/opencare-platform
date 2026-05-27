@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "Configuration - OpenCare Portal",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type UseCaseManifestEntry = {
   name?: string;
   description?: string;

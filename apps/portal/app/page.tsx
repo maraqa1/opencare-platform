@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   title: "Home - OpenCare Portal",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function HomePage() {
   const [runtime, health, alerts, occupancy, useCaseConfig] = await Promise.all([
     getApiJson<{
