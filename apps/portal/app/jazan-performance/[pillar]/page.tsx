@@ -833,19 +833,167 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
   );
 }
 
-function PillarThreeDeliveryComponentsPage({ pillar }: { pillar: JazanPillar }) {
+function PillarThreeOverviewPage({ pillar }: { pillar: JazanPillar }) {
+  const dataSources = [
+    ["source_jazan", "early-warning slice", "6 sources feeding pillar 4", "loaded - 8m ago"],
+    ["source_jazan", "finance & budget", "expenditure, collections, budget", "needs data"],
+    ["source_jazan", "workforce", "staffing, capacity", "needs data"],
+    ["source_jazan", "full citizen services", "all service channels", "needs data"],
+  ];
+
+  return (
+    <PageFrame
+      eyebrow="Home > Pillars > Data, analytics & dashboards"
+      title="Data, analytics & dashboards"
+      description="البيانات والتحليلات"
+      chips={[
+        { label: "partially connected", tone: "primary" },
+        { label: `Route: ${pillar.route}`, tone: "accent" },
+      ]}
+      actions={
+        <Link className="secondary-link" href="/jazan-performance">
+          Back to operating model
+        </Link>
+      }
+      pageClassName="jazan-workspace-page jazan-delivery-page"
+    >
+      <TabNav items={pillarTabs} activeKey="data-analytics" />
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Scope & methodology</p>
+            <h2>Governed data foundation</h2>
+          </div>
+        </div>
+        <p>
+          Build the governed data foundation every other pillar runs on - the platform, the governance, the models, a
+          semantic layer that turns governed KPIs into consistent metrics, and the visualisations on top.
+        </p>
+        <div className="jazan-method-chain compact" aria-label="Data analytics delivery method">
+          {["Platform", "Govern", "Model", "Semantic", "Visualise"].map((step) => (
+            <span key={step}>{step}</span>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Pillar-level success measures</p>
+            <h2>Connection status</h2>
+          </div>
+        </div>
+        <div className="jazan-warning-metrics">
+          <article className="jazan-warning-metric">
+            <span>Sources unified</span>
+            <strong>6 / 18</strong>
+            <p>early-warning slice live</p>
+          </article>
+          <article className="jazan-warning-metric">
+            <span>Data quality - connected</span>
+            <strong>&gt; 90%</strong>
+            <p>on the 6 live sources</p>
+          </article>
+          <article className="jazan-warning-metric">
+            <span>Certified dashboard coverage</span>
+            <strong>-</strong>
+            <p>target &gt;90% - pending</p>
+          </article>
+          <article className="jazan-warning-metric">
+            <span>Report timeliness</span>
+            <strong>-</strong>
+            <p>target &gt;95% - pending</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Architecture</p>
+            <h2>Delivery components</h2>
+          </div>
+          <Link className="secondary-link" href="/jazan-performance/data-analytics-dashboards/delivery-components">
+            View component detail
+          </Link>
+        </div>
+        <div className="delivery-overview-list">
+          {deliveryComponents.map((component) => (
+            <article key={component.id}>
+              <div className="delivery-card-title">
+                <DeliveryIcon name={component.icon} size={17} />
+                <div>
+                  <h3>{component.title}</h3>
+                  <p>{component.description}</p>
+                </div>
+              </div>
+              <DeliveryStatusChip status={component.status} />
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Dependencies</p>
+            <h2>Data sources & dependencies</h2>
+          </div>
+        </div>
+        <div className="jazan-source-list">
+          {dataSources.map(([schema, domain, description, status]) => (
+            <div key={`${schema}-${domain}`}>
+              <code>{schema}</code>
+              <span>
+                {domain} - {description}
+              </span>
+              <strong className={status === "needs data" ? "pending" : undefined}>{status}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section delivery-linked-usecase">
+        <div>
+          <p className="eyebrow">Linked use case - partially live</p>
+          <h2>Performance data & dashboards</h2>
+          <p>
+            The platform, the early-warning models, and the dashboards feeding pillar 4 are running today. Full certified
+            coverage across all domains and the semantic layer light up as the remaining sources connect and pillar 2
+            publishes its KPI dictionary.
+          </p>
+        </div>
+        <div className="hero-actions">
+          <Link className="secondary-link" href="/jazan-performance/municipal-project-early-warning">
+            View the live pipeline
+          </Link>
+          <Link className="secondary-link" href="/jazan-performance/data-analytics-dashboards/delivery-components">
+            View delivery components
+          </Link>
+        </div>
+      </section>
+    </PageFrame>
+  );
+}
+
+export function PillarThreeDeliveryComponentsPage({
+  backHref = "/jazan-performance/data-analytics-dashboards",
+}: {
+  backHref?: string;
+}) {
   return (
     <PageFrame
       eyebrow="Pillars > Data, analytics & dashboards > Delivery components"
       title="Pillar 3 · five delivery components"
       description="مكونات تسليم البيانات والتحليلات ولوحات المتابعة"
       chips={[
-        { label: `Status: ${formatJazanStatus(pillar.status)}`, tone: "primary" },
-        { label: `Route: ${pillar.route}`, tone: "accent" },
+        { label: "partially connected", tone: "primary" },
+        { label: "Delivery detail", tone: "accent" },
       ]}
       actions={
-        <Link className="secondary-link" href="/jazan-performance">
-          Back to operating model
+        <Link className="secondary-link" href={backHref}>
+          Back to Pillar 3
         </Link>
       }
       pageClassName="jazan-workspace-page jazan-delivery-page"
@@ -1093,7 +1241,7 @@ export default async function JazanPerformancePillarPage({ params }: PageProps) 
   }
 
   if (pillar.id === "data-analytics-dashboards") {
-    return <PillarThreeDeliveryComponentsPage pillar={pillar} />;
+    return <PillarThreeOverviewPage pillar={pillar} />;
   }
 
   if (pillar.id === "municipal-project-early-warning") {

@@ -1785,6 +1785,14 @@ code {
   line-height: 1.48;
 }
 
+.delivery-card-title h3 {
+  margin: 0 0 3px;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
 .delivery-status-chip {
   width: fit-content;
   flex: 0 0 auto;
@@ -1847,6 +1855,56 @@ code {
   border-top: 1px solid rgba(31, 56, 100, 0.08);
   color: #4b5563;
   font-weight: 700;
+}
+
+.delivery-overview-list {
+  display: grid;
+}
+
+.delivery-overview-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.delivery-overview-list article:last-child {
+  border-bottom: 0;
+}
+
+.delivery-overview-list p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.jazan-source-list strong.pending {
+  background: #eef2f7;
+  color: #4b5563;
+}
+
+.delivery-linked-usecase {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.delivery-linked-usecase h2 {
+  margin: 0 0 8px;
+  color: #07194a;
+  font-family: var(--font-heading);
+}
+
+.delivery-linked-usecase p {
+  max-width: 760px;
+  margin: 0;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .jazan-value-cycle {
@@ -6200,6 +6258,8 @@ code {
   .jazan-project-meta div,
   .jazan-recommendation-list article,
   .delivery-stack,
+  .delivery-overview-list article,
+  .delivery-linked-usecase,
   .jazan-rhythm-panel > div,
   .jazan-measures-panel > div,
   .jazan-governance-tree div,
