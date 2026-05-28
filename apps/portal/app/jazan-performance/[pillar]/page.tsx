@@ -409,7 +409,7 @@ function EmptyState({ message }: { message: string }) {
 
 function DeliveryIcon({ name, size = 16, className }: { name: DeliveryIconName; size?: number; className?: string }) {
   const common = {
-    "aria-hidden": "true",
+    "aria-hidden": true,
     className: className ? `delivery-icon ${className}` : "delivery-icon",
     fill: "none",
     height: size,
