@@ -140,7 +140,13 @@ export default async function MunicipalityEarlyWarningPage({ params }: PageProps
               <div key={driver.title}>
                 <span className={`risk-dot ${driver.severity}`} />
                 <div>
-                  <strong>{driver.title}</strong>
+                  {driver.href ? (
+                    <Link className="jazan-inline-link" href={driver.href}>
+                      {driver.title}
+                    </Link>
+                  ) : (
+                    <strong>{driver.title}</strong>
+                  )}
                   <p>{driver.detail}</p>
                 </div>
                 <RiskBadge label={driver.severity} />

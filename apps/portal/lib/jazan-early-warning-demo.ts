@@ -32,12 +32,52 @@ export type SabyaRiskDriver = {
   title: string;
   detail: string;
   severity: "critical" | "high" | "medium";
+  href?: string;
 };
 
 export type SabyaKpi = {
   label: string;
   value: string;
   status: "at risk" | "watch" | "on track";
+};
+
+export type ProjectMetric = {
+  label: string;
+  value: string;
+  note: string;
+  tone?: "normal" | "warning" | "critical";
+};
+
+export type ProjectTask = {
+  name: string;
+  start: number;
+  width: number;
+  status: "planned" | "complete" | "in-progress" | "overrun" | "forecast";
+};
+
+export type ProjectComment = {
+  text: string;
+  source: string;
+};
+
+export type ProjectRecommendation = {
+  title: string;
+  description: string;
+  confidence: "high confidence" | "medium confidence";
+};
+
+export type ProjectDemo = {
+  slug: string;
+  title: string;
+  subtitle: string;
+  municipality: string;
+  status: "delayed";
+  risk: "high risk";
+  metrics: ProjectMetric[];
+  tasks: ProjectTask[];
+  metadata: Array<[string, string]>;
+  comments: ProjectComment[];
+  recommendations: ProjectRecommendation[];
 };
 
 export const earlyWarningMethodology = ["Ingest", "Transform", "Score", "Surface", "Act"];
@@ -87,7 +127,12 @@ export const sabyaTrend = [
 
 export const sabyaDrivers: SabyaRiskDriver[] = [
   { title: "Performance anomaly", detail: "composite -14pp / 90 days - z = -2.4", severity: "critical" },
-  { title: "Project delay", detail: "road resurfacing phase 2 - 42 days late", severity: "high" },
+  {
+    title: "Project delay",
+    detail: "road resurfacing phase 2 - 42 days late",
+    severity: "high",
+    href: "/jazan-performance/municipal-project-early-warning/projects/sabya-road-resurfacing-phase-2",
+  },
   { title: "Revenue decline", detail: "Q3 collections -8% vs target", severity: "medium" },
   { title: "Service backlog", detail: "open requests +18% month on month", severity: "medium" },
 ];
@@ -98,4 +143,64 @@ export const sabyaKpis: SabyaKpi[] = [
   { label: "Revenue collection rate", value: "79% / 90%", status: "watch" },
   { label: "Visual distortion closed", value: "70% / 85%", status: "watch" },
   { label: "Infrastructure uptime", value: "86% / 80%", status: "on track" },
+];
+
+export const projectDemos: ProjectDemo[] = [
+  {
+    slug: "sabya-road-resurfacing-phase-2",
+    title: "Sabya road resurfacing - phase 2",
+    subtitle: "LZN-SAB-RR-02",
+    municipality: "Sabya",
+    status: "delayed",
+    risk: "high risk",
+    metrics: [
+      { label: "Physical progress", value: "58%", note: "vs 75% planned" },
+      { label: "Schedule slip", value: "42 days", note: "+14 vs last month", tone: "critical" },
+      { label: "Budget used", value: "65%", note: "SAR 8.1M / 12.4M" },
+      { label: "Forecast completion", value: "11 Jul", note: "planned 30 May", tone: "warning" },
+    ],
+    tasks: [
+      { name: "Mobilization", start: 4, width: 10, status: "complete" },
+      { name: "Site clearing", start: 14, width: 10, status: "complete" },
+      { name: "Sub-base prep", start: 24, width: 14, status: "complete" },
+      { name: "Asphalt laying", start: 39, width: 34, status: "overrun" },
+      { name: "Line marking", start: 75, width: 7, status: "forecast" },
+      { name: "Handover", start: 86, width: 6, status: "forecast" },
+    ],
+    metadata: [
+      ["Sector", "Roads & infrastructure"],
+      ["Contractor", "Al-Marwan Contracting"],
+      ["Owner", "Eng. K. Al-Najmi"],
+      ["Budget", "SAR 12.4M"],
+      ["Start date", "1 Dec 2025"],
+      ["Planned end", "30 May 2026"],
+      ["Forecast end", "11 Jul 2026"],
+    ],
+    comments: [
+      { text: "Asphalt supplier confirmed delivery slipped to next week - port congestion at Jazan.", source: "Eng. K. Al-Najmi - 2 days ago" },
+      { text: "Sub-grade moisture above spec on segment 3; remediation adds about a week.", source: "Site inspector - 5 days ago" },
+      { text: "Phase 2 flagged amber - milestone variance over 20%.", source: "PMO - 1 week ago" },
+      { text: "Contractor requested a 30-day extension; under review.", source: "Contracts office - 2 weeks ago" },
+    ],
+    recommendations: [
+      {
+        title: "Escalate to the steering committee now, not at the next monthly review.",
+        description:
+          "Across 14 comparable resurfacing projects, those that slipped past the 50% milestone finished 58 days late on average.",
+        confidence: "high confidence",
+      },
+      {
+        title: "Pre-order phase 5 line-marking materials this week.",
+        description:
+          "Material-supply delays drove 6 of the last 9 road-project slips in Jazan; ordering now protects the next phase from a second delay.",
+        confidence: "high confidence",
+      },
+      {
+        title: "Run line marking in parallel with the final asphalt segments.",
+        description:
+          "Projects that parallelized phases 4 and 5 recovered about 12 days on average without added cost.",
+        confidence: "medium confidence",
+      },
+    ],
+  },
 ];

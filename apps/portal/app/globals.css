@@ -1386,10 +1386,19 @@ code {
 }
 
 .jazan-risk-driver-list strong,
+.jazan-inline-link,
 .jazan-kpi-list span {
   color: #111827;
   font-size: 14px;
   font-weight: 900;
+}
+
+.jazan-inline-link {
+  text-decoration: none;
+}
+
+.jazan-inline-link:hover {
+  color: #2563eb;
 }
 
 .jazan-risk-driver-list p,
@@ -1430,6 +1439,245 @@ code {
   margin: 0;
   color: #4b5563;
   font-size: 13px;
+}
+
+.jazan-project-detail-page > .hero {
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.14);
+}
+
+.jazan-warning-metric.critical strong,
+.jazan-warning-metric.warning strong {
+  color: #7f1d1d;
+}
+
+.jazan-project-schedule {
+  display: grid;
+  gap: 14px;
+}
+
+.jazan-schedule-months {
+  display: grid;
+  grid-template-columns: 150px repeat(9, minmax(0, 1fr));
+  gap: 0;
+  color: #111827;
+  font-size: 11px;
+}
+
+.jazan-schedule-months strong {
+  text-align: center;
+}
+
+.jazan-schedule-body {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 6px 0;
+  background:
+    linear-gradient(90deg, transparent 0 150px, rgba(31, 56, 100, 0.08) 150px 151px, transparent 151px),
+    repeating-linear-gradient(90deg, transparent 0 calc((100% - 150px) / 9 - 1px), rgba(31, 56, 100, 0.07) calc((100% - 150px) / 9 - 1px) calc((100% - 150px) / 9));
+}
+
+.jazan-schedule-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 0;
+  align-items: center;
+  min-height: 28px;
+}
+
+.jazan-schedule-row > span {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.jazan-schedule-track {
+  position: relative;
+  height: 18px;
+}
+
+.jazan-schedule-bar {
+  position: absolute;
+  top: 6px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.jazan-schedule-bar.planned {
+  border: 1px solid #9ca3af;
+  background: #ffffff;
+}
+
+.jazan-schedule-bar.complete {
+  background: #4f7f24;
+}
+
+.jazan-schedule-bar.in-progress {
+  background: #bd7a14;
+}
+
+.jazan-schedule-bar.overrun {
+  background: #a53b2b;
+}
+
+.jazan-schedule-bar.forecast {
+  background: #c7c7bd;
+}
+
+.jazan-today-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(150px + ((100% - 150px) * 0.62));
+  border-left: 1px dashed #d45a4b;
+}
+
+.jazan-today-marker span {
+  position: absolute;
+  bottom: -18px;
+  left: -14px;
+  color: #a53b2b;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.jazan-gantt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.jazan-gantt-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.jazan-gantt-legend i {
+  width: 16px;
+  height: 4px;
+  display: inline-block;
+  border-radius: 999px;
+}
+
+.jazan-gantt-legend .planned {
+  border: 1px solid #9ca3af;
+  background: #ffffff;
+}
+
+.jazan-gantt-legend .complete {
+  background: #4f7f24;
+}
+
+.jazan-gantt-legend .in-progress {
+  background: #bd7a14;
+}
+
+.jazan-gantt-legend .overrun {
+  background: #a53b2b;
+}
+
+.jazan-gantt-legend .forecast {
+  background: #c7c7bd;
+}
+
+.jazan-project-meta {
+  display: grid;
+  margin: 0;
+}
+
+.jazan-project-meta div,
+.jazan-comment-list div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.1);
+}
+
+.jazan-project-meta div {
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1fr);
+}
+
+.jazan-project-meta div:last-child,
+.jazan-comment-list div:last-child {
+  border-bottom: 0;
+}
+
+.jazan-project-meta dt {
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.jazan-project-meta dd {
+  margin: 0;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.jazan-project-meta dd.danger {
+  color: #9f1239;
+}
+
+.jazan-comment-list {
+  display: grid;
+}
+
+.jazan-comment-list strong {
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.jazan-comment-list span {
+  color: #4b5563;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.jazan-ai-panel {
+  background: #fbfaf3;
+}
+
+.jazan-recommendation-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.jazan-recommendation-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.jazan-recommendation-list article:last-child {
+  border-bottom: 0;
+}
+
+.jazan-recommendation-list h3 {
+  margin: 0 0 4px;
+  color: #111827;
+  font-family: var(--font-heading);
+  font-size: 15px;
+}
+
+.jazan-recommendation-list p,
+.jazan-ai-note {
+  margin: 0;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .jazan-value-cycle {
@@ -5778,6 +6026,10 @@ code {
   .jazan-two-column-grid,
   .jazan-cascade-map,
   .jazan-source-list div,
+  .jazan-schedule-row,
+  .jazan-schedule-months,
+  .jazan-project-meta div,
+  .jazan-recommendation-list article,
   .jazan-rhythm-panel > div,
   .jazan-measures-panel > div,
   .jazan-governance-tree div,
