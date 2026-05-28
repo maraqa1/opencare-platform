@@ -13,6 +13,13 @@ import {
   formatJazanStatus,
   type JazanPillar,
 } from "@/lib/jazan";
+import {
+  earlyWarningDeliverables,
+  earlyWarningMethodology,
+  earlyWarningMetrics,
+  earlyWarningSources,
+  municipalityRisks,
+} from "@/lib/jazan-early-warning-demo";
 
 type PageProps = {
   params: Promise<{ pillar: string }>;
@@ -615,6 +622,150 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
   );
 }
 
+function EarlyWarningWorkspacePage({ pillar }: { pillar: JazanPillar }) {
+  return (
+    <PageFrame
+      eyebrow="Pillar 04"
+      title="Municipal & project early warning"
+      description="الإنذار المبكر للبلديات والمشاريع"
+      chips={[
+        { label: "Live - 6/6 sources", tone: "primary" },
+        { label: `Route: ${pillar.route}`, tone: "accent" },
+        { label: "Demo visual values", tone: "accent" },
+      ]}
+      actions={
+        <>
+          <Link className="secondary-link" href="/jazan-performance">
+            Back to operating model
+          </Link>
+          <Link className="secondary-link" href="/jazan-performance/municipal-project-early-warning/municipalities/sabya">
+            Open Sabya detail
+          </Link>
+        </>
+      }
+      pageClassName="jazan-workspace-page jazan-early-warning-page"
+    >
+      <TabNav items={pillarTabs} activeKey="early-warning" />
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Scope & methodology</p>
+            <h2>Municipality risk sensing layer</h2>
+          </div>
+        </div>
+        <p>
+          Detect performance, project, revenue, and service risks across all 25 municipalities before they become
+          crises. Ingest from source systems, transform through governed analytics marts, score risk with forecasting
+          and anomaly runtimes, and surface the result in the executive cockpit and corrective-action queue.
+        </p>
+        <div className="jazan-method-chain compact" aria-label="Early warning methodology">
+          {earlyWarningMethodology.map((step) => (
+            <span key={step}>{step}</span>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Demo targets</p>
+            <h2>Pillar-level success measures</h2>
+          </div>
+        </div>
+        <div className="jazan-warning-metrics">
+          {earlyWarningMetrics.map((metric) => (
+            <article className="jazan-warning-metric" key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              {metric.note ? <p>{metric.note}</p> : null}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Operating outputs</p>
+            <h2>Deliverables</h2>
+          </div>
+        </div>
+        <div className="jazan-warning-deliverables">
+          {earlyWarningDeliverables.map((item) => (
+            <article className="jazan-warning-deliverable" key={item.title}>
+              <span aria-hidden="true">{item.marker}</span>
+              <div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Risk cockpit</p>
+            <h2>Municipality risk ranking</h2>
+          </div>
+          <Link className="secondary-link" href="/jazan-performance/municipal-project-early-warning/municipalities/sabya">
+            View high-risk municipality
+          </Link>
+        </div>
+        <div className="jazan-municipality-risk-grid">
+          {municipalityRisks.map((municipality) => (
+            <Link
+              className={`jazan-municipality-risk-card ${municipality.status.replace(" ", "-")}`}
+              href={`/jazan-performance/municipal-project-early-warning/municipalities/${municipality.slug}`}
+              key={municipality.slug}
+            >
+              <div>
+                <strong>{municipality.name}</strong>
+                <span>{municipality.arabicName}</span>
+              </div>
+              <dl>
+                <div>
+                  <dt>Score</dt>
+                  <dd>{municipality.score}%</dd>
+                </div>
+                <div>
+                  <dt>Rank</dt>
+                  <dd>{municipality.rank} / 25</dd>
+                </div>
+                <div>
+                  <dt>Trend</dt>
+                  <dd>{municipality.trend}</dd>
+                </div>
+              </dl>
+              <span className={`jazan-status-chip ${municipality.status.replace(" ", "-")}`}>{municipality.status}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Integration contract</p>
+            <h2>Data sources & dependencies</h2>
+          </div>
+        </div>
+        <div className="jazan-source-list">
+          {earlyWarningSources.map((source) => (
+            <div key={source.table}>
+              <code>{source.table}</code>
+              <span>{source.description}</span>
+              <strong>{source.status}</strong>
+            </div>
+          ))}
+        </div>
+      </section>
+    </PageFrame>
+  );
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { pillar: pillarId } = await params;
   const pillar = await getPillar(pillarId);
@@ -634,6 +785,10 @@ export default async function JazanPerformancePillarPage({ params }: PageProps) 
   if (pillar.id === "strategic-alignment-objective-cascade") {
     const data = await getStrategicAlignmentWorkspace();
     return <StrategicAlignmentWorkspacePage pillar={pillar} data={data} />;
+  }
+
+  if (pillar.id === "municipal-project-early-warning") {
+    return <EarlyWarningWorkspacePage pillar={pillar} />;
   }
 
   return (

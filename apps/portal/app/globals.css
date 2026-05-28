@@ -1107,6 +1107,331 @@ code {
   line-height: 1.55;
 }
 
+.jazan-early-warning-page > .hero,
+.jazan-municipality-detail-page > .hero {
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.14);
+}
+
+.jazan-method-chain.compact span {
+  min-height: 28px;
+  padding: 0 10px;
+  background: #f4f1e9;
+  border-color: rgba(185, 111, 19, 0.14);
+  color: #4b3d25;
+}
+
+.jazan-warning-metrics,
+.jazan-detail-score-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.jazan-warning-metric {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 104px;
+  padding: 18px;
+  border-radius: 10px;
+  background: #fbfaf6;
+  border: 1px solid rgba(31, 56, 100, 0.06);
+}
+
+.jazan-warning-metric span {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.jazan-warning-metric strong {
+  color: #111827;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  line-height: 1;
+}
+
+.jazan-warning-metric p {
+  margin: 0;
+  color: #8a2f22;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.jazan-warning-deliverables,
+.jazan-municipality-risk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.jazan-warning-deliverable {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 86px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #fbfaf6;
+  border: 1px solid rgba(31, 56, 100, 0.06);
+}
+
+.jazan-warning-deliverable > span {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #374151;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.jazan-warning-deliverable h3,
+.jazan-municipality-risk-card strong {
+  margin: 0;
+  color: #111827;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.jazan-warning-deliverable p,
+.jazan-municipality-risk-card span,
+.jazan-source-list span {
+  margin: 0;
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.jazan-municipality-risk-card {
+  display: grid;
+  gap: 12px;
+  min-height: 142px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.jazan-municipality-risk-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(12, 116, 109, 0.28);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+}
+
+.jazan-municipality-risk-card.high-risk {
+  border-color: rgba(151, 42, 42, 0.22);
+  background: #fffafa;
+}
+
+.jazan-municipality-risk-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.jazan-municipality-risk-card dt {
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.jazan-municipality-risk-card dd {
+  margin: 2px 0 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.jazan-source-list {
+  display: grid;
+}
+
+.jazan-source-list div {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(220px, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.jazan-source-list div:last-child {
+  border-bottom: 0;
+}
+
+.jazan-source-list code {
+  color: #111827;
+  font-size: 12px;
+}
+
+.jazan-source-list strong {
+  width: fit-content;
+  justify-self: end;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #e6f4d7;
+  color: #4a6f18;
+  font-size: 11px;
+}
+
+.jazan-status-chip.high-risk,
+.jazan-status-chip.critical,
+.jazan-status-chip.at-risk {
+  background: #ffe8e8;
+  color: #9f1239;
+}
+
+.jazan-status-chip.watch,
+.jazan-status-chip.high,
+.jazan-status-chip.medium {
+  background: #fff4dc;
+  color: #7a4a0b;
+}
+
+.jazan-status-chip.on-track {
+  background: #e5f5ef;
+  color: #07564f;
+}
+
+.jazan-trend-chart {
+  display: grid;
+  gap: 14px;
+}
+
+.jazan-chart-title {
+  display: flex;
+  gap: 8px;
+  color: #111827;
+  font-size: 14px;
+}
+
+.jazan-chart-title span {
+  color: #6b7280;
+}
+
+.jazan-trend-chart svg {
+  width: 100%;
+  min-height: 220px;
+}
+
+.jazan-trend-chart .grid {
+  stroke: rgba(31, 56, 100, 0.09);
+  stroke-width: 1;
+}
+
+.jazan-trend-chart .target {
+  stroke: rgba(185, 111, 19, 0.24);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+}
+
+.jazan-trend-chart .trend-line {
+  fill: none;
+  stroke: #bd7a14;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.jazan-trend-chart circle {
+  fill: #bd7a14;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.jazan-trend-chart circle.final {
+  fill: #a53b2b;
+}
+
+.jazan-trend-chart text {
+  fill: #111827;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jazan-trend-chart .final-label {
+  fill: #a53b2b;
+}
+
+.jazan-risk-driver-list,
+.jazan-kpi-list {
+  display: grid;
+}
+
+.jazan-risk-driver-list > div,
+.jazan-kpi-list > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.jazan-risk-driver-list > div:last-child,
+.jazan-kpi-list > div:last-child {
+  border-bottom: 0;
+}
+
+.jazan-risk-driver-list strong,
+.jazan-kpi-list span {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.jazan-risk-driver-list p,
+.jazan-kpi-list strong {
+  margin: 2px 0 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.risk-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #bd7a14;
+}
+
+.risk-dot.critical {
+  background: #a53b2b;
+}
+
+.jazan-action-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(37, 99, 235, 0.42);
+}
+
+.jazan-action-panel h2 {
+  margin: 8px 0 4px;
+  color: #111827;
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+
+.jazan-action-panel p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
 .jazan-value-cycle {
   grid-area: cycle;
   position: relative;
@@ -5452,6 +5777,7 @@ code {
   .jazan-detail-grid,
   .jazan-two-column-grid,
   .jazan-cascade-map,
+  .jazan-source-list div,
   .jazan-rhythm-panel > div,
   .jazan-measures-panel > div,
   .jazan-governance-tree div,
@@ -5524,6 +5850,11 @@ code {
   .button,
   .secondary-link {
     width: 100%;
+  }
+
+  .jazan-action-panel {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .status-alert-rail {
