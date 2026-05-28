@@ -111,6 +111,32 @@ type StrategicAlignmentWorkspace = {
   alignmentGaps: AlignmentGap[];
 };
 
+type DeliveryStatus = "operational" | "partial" | "pending";
+
+type DeliveryComponent = {
+  id: string;
+  title: string;
+  status: DeliveryStatus;
+  description: string;
+  delivers: string[];
+  tools: string[];
+  note: string;
+  icon: DeliveryIconName;
+};
+
+type DeliveryIconName =
+  | "bar-chart"
+  | "database"
+  | "shield"
+  | "network"
+  | "layers"
+  | "dashboard"
+  | "check"
+  | "partial"
+  | "clock"
+  | "package"
+  | "wrench";
+
 const emptyStrategicAlignmentWorkspace: StrategicAlignmentWorkspace = {
   summary: {
     objectivesCascaded: null,
@@ -290,6 +316,66 @@ const initiativeColumns = [
 
 const gapColumns = ["Gap", "Impacted objective", "Owner", "Due date", "Escalation level", "Expected outcome", "Status"];
 
+const deliveryComponents: DeliveryComponent[] = [
+  {
+    id: "data-platform",
+    title: "Data platform",
+    status: "operational",
+    description: "Foundation services for source ingestion, storage, orchestration, and runtime execution.",
+    delivers: ["K3s single-VM deployment", "ingestion connectors", "scheduled jobs"],
+    tools: ["Airbyte", "dbt", "PostgreSQL", "MinIO", "Redis", "K3s"],
+    note: "Base platform is available for demo workloads and scheduled data refresh.",
+    icon: "database",
+  },
+  {
+    id: "data-governance",
+    title: "Data governance",
+    status: "partial",
+    description: "Controls for ownership, definitions, evidence, lineage, and quality gates across the delivery stack.",
+    delivers: ["KPI dictionary", "lineage evidence", "quality controls"],
+    tools: ["OpenCare registry", "source contracts", "audit tables"],
+    note: "Governance controls are defined; certification coverage is still being expanded.",
+    icon: "shield",
+  },
+  {
+    id: "data-modelling",
+    title: "Data modelling",
+    status: "partial",
+    description: "Analytics-ready marts that turn raw municipal, project, revenue, and service data into governed facts.",
+    delivers: ["dimensional marts", "performance facts", "risk features"],
+    tools: ["dbt", "PostgreSQL", "analytics schema"],
+    note: "Core model structure is in place; remaining marts follow the Jazan data contract.",
+    icon: "network",
+  },
+  {
+    id: "semantic-layer",
+    title: "Semantic layer",
+    status: "pending",
+    description: "Shared business definitions for measures, dimensions, targets, thresholds, and report filters.",
+    delivers: ["metric definitions", "dashboard measures", "approved filters"],
+    tools: ["KPI dictionary", "semantic contracts", "dashboard metadata"],
+    note: "Semantic publishing is pending final KPI dictionary approval.",
+    icon: "layers",
+  },
+  {
+    id: "visualisation",
+    title: "Visualisation design & implementation",
+    status: "partial",
+    description: "Executive and operational dashboard surfaces for scorecards, warnings, reviews, and drilldowns.",
+    delivers: ["executive cockpit", "municipality views", "project drilldowns"],
+    tools: ["Next.js", "Superset", "OpenCare portal"],
+    note: "Demo surfaces are available; production dashboards will bind to governed API outputs.",
+    icon: "dashboard",
+  },
+];
+
+const stackComponents = [
+  deliveryComponents[4],
+  deliveryComponents[3],
+  deliveryComponents[2],
+  deliveryComponents[0],
+];
+
 async function getPillar(pillarId: string) {
   const fallback = emptyJazanPillarsResponse.pillars.find((item) => item.id === pillarId) ?? null;
   const data = await getApiJson<PillarResponse>({
@@ -319,6 +405,131 @@ function formatStatusLabel(status: string) {
 
 function EmptyState({ message }: { message: string }) {
   return <div className="jazan-empty-state">{message}</div>;
+}
+
+function DeliveryIcon({ name, size = 16, className }: { name: DeliveryIconName; size?: number; className?: string }) {
+  const common = {
+    "aria-hidden": "true",
+    className: className ? `delivery-icon ${className}` : "delivery-icon",
+    fill: "none",
+    height: size,
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 1.9,
+    viewBox: "0 0 24 24",
+    width: size,
+  };
+
+  switch (name) {
+    case "bar-chart":
+      return (
+        <svg {...common}>
+          <path d="M4 19V5" />
+          <path d="M4 19h16" />
+          <path d="M8 16v-5" />
+          <path d="M12 16V8" />
+          <path d="M16 16v-9" />
+        </svg>
+      );
+    case "database":
+      return (
+        <svg {...common}>
+          <ellipse cx="12" cy="5" rx="7" ry="3" />
+          <path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5" />
+          <path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 3l7 3v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6l7-3z" />
+          <path d="M9 12l2 2 4-5" />
+        </svg>
+      );
+    case "network":
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="6" height="5" rx="1.5" />
+          <rect x="15" y="4" width="6" height="5" rx="1.5" />
+          <rect x="9" y="15" width="6" height="5" rx="1.5" />
+          <path d="M9 7h6" />
+          <path d="M12 9v6" />
+        </svg>
+      );
+    case "layers":
+      return (
+        <svg {...common}>
+          <path d="M12 3l9 5-9 5-9-5 9-5z" />
+          <path d="M5 12l7 4 7-4" />
+          <path d="M5 16l7 4 7-4" />
+        </svg>
+      );
+    case "dashboard":
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M8 9h3" />
+          <path d="M8 13h8" />
+          <path d="M8 17h5" />
+          <path d="M16 9h2" />
+        </svg>
+      );
+    case "check":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M8.5 12.5l2.2 2.2 4.8-5.2" />
+        </svg>
+      );
+    case "partial":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 7v6" />
+          <path d="M12 17h.01" />
+        </svg>
+      );
+    case "clock":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 8v5l3 2" />
+        </svg>
+      );
+    case "package":
+      return (
+        <svg {...common}>
+          <path d="M4 8l8-4 8 4-8 4-8-4z" />
+          <path d="M4 8v8l8 4 8-4V8" />
+          <path d="M12 12v8" />
+          <path d="M9 15l1.5 1.5L14 13" />
+        </svg>
+      );
+    case "wrench":
+      return (
+        <svg {...common}>
+          <path d="M14.5 5.5a4 4 0 0 0 4 5L10 19a2.5 2.5 0 0 1-3.5-3.5l8.5-8.5a4 4 0 0 0-.5-1.5z" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function statusIconName(status: DeliveryStatus): DeliveryIconName {
+  if (status === "operational") return "check";
+  if (status === "pending") return "clock";
+  return "partial";
+}
+
+function DeliveryStatusChip({ status }: { status: DeliveryStatus }) {
+  return (
+    <span className={`delivery-status-chip ${status}`}>
+      <DeliveryIcon name={statusIconName(status)} size={14} />
+      {status}
+    </span>
+  );
 }
 
 function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar; data: StrategicAlignmentWorkspace }) {
@@ -622,6 +833,100 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
   );
 }
 
+function PillarThreeDeliveryComponentsPage({ pillar }: { pillar: JazanPillar }) {
+  return (
+    <PageFrame
+      eyebrow="Pillars > Data, analytics & dashboards > Delivery components"
+      title="Pillar 3 · five delivery components"
+      description="مكونات تسليم البيانات والتحليلات ولوحات المتابعة"
+      chips={[
+        { label: `Status: ${formatJazanStatus(pillar.status)}`, tone: "primary" },
+        { label: `Route: ${pillar.route}`, tone: "accent" },
+      ]}
+      actions={
+        <Link className="secondary-link" href="/jazan-performance">
+          Back to operating model
+        </Link>
+      }
+      pageClassName="jazan-workspace-page jazan-delivery-page"
+    >
+      <TabNav items={pillarTabs} activeKey="data-analytics" />
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Delivery architecture</p>
+            <h2>How they stack</h2>
+          </div>
+          <DeliveryIcon name="bar-chart" size={18} className="section-icon" />
+        </div>
+        <div className="delivery-stack">
+          <div className="delivery-stack-rows">
+            {stackComponents.map((component) => (
+              <article className="delivery-stack-row" key={component.id}>
+                <div className="delivery-stack-title">
+                  <DeliveryIcon name={component.icon} size={17} />
+                  <span>{component.title}</span>
+                </div>
+                <DeliveryStatusChip status={component.status} />
+              </article>
+            ))}
+          </div>
+          <aside className="delivery-governance-spine">
+            <DeliveryIcon name="shield" size={18} />
+            <span>Data governance applies to all</span>
+          </aside>
+        </div>
+      </section>
+
+      <section className="delivery-workstream-grid">
+        {deliveryComponents.map((component) => (
+          <article className="panel delivery-workstream-card" key={component.id}>
+            <header>
+              <div className="delivery-card-title">
+                <DeliveryIcon name={component.icon} size={18} />
+                <h2>{component.title}</h2>
+              </div>
+              <DeliveryStatusChip status={component.status} />
+            </header>
+            <p>{component.description}</p>
+
+            <div className="delivery-chip-row">
+              <span className="delivery-row-label">
+                <DeliveryIcon name="package" size={14} />
+                Delivers
+              </span>
+              <div>
+                {component.delivers.map((item) => (
+                  <span className="delivery-soft-chip" key={item}>
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="delivery-chip-row">
+              <span className="delivery-row-label">
+                <DeliveryIcon name="wrench" size={14} />
+                Tools
+              </span>
+              <div>
+                {component.tools.map((tool) => (
+                  <span className="delivery-soft-chip" key={tool}>
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <p className="delivery-note">{component.note}</p>
+          </article>
+        ))}
+      </section>
+    </PageFrame>
+  );
+}
+
 function EarlyWarningWorkspacePage({ pillar }: { pillar: JazanPillar }) {
   return (
     <PageFrame
@@ -785,6 +1090,10 @@ export default async function JazanPerformancePillarPage({ params }: PageProps) 
   if (pillar.id === "strategic-alignment-objective-cascade") {
     const data = await getStrategicAlignmentWorkspace();
     return <StrategicAlignmentWorkspacePage pillar={pillar} data={data} />;
+  }
+
+  if (pillar.id === "data-analytics-dashboards") {
+    return <PillarThreeDeliveryComponentsPage pillar={pillar} />;
   }
 
   if (pillar.id === "municipal-project-early-warning") {

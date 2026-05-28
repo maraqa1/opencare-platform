@@ -1680,6 +1680,175 @@ code {
   line-height: 1.45;
 }
 
+.jazan-delivery-page .hero h1 {
+  letter-spacing: 0;
+}
+
+.delivery-icon {
+  flex: 0 0 auto;
+  display: inline-block;
+}
+
+.delivery-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.delivery-stack-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.delivery-stack-row {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fbfaf6;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.delivery-stack-title,
+.delivery-card-title,
+.delivery-row-label,
+.delivery-status-chip,
+.delivery-governance-spine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delivery-stack-title {
+  min-width: 0;
+  color: #111827;
+  font-weight: 900;
+}
+
+.delivery-stack-title span {
+  overflow-wrap: anywhere;
+}
+
+.delivery-governance-spine {
+  justify-content: center;
+  min-height: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  background: #eef8f4;
+  border: 1px solid rgba(7, 86, 79, 0.14);
+  color: #07564f;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.delivery-workstream-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 14px;
+}
+
+.delivery-workstream-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.delivery-workstream-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.delivery-card-title {
+  min-width: 0;
+  color: #07564f;
+}
+
+.delivery-card-title h2 {
+  margin: 0;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.delivery-workstream-card p {
+  margin: 0;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.48;
+}
+
+.delivery-status-chip {
+  width: fit-content;
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: lowercase;
+}
+
+.delivery-status-chip.operational {
+  background: #e5f5ef;
+  color: #07564f;
+}
+
+.delivery-status-chip.partial {
+  background: #fff4dc;
+  color: #7a4a0b;
+}
+
+.delivery-status-chip.pending {
+  background: #eef2f7;
+  color: #4b5563;
+}
+
+.delivery-chip-row {
+  display: grid;
+  gap: 8px;
+}
+
+.delivery-row-label {
+  color: #4b5563;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.delivery-chip-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.delivery-soft-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f4f7fb;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  color: #07194a;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.delivery-note {
+  padding-top: 10px;
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+  color: #4b5563;
+  font-weight: 700;
+}
+
 .jazan-value-cycle {
   grid-area: cycle;
   position: relative;
@@ -6030,6 +6199,7 @@ code {
   .jazan-schedule-months,
   .jazan-project-meta div,
   .jazan-recommendation-list article,
+  .delivery-stack,
   .jazan-rhythm-panel > div,
   .jazan-measures-panel > div,
   .jazan-governance-tree div,
