@@ -1029,13 +1029,16 @@ code {
 }
 
 .jazan-status-chip.aligned,
-.jazan-status-chip.complete {
+.jazan-status-chip.complete,
+.jazan-status-chip.assigned {
   background: #e5f5ef;
   color: #07564f;
 }
 
 .jazan-status-chip.partially_aligned,
-.jazan-status-chip.partial {
+.jazan-status-chip.partial,
+.jazan-status-chip.in_review,
+.jazan-status-chip.low {
   background: #fff4dc;
   color: #7a4a0b;
 }
@@ -1043,7 +1046,8 @@ code {
 .jazan-status-chip.missing_kpi,
 .jazan-status-chip.missing_owner,
 .jazan-status-chip.missing_initiative,
-.jazan-status-chip.at_risk {
+.jazan-status-chip.at_risk,
+.jazan-status-chip.open {
   background: #ffe8e8;
   color: #9f1239;
 }
@@ -2126,26 +2130,69 @@ code {
 
 .strategic-hierarchy-flow {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 42px;
 }
 
 .strategic-hierarchy-flow article {
   position: relative;
   display: grid;
-  gap: 10px;
-  padding: 14px;
-  min-height: 188px;
+  align-content: start;
+  gap: 9px;
+  min-height: 160px;
+  padding: 18px;
 }
 
 .strategic-hierarchy-flow article:not(:last-child)::after {
   content: "->";
   position: absolute;
   top: 50%;
-  right: -9px;
+  right: -28px;
   color: #6b7280;
   font-weight: 900;
   transform: translateY(-50%);
+}
+
+.strategic-stage-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #374151;
+}
+
+.strategic-hierarchy-flow article p {
+  margin: 0;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.strategic-progress-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.strategic-progress-row strong {
+  color: #111827;
+  font-size: 12px;
+}
+
+.strategic-progress-track {
+  display: block;
+  overflow: hidden;
+  height: 7px;
+  border-radius: 999px;
+  background: #efeee8;
+}
+
+.strategic-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2f6d1d;
 }
 
 .strategic-hierarchy-flow dl,
@@ -2178,17 +2225,60 @@ code {
   text-align: right;
 }
 
+.objective-spotlight-card {
+  overflow: hidden;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.objective-spotlight-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+  background: #fbfaf6;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.objective-spotlight-titlebar strong {
+  margin-right: auto;
+  color: #07194a;
+}
+
+.objective-spotlight-titlebar span {
+  color: #374151;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.objective-spotlight-titlebar span:not(:last-child)::after {
+  content: ">";
+  margin-left: 14px;
+  color: #9ca3af;
+}
+
 .objective-spotlight {
   display: grid;
   grid-template-columns: 1.05fr 1fr 1fr;
-  gap: 12px;
+  gap: 0;
 }
 
 .objective-spotlight article {
   display: grid;
   align-content: start;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
+  border: 0;
+  border-radius: 0;
+  border-right: 1px solid rgba(31, 56, 100, 0.1);
+}
+
+.objective-spotlight article:last-child {
+  border-right: 0;
 }
 
 .objective-spotlight span,
@@ -2205,6 +2295,29 @@ code {
   color: #111827;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.objective-summary-list {
+  display: grid;
+  gap: 10px;
+}
+
+.objective-summary-list p {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  margin: 0;
+}
+
+.objective-summary-list svg {
+  grid-row: span 2;
+  margin-top: 2px;
+}
+
+.objective-summary-list strong {
+  display: block;
+  color: #07194a;
+  font-size: 12px;
 }
 
 .objective-initiative-map {
@@ -2236,7 +2349,134 @@ code {
 
 .objective-initiative-map span.shared {
   border-color: rgba(37, 99, 235, 0.22);
-  background: #f7fbff;
+  background: #dbeafe;
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.22);
+}
+
+.relationship-note {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.strategic-scroll-table {
+  overflow-x: auto;
+}
+
+.strategic-scroll-table .jazan-data-table {
+  min-width: 940px;
+}
+
+.strategic-scroll-table td:first-child {
+  min-width: 190px;
+}
+
+.municipality-coverage-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 14px;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.municipality-coverage-legend span,
+.municipality-tile-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.municipality-coverage-legend i,
+.municipality-tile-header i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.municipality-coverage-legend i.complete,
+.municipality-tile-header i.complete {
+  background: #2f6d1d;
+}
+
+.municipality-coverage-legend i.partial,
+.municipality-tile-header i.partial {
+  background: #b7791f;
+}
+
+.municipality-coverage-legend i.at_risk,
+.municipality-tile-header i.at_risk {
+  background: #9b2c2c;
+}
+
+.strategic-cockpit-page .jazan-municipality-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.strategic-cockpit-page .jazan-municipality-tile {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+}
+
+.strategic-cockpit-page .jazan-municipality-tile strong {
+  color: #111827;
+  font-family: var(--font-heading);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.strategic-cockpit-page .jazan-municipality-tile p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.municipality-tile-header {
+  justify-content: space-between;
+}
+
+.strategic-cockpit-page .jazan-deliverable-card {
+  align-content: start;
+  gap: 10px;
+}
+
+.strategic-cockpit-page .jazan-deliverable-card .delivery-icon {
+  color: #374151;
+}
+
+@media (max-width: 1100px) {
+  .strategic-hierarchy-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .strategic-cockpit-page .jazan-municipality-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .strategic-hierarchy-flow,
+  .objective-spotlight,
+  .strategic-cockpit-page .jazan-municipality-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .strategic-hierarchy-flow article::after {
+    display: none;
+  }
+
+  .objective-spotlight article {
+    border-right: 0;
+    border-bottom: 1px solid rgba(31, 56, 100, 0.1);
+  }
+
+  .objective-spotlight article:last-child {
+    border-bottom: 0;
+  }
 }
 
 .carry-forward-grid {

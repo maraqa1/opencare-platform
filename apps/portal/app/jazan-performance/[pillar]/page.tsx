@@ -603,6 +603,18 @@ function DeliveryStatusChip({ status }: { status: DeliveryStatus }) {
   );
 }
 
+const cascadeStageIcons: Record<CascadeNode["stage"], DeliveryIconName> = {
+  vision_ministry: "bar-chart",
+  amanah_objective: "dashboard",
+  agency_department: "network",
+  municipality: "layers",
+  kpi_initiative_action: "check",
+};
+
+function StrategicStatusChip({ status }: { status: string }) {
+  return <span className={`jazan-status-chip ${status}`}>{formatStatusLabel(status)}</span>;
+}
+
 function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar; data: StrategicAlignmentWorkspace }) {
   const cascadeNodes = data.cascadeNodes.length > 0 ? data.cascadeNodes : cascadeStages;
 
@@ -735,7 +747,7 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
         {data.alignmentMatrix.length === 0 ? (
           <EmptyState message="No strategic alignment matrix loaded." />
         ) : (
-          <div className="jazan-table-wrap">
+          <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
                 <tr>{matrixColumns.map((column) => <th key={column}>{column}</th>)}</tr>
@@ -743,7 +755,7 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
               <tbody>
                 {data.alignmentMatrix.map((row) => (
                   <tr key={row.objectiveId}>
-                    <td>{row.strategicObjective}</td>
+                    <td><strong>{row.strategicObjective}</strong></td>
                     <td>{row.ministryAlignment ?? "Needs data"}</td>
                     <td>{row.owner ?? "Needs data"}</td>
                     <td>{formatNullableNumber(row.linkedKpis)}</td>
@@ -805,7 +817,7 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
         {data.initiativeLinkage.length === 0 ? (
           <EmptyState message="No initiative linkage data loaded." />
         ) : (
-          <div className="jazan-table-wrap">
+          <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
                 <tr>{initiativeColumns.map((column) => <th key={column}>{column}</th>)}</tr>
@@ -838,7 +850,7 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
         {data.alignmentGaps.length === 0 ? (
           <EmptyState message="No alignment gaps generated." />
         ) : (
-          <div className="jazan-table-wrap">
+          <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
                 <tr>{gapColumns.map((column) => <th key={column}>{column}</th>)}</tr>
@@ -1038,23 +1050,19 @@ function StrategicAlignmentCockpitPage({
           <div className="strategic-hierarchy-flow">
             {data.cascadeNodes.map((node, index) => (
               <article key={node.id}>
-                <StrategicMiniIcon label={index === 0 ? "V" : index === 1 ? "A" : index === 2 ? "D" : index === 3 ? "M" : "K"} />
-                <span className={`jazan-status-chip ${node.status}`}>{formatStatusLabel(node.status)}</span>
+                <div className="strategic-stage-topline">
+                  <StrategicMiniIcon label={index === 0 ? "V" : index === 1 ? "A" : index === 2 ? "D" : index === 3 ? "M" : "K"} />
+                  <DeliveryIcon name={cascadeStageIcons[node.stage]} size={18} />
+                </div>
                 <h3>{node.label}</h3>
-                <dl>
-                  <div>
-                    <dt>Count</dt>
-                    <dd>{node.countLabel || "No data loaded"}</dd>
-                  </div>
-                  <div>
-                    <dt>Coverage</dt>
-                    <dd>{node.coveragePct === null || node.coveragePct === undefined ? "No data loaded" : `${node.coveragePct}%`}</dd>
-                  </div>
-                  <div>
-                    <dt>Open gaps</dt>
-                    <dd>{formatNullableNumber(node.openGaps ?? null)}</dd>
-                  </div>
-                </dl>
+                <p>{node.countLabel || "No data loaded"}{node.openGaps ? ` - ${node.openGaps} gaps` : ""}</p>
+                <div className="strategic-progress-row">
+                  <span className="strategic-progress-track">
+                    <span style={{ width: `${Math.max(0, Math.min(node.coveragePct ?? 0, 100))}%` }} />
+                  </span>
+                  <strong>{node.coveragePct === null || node.coveragePct === undefined ? "No data loaded" : `${node.coveragePct}%`}</strong>
+                </div>
+                <StrategicStatusChip status={node.status} />
               </article>
             ))}
           </div>
@@ -1071,41 +1079,43 @@ function StrategicAlignmentCockpitPage({
         {mode === "empty" ? (
           <EmptyState message="No objective spotlight loaded." />
         ) : (
-          <div className="objective-spotlight">
-            <article>
-              <span>Ministry / Vision Alignment</span>
-              <h3>{objectiveSpotlight.ministryAlignment}</h3>
-              <p>{objectiveSpotlight.amanahObjective}</p>
-              <dl>
-                <div>
-                  <dt>Owner</dt>
-                  <dd>{objectiveSpotlight.owner}</dd>
+          <div className="objective-spotlight-card">
+            <div className="objective-spotlight-titlebar">
+              <strong>{objectiveSpotlight.amanahObjective}</strong>
+              <span>Ministry / vision</span>
+              <span>Amanah objective</span>
+              <span>Owner</span>
+              <span>Municipality</span>
+              <span>KPIs</span>
+              <span>Gaps</span>
+              <span>Actions</span>
+            </div>
+            <div className="objective-spotlight">
+              <article>
+                <span>Objective summary</span>
+                <div className="objective-summary-list">
+                  <p><DeliveryIcon name="bar-chart" size={15} /> <strong>Ministry / vision alignment</strong>{objectiveSpotlight.ministryAlignment}</p>
+                  <p><DeliveryIcon name="dashboard" size={15} /> <strong>Amanah objective</strong>{objectiveSpotlight.amanahObjective}</p>
+                  <p><DeliveryIcon name="network" size={15} /> <strong>Owner + agency</strong>{objectiveSpotlight.owner} - {objectiveSpotlight.agency}</p>
+                  <p><DeliveryIcon name="layers" size={15} /> <strong>Municipality coverage</strong>{objectiveSpotlight.municipalityCoverage}</p>
                 </div>
-                <div>
-                  <dt>Agency / Department</dt>
-                  <dd>{objectiveSpotlight.agency}</dd>
-                </div>
-                <div>
-                  <dt>Municipality Coverage</dt>
-                  <dd>{objectiveSpotlight.municipalityCoverage}</dd>
-                </div>
-              </dl>
-            </article>
-            <article>
-              <span>Linked KPIs</span>
-              <ul>{objectiveSpotlight.linkedKpis.map((item) => <li key={item}>{item}</li>)}</ul>
-              <span>Linked Initiatives</span>
-              <ul>{objectiveSpotlight.linkedInitiatives.map((item) => <li key={item}>{item}</li>)}</ul>
-            </article>
-            <article>
-              <span>Gaps and actions</span>
-              <ul>{objectiveSpotlight.gaps.map((item) => <li key={item}>{item}</li>)}</ul>
-              {objectiveSpotlight.actions.map((action) => (
-                <Link className="secondary-link" href={action.href} key={action.label}>
-                  {action.label}
-                </Link>
-              ))}
-            </article>
+              </article>
+              <article>
+                <span>Linked KPIs</span>
+                <ul>{objectiveSpotlight.linkedKpis.map((item) => <li key={item}>{item}</li>)}</ul>
+                <span>Linked Initiatives</span>
+                <ul>{objectiveSpotlight.linkedInitiatives.map((item) => <li key={item}>{item}</li>)}</ul>
+              </article>
+              <article>
+                <span>Gaps & carry-forward</span>
+                <ul>{objectiveSpotlight.gaps.map((item) => <li key={item}>{item}</li>)}</ul>
+                {objectiveSpotlight.actions.map((action) => (
+                  <Link className="secondary-link" href={action.href} key={action.label}>
+                    {action.label}
+                  </Link>
+                ))}
+              </article>
+            </div>
           </div>
         )}
       </section>
@@ -1120,7 +1130,7 @@ function StrategicAlignmentCockpitPage({
         {data.alignmentMatrix.length === 0 ? (
           <EmptyState message="No strategic alignment matrix loaded." />
         ) : (
-          <div className="jazan-table-wrap">
+          <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
                 <tr>{["Strategic Objective", "Ministry / Vision Alignment", "Owner", "Linked KPIs", "Linked Initiatives", "Municipalities Covered", "Alignment Status", "Gaps", "Carry Forward"].map((column) => <th key={column}>{column}</th>)}</tr>
@@ -1128,14 +1138,14 @@ function StrategicAlignmentCockpitPage({
               <tbody>
                 {data.alignmentMatrix.map((row) => (
                   <tr key={row.objectiveId}>
-                    <td>{row.strategicObjective}</td>
+                    <td><strong>{row.strategicObjective}</strong></td>
                     <td>{row.ministryAlignment ?? "Needs data"}</td>
                     <td>{row.owner ?? "Needs data"}</td>
                     <td>{formatNullableNumber(row.linkedKpis)}</td>
                     <td>{formatNullableNumber(row.linkedInitiatives)}</td>
                     <td>{row.municipalitiesCovered ?? "Needs data"}</td>
-                    <td><span className={`jazan-status-chip ${row.status}`}>{formatStatusLabel(row.status)}</span></td>
-                    <td>{row.gaps.length > 0 ? row.gaps.join(", ") : "0"}</td>
+                    <td><StrategicStatusChip status={row.status} /></td>
+                    <td><strong>{row.gaps.length > 0 ? row.gaps.join(", ") : "0"}</strong></td>
                     <td>{row.carryForward?.length ? row.carryForward.join(", ") : "No data loaded"}</td>
                   </tr>
                 ))}
@@ -1155,6 +1165,7 @@ function StrategicAlignmentCockpitPage({
         {mode === "empty" ? (
           <EmptyState message="No objective-to-initiative relationships loaded." />
         ) : (
+          <>
           <div className="objective-initiative-map">
             <div>
               <h3>Strategic objectives</h3>
@@ -1169,6 +1180,11 @@ function StrategicAlignmentCockpitPage({
               {objectiveInitiativeLinks.map((item) => <span key={`${item.objectiveName}-${item.kpiOrBenefit}`}>{item.kpiOrBenefit}</span>)}
             </div>
           </div>
+          <p className="strategic-helper-text relationship-note">
+            Digital request tracking feeds service quality, transparency, and early-warning capture - one initiative,
+            multiple objectives.
+          </p>
+          </>
         )}
       </section>
 
@@ -1182,19 +1198,26 @@ function StrategicAlignmentCockpitPage({
         {data.municipalityCoverage.length === 0 ? (
           <EmptyState message="No municipality coverage data loaded." />
         ) : (
+          <>
+          <div className="municipality-coverage-legend" aria-label="Municipality coverage status summary">
+            <span><i className="complete" /> complete - {data.municipalityCoverage.filter((municipality) => municipality.status === "complete").length}</span>
+            <span><i className="partial" /> partial - {data.municipalityCoverage.filter((municipality) => municipality.status === "partial").length}</span>
+            <span><i className="at_risk" /> at risk - {data.municipalityCoverage.filter((municipality) => municipality.status === "at_risk").length}</span>
+          </div>
           <div className="jazan-municipality-grid">
             {data.municipalityCoverage.map((municipality) => (
               <article className="jazan-municipality-tile" key={municipality.municipalityId}>
-                <h3>{municipality.municipalityName}</h3>
-                <span className={`jazan-status-chip ${municipality.status}`}>{formatStatusLabel(municipality.status)}</span>
-                <dl>
-                  <div><dt>Coverage</dt><dd>{municipality.coveragePct === null ? "No data loaded" : `${municipality.coveragePct}%`}</dd></div>
-                  <div><dt>Linked objectives</dt><dd>{formatNullableNumber(municipality.linkedObjectives)}</dd></div>
-                  <div><dt>Open gaps</dt><dd>{formatNullableNumber(municipality.openGaps)}</dd></div>
-                </dl>
+                <div className="municipality-tile-header">
+                  <h3>{municipality.municipalityName}</h3>
+                  <i className={municipality.status} aria-hidden="true" />
+                </div>
+                <strong>{municipality.coveragePct === null ? "No data loaded" : `${municipality.coveragePct}%`}</strong>
+                <p>{formatNullableNumber(municipality.linkedObjectives)} objectives - {formatNullableNumber(municipality.openGaps)} gaps</p>
+                <StrategicStatusChip status={municipality.status} />
               </article>
             ))}
           </div>
+          </>
         )}
       </section>
 
@@ -1208,7 +1231,7 @@ function StrategicAlignmentCockpitPage({
         {data.alignmentGaps.length === 0 ? (
           <EmptyState message="No alignment gaps generated." />
         ) : (
-          <div className="jazan-table-wrap">
+          <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
                 <tr>{["Gap", "Impacted Objective", "Type", "Owner", "Target Pillar", "Due Date", "Escalation", "Expected Outcome", "Status"].map((column) => <th key={column}>{column}</th>)}</tr>
@@ -1222,9 +1245,9 @@ function StrategicAlignmentCockpitPage({
                     <td>{gap.owner ?? "Needs data"}</td>
                     <td>{gap.targetPillar ?? "Needs data"}</td>
                     <td>{gap.dueDateLabel ?? gap.dueDate ?? "Needs data"}</td>
-                    <td>{gap.escalation ?? gap.escalationLevel ?? "Needs data"}</td>
+                    <td><StrategicStatusChip status={gap.escalation ?? gap.escalationLevel ?? "needs_data"} /></td>
                     <td>{gap.expectedOutcome ?? "Needs data"}</td>
-                    <td>{formatStatusLabel(gap.status)}</td>
+                    <td><StrategicStatusChip status={gap.status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -1261,8 +1284,9 @@ function StrategicAlignmentCockpitPage({
             </div>
           </div>
           <div className="jazan-deliverable-grid">
-            {[...deliverables, ["Carry-forward package", "Shows which items move to KPI governance, data governance, early warning, corrective actions, or sustainability."]].map(([title, description]) => (
+            {[...deliverables, ["Carry-forward package", "Shows which items move to KPI governance, data governance, early warning, corrective actions, or sustainability."]].map(([title, description], index) => (
               <article className="jazan-deliverable-card" key={title}>
+                <DeliveryIcon name={index % 3 === 0 ? "dashboard" : index % 3 === 1 ? "network" : "package"} size={18} />
                 <h3>{title}</h3>
                 <p>{description}</p>
               </article>
