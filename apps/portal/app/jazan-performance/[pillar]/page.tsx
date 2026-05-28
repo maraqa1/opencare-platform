@@ -124,6 +124,15 @@ type DeliveryComponent = {
   icon: DeliveryIconName;
 };
 
+type ModelRuntimeConnection = {
+  title: string;
+  status: DeliveryStatus;
+  description: string;
+  inputs: string[];
+  outputs: string[];
+  owner: string;
+};
+
 type DeliveryIconName =
   | "bar-chart"
   | "database"
@@ -135,7 +144,8 @@ type DeliveryIconName =
   | "partial"
   | "clock"
   | "package"
-  | "wrench";
+  | "wrench"
+  | "spark";
 
 const emptyStrategicAlignmentWorkspace: StrategicAlignmentWorkspace = {
   summary: {
@@ -321,10 +331,10 @@ const deliveryComponents: DeliveryComponent[] = [
     id: "data-platform",
     title: "Data platform",
     status: "operational",
-    description: "Foundation services for source ingestion, storage, orchestration, and runtime execution.",
-    delivers: ["K3s single-VM deployment", "ingestion connectors", "scheduled jobs"],
-    tools: ["Airbyte", "dbt", "PostgreSQL", "MinIO", "Redis", "K3s"],
-    note: "Base platform is available for demo workloads and scheduled data refresh.",
+    description: "Foundation services for source ingestion, storage, orchestration, model serving, and runtime execution.",
+    delivers: ["K3s single-VM deployment", "ingestion connectors", "scheduled jobs", "runtime endpoints"],
+    tools: ["Airbyte", "dbt", "PostgreSQL", "MinIO", "Redis", "K3s", "R runtimes"],
+    note: "Base platform is available for demo workloads, scheduled refresh, and predictive runtime execution.",
     icon: "database",
   },
   {
@@ -341,20 +351,20 @@ const deliveryComponents: DeliveryComponent[] = [
     id: "data-modelling",
     title: "Data modelling",
     status: "partial",
-    description: "Analytics-ready marts that turn raw municipal, project, revenue, and service data into governed facts.",
-    delivers: ["dimensional marts", "performance facts", "risk features"],
-    tools: ["dbt", "PostgreSQL", "analytics schema"],
-    note: "Core model structure is in place; remaining marts follow the Jazan data contract.",
+    description: "Analytics-ready marts and feature sets that turn raw municipal, project, revenue, and service data into governed facts.",
+    delivers: ["dimensional marts", "performance facts", "risk features", "model-ready feature tables"],
+    tools: ["dbt", "PostgreSQL", "analytics schema", "feature marts"],
+    note: "Core model structure is in place; predictive features support early-warning model runtimes.",
     icon: "network",
   },
   {
     id: "semantic-layer",
     title: "Semantic layer",
     status: "pending",
-    description: "Shared business definitions for measures, dimensions, targets, thresholds, and report filters.",
-    delivers: ["metric definitions", "dashboard measures", "approved filters"],
-    tools: ["KPI dictionary", "semantic contracts", "dashboard metadata"],
-    note: "Semantic publishing is pending final KPI dictionary approval.",
+    description: "Shared business definitions for measures, dimensions, targets, thresholds, model inputs, and report filters.",
+    delivers: ["metric definitions", "dashboard measures", "approved filters", "model input definitions"],
+    tools: ["KPI dictionary", "semantic contracts", "dashboard metadata", "model registry metadata"],
+    note: "Semantic publishing is pending final KPI dictionary approval and model input certification.",
     icon: "layers",
   },
   {
@@ -374,6 +384,33 @@ const stackComponents = [
   deliveryComponents[3],
   deliveryComponents[2],
   deliveryComponents[0],
+];
+
+const modelRuntimeConnections: ModelRuntimeConnection[] = [
+  {
+    title: "Project delay prediction runtime",
+    status: "partial",
+    description: "Forecasts milestone slippage using project schedule, progress, contractor, and historical delay features.",
+    inputs: ["project milestones", "physical progress", "contractor history", "schedule variance"],
+    outputs: ["delay risk score", "forecast completion", "recommended escalation"],
+    owner: "PMO + Data & Analytics",
+  },
+  {
+    title: "Municipality anomaly detection runtime",
+    status: "operational",
+    description: "Detects abnormal movement in municipality performance scores and service KPIs.",
+    inputs: ["KPI results", "service backlog", "revenue collections", "visual distortion cases"],
+    outputs: ["risk driver", "severity", "early-warning flag"],
+    owner: "Data & Analytics",
+  },
+  {
+    title: "AI recommendation layer",
+    status: "partial",
+    description: "Generates advisory recommendations from governed evidence, historical patterns, and decision outcomes.",
+    inputs: ["risk facts", "project history", "decision logs", "owner assignments"],
+    outputs: ["advisory recommendation", "confidence label", "decision rationale"],
+    owner: "Performance Office",
+  },
 ];
 
 async function getPillar(pillarId: string) {
@@ -510,6 +547,14 @@ function DeliveryIcon({ name, size = 16, className }: { name: DeliveryIconName; 
       return (
         <svg {...common}>
           <path d="M14.5 5.5a4 4 0 0 0 4 5L10 19a2.5 2.5 0 0 1-3.5-3.5l8.5-8.5a4 4 0 0 0-.5-1.5z" />
+        </svg>
+      );
+    case "spark":
+      return (
+        <svg {...common}>
+          <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />
+          <path d="M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15z" />
+          <path d="M18 14l.7 1.8 1.8.7-1.8.7L18 19l-.7-1.8-1.8-.7 1.8-.7L18 14z" />
         </svg>
       );
     default:
@@ -868,10 +913,11 @@ function PillarThreeOverviewPage({ pillar }: { pillar: JazanPillar }) {
         </div>
         <p>
           Build the governed data foundation every other pillar runs on - the platform, the governance, the models, a
-          semantic layer that turns governed KPIs into consistent metrics, and the visualisations on top.
+          semantic layer that turns governed KPIs into consistent metrics, the predictive runtimes that score risk, and
+          the visualisations on top.
         </p>
         <div className="jazan-method-chain compact" aria-label="Data analytics delivery method">
-          {["Platform", "Govern", "Model", "Semantic", "Visualise"].map((step) => (
+          {["Platform", "Govern", "Model", "Predict", "Semantic", "Visualise"].map((step) => (
             <span key={step}>{step}</span>
           ))}
         </div>
@@ -905,6 +951,11 @@ function PillarThreeOverviewPage({ pillar }: { pillar: JazanPillar }) {
             <strong>-</strong>
             <p>target &gt;95% - pending</p>
           </article>
+          <article className="jazan-warning-metric">
+            <span>Predictive runtimes connected</span>
+            <strong>2 / 3</strong>
+            <p>early-warning and anomaly live</p>
+          </article>
         </div>
       </section>
 
@@ -937,6 +988,41 @@ function PillarThreeOverviewPage({ pillar }: { pillar: JazanPillar }) {
       <section className="panel jazan-workspace-section">
         <div className="jazan-section-header">
           <div>
+            <p className="eyebrow">AI and predictive runtimes</p>
+            <h2>Model connections</h2>
+          </div>
+          <DeliveryIcon name="spark" size={18} className="section-icon" />
+        </div>
+        <div className="delivery-model-grid">
+          {modelRuntimeConnections.map((model) => (
+            <article className="delivery-model-card" key={model.title}>
+              <header>
+                <div className="delivery-card-title">
+                  <DeliveryIcon name="spark" size={17} />
+                  <h3>{model.title}</h3>
+                </div>
+                <DeliveryStatusChip status={model.status} />
+              </header>
+              <p>{model.description}</p>
+              <div className="delivery-model-flow">
+                <div>
+                  <span>Inputs</span>
+                  <p>{model.inputs.join(" | ")}</p>
+                </div>
+                <div>
+                  <span>Outputs</span>
+                  <p>{model.outputs.join(" | ")}</p>
+                </div>
+              </div>
+              <strong>Owner: {model.owner}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
             <p className="eyebrow">Dependencies</p>
             <h2>Data sources & dependencies</h2>
           </div>
@@ -959,9 +1045,9 @@ function PillarThreeOverviewPage({ pillar }: { pillar: JazanPillar }) {
           <p className="eyebrow">Linked use case - partially live</p>
           <h2>Performance data & dashboards</h2>
           <p>
-            The platform, the early-warning models, and the dashboards feeding pillar 4 are running today. Full certified
-            coverage across all domains and the semantic layer light up as the remaining sources connect and pillar 2
-            publishes its KPI dictionary.
+            The platform, the predictive early-warning runtimes, and the dashboards feeding pillar 4 are running today.
+            Full certified coverage across all domains, the AI recommendation layer, and the semantic layer light up as
+            the remaining sources connect and pillar 2 publishes its KPI dictionary.
           </p>
         </div>
         <div className="hero-actions">
@@ -1019,11 +1105,53 @@ export function PillarThreeDeliveryComponentsPage({
                 <DeliveryStatusChip status={component.status} />
               </article>
             ))}
+            <article className="delivery-stack-row model-runtime">
+              <div className="delivery-stack-title">
+                <DeliveryIcon name="spark" size={17} />
+                <span>AI models & predictive runtimes</span>
+              </div>
+              <DeliveryStatusChip status="partial" />
+            </article>
           </div>
           <aside className="delivery-governance-spine">
             <DeliveryIcon name="shield" size={18} />
             <span>Data governance applies to all</span>
           </aside>
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">AI and runtime layer</p>
+            <h2>Predictive model connections</h2>
+          </div>
+          <DeliveryIcon name="spark" size={18} className="section-icon" />
+        </div>
+        <div className="delivery-model-grid">
+          {modelRuntimeConnections.map((model) => (
+            <article className="delivery-model-card" key={model.title}>
+              <header>
+                <div className="delivery-card-title">
+                  <DeliveryIcon name="spark" size={17} />
+                  <h3>{model.title}</h3>
+                </div>
+                <DeliveryStatusChip status={model.status} />
+              </header>
+              <p>{model.description}</p>
+              <div className="delivery-model-flow">
+                <div>
+                  <span>Inputs</span>
+                  <p>{model.inputs.join(" | ")}</p>
+                </div>
+                <div>
+                  <span>Outputs</span>
+                  <p>{model.outputs.join(" | ")}</p>
+                </div>
+              </div>
+              <strong>Owner: {model.owner}</strong>
+            </article>
+          ))}
         </div>
       </section>
 
