@@ -20,25 +20,34 @@ import {
   earlyWarningSources,
   municipalityRisks,
 } from "@/lib/jazan-early-warning-demo";
+import {
+  carryForwardRules,
+  demoStrategicAlignmentWorkspace,
+  objectiveInitiativeLinks,
+  objectiveSpotlight,
+  strategicNarrativeCards,
+} from "@/lib/jazan-strategic-alignment-demo";
 
 type PageProps = {
   params: Promise<{ pillar: string }>;
+  searchParams?: Promise<{ demo?: string }>;
 };
 
 type PillarResponse = {
   pillar: JazanPillar | null;
 };
 
-type StrategicAlignmentSummary = {
-  objectivesCascaded: number | null;
-  kpisLinked: number | null;
-  initiativesLinked: number | null;
-  municipalitiesCovered: number | null;
+export type StrategicAlignmentSummary = {
+  alignmentCoverage?: number | null;
+  objectivesCascaded: number | string | null;
+  kpisLinked: number | string | null;
+  initiativesLinked: number | string | null;
+  municipalitiesCovered: number | string | null;
   openAlignmentGaps: number | null;
   dataFreshness: string | null;
 };
 
-type CascadeNode = {
+export type CascadeNode = {
   id: string;
   label: string;
   stage:
@@ -48,18 +57,22 @@ type CascadeNode = {
     | "municipality"
     | "kpi_initiative_action";
   owner?: string | null;
+  countLabel?: string | null;
+  coveragePct?: number | null;
+  openGaps?: number | null;
   linkedKpiCount?: number | null;
   linkedInitiativeCount?: number | null;
   status:
     | "aligned"
     | "partially_aligned"
+    | "needs_review"
     | "missing_kpi"
     | "missing_owner"
     | "missing_initiative"
     | "needs_data";
 };
 
-type AlignmentMatrixRow = {
+export type AlignmentMatrixRow = {
   objectiveId: string;
   strategicObjective: string;
   ministryAlignment: string | null;
@@ -69,9 +82,10 @@ type AlignmentMatrixRow = {
   municipalitiesCovered: string | null;
   status: string;
   gaps: string[];
+  carryForward?: string[];
 };
 
-type MunicipalityCoverage = {
+export type MunicipalityCoverage = {
   municipalityId: string;
   municipalityName: string;
   coveragePct: number | null;
@@ -91,18 +105,22 @@ type InitiativeLinkage = {
   status: string;
 };
 
-type AlignmentGap = {
+export type AlignmentGap = {
   gapId: string;
   gap: string;
   impactedObjective: string;
+  type?: string;
   owner: string | null;
-  dueDate: string | null;
-  escalationLevel: string | null;
+  targetPillar?: string;
+  dueDate?: string | null;
+  dueDateLabel?: string | null;
+  escalation?: "low" | "medium" | "high" | null;
+  escalationLevel?: string | null;
   expectedOutcome: string | null;
   status: string;
 };
 
-type StrategicAlignmentWorkspace = {
+export type StrategicAlignmentWorkspace = {
   summary: StrategicAlignmentSummary;
   cascadeNodes: CascadeNode[];
   alignmentMatrix: AlignmentMatrixRow[];
@@ -440,7 +458,7 @@ async function getStrategicAlignmentWorkspace() {
   });
 }
 
-function formatNullableNumber(value: number | null) {
+function formatNullableNumber(value: number | string | null | undefined) {
   return value === null || value === undefined ? "No data loaded" : String(value);
 }
 
@@ -877,6 +895,393 @@ function StrategicAlignmentWorkspacePage({ pillar, data }: { pillar: JazanPillar
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
+              </section>
+            ))}
+          </div>
+        </article>
+      </section>
+    </PageFrame>
+  );
+}
+
+function hasStrategicAlignmentData(data: StrategicAlignmentWorkspace) {
+  return Boolean(
+    data.cascadeNodes.length ||
+      data.alignmentMatrix.length ||
+      data.municipalityCoverage.length ||
+      data.alignmentGaps.length ||
+      data.summary.alignmentCoverage ||
+      data.summary.objectivesCascaded,
+  );
+}
+
+function StrategicMiniIcon({ label }: { label: string }) {
+  return (
+    <span className="strategic-icon" aria-hidden="true">
+      {label}
+    </span>
+  );
+}
+
+function StrategicAlignmentCockpitPage({
+  pillar,
+  data,
+  mode,
+}: {
+  pillar: JazanPillar;
+  data: StrategicAlignmentWorkspace;
+  mode: "live" | "demo" | "empty";
+}) {
+  const modeLabel =
+    mode === "demo" ? "Demo data · seeded for proposal walkthrough" : mode === "live" ? "Live data" : "Needs data";
+
+  return (
+    <PageFrame
+      eyebrow="Pillar 01"
+      title={pillar.title}
+      description="المواءمة الاستراتيجية وتسلسل الأهداف"
+      chips={[
+        { label: modeLabel, tone: "primary" },
+        { label: `Primary KPI: ${pillar.primary_kpi.label}`, tone: "accent" },
+        { label: `Route: ${pillar.route}`, tone: "accent" },
+      ]}
+      actions={
+        <>
+          <Link className="secondary-link" href="/jazan-performance">
+            Back to operating model
+          </Link>
+          <Link className="secondary-link" href="/jazan-performance/kpi-performance-governance">
+            View KPI Governance
+          </Link>
+          <Link className="button primary" href="#alignment-gaps">
+            Open Alignment Gaps
+          </Link>
+        </>
+      }
+      pageClassName="jazan-workspace-page strategic-cockpit-page"
+    >
+      <TabNav items={pillarTabs} activeKey="strategic-alignment" />
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Scope & Methodology</p>
+            <h2>Strategic alignment operating model</h2>
+          </div>
+          <span className="summary-badge">Data freshness: {formatJazanFreshness(data.summary.dataFreshness)}</span>
+        </div>
+        <p>
+          Convert the Amanah strategy into an operating alignment model by cascading Vision 2030, ministry, and Amanah
+          objectives to agencies, departments, and all 25 municipalities; linking each objective to KPIs, initiatives,
+          owners, targets, and alignment gaps.
+        </p>
+        <div className="jazan-method-chain" aria-label="Strategic alignment methodology">
+          {methodology.map((step) => (
+            <span key={step}>{step}</span>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Operating intent</p>
+            <h2>Why this pillar matters</h2>
+          </div>
+        </div>
+        <div className="strategic-narrative-grid">
+          {strategicNarrativeCards.map((card) => (
+            <article key={card.title}>
+              <StrategicMiniIcon label={card.icon === "users" ? "LE" : card.icon === "map" ? "25" : "PMO"} />
+              <div>
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Executive alignment KPI strip</p>
+            <h2>Alignment signal</h2>
+          </div>
+        </div>
+        <div className="jazan-metric-grid">
+          <article className="jazan-metric-card">
+            <span>{mode === "demo" ? "Demo" : "Live"}</span>
+            <h3>Alignment coverage</h3>
+            <strong>{data.summary.alignmentCoverage === null || data.summary.alignmentCoverage === undefined ? "No data loaded" : `${data.summary.alignmentCoverage}%`}</strong>
+          </article>
+          {liveIndicators.map(([key, label]) => (
+            <article className="jazan-metric-card" key={key}>
+              <span>{mode === "demo" ? "Demo" : "Live"}</span>
+              <h3>{label}</h3>
+              <strong>{formatNullableNumber(data.summary[key])}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Strategic hierarchy</p>
+            <h2>Strategy to execution cascade</h2>
+          </div>
+        </div>
+        {data.cascadeNodes.length === 0 ? (
+          <EmptyState message="No cascade data loaded. Connect strategic objectives, KPI definitions, initiatives, and municipality mappings to populate this view." />
+        ) : (
+          <div className="strategic-hierarchy-flow">
+            {data.cascadeNodes.map((node, index) => (
+              <article key={node.id}>
+                <StrategicMiniIcon label={index === 0 ? "V" : index === 1 ? "A" : index === 2 ? "D" : index === 3 ? "M" : "K"} />
+                <span className={`jazan-status-chip ${node.status}`}>{formatStatusLabel(node.status)}</span>
+                <h3>{node.label}</h3>
+                <dl>
+                  <div>
+                    <dt>Count</dt>
+                    <dd>{node.countLabel || "No data loaded"}</dd>
+                  </div>
+                  <div>
+                    <dt>Coverage</dt>
+                    <dd>{node.coveragePct === null || node.coveragePct === undefined ? "No data loaded" : `${node.coveragePct}%`}</dd>
+                  </div>
+                  <div>
+                    <dt>Open gaps</dt>
+                    <dd>{formatNullableNumber(node.openGaps ?? null)}</dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Objective carried to action</p>
+            <h2>{mode === "empty" ? "No objective spotlight loaded" : objectiveSpotlight.amanahObjective}</h2>
+          </div>
+        </div>
+        {mode === "empty" ? (
+          <EmptyState message="No objective spotlight loaded." />
+        ) : (
+          <div className="objective-spotlight">
+            <article>
+              <span>Ministry / Vision Alignment</span>
+              <h3>{objectiveSpotlight.ministryAlignment}</h3>
+              <p>{objectiveSpotlight.amanahObjective}</p>
+              <dl>
+                <div>
+                  <dt>Owner</dt>
+                  <dd>{objectiveSpotlight.owner}</dd>
+                </div>
+                <div>
+                  <dt>Agency / Department</dt>
+                  <dd>{objectiveSpotlight.agency}</dd>
+                </div>
+                <div>
+                  <dt>Municipality Coverage</dt>
+                  <dd>{objectiveSpotlight.municipalityCoverage}</dd>
+                </div>
+              </dl>
+            </article>
+            <article>
+              <span>Linked KPIs</span>
+              <ul>{objectiveSpotlight.linkedKpis.map((item) => <li key={item}>{item}</li>)}</ul>
+              <span>Linked Initiatives</span>
+              <ul>{objectiveSpotlight.linkedInitiatives.map((item) => <li key={item}>{item}</li>)}</ul>
+            </article>
+            <article>
+              <span>Gaps and actions</span>
+              <ul>{objectiveSpotlight.gaps.map((item) => <li key={item}>{item}</li>)}</ul>
+              {objectiveSpotlight.actions.map((action) => (
+                <Link className="secondary-link" href={action.href} key={action.label}>
+                  {action.label}
+                </Link>
+              ))}
+            </article>
+          </div>
+        )}
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Matrix</p>
+            <h2>Strategic Alignment Matrix</h2>
+          </div>
+        </div>
+        {data.alignmentMatrix.length === 0 ? (
+          <EmptyState message="No strategic alignment matrix loaded." />
+        ) : (
+          <div className="jazan-table-wrap">
+            <table className="table jazan-data-table">
+              <thead>
+                <tr>{["Strategic Objective", "Ministry / Vision Alignment", "Owner", "Linked KPIs", "Linked Initiatives", "Municipalities Covered", "Alignment Status", "Gaps", "Carry Forward"].map((column) => <th key={column}>{column}</th>)}</tr>
+              </thead>
+              <tbody>
+                {data.alignmentMatrix.map((row) => (
+                  <tr key={row.objectiveId}>
+                    <td>{row.strategicObjective}</td>
+                    <td>{row.ministryAlignment ?? "Needs data"}</td>
+                    <td>{row.owner ?? "Needs data"}</td>
+                    <td>{formatNullableNumber(row.linkedKpis)}</td>
+                    <td>{formatNullableNumber(row.linkedInitiatives)}</td>
+                    <td>{row.municipalitiesCovered ?? "Needs data"}</td>
+                    <td><span className={`jazan-status-chip ${row.status}`}>{formatStatusLabel(row.status)}</span></td>
+                    <td>{row.gaps.length > 0 ? row.gaps.join(", ") : "0"}</td>
+                    <td>{row.carryForward?.length ? row.carryForward.join(", ") : "No data loaded"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Many-to-many logic</p>
+            <h2>Objective ↔ Initiative Map</h2>
+          </div>
+        </div>
+        {mode === "empty" ? (
+          <EmptyState message="No objective-to-initiative relationships loaded." />
+        ) : (
+          <div className="objective-initiative-map">
+            <div>
+              <h3>Strategic objectives</h3>
+              {[...new Set(objectiveInitiativeLinks.map((item) => item.objectiveName))].map((name) => <span key={name}>{name}</span>)}
+            </div>
+            <div>
+              <h3>Initiatives</h3>
+              {[...new Set(objectiveInitiativeLinks.map((item) => item.initiativeName))].map((name) => <span className={name === "Digital request tracking" ? "shared" : undefined} key={name}>{name}</span>)}
+            </div>
+            <div>
+              <h3>KPIs / benefits</h3>
+              {objectiveInitiativeLinks.map((item) => <span key={`${item.objectiveName}-${item.kpiOrBenefit}`}>{item.kpiOrBenefit}</span>)}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">25 municipalities</p>
+            <h2>Municipality Coverage</h2>
+          </div>
+        </div>
+        {data.municipalityCoverage.length === 0 ? (
+          <EmptyState message="No municipality coverage data loaded." />
+        ) : (
+          <div className="jazan-municipality-grid">
+            {data.municipalityCoverage.map((municipality) => (
+              <article className="jazan-municipality-tile" key={municipality.municipalityId}>
+                <h3>{municipality.municipalityName}</h3>
+                <span className={`jazan-status-chip ${municipality.status}`}>{formatStatusLabel(municipality.status)}</span>
+                <dl>
+                  <div><dt>Coverage</dt><dd>{municipality.coveragePct === null ? "No data loaded" : `${municipality.coveragePct}%`}</dd></div>
+                  <div><dt>Linked objectives</dt><dd>{formatNullableNumber(municipality.linkedObjectives)}</dd></div>
+                  <div><dt>Open gaps</dt><dd>{formatNullableNumber(municipality.openGaps)}</dd></div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="panel jazan-workspace-section" id="alignment-gaps">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Decision bridge</p>
+            <h2>Alignment Gaps Requiring Action</h2>
+          </div>
+        </div>
+        {data.alignmentGaps.length === 0 ? (
+          <EmptyState message="No alignment gaps generated." />
+        ) : (
+          <div className="jazan-table-wrap">
+            <table className="table jazan-data-table">
+              <thead>
+                <tr>{["Gap", "Impacted Objective", "Type", "Owner", "Target Pillar", "Due Date", "Escalation", "Expected Outcome", "Status"].map((column) => <th key={column}>{column}</th>)}</tr>
+              </thead>
+              <tbody>
+                {data.alignmentGaps.map((gap) => (
+                  <tr key={gap.gapId}>
+                    <td>{gap.gap}</td>
+                    <td>{gap.impactedObjective}</td>
+                    <td>{gap.type ?? "Needs data"}</td>
+                    <td>{gap.owner ?? "Needs data"}</td>
+                    <td>{gap.targetPillar ?? "Needs data"}</td>
+                    <td>{gap.dueDateLabel ?? gap.dueDate ?? "Needs data"}</td>
+                    <td>{gap.escalation ?? gap.escalationLevel ?? "Needs data"}</td>
+                    <td>{gap.expectedOutcome ?? "Needs data"}</td>
+                    <td>{formatStatusLabel(gap.status)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="strategic-helper-text">Alignment gaps are routed into KPI governance, data governance, corrective actions, or sustainability workflows depending on the gap type.</p>
+          </div>
+        )}
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Carry-forward logic</p>
+            <h2>Where aligned work moves next</h2>
+          </div>
+        </div>
+        <div className="carry-forward-grid">
+          {carryForwardRules.map(([condition, output, target]) => (
+            <article key={condition}>
+              <span>{condition}</span>
+              <strong>{output}</strong>
+              <p>{target}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="jazan-two-column-grid">
+        <article className="panel jazan-workspace-section">
+          <div className="jazan-section-header">
+            <div>
+              <p className="eyebrow">Outputs</p>
+              <h2>Outputs of Pillar 01</h2>
+            </div>
+          </div>
+          <div className="jazan-deliverable-grid">
+            {[...deliverables, ["Carry-forward package", "Shows which items move to KPI governance, data governance, early warning, corrective actions, or sustainability."]].map(([title, description]) => (
+              <article className="jazan-deliverable-card" key={title}>
+                <h3>{title}</h3>
+                <p>{description}</p>
+              </article>
+            ))}
+          </div>
+        </article>
+
+        <article className="panel jazan-workspace-section">
+          <div className="jazan-section-header">
+            <div>
+              <p className="eyebrow">Integration contract</p>
+              <h2>Data Sources & OpenCare Contract Evidence</h2>
+            </div>
+          </div>
+          <div className="jazan-dependency-groups">
+            {dependencyGroups.map((group) => (
+              <section key={group.title}>
+                <h3>{group.title}</h3>
+                <ul>{group.items.map((item) => <li key={item}>{item}</li>)}</ul>
               </section>
             ))}
           </div>
@@ -1385,8 +1790,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function JazanPerformancePillarPage({ params }: PageProps) {
+export default async function JazanPerformancePillarPage({ params, searchParams }: PageProps) {
   const { pillar: pillarId } = await params;
+  const query = searchParams ? await searchParams : {};
   const pillar = await getPillar(pillarId);
 
   if (!pillar) {
@@ -1394,8 +1800,12 @@ export default async function JazanPerformancePillarPage({ params }: PageProps) 
   }
 
   if (pillar.id === "strategic-alignment-objective-cascade") {
-    const data = await getStrategicAlignmentWorkspace();
-    return <StrategicAlignmentWorkspacePage pillar={pillar} data={data} />;
+    const apiData = await getStrategicAlignmentWorkspace();
+    const demoEnabled = query.demo === "1" || process.env.NEXT_PUBLIC_JAZAN_DEMO_MODE === "true";
+    const mode = hasStrategicAlignmentData(apiData) ? "live" : demoEnabled ? "demo" : "empty";
+    const data = mode === "demo" ? demoStrategicAlignmentWorkspace : apiData;
+
+    return <StrategicAlignmentCockpitPage pillar={pillar} data={data} mode={mode} />;
   }
 
   if (pillar.id === "data-analytics-dashboards") {
