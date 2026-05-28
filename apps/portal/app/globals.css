@@ -1866,17 +1866,25 @@ code {
   display: grid;
 }
 
-.delivery-overview-list article {
+.delivery-overview-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   padding: 14px 0;
   border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+  color: inherit;
+  text-decoration: none;
 }
 
-.delivery-overview-list article:last-child {
+.delivery-overview-item:last-child {
   border-bottom: 0;
+}
+
+.delivery-overview-item.clickable:hover,
+.delivery-workstream-card.clickable:hover {
+  border-color: rgba(37, 99, 235, 0.2);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
 }
 
 .delivery-overview-list p {
@@ -1964,6 +1972,97 @@ code {
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.jazan-governance-detail-page .hero h1 {
+  letter-spacing: 0;
+}
+
+.governance-lineage-flow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.governance-lineage-flow article {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fbfaf6;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.governance-lineage-flow article:not(:last-child)::after {
+  content: "->";
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  color: #6b7280;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+.governance-lineage-flow span,
+.governance-check-list span {
+  color: #4b5563;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.governance-lineage-flow strong,
+.governance-check-list strong,
+.governance-control-grid strong {
+  color: #07194a;
+  font-size: 13px;
+}
+
+.governance-lineage-flow p,
+.governance-check-list p,
+.governance-control-grid p {
+  margin: 0;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.governance-compact-table {
+  min-width: 640px;
+}
+
+.governance-check-list {
+  display: grid;
+}
+
+.governance-check-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.governance-check-list > div:last-child {
+  border-bottom: 0;
+}
+
+.governance-control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.governance-control-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(31, 56, 100, 0.08);
 }
 
 .jazan-value-cycle {
@@ -6318,7 +6417,10 @@ code {
   .jazan-recommendation-list article,
   .delivery-stack,
   .delivery-overview-list article,
+  .delivery-overview-item,
   .delivery-linked-usecase,
+  .governance-lineage-flow,
+  .governance-check-list > div,
   .jazan-rhythm-panel > div,
   .jazan-measures-panel > div,
   .jazan-governance-tree div,

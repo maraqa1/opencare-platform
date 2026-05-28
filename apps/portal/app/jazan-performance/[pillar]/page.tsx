@@ -413,6 +413,14 @@ const modelRuntimeConnections: ModelRuntimeConnection[] = [
   },
 ];
 
+function componentHref(component: DeliveryComponent) {
+  if (component.id === "data-governance") {
+    return "/jazan-performance/data-analytics-dashboards/delivery-components/data-governance";
+  }
+
+  return null;
+}
+
 async function getPillar(pillarId: string) {
   const fallback = emptyJazanPillarsResponse.pillars.find((item) => item.id === pillarId) ?? null;
   const data = await getApiJson<PillarResponse>({
@@ -970,18 +978,31 @@ function PillarThreeOverviewPage({ pillar }: { pillar: JazanPillar }) {
           </Link>
         </div>
         <div className="delivery-overview-list">
-          {deliveryComponents.map((component) => (
-            <article key={component.id}>
-              <div className="delivery-card-title">
-                <DeliveryIcon name={component.icon} size={17} />
-                <div>
-                  <h3>{component.title}</h3>
-                  <p>{component.description}</p>
+          {deliveryComponents.map((component) => {
+            const href = componentHref(component);
+            const content = (
+              <>
+                <div className="delivery-card-title">
+                  <DeliveryIcon name={component.icon} size={17} />
+                  <div>
+                    <h3>{component.title}</h3>
+                    <p>{component.description}</p>
+                  </div>
                 </div>
-              </div>
-              <DeliveryStatusChip status={component.status} />
-            </article>
-          ))}
+                <DeliveryStatusChip status={component.status} />
+              </>
+            );
+
+            return href ? (
+              <Link className="delivery-overview-item clickable" href={href} key={component.id}>
+                {content}
+              </Link>
+            ) : (
+              <article className="delivery-overview-item" key={component.id}>
+                {content}
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -1156,8 +1177,11 @@ export function PillarThreeDeliveryComponentsPage({
       </section>
 
       <section className="delivery-workstream-grid">
-        {deliveryComponents.map((component) => (
-          <article className="panel delivery-workstream-card" key={component.id}>
+        {deliveryComponents.map((component) => {
+          const href = componentHref(component);
+
+          return (
+          <article className={href ? "panel delivery-workstream-card clickable" : "panel delivery-workstream-card"} key={component.id}>
             <header>
               <div className="delivery-card-title">
                 <DeliveryIcon name={component.icon} size={18} />
@@ -1196,8 +1220,14 @@ export function PillarThreeDeliveryComponentsPage({
             </div>
 
             <p className="delivery-note">{component.note}</p>
+            {href ? (
+              <Link className="secondary-link" href={href}>
+                Open governance detail
+              </Link>
+            ) : null}
           </article>
-        ))}
+          );
+        })}
       </section>
     </PageFrame>
   );
