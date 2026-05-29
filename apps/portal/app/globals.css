@@ -1898,6 +1898,97 @@ code {
   line-height: 1.35;
 }
 
+.delivery-tool-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.delivery-tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 4px 9px 4px 4px;
+  border-radius: 999px;
+  background: #f4f2ed;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.delivery-tool-initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.delivery-tool-initial.violet {
+  background: #635bff;
+}
+
+.delivery-tool-initial.coral {
+  background: #f05f42;
+}
+
+.delivery-tool-initial.slate {
+  background: #365172;
+}
+
+.delivery-tool-initial.red {
+  background: #c53030;
+}
+
+.delivery-tool-initial.blue {
+  background: #4f6bed;
+}
+
+.delivery-tool-initial.purple {
+  background: #653281;
+}
+
+.delivery-tool-initial.green {
+  background: #2f6d3a;
+}
+
+.delivery-tool-initial.cyan {
+  background: #5aaec4;
+}
+
+.delivery-tool-initial.indigo {
+  background: #5946b2;
+}
+
+.delivery-tool-initial.amber {
+  background: #b7791f;
+}
+
+.delivery-tool-initial.pink {
+  background: #e85c9a;
+}
+
+.delivery-tool-initial.yellow {
+  background: #d4b000;
+  color: #111827;
+}
+
+.delivery-tool-initial.orange {
+  background: #d97706;
+}
+
+.delivery-tool-initial.black {
+  background: #111827;
+}
+
 .jazan-source-list strong.pending {
   background: #eef2f7;
   color: #4b5563;

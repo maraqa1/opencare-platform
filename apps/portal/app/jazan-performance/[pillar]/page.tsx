@@ -350,8 +350,8 @@ const deliveryComponents: DeliveryComponent[] = [
     title: "Data platform",
     status: "operational",
     description: "Foundation services for source ingestion, storage, orchestration, model serving, and runtime execution.",
-    delivers: ["K3s single-VM deployment", "ingestion connectors", "scheduled jobs", "runtime endpoints"],
-    tools: ["Airbyte", "dbt", "PostgreSQL", "MinIO", "Redis", "K3s", "R runtimes"],
+    delivers: ["source ingestion", "storage", "orchestration", "model serving", "runtime execution"],
+    tools: ["Airbyte", "dbt", "PostgreSQL", "MinIO", "Redis", "K3s", "Databricks", "Microsoft Fabric"],
     note: "Base platform is available for demo workloads, scheduled refresh, and predictive runtime execution.",
     icon: "database",
   },
@@ -360,8 +360,8 @@ const deliveryComponents: DeliveryComponent[] = [
     title: "Data governance",
     status: "partial",
     description: "Controls for ownership, definitions, evidence, lineage, and quality gates across the delivery stack.",
-    delivers: ["KPI dictionary", "lineage evidence", "quality controls"],
-    tools: ["OpenCare registry", "source contracts", "audit tables"],
+    delivers: ["ownership", "definitions", "evidence", "lineage", "quality gates"],
+    tools: ["NDMO - Saudi", "PDPL - Saudi", "Lineage", "Data dictionary", "Business glossary", "Data quality"],
     note: "Governance controls are defined; certification coverage is still being expanded.",
     icon: "shield",
   },
@@ -370,8 +370,8 @@ const deliveryComponents: DeliveryComponent[] = [
     title: "Data modelling",
     status: "partial",
     description: "Analytics-ready marts and feature sets that turn raw municipal, project, revenue, and service data into governed facts.",
-    delivers: ["dimensional marts", "performance facts", "risk features", "model-ready feature tables"],
-    tools: ["dbt", "PostgreSQL", "analytics schema", "feature marts"],
+    delivers: ["analytics-ready marts", "feature sets", "governed facts"],
+    tools: ["dbt models", "PostgreSQL marts", "Star schemas", "Fact / dim marts"],
     note: "Core model structure is in place; predictive features support early-warning model runtimes.",
     icon: "network",
   },
@@ -380,8 +380,8 @@ const deliveryComponents: DeliveryComponent[] = [
     title: "Semantic layer",
     status: "pending",
     description: "Shared business definitions for measures, dimensions, targets, thresholds, model inputs, and report filters.",
-    delivers: ["metric definitions", "dashboard measures", "approved filters", "model input definitions"],
-    tools: ["KPI dictionary", "semantic contracts", "dashboard metadata", "model registry metadata"],
+    delivers: ["measures", "dimensions", "targets", "thresholds", "model inputs", "report filters"],
+    tools: ["MetricFlow", "Cube", "Governed metrics"],
     note: "Semantic publishing is pending final KPI dictionary approval and model input certification.",
     icon: "layers",
   },
@@ -390,8 +390,8 @@ const deliveryComponents: DeliveryComponent[] = [
     title: "Visualisation design & implementation",
     status: "partial",
     description: "Executive and operational dashboard surfaces for scorecards, warnings, reviews, and drilldowns.",
-    delivers: ["executive cockpit", "municipality views", "project drilldowns"],
-    tools: ["Next.js", "Superset", "OpenCare portal"],
+    delivers: ["scorecards", "warnings", "reviews", "drilldowns"],
+    tools: ["Power BI", "Superset", "Tableau", "Next.js portal", "Report packs"],
     note: "Demo surfaces are available; production dashboards will bind to governed API outputs.",
     icon: "dashboard",
   },
@@ -599,6 +599,61 @@ function DeliveryStatusChip({ status }: { status: DeliveryStatus }) {
     <span className={`delivery-status-chip ${status}`}>
       <DeliveryIcon name={statusIconName(status)} size={14} />
       {status}
+    </span>
+  );
+}
+
+const toolChipToneByName: Record<string, string> = {
+  Airbyte: "violet",
+  dbt: "coral",
+  "dbt models": "coral",
+  PostgreSQL: "slate",
+  "PostgreSQL marts": "slate",
+  MinIO: "red",
+  Redis: "red",
+  K3s: "blue",
+  Databricks: "red",
+  "Microsoft Fabric": "purple",
+  "NDMO - Saudi": "green",
+  "PDPL - Saudi": "slate",
+  Lineage: "cyan",
+  "Data dictionary": "indigo",
+  "Business glossary": "amber",
+  "Data quality": "coral",
+  "Star schemas": "amber",
+  "Fact / dim marts": "indigo",
+  MetricFlow: "coral",
+  Cube: "pink",
+  "Governed metrics": "indigo",
+  "Power BI": "yellow",
+  Superset: "cyan",
+  Tableau: "orange",
+  "Next.js portal": "black",
+  "Report packs": "green",
+};
+
+function toolChipInitial(label: string) {
+  if (label === "PostgreSQL" || label === "PostgreSQL marts") return "PG";
+  if (label === "Microsoft Fabric") return "F";
+  if (label === "Data dictionary") return "DD";
+  if (label === "Business glossary") return "BG";
+  if (label === "Fact / dim marts") return "F-D";
+  if (label === "Power BI") return "PB";
+  if (label === "Next.js portal") return "N";
+  return label
+    .split(/[\s./-]+/)
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
+function DeliveryToolChip({ label }: { label: string }) {
+  return (
+    <span className="delivery-tool-chip">
+      <span className={`delivery-tool-initial ${toolChipToneByName[label] ?? "slate"}`}>{toolChipInitial(label)}</span>
+      {label}
     </span>
   );
 }
@@ -1416,6 +1471,11 @@ function PillarThreeOverviewPage({ pillar }: { pillar: JazanPillar }) {
                   <div>
                     <h3>{component.title}</h3>
                     <p>{component.description}</p>
+                    <div className="delivery-tool-chip-row" aria-label={`${component.title} tools and standards`}>
+                      {component.tools.map((tool) => (
+                        <DeliveryToolChip label={tool} key={tool} />
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <DeliveryStatusChip status={component.status} />
