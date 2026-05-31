@@ -20,6 +20,18 @@ def utc_now_iso() -> str:
 
 class UseCaseTemplateStorage:
     _STALE_LOCK_MAX_AGE_SECONDS = 30.0
+    _STATEFUL_ACTIONS = {
+        "upload",
+        "validate",
+        "compile",
+        "plan-materialization",
+        "materialize",
+        "activate",
+        "verify-live",
+        "exclude",
+        "remove-operational",
+        "uninstall",
+    }
 
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -331,6 +343,12 @@ class UseCaseTemplateStorage:
                 if isinstance(event, dict):
                     actions.append(event)
 
+        lifecycle_events = [
+            event
+            for event in actions
+            if str(event.get("action") or "").strip().lower() in self._STATEFUL_ACTIONS
+        ]
+
         compile_status = "parsed"
         materialization_status = "staged"
         activation_status = "previewable"
@@ -340,7 +358,7 @@ class UseCaseTemplateStorage:
         product_promotion_status = "pending"
         status = "uploaded"
 
-        for event in actions:
+        for event in lifecycle_events:
             action = str(event.get("action") or "").strip().lower()
             event_status = str(event.get("status") or status).strip().lower() or status
             status = event_status
@@ -375,6 +393,7 @@ class UseCaseTemplateStorage:
                 enabled = False
 
         uploaded_at = actions[0].get("timestamp") if actions else utc_now_iso()
+        last_lifecycle_event = lifecycle_events[-1] if lifecycle_events else {}
         last_event = actions[-1] if actions else {}
         record: dict[str, Any] = {
             "id": record_id,
@@ -384,7 +403,7 @@ class UseCaseTemplateStorage:
             "version": version,
             "domain": metadata.get("domain"),
             "owner": metadata.get("owner"),
-            "uploaded_by": last_event.get("actor") if actions else "unknown",
+            "uploaded_by": actions[0].get("actor") if actions else "unknown",
             "uploaded_at": uploaded_at,
             "status": status,
             "enabled": enabled,
@@ -406,8 +425,8 @@ class UseCaseTemplateStorage:
                 "domain": metadata.get("domain"),
                 "owner": metadata.get("owner"),
             },
-            "last_action": last_event.get("action") if actions else "recovered",
-            "last_action_at": last_event.get("timestamp") if actions else uploaded_at,
+            "last_action": last_lifecycle_event.get("action") if lifecycle_events else "recovered",
+            "last_action_at": last_lifecycle_event.get("timestamp") if lifecycle_events else uploaded_at,
             "error_message": str(last_event.get("error_message") or ""),
             "last_error": str(last_event.get("error_message") or ""),
             "actions": actions,

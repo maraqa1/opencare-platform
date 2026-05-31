@@ -285,6 +285,61 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertFalse(storage.staged_dir("golden-example", "1.0.0").exists())
             self.assertFalse(storage.upload_dir("golden-example", "1.0.0").exists())
 
+    def test_recovered_active_package_prefers_latest_lifecycle_version_over_recent_audit_activity(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            for version in ("1.6.0", "1.7.0"):
+                staged_root = storage.staged_dir("golden-example", version)
+                staged_root.mkdir(parents=True, exist_ok=True)
+                build_valid_package_tree(staged_root, slug="patient-outcomes")
+
+            old_events = [
+                {"action": "upload", "status": "validated", "timestamp": "2026-05-31T10:00:00Z"},
+                {"action": "compile", "status": "compiled", "timestamp": "2026-05-31T10:05:00Z"},
+                {"action": "materialize", "status": "materialized", "timestamp": "2026-05-31T10:10:00Z"},
+                {"action": "activate", "status": "active", "timestamp": "2026-05-31T10:15:00Z"},
+                {"action": "verify-live", "status": "degraded", "timestamp": "2026-05-31T10:20:00Z"},
+                {"action": "patient-level drilldown access", "status": "degraded", "timestamp": "2026-05-31T12:00:00Z"},
+            ]
+            new_events = [
+                {"action": "upload", "status": "validated", "timestamp": "2026-05-31T11:00:00Z"},
+                {"action": "compile", "status": "compiled", "timestamp": "2026-05-31T11:05:00Z"},
+                {"action": "materialize", "status": "materialized", "timestamp": "2026-05-31T11:10:00Z"},
+                {"action": "activate", "status": "active", "timestamp": "2026-05-31T11:15:00Z"},
+                {"action": "verify-live", "status": "degraded", "timestamp": "2026-05-31T11:20:00Z"},
+            ]
+
+            for event in old_events:
+                storage.record_action(
+                    package_id="golden-example",
+                    slug="patient-outcomes",
+                    version="1.6.0",
+                    actor="portal-admin",
+                    action=event["action"],
+                    status=event["status"],
+                    validation_result="warning",
+                    log=f"{event['action']} completed.",
+                    update_package_state=event["action"] != "patient-level drilldown access",
+                )
+            for event in new_events:
+                storage.record_action(
+                    package_id="golden-example",
+                    slug="patient-outcomes",
+                    version="1.7.0",
+                    actor="portal-admin",
+                    action=event["action"],
+                    status=event["status"],
+                    validation_result="warning",
+                    log=f"{event['action']} completed.",
+                )
+
+            storage.save_registry({"packages": {}, "active_versions": {}})
+
+            active_record = storage.get_active_package_by_slug("patient-outcomes")
+
+            self.assertIsNotNone(active_record)
+            self.assertEqual(active_record["version"], "1.7.0")
+
 
 if __name__ == "__main__":
     unittest.main()
