@@ -94,6 +94,10 @@ class UseCaseRuntimeResolverTests(unittest.TestCase):
                 self.assertGreater(body["meta"]["widget_count"], 0)
                 self.assertTrue(any(widget["component_id"] == "readmission_card" for widget in body["widgets"]))
 
+                prefetched_tab_payload = client().get("/api/v1/use-cases/patient-outcomes/tabs/overview?prefetch=1")
+                self.assertEqual(prefetched_tab_payload.status_code, 200)
+                self.assertEqual(prefetched_tab_payload.json()["tab_payload"]["tab"]["id"], "overview")
+
     def test_runtime_access_does_not_mutate_lifecycle_state(self):
         with tempfile.TemporaryDirectory(prefix="package-") as temp_dir:
             root = Path(temp_dir) / "golden-package"

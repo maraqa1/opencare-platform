@@ -15,7 +15,12 @@ resolver = UseCaseRuntimeResolver(storage)
 
 
 def _filters(request: Request) -> dict[str, Any]:
-    return {key: value for key, value in request.query_params.items()}
+    ignored_keys = {"prefetch"}
+    return {
+        key: value
+        for key, value in request.query_params.items()
+        if key not in ignored_keys
+    }
 
 
 def _actor(request: Request) -> str:

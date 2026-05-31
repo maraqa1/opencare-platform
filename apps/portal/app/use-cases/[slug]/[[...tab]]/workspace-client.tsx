@@ -543,14 +543,18 @@ function fetchTabPayload({
   const request = fetch(`/api/portal/api/v1/use-cases/${slug}/tabs/${tabId}${query}`, { cache: "no-store" })
     .then(async (response) => {
       if (!response.ok) {
-        throw new Error(`${response.status}:${correlationId}`);
+        const body = (await response.json().catch(() => ({}))) as { detail?: string; message?: string };
+        const detail = body.detail ?? body.message ?? "Widget data could not be loaded.";
+        throw new Error(`${response.status}:${correlationId}:${detail}`);
       }
       const payload = (((await response.json()) as { tab_payload?: TabPayload }).tab_payload ?? {}) as TabPayloadResult;
       setCachedTabPayload(slug, tabId, payload);
       return payload;
     })
-    .catch(() => {
+    .catch((error) => {
       const defectClass = classifyDefect(workspace);
+      const [, , detail] =
+        error instanceof Error ? error.message.split(":", 3) : [];
       return {
         tab: { id: tabId },
         widgets: [],
@@ -564,7 +568,11 @@ function fetchTabPayload({
         },
         _error: {
           defectClass,
-          operatorMessage: operatorMessage(workspace, "Widget data could not be loaded.", undefined),
+          operatorMessage: operatorMessage(
+            workspace,
+            detail || "Widget data could not be loaded.",
+            undefined,
+          ),
           correlationId,
         },
       } satisfies TabPayloadResult;
