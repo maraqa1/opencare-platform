@@ -431,6 +431,151 @@ const modelRuntimeConnections: ModelRuntimeConnection[] = [
   },
 ];
 
+const decisionInputs = [
+  "Risk-scored municipalities",
+  "Forecast breaches",
+  "AI recommendations - advisory",
+];
+
+const decisionFlow = [
+  {
+    title: "Triage",
+    text: "Flags land and get tagged: severity, type, municipality",
+    icon: "dashboard" as DeliveryIconName,
+  },
+  {
+    title: "Review",
+    text: "Cadence picks the queue at the right altitude",
+    icon: "bar-chart" as DeliveryIconName,
+  },
+  {
+    title: "Decide",
+    text: "Owner chooses action from evidence and recommendation",
+    icon: "check" as DeliveryIconName,
+  },
+  {
+    title: "Act",
+    text: "Lifecycle runs to verified closure across stages",
+    icon: "wrench" as DeliveryIconName,
+    active: true,
+  },
+  {
+    title: "Track",
+    text: "Outcome measured against expected KPI recovery",
+    icon: "spark" as DeliveryIconName,
+  },
+];
+
+const reviewCadence = [
+  ["Weekly tactical", "Hot anomalies, urgent slips, escalations", "Next in 3 days - 9 items queued", "spark"],
+  ["Monthly performance", "KPI trends, action effectiveness, portfolio", "Next in 12 days - 4 items", "bar-chart"],
+  ["Quarterly strategic", "Objective alignment, learning, resource shifts", "Next in 47 days - 1 item", "dashboard"],
+] as const;
+
+const actionLifecycle = ["Proposed", "Approved", "In progress", "Evidence submitted", "Verified", "Closed"];
+
+const decisionSummary = [
+  ["Open corrective actions", "14", "across 8 municipalities", "neutral"],
+  ["Closure rate - 30 days", "78%", "target >= 85% - watch", "watch"],
+  ["Verified this month", "8", "recovered against target", "good"],
+  ["High-escalation items", "3", "awaiting executive review", "danger"],
+] as const;
+
+const correctiveActionQueue = [
+  {
+    action: "Rebalance field-response capacity & SLA escalation",
+    impacted: "Sabya - service quality",
+    lifecycle: "In progress",
+    owner: "Services Agency",
+    ticket: "JZN-SVC-2347",
+    due: "+23 days",
+    escalation: "Med",
+    selected: true,
+  },
+  {
+    action: "Investigate revenue collection drop",
+    impacted: "Abu Arish - revenue",
+    lifecycle: "Approved",
+    owner: "Finance & Investment",
+    ticket: "JZN-FIN-2351",
+    due: "+18 days",
+    escalation: "Med",
+  },
+  {
+    action: "Compliance follow-up - visual distortion",
+    impacted: "Samtah - compliance",
+    lifecycle: "Evidence",
+    owner: "Field Compliance",
+    ticket: "JZN-CMP-2339",
+    due: "+5 days",
+    escalation: "Low",
+  },
+  {
+    action: "Service center reopening plan",
+    impacted: "Bish - service quality",
+    lifecycle: "Proposed",
+    owner: "Services Agency",
+    ticket: "JZN-SVC-2354",
+    due: "+30 days",
+    escalation: "Low",
+  },
+  {
+    action: "Project escalation - road resurfacing",
+    impacted: "Sabya - project",
+    lifecycle: "Approved",
+    owner: "PMO",
+    ticket: "JZN-PRJ-2348",
+    due: "+14 days",
+    escalation: "High",
+  },
+  {
+    action: "Citizen satisfaction recovery program",
+    impacted: "Al Aridah - service quality",
+    lifecycle: "In progress",
+    owner: "Service Quality",
+    ticket: "JZN-SVC-2342",
+    due: "+21 days",
+    escalation: "Med",
+  },
+];
+
+const selectedDecisionAction = {
+  title: "Rebalance field-response capacity and activate SLA escalation protocol",
+  arabic: "إعادة توازن استجابة الميدان وتفعيل بروتوكول تصعيد اتفاقية مستوى الخدمة",
+  status: "In progress",
+  owner: "Services Agency",
+  supporting: "Municipality Coordinator",
+  due: "+23 days",
+  escalation: "Medium",
+  ticket: "JZN-SVC-2347",
+  lifecycle: [
+    ["Proposed", "12d ago", true],
+    ["Approved", "9d ago", true],
+    ["In progress", "started 7d ago", true],
+    ["Evidence", "", false],
+    ["Verified", "", false],
+    ["Closed", "", false],
+  ] as const,
+  evidence: [
+    ["Forecast", "78% probability of missing closure-rate target within 4 weeks.", "High confidence - Runtime"],
+    ["Anomaly", "Resolution time +23% above Sabya's own baseline.", "z = +2.4 - Runtime"],
+    ["Composite risk", "84 / 100 - High - forecast 78%, anomaly +2.4, backlog +18%, SLA -8pp.", "Deterministic - not a black box"],
+    ["Recommendation", "Field-response rebalancing + SLA escalation protocol.", "Basis: 14 comparable interventions - advisory"],
+  ],
+  actors: [
+    ["JZN-SVC-2347", "OpenCare Action Tracker", "Open - assigned"],
+    ["Field Response Team", "8 technicians - Services Agency", ""],
+    ["Sabya Municipality Office", "3 coordinators - Municipality Coordinator", ""],
+    ["SLA Escalation Lead", "1 manager - Services Agency", ""],
+  ],
+  expectedOutcome: "Restore closure rate to > 90% and reduce average resolution time to < 48h within the +30 day window.",
+  decisionLog: [
+    ["7d ago - Services Agency", "Services Agency activated SLA escalation protocol citywide."],
+    ["9d ago - Weekly tactical review", "Weekly review approved the intervention; +30-day target set."],
+    ["12d ago - Early Warning runtime", "Auto-triggered by Early Warning composite risk score 84 / 100 for Sabya."],
+  ],
+};
+
 function componentHref(component: DeliveryComponent) {
   if (component.id === "data-governance") {
     return "/jazan-performance/data-analytics-dashboards/delivery-components/data-governance";
@@ -1866,6 +2011,239 @@ function EarlyWarningWorkspacePage({ pillar }: { pillar: JazanPillar }) {
   );
 }
 
+function DecisionRhythmWorkspacePage({ pillar }: { pillar: JazanPillar }) {
+  return (
+    <PageFrame
+      eyebrow="Pillar 05"
+      title={pillar.title}
+      description="إيقاع القرار والإجراءات التصحيحية"
+      chips={[
+        { label: "Demo data - seeded for proposal walkthrough", tone: "primary" },
+        { label: `Primary KPI: ${pillar.primary_kpi.label}`, tone: "accent" },
+        { label: `Route: ${pillar.route}`, tone: "accent" },
+      ]}
+      actions={
+        <Link className="secondary-link" href="/jazan-performance">
+          Back to operating model
+        </Link>
+      }
+      pageClassName="jazan-workspace-page decision-rhythm-page"
+    >
+      <TabNav items={pillarTabs} activeKey={pillar.id} />
+
+      <section className="panel jazan-workspace-section decision-loop-panel">
+        <div className="decision-loop-band">
+          <p className="eyebrow">Inputs - from Pillar 4</p>
+          <div>
+            {decisionInputs.map((input) => (
+              <span className="decision-loop-chip" key={input}>{input}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="decision-flow-grid">
+          {decisionFlow.map((step) => (
+            <article className={step.active ? "active" : undefined} key={step.title}>
+              <DeliveryIcon name={step.icon} size={20} />
+              <h3>{step.title}</h3>
+              <p>{step.text}</p>
+              <span>Pillar 5</span>
+            </article>
+          ))}
+        </div>
+
+        <div className="decision-loop-two-col">
+          <article>
+            <p className="eyebrow">Review cadence</p>
+            {reviewCadence.map(([title, text, note, icon]) => (
+              <div className="decision-cadence-row" key={title}>
+                <DeliveryIcon name={icon as DeliveryIconName} size={18} />
+                <div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                  <strong>{note}</strong>
+                </div>
+              </div>
+            ))}
+          </article>
+          <article>
+            <p className="eyebrow">Action lifecycle - 6 stages</p>
+            <div className="decision-lifecycle-chips">
+              {actionLifecycle.map((stage) => (
+                <span key={stage}>{stage}</span>
+              ))}
+            </div>
+            <p>
+              Every stage is auditable: the decision log captures who acted, when, and what evidence supported the move.
+              No action closes without a verified outcome against its expected KPI recovery.
+            </p>
+          </article>
+        </div>
+
+        <div className="decision-loop-band">
+          <p className="eyebrow">Outputs - feedback</p>
+          <div>
+            <span className="decision-loop-chip">Pillar 1 - alignment status updated</span>
+            <span className="decision-loop-chip">Pillar 4 - recommendation history enriched</span>
+            <span className="decision-loop-chip">Pillar 6 - training need if pattern repeats</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Action loop - summary</p>
+            <h2>Corrective-action control tower</h2>
+          </div>
+        </div>
+        <div className="decision-summary-grid">
+          {decisionSummary.map(([label, value, note, tone]) => (
+            <article className={`decision-summary-card ${tone}`} key={label}>
+              <span>{label}</span>
+              <strong>{value}</strong>
+              <p>{note}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Review cadence - إيقاع المراجعات</p>
+            <h2>Cadence picks the right altitude</h2>
+          </div>
+        </div>
+        <div className="decision-cadence-cards">
+          {reviewCadence.map(([title, text, note, icon]) => (
+            <article key={title}>
+              <DeliveryIcon name={icon as DeliveryIconName} size={19} />
+              <div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+                <strong>{note}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Corrective-action queue</p>
+            <h2>Actions requiring movement</h2>
+          </div>
+        </div>
+        <div className="jazan-table-wrap strategic-scroll-table">
+          <table className="table jazan-data-table decision-action-table">
+            <thead>
+              <tr>{["Action", "Impacted", "Lifecycle", "Owner", "Ticket", "Due", "Esc."].map((column) => <th key={column}>{column}</th>)}</tr>
+            </thead>
+            <tbody>
+              {correctiveActionQueue.map((row) => (
+                <tr className={row.selected ? "selected" : undefined} key={row.ticket}>
+                  <td><strong>{row.action}</strong></td>
+                  <td>{row.impacted}</td>
+                  <td><StrategicStatusChip status={row.lifecycle.toLowerCase().replaceAll(" ", "_")} /></td>
+                  <td>{row.owner}</td>
+                  <td>{row.ticket}</td>
+                  <td>{row.due}</td>
+                  <td><StrategicStatusChip status={row.escalation.toLowerCase()} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel jazan-workspace-section decision-action-detail">
+        <div className="jazan-section-header">
+          <div>
+            <p className="eyebrow">Selected action detail</p>
+            <h2>{selectedDecisionAction.title}</h2>
+            <p>{selectedDecisionAction.arabic}</p>
+          </div>
+          <StrategicStatusChip status="in_progress" />
+        </div>
+
+        <div className="decision-action-meta">
+          {[
+            ["Owner", selectedDecisionAction.owner],
+            ["Supporting", selectedDecisionAction.supporting],
+            ["Due", selectedDecisionAction.due],
+            ["Escalation", selectedDecisionAction.escalation],
+            ["Ticket", selectedDecisionAction.ticket],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <span>{label}</span>
+              <strong>{value}</strong>
+            </div>
+          ))}
+        </div>
+
+        <div className="decision-lifecycle-line">
+          {selectedDecisionAction.lifecycle.map(([stage, note, done]) => (
+            <div className={done ? "done" : undefined} key={stage}>
+              <span />
+              <strong>{stage}</strong>
+              <small>{note || "pending"}</small>
+            </div>
+          ))}
+        </div>
+
+        <div className="decision-detail-grid">
+          <article>
+            <p className="eyebrow">Model evidence - why this action was triggered</p>
+            <div className="decision-evidence-grid">
+              {selectedDecisionAction.evidence.map(([title, text, note]) => (
+                <div key={title}>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                  <span>{note}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article>
+            <p className="eyebrow">Work execution - who's acting</p>
+            <div className="decision-actors">
+              {selectedDecisionAction.actors.map(([name, role, badge]) => (
+                <div key={name}>
+                  <strong>{name}</strong>
+                  <span>{role}</span>
+                  {badge ? <em>{badge}</em> : null}
+                </div>
+              ))}
+            </div>
+            <p className="strategic-helper-text">Last field update 8 hours ago - 2 service centers re-staffed, intake queue down 12%.</p>
+          </article>
+        </div>
+
+        <div className="decision-detail-grid compact">
+          <article>
+            <p className="eyebrow">Expected outcome</p>
+            <strong>{selectedDecisionAction.expectedOutcome}</strong>
+          </article>
+          <article>
+            <p className="eyebrow">Decision log</p>
+            <div className="decision-log-list">
+              {selectedDecisionAction.decisionLog.map(([meta, text]) => (
+                <div key={meta}>
+                  <strong>{text}</strong>
+                  <span>{meta}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
+    </PageFrame>
+  );
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { pillar: pillarId } = await params;
   const pillar = await getPillar(pillarId);
@@ -1898,6 +2276,10 @@ export default async function JazanPerformancePillarPage({ params, searchParams 
 
   if (pillar.id === "municipal-project-early-warning") {
     return <EarlyWarningWorkspacePage pillar={pillar} />;
+  }
+
+  if (pillar.id === "decision-rhythm-corrective-actions") {
+    return <DecisionRhythmWorkspacePage pillar={pillar} />;
   }
 
   return (
