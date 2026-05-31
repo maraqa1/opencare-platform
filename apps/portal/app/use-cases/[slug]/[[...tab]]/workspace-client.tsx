@@ -610,7 +610,7 @@ export function MaterializedWorkspaceClient({
 
   useEffect(() => {
     if (packageBlocked) {
-      const blockedComponents = Object.fromEntries(
+      const blockedComponents: Record<string, EndpointState> = Object.fromEntries(
         selectedComponents
           .filter((component) => component.id)
           .map((component) => [
@@ -624,7 +624,7 @@ export function MaterializedWorkspaceClient({
             },
           ]),
       );
-      const blockedEndpoints = Object.fromEntries(
+      const blockedEndpoints: Record<string, EndpointState> = Object.fromEntries(
         selectedComponents
           .map((component) => normalizeEndpoint(specEndpoint(component)))
           .filter(Boolean)
@@ -663,20 +663,19 @@ export function MaterializedWorkspaceClient({
         }, {}),
       );
     } else {
-      setEndpointState({});
-      setComponentState(
-        Object.fromEntries(
-          selectedComponents
-            .filter((component) => component.id)
-            .map((component) => [
-              component.id as string,
-              {
-                status: "loading" as const,
-                payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
-              },
-            ]),
-        ),
+      const loadingComponents: Record<string, EndpointState> = Object.fromEntries(
+        selectedComponents
+          .filter((component) => component.id)
+          .map((component) => [
+            component.id as string,
+            {
+              status: "loading" as const,
+              payload: { data: [], meta: { empty: false }, warnings: [], errors: [] },
+            },
+          ]),
       );
+      setEndpointState({});
+      setComponentState(loadingComponents);
     }
 
     let cancelled = false;
@@ -688,7 +687,7 @@ export function MaterializedWorkspaceClient({
       const tabError = tabPayload._error;
       if (widgets.length === 0 && selectedComponents.length > 0) {
         const fallbackStatus = tabError?.defectClass === "package-defect" ? "blocked" : "degraded";
-        const fallbackEntries = Object.fromEntries(
+        const fallbackEntries: Record<string, EndpointState> = Object.fromEntries(
           selectedComponents
             .filter((component) => component.id)
             .map((component) => [
