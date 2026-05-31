@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 
-import Link from "next/link";
-
 import type { NavItem } from "@/config/navigation";
 import { getUseCaseByPath } from "@/lib/use-cases";
 
@@ -103,13 +101,13 @@ function NavSection({
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           return (
             <li key={item.href}>
-              <Link
+              <a
                 href={item.href}
                 className={isActive ? "nav-link active" : "nav-link"}
               >
                 <span>{item.label}</span>
                 {item.badge ? <span className="nav-badge">{item.badge}</span> : null}
-              </Link>
+              </a>
             </li>
           );
         })}
@@ -157,9 +155,9 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
           </div>
           <div className="topbar-actions">
             <span className="persona-badge">{topbar.badge}</span>
-            <Link className="settings-link" href={topbar.actionHref}>
+            <a className="settings-link" href={topbar.actionHref}>
               {topbar.actionLabel}
-            </Link>
+            </a>
           </div>
         </header>
         {children}

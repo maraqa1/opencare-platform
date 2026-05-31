@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-
 import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
@@ -97,9 +95,9 @@ export default async function HomePage() {
         { label: "Governed decision support", tone: "accent" },
       ]}
       actions={[
-        <Link key="use-cases" className="button primary" href="/use-cases">
+        <a key="use-cases" className="button primary" href="/use-cases">
           View Use Cases
-        </Link>,
+        </a>,
         <a key="status" className="secondary-link" href={defaultUseCaseHref}>
           Open Primary Workspace
         </a>,
@@ -127,9 +125,9 @@ export default async function HomePage() {
               <p className="eyebrow">Active Use Cases</p>
               <h3 className="section-heading">Product modules, not dashboard tabs</h3>
             </div>
-            <Link className="secondary-link" href="/use-cases">
+            <a className="secondary-link" href="/use-cases">
               Catalogue
-            </Link>
+            </a>
           </div>
           <div className="use-case-card-grid">
             {activeUseCases.map((useCase) => (
@@ -145,7 +143,7 @@ export default async function HomePage() {
                   <span className="inline-link">{useCase.ctaLabel ?? "Enter workspace"}</span>
                 </a>
               ) : (
-                <Link
+                <a
                   key={useCase.id}
                   href="/use-cases"
                   className="use-case-card muted"
@@ -154,7 +152,7 @@ export default async function HomePage() {
                   <h4>{useCase.name}</h4>
                   <p>{useCase.summary}</p>
                   <span className="inline-link">Coming soon</span>
-                </Link>
+                </a>
               )
             ))}
           </div>
