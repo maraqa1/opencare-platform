@@ -29,13 +29,14 @@ class UseCaseRuntimeResolverTests(unittest.TestCase):
         }
 
         match = resolver._endpoint_binding(runtime_definition, "/api/v1/use-cases/patient-outcomes/overview")
-        payload = resolver._sample_endpoint_payload(
-            "patient-outcomes",
-            "/api/v1/use-cases/patient-outcomes/overview",
-        )
-
         self.assertEqual(match["path"], "/overview")
-        self.assertFalse(payload["meta"]["empty"])
+        self.assertEqual(
+            resolver._relative_endpoint(
+                "/api/v1/use-cases/patient-outcomes/overview",
+                "/api/v1/use-cases/patient-outcomes",
+            ),
+            "/overview",
+        )
 
     def test_materialized_package_resolves_workspace_and_kpis(self):
         with tempfile.TemporaryDirectory(prefix="package-") as temp_dir:
@@ -64,7 +65,9 @@ class UseCaseRuntimeResolverTests(unittest.TestCase):
 
                 kpis = client().get("/api/v1/use-cases/patient-outcomes/kpis")
                 self.assertEqual(kpis.status_code, 200)
-                self.assertTrue(kpis.json()["meta"]["empty"])
+                body = kpis.json()
+                self.assertFalse(body["meta"]["binding_realized"])
+                self.assertEqual(body["errors"][0]["code"], "binding_not_realized")
 
     def test_materialized_package_resolves_tab_payload(self):
         with tempfile.TemporaryDirectory(prefix="package-") as temp_dir:
@@ -93,6 +96,8 @@ class UseCaseRuntimeResolverTests(unittest.TestCase):
                 self.assertEqual(body["tab"]["id"], "overview")
                 self.assertGreater(body["meta"]["widget_count"], 0)
                 self.assertTrue(any(widget["component_id"] == "readmission_card" for widget in body["widgets"]))
+                self.assertTrue(any(widget["state"] == "degraded" for widget in body["widgets"]))
+                self.assertTrue(any(widget["payload"]["errors"] for widget in body["widgets"]))
 
                 prefetched_tab_payload = client().get("/api/v1/use-cases/patient-outcomes/tabs/overview?prefetch=1")
                 self.assertEqual(prefetched_tab_payload.status_code, 200)

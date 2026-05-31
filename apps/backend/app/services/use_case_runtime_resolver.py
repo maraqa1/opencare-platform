@@ -1,8 +1,16 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import date, datetime
+from decimal import Decimal
+from pathlib import Path
 from typing import Any
+from uuid import UUID
 
+import psycopg
+from psycopg.errors import UndefinedColumn, UndefinedTable
+
+from app.db import connect
 from app.services.use_case_template_storage import UseCaseTemplateStorage, utc_now_iso
 
 
@@ -50,209 +58,139 @@ class UseCaseRuntimeResolver:
             "max_expected_age_hours": 24,
         }
 
-    def _sample_overview_payload(self, slug: str) -> dict[str, Any]:
-        return {
-            "data": {
-                "use_case_slug": slug,
-                "episode_count": 1842,
-                "average_length_of_stay": 4.6,
-                "average_readmission_risk": 0.31,
-                "readmission_30d_rate": 8.7,
-                "complication_rate": 3.2,
-                "unplanned_return_to_theatre_rate": 1.4,
-                "proms_improvement": 12.8,
-                "threshold_status": "watch",
-            },
-            "meta": {
-                "empty": False,
-                "data_freshness": self._freshness_meta(),
-            },
-        }
+    @staticmethod
+    def _serialize(value: object) -> object:
+        if isinstance(value, Decimal):
+            return float(value)
+        if isinstance(value, datetime):
+            return value.isoformat() + "Z"
+        if isinstance(value, date):
+            return value.isoformat()
+        if isinstance(value, UUID):
+            return str(value)
+        return value
 
-    def _sample_trend_payload(self) -> dict[str, Any]:
-        return {
-            "data": [
-                {
-                    "admission_month": month,
-                    "episode_count": count,
-                    "readmission_30d_rate": readmission,
-                    "complication_rate": complication,
-                    "return_to_theatre_rate": theatre,
-                    "average_length_of_stay": los,
-                    "average_proms_improvement": proms,
-                }
-                for month, count, readmission, complication, theatre, los, proms in [
-                    ("2026-01", 142, 9.8, 3.7, 1.7, 5.1, 10.4),
-                    ("2026-02", 148, 9.4, 3.5, 1.5, 4.9, 10.9),
-                    ("2026-03", 151, 9.1, 3.4, 1.6, 4.8, 11.3),
-                    ("2026-04", 153, 8.9, 3.3, 1.5, 4.7, 11.8),
-                    ("2026-05", 157, 8.7, 3.2, 1.4, 4.6, 12.4),
-                    ("2026-06", 161, 8.5, 3.0, 1.3, 4.5, 12.9),
-                ]
-            ],
-            "meta": {
-                "empty": False,
-                "data_freshness": self._freshness_meta(),
-            },
-        }
+    def _serialize_row(self, row: dict[str, Any]) -> dict[str, Any]:
+        return {key: self._serialize(value) for key, value in dict(row).items()}
 
-    def _sample_variation_payload(self) -> dict[str, Any]:
-        return {
-            "data": [
-                {
-                    "consultant_id": consultant,
-                    "procedure_group": procedure,
-                    "payer_id": payer,
-                    "episode_count": count,
-                    "readmission_30d_rate": readmission,
-                    "complication_rate": complication,
-                    "return_to_theatre_rate": theatre,
-                    "average_readmission_risk_score": risk,
-                    "average_proms_improvement": proms,
-                }
-                for consultant, procedure, payer, count, readmission, complication, theatre, risk, proms in [
-                    ("CONS-104", "Orthopaedics", "PAYER-A", 182, 8.1, 2.9, 1.2, 0.27, 13.5),
-                    ("CONS-207", "Cardiology", "PAYER-B", 164, 9.4, 3.7, 1.6, 0.33, 11.8),
-                    ("CONS-319", "General Surgery", "PAYER-C", 143, 8.8, 3.2, 1.5, 0.29, 12.1),
-                    ("CONS-411", "Urology", "PAYER-A", 127, 7.9, 2.7, 1.1, 0.24, 14.0),
-                ]
-            ],
-            "meta": {
-                "empty": False,
-                "data_freshness": self._freshness_meta(),
-            },
+    @staticmethod
+    def _binding_error(
+        code: str,
+        message: str,
+        *,
+        realized: bool = False,
+        detail: str | None = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "code": code,
+            "message": message,
+            "binding_realized": realized,
         }
+        if detail:
+            payload["detail"] = detail
+        return payload
 
-    def _sample_governance_payload(self, slug: str) -> dict[str, Any]:
-        return {
-            "data": {
-                "use_case_slug": slug,
-                "use_case_name": "Patient Outcomes",
-                "governance_profile": "Monthly governance review with named accountable owner and data steward.",
-                "highest_classification": "restricted",
-                "default_patient_identifier": "masked_patient_id",
-                "full_identifier_access_policy": "phi_authorized role with audited reveal flow",
-                "phi_masking_required": True,
-                "patient_level_audit_required": True,
-                "governance_evidence_required": True,
-                "lineage_expected_path": "source -> raw -> staging -> analytics -> output -> api -> portal",
-                "dashboard_governance_status": "pass",
-                "evidence_domains_required": "asset_inventory, metric_dictionary, classification_register, lineage_summary",
-            },
-            "meta": {
-                "empty": False,
-                "data_freshness": self._freshness_meta(),
-            },
-        }
+    @staticmethod
+    def _package_root(record: dict[str, Any]) -> Path | None:
+        for key in ("installed_path", "staged_path"):
+            value = str(record.get(key) or "").strip()
+            if value:
+                path = Path(value)
+                if path.is_dir():
+                    return path
+        return None
 
-    def _sample_filters_payload(self) -> dict[str, Any]:
-        return {
-            "data": [
-                {"filter_id": "specialty", "value": "Orthopaedics", "record_count": 428},
-                {"filter_id": "specialty", "value": "Cardiology", "record_count": 366},
-                {"filter_id": "payer", "value": "PAYER-A", "record_count": 512},
-                {"filter_id": "risk_band", "value": "high", "record_count": 138},
-            ],
-            "meta": {
-                "empty": False,
-                "data_freshness": self._freshness_meta(),
-            },
-        }
+    @staticmethod
+    def _query_parameter_names(sql_text: str) -> set[str]:
+        import re
 
-    def _sample_kpis_payload(self) -> dict[str, Any]:
-        return {
-            "data": [
-                {
-                    "metric_id": "readmission_30d_rate",
-                    "metric_name": "30-Day Readmission Rate",
-                    "definition": "Episodes readmitted within 30 days of discharge.",
-                    "formula": "SUM(readmitted_30d_flag) / COUNT(episode_id)",
-                    "unit": "percentage",
-                    "source_table": "analytics.fct_patient_outcomes",
-                    "owner": "Clinical Governance Lead",
-                },
-                {
-                    "metric_id": "complication_rate",
-                    "metric_name": "Complication Rate",
-                    "definition": "Episodes with at least one recorded clinical complication.",
-                    "formula": "SUM(complication_flag) / COUNT(episode_id)",
-                    "unit": "percentage",
-                    "source_table": "analytics.fct_patient_outcomes",
-                    "owner": "Medical Director",
-                },
-                {
-                    "metric_id": "average_length_of_stay",
-                    "metric_name": "Average Length of Stay",
-                    "definition": "Average inpatient days for completed episodes.",
-                    "formula": "AVG(length_of_stay_days)",
-                    "unit": "days",
-                    "source_table": "analytics.fct_patient_outcomes",
-                    "owner": "Operations Leadership",
-                },
-            ],
-            "meta": {
-                "empty": False,
-                "data_freshness": self._freshness_meta(),
-            },
-        }
+        named_percent = {match.group(1) for match in re.finditer(r"%\(([A-Za-z_][A-Za-z0-9_]*)\)s", sql_text)}
+        named_colon = {match.group(1) for match in re.finditer(r"(?<!:):([A-Za-z_][A-Za-z0-9_]*)", sql_text)}
+        return named_percent | named_colon
 
-    def _sample_queue_payload(self, queue_name: str) -> dict[str, Any]:
-        prefix = queue_name.upper().replace("-", "")[:4] or "CASE"
-        base_rows = []
-        for index, specialty, consultant, payer, procedure, risk in [
-            (1, "Orthopaedics", "CONS-104", "PAYER-A", "Joint Replacement", 0.82),
-            (2, "Cardiology", "CONS-207", "PAYER-B", "Valve Procedure", 0.78),
-            (3, "General Surgery", "CONS-319", "PAYER-C", "Abdominal", 0.74),
-            (4, "Urology", "CONS-411", "PAYER-A", "Endoscopy", 0.71),
-        ]:
-            base_rows.append(
-                {
-                    "episode_id": f"{prefix}-EPI-{index:04d}",
-                    "masked_patient_id": f"PX-{index:04d}",
-                    "specialty": specialty,
-                    "consultant_id": consultant,
-                    "payer_id": payer,
-                    "diagnosis_group": "Outcome review",
-                    "procedure_group": procedure,
-                    "discharge_date": f"2026-05-{10 + index:02d}",
-                    "readmission_risk_score": risk,
-                    "risk_band": "high" if risk >= 0.75 else "watch",
-                    "governance_evidence_link": "/governance/use-cases/patient-outcomes",
-                }
+    def _prepare_query(
+        self,
+        record: dict[str, Any],
+        match: dict[str, Any],
+        filters: dict[str, Any],
+    ) -> tuple[str | None, dict[str, Any], dict[str, Any] | None]:
+        query_ref = str(match.get("query") or "").strip()
+        if not query_ref:
+            return None, {}, self._binding_error(
+                "binding_not_realized",
+                "Endpoint binding was compiled without a query reference.",
             )
-        return {
-            "data": base_rows,
-            "meta": {
-                "empty": False,
-                "data_freshness": self._freshness_meta(),
-            },
-        }
 
-    def _sample_endpoint_payload(self, slug: str, endpoint: str) -> dict[str, Any]:
-        relative_endpoint = self._relative_endpoint(endpoint, f"/api/v1/use-cases/{slug}")
-        if relative_endpoint == "/overview":
-            return self._sample_overview_payload(slug)
-        if relative_endpoint == "/kpis":
-            return self._sample_kpis_payload()
-        if relative_endpoint == "/filters":
-            return self._sample_filters_payload()
-        if relative_endpoint == "/trends":
-            return self._sample_trend_payload()
-        if relative_endpoint == "/variation":
-            return self._sample_variation_payload()
-        if relative_endpoint == "/governance":
-            return self._sample_governance_payload(slug)
-        if relative_endpoint.startswith("/queues/"):
-            return self._sample_queue_payload(relative_endpoint.rsplit("/", 1)[-1])
-        if relative_endpoint == "/drilldown":
-            return self._sample_queue_payload("drilldown")
-        return {
-            "data": [],
-            "meta": {
-                "empty": True,
-                "data_freshness": None,
-            },
-        }
+        package_root = self._package_root(record)
+        if package_root is None:
+            return None, {}, self._binding_error(
+                "binding_not_realized",
+                "Package runtime assets are unavailable on disk.",
+            )
+
+        query_path = package_root / query_ref
+        if not query_path.is_file():
+            return None, {}, self._binding_error(
+                "binding_not_realized",
+                f"Compiled endpoint query is missing: {query_ref}",
+            )
+
+        sql_text = query_path.read_text(encoding="utf-8").strip()
+        if not sql_text:
+            return None, {}, self._binding_error(
+                "binding_not_realized",
+                f"Compiled endpoint query is empty: {query_ref}",
+            )
+        if "{{" in sql_text or "{%" in sql_text:
+            return None, {}, self._binding_error(
+                "binding_not_realized",
+                f"Compiled endpoint query still contains unresolved template syntax: {query_ref}",
+            )
+
+        parameter_names = self._query_parameter_names(sql_text)
+        missing = sorted(name for name in parameter_names if name not in filters)
+        if missing:
+            return None, {}, self._binding_error(
+                "binding_not_realized",
+                "Endpoint query requires runtime parameters that were not supplied.",
+                detail=", ".join(missing),
+            )
+
+        params = {key: value for key, value in filters.items() if key in parameter_names}
+        return sql_text, params, None
+
+    def _execute_query_binding(
+        self,
+        record: dict[str, Any],
+        match: dict[str, Any],
+        filters: dict[str, Any],
+    ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+        sql_text, params, prepare_error = self._prepare_query(record, match, filters)
+        if prepare_error:
+            return [], prepare_error
+
+        assert sql_text is not None
+        try:
+            with connect() as conn:
+                if params:
+                    rows = conn.execute(sql_text, params).fetchall()
+                else:
+                    rows = conn.execute(sql_text).fetchall()
+        except (UndefinedTable, UndefinedColumn) as exc:
+            return [], self._binding_error(
+                "binding_not_realized",
+                "Endpoint query references data assets that are not materialized yet.",
+                detail=str(exc),
+            )
+        except psycopg.Error as exc:
+            return [], self._binding_error(
+                "runtime_query_failed",
+                "Endpoint query failed during runtime execution.",
+                realized=True,
+                detail=str(exc),
+            )
+
+        return [self._serialize_row(row) for row in rows], None
 
     @staticmethod
     def _normalize_endpoint(endpoint: str) -> str:
@@ -316,11 +254,15 @@ class UseCaseRuntimeResolver:
                     f"Unsupported filters for {normalized_endpoint}: {', '.join(unsupported_filters)}"
                 )
 
-        payload = self._sample_endpoint_payload(slug, normalized_endpoint)
-        meta_payload = payload.get("meta", {})
+        rows, binding_error = self._execute_query_binding(record, match, applied_filters)
+        meta_payload = {
+            "empty": len(rows) == 0,
+            "data_freshness": self._freshness_meta(),
+            "binding_realized": binding_error is None,
+        }
         meta = {
-            **(meta_payload if isinstance(meta_payload, dict) else {}),
-            "empty": bool(meta_payload.get("empty", False)) if isinstance(meta_payload, dict) else False,
+            **meta_payload,
+            "empty": bool(meta_payload.get("empty", False)),
             "as_of": utc_now_iso(),
             "use_case_slug": slug,
             "endpoint": normalized_endpoint,
@@ -328,7 +270,7 @@ class UseCaseRuntimeResolver:
             "materialization_status": record.get("materialization_status"),
             "activation_status": record.get("activation_status"),
             "live_verification_status": record.get("live_verification_status"),
-            "data_freshness": meta_payload.get("data_freshness") if isinstance(meta_payload, dict) else None,
+            "data_freshness": meta_payload.get("data_freshness"),
         }
 
         phi_handling = match.get("phi_handling")
@@ -348,9 +290,9 @@ class UseCaseRuntimeResolver:
             )
 
         return {
-            "data": payload.get("data", []),
+            "data": rows,
             "meta": meta,
-            "errors": [],
+            "errors": [binding_error] if binding_error else [],
             "warnings": [],
         }
 
