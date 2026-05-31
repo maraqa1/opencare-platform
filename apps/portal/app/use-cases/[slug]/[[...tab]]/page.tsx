@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { PageFrame } from "@/components/page-frame";
-import { TabNav } from "@/components/TabNav";
-import { getApiJson } from "@/lib/api";
 import { getUseCaseByPath } from "@/lib/use-cases";
 
-import { MaterializedWorkspaceClient } from "./workspace-client";
+import { WorkspaceShellClient } from "./workspace-shell-client";
 
 export const metadata: Metadata = {
   title: "Use Case Workspace - OpenCare Portal",
@@ -180,18 +176,6 @@ export type WorkspaceTabDefinition = {
   component_specs?: ComponentSpec[];
 };
 
-function tabLabel(tabId: string) {
-  return tabId.replaceAll("-", " ").replace(/\b\w/g, (match) => match.toUpperCase());
-}
-
-function tabPathSegment(route: string | undefined) {
-  if (!route) {
-    return "";
-  }
-  const segments = route.split("/").filter(Boolean);
-  return segments.at(-1) ?? "";
-}
-
 export default async function MaterializedUseCaseWorkspacePage({ params }: RouteContext) {
   const { slug, tab } = await params;
   const builtIn = getUseCaseByPath(`/use-cases/${slug}`);
@@ -200,94 +184,5 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
   }
 
   const activeTab = tab?.[0] ?? "overview";
-  const workspaceResponse = await getApiJson<{ workspace?: WorkspaceDefinition }>({
-    path: `/api/v1/use-cases/${slug}/workspace`,
-    fallback: { workspace: undefined },
-    cacheMode: "revalidate",
-  });
-  const workspace = workspaceResponse.workspace;
-  if (!workspace) {
-    notFound();
-  }
-
-  const tabs = (workspace.tabs ?? []).map((item, index) => {
-    const tabId = item.id ?? "overview";
-    const routeSegment = tabPathSegment(item.route);
-    const href =
-      item.route && item.route.startsWith("/use-cases/")
-        ? item.route
-        : index === 0 || tabId === "overview"
-          ? `/use-cases/${slug}`
-          : `/use-cases/${slug}/${routeSegment || tabId}`;
-    const routeKey = index === 0 ? "overview" : routeSegment || tabId;
-    return {
-      key: routeKey,
-      label: item.label ?? tabLabel(tabId),
-      href,
-      id: tabId,
-      route: item.route,
-      component_specs: item.component_specs ?? [],
-    };
-  });
-
-  const selectedTab =
-    tabs.find((item, index) => {
-      const routeSegment = tabPathSegment(item.route);
-      return index === 0
-        ? activeTab === "overview" || activeTab === item.id || activeTab === routeSegment
-        : activeTab === item.id || activeTab === routeSegment;
-    }) ?? tabs[0];
-
-  const diagnosticsHref = workspace.identity?.package_id
-    ? `/admin/use-case-templates/${encodeURIComponent(workspace.identity.package_id)}`
-    : undefined;
-  const selectedWidgetModels =
-    workspace.dashboard_model?.tabs?.find((item, index) => {
-      const routeSegment = tabPathSegment(item.route);
-      return index === 0
-        ? activeTab === "overview" || activeTab === item.id || activeTab === routeSegment
-        : activeTab === item.id || activeTab === routeSegment;
-    })?.widgets ?? [];
-  return (
-    <PageFrame
-      eyebrow="Use Case Workspace"
-      title={workspace.identity?.name ?? slug}
-      description={
-        workspace.identity?.description ??
-        workspace.identity?.domain ??
-        "Persisted workspace definition resolved from the active runtime model."
-      }
-      chips={[
-        {
-          label:
-            workspace.state?.live_verification_status === "live_verified"
-              ? "Trusted runtime"
-              : workspace.state?.activation_status === "active"
-                ? "Runtime active"
-                : "Runtime review",
-          tone: workspace.state?.live_verification_status === "live_verified" ? "accent" : "primary",
-        },
-        { label: `${tabs.length} tabs`, tone: "primary" },
-      ]}
-      actions={
-        diagnosticsHref ? (
-          <Link className="settings-link" href={diagnosticsHref}>
-            Operator diagnostics
-          </Link>
-        ) : null
-      }
-    >
-      <TabNav items={tabs.map(({ key, label, href }) => ({ key, label, href }))} activeKey={selectedTab?.key ?? "overview"} />
-      <MaterializedWorkspaceClient
-        slug={slug}
-        workspace={workspace}
-        selectedTabId={selectedTab?.id ?? activeTab}
-        selectedTabLabel={selectedTab?.label ?? tabLabel(activeTab)}
-        selectedComponents={selectedTab?.component_specs ?? []}
-        selectedWidgetModels={selectedWidgetModels}
-        allTabs={workspace.tabs ?? []}
-        diagnosticsHref={diagnosticsHref}
-      />
-    </PageFrame>
-  );
+  return <WorkspaceShellClient slug={slug} activeTab={activeTab} />;
 }
