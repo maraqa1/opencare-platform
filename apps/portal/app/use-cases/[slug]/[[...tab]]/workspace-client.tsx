@@ -128,7 +128,7 @@ function componentTitle(spec: ComponentSpec) {
 }
 
 function componentSubtitle(spec: ComponentSpec) {
-  return spec.display_contract?.subtitle ?? spec.purpose ?? "Configured in the persisted workspace model.";
+  return spec.display_contract?.subtitle ?? spec.purpose ?? "Live operational insight from the promoted workspace model.";
 }
 
 function widgetTitle(widget: DashboardWidgetModel, spec: ComponentSpec) {
@@ -343,7 +343,7 @@ function TrustOverlay({
 }) {
   return (
     <span className={`native-bi-trust-pill ${trusted ? "trusted" : "governance-review"}`}>
-      {trusted ? "Trusted" : "Governance review"}
+      {trusted ? "Trusted runtime" : "Governance check"}
     </span>
   );
 }
@@ -472,6 +472,30 @@ function setCachedTabPayload(slug: string, tabId: string, payload: TabPayloadRes
   });
 }
 
+function componentStateFromTabPayload(
+  workspace: WorkspaceDefinition,
+  payload: TabPayloadResult | undefined,
+) {
+  return (payload?.widgets ?? []).reduce<Record<string, EndpointState>>((accumulator, widget) => {
+    if (widget.component_id) {
+      accumulator[widget.component_id] = toEndpointState(workspace, widget);
+    }
+    return accumulator;
+  }, {});
+}
+
+function endpointStateFromTabPayload(
+  workspace: WorkspaceDefinition,
+  payload: TabPayloadResult | undefined,
+) {
+  return (payload?.widgets ?? []).reduce<Record<string, EndpointState>>((accumulator, widget) => {
+    if (widget.endpoint) {
+      accumulator[widget.endpoint] = toEndpointState(workspace, widget);
+    }
+    return accumulator;
+  }, {});
+}
+
 function toEndpointState(
   workspace: WorkspaceDefinition,
   widgetPayload: NonNullable<TabPayload["widgets"]>[number],
@@ -562,6 +586,7 @@ export function MaterializedWorkspaceClient({
   selectedWidgetModels,
   allTabs,
   diagnosticsHref,
+  initialTabPayload,
 }: {
   slug: string;
   workspace: WorkspaceDefinition;
@@ -571,7 +596,9 @@ export function MaterializedWorkspaceClient({
   selectedWidgetModels: DashboardWidgetModel[];
   allTabs: WorkspaceTabDefinition[];
   diagnosticsHref?: string;
+  initialTabPayload?: TabPayload;
 }) {
+  const initialTabPayloadResult = initialTabPayload as TabPayloadResult | undefined;
   const prefetchedTabIds = useMemo(
     () =>
       allTabs
@@ -580,20 +607,10 @@ export function MaterializedWorkspaceClient({
     [allTabs, selectedTabId],
   );
   const [endpointState, setEndpointState] = useState<Record<string, EndpointState>>(() =>
-    (getCachedTabPayload(slug, selectedTabId)?.widgets ?? []).reduce<Record<string, EndpointState>>((accumulator, widget) => {
-      if (widget.endpoint) {
-        accumulator[widget.endpoint] = toEndpointState(workspace, widget);
-      }
-      return accumulator;
-    }, {}),
+    endpointStateFromTabPayload(workspace, getCachedTabPayload(slug, selectedTabId) ?? initialTabPayloadResult),
   );
   const [componentState, setComponentState] = useState<Record<string, EndpointState>>(() =>
-    (getCachedTabPayload(slug, selectedTabId)?.widgets ?? []).reduce<Record<string, EndpointState>>((accumulator, widget) => {
-      if (widget.component_id) {
-        accumulator[widget.component_id] = toEndpointState(workspace, widget);
-      }
-      return accumulator;
-    }, {}),
+    componentStateFromTabPayload(workspace, getCachedTabPayload(slug, selectedTabId) ?? initialTabPayloadResult),
   );
 
   const packageBlocked = workspace.state?.materialization_status !== "materialized" || workspace.state?.activation_status !== "active";
@@ -607,6 +624,12 @@ export function MaterializedWorkspaceClient({
       ),
     [selectedWidgetModels],
   );
+
+  useEffect(() => {
+    if (initialTabPayloadResult?.widgets?.length) {
+      setCachedTabPayload(slug, selectedTabId, initialTabPayloadResult);
+    }
+  }, [initialTabPayloadResult, selectedTabId, slug]);
 
   useEffect(() => {
     if (packageBlocked) {
@@ -644,24 +667,10 @@ export function MaterializedWorkspaceClient({
       return;
     }
 
-    const cached = getCachedTabPayload(slug, selectedTabId);
+    const cached = getCachedTabPayload(slug, selectedTabId) ?? initialTabPayloadResult;
     if (cached?.widgets?.length) {
-      setComponentState(
-        cached.widgets.reduce<Record<string, EndpointState>>((accumulator, widget) => {
-          if (widget.component_id) {
-            accumulator[widget.component_id] = toEndpointState(workspace, widget);
-          }
-          return accumulator;
-        }, {}),
-      );
-      setEndpointState(
-        cached.widgets.reduce<Record<string, EndpointState>>((accumulator, widget) => {
-          if (widget.endpoint) {
-            accumulator[widget.endpoint] = toEndpointState(workspace, widget);
-          }
-          return accumulator;
-        }, {}),
-      );
+      setComponentState(componentStateFromTabPayload(workspace, cached));
+      setEndpointState(endpointStateFromTabPayload(workspace, cached));
     } else {
       const loadingComponents: Record<string, EndpointState> = Object.fromEntries(
         selectedComponents
@@ -725,7 +734,7 @@ export function MaterializedWorkspaceClient({
     return () => {
       cancelled = true;
     };
-  }, [packageBlocked, selectedComponents, selectedTabId, slug, workspace]);
+  }, [initialTabPayloadResult, packageBlocked, selectedComponents, selectedTabId, slug, workspace]);
 
   useEffect(() => {
     if (packageBlocked) {
@@ -788,7 +797,7 @@ export function MaterializedWorkspaceClient({
     <section className="grid">
       <article className="panel span-8">
         <p className="eyebrow">{selectedTabLabel}</p>
-        <h3 className="section-heading">Operational workspace</h3>
+        <h3 className="section-heading">Patient Outcomes workspace</h3>
         <p className="section-subtitle">
           The persisted dashboard model opens first, then the selected tab hydrates through one runtime payload so navigation stays warm.
         </p>
@@ -801,7 +810,7 @@ export function MaterializedWorkspaceClient({
 
       <article className="panel span-4">
         <p className="eyebrow">Workspace status</p>
-        <h3 className="section-heading">Current tab posture</h3>
+        <h3 className="section-heading">Current tab readiness</h3>
         <dl className="use-case-evidence-list">
           <div>
             <dt>Verification</dt>
@@ -845,7 +854,7 @@ export function MaterializedWorkspaceClient({
             </div>
             <div>
               <span className="eyebrow">Lineage</span>
-              <strong>{trusted ? "Verified" : "Needs review"}</strong>
+              <strong>{trusted ? "Verified" : "Reviewing"}</strong>
             </div>
           </div>
         </article>
@@ -853,8 +862,8 @@ export function MaterializedWorkspaceClient({
 
       {canvasWidgets.length > 0 ? (
         <article className="panel span-12">
-          <p className="eyebrow">Live dashboard</p>
-          <h3 className="section-heading">Display contract canvas</h3>
+          <p className="eyebrow">Live workspace</p>
+          <h3 className="section-heading">{selectedTabLabel}</h3>
           <div className="grid">
             {canvasWidgets.map((widget) => {
               const component = widget.component_id ? selectedComponents.find((item) => item.id === widget.component_id) : undefined;
@@ -985,7 +994,7 @@ export function MaterializedWorkspaceClient({
                         <div className="native-bi-mini-metrics">
                           <div className="native-bi-mini-metric">
                             <span>Trust</span>
-                            <strong>{trusted ? "Trusted" : "Needs review"}</strong>
+                            <strong>{trusted ? "Trusted runtime" : "Governance check"}</strong>
                           </div>
                           <div className="native-bi-mini-metric">
                             <span>Freshness</span>
