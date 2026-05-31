@@ -331,6 +331,7 @@ class UseCaseRuntimeResolver:
                 status=record.get("status", "active"),
                 validation_result=record.get("package_validation_status"),
                 log=f"Runtime endpoint {normalized_endpoint} accessed with PHI policy {phi_handling}.",
+                update_package_state=False,
             )
 
         return {

@@ -144,6 +144,46 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertEqual(len(active_packages), 1)
             self.assertEqual(active_packages[0]["id"], "pkg-legacy")
 
+    def test_record_action_can_append_audit_event_without_mutating_package_state(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            storage.upsert_package(
+                {
+                    "id": "pkg-audit",
+                    "package_id": "pkg-audit",
+                    "slug": "patient-outcomes",
+                    "version": "1.0.0",
+                    "status": "degraded",
+                    "enabled": True,
+                    "materialization_status": "materialized",
+                    "activation_status": "active",
+                    "live_verification_status": "degraded",
+                    "product_promotion_status": "promoted",
+                    "last_action": "verify-live",
+                    "last_action_at": "2026-05-31T15:38:53Z",
+                }
+            )
+
+            storage.record_action(
+                package_id="pkg-audit",
+                slug="patient-outcomes",
+                version="1.0.0",
+                actor="portal-user",
+                action="restricted PHI attribute access",
+                status="degraded",
+                validation_result="warning",
+                log="Runtime endpoint /overview accessed.",
+                update_package_state=False,
+            )
+
+            record = storage.get_package("pkg-audit")
+
+            assert record is not None
+            self.assertEqual(record["status"], "degraded")
+            self.assertEqual(record["last_action"], "verify-live")
+            self.assertEqual(record["product_promotion_status"], "promoted")
+            self.assertEqual(record["actions"][-1]["action"], "restricted PHI attribute access")
+
 
 if __name__ == "__main__":
     unittest.main()

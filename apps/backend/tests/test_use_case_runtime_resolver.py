@@ -69,3 +69,46 @@ class UseCaseRuntimeResolverTests(unittest.TestCase):
                 self.assertEqual(body["tab"]["id"], "overview")
                 self.assertGreater(body["meta"]["widget_count"], 0)
                 self.assertTrue(any(widget["component_id"] == "readmission_card" for widget in body["widgets"]))
+
+    def test_runtime_access_does_not_mutate_lifecycle_state(self):
+        with tempfile.TemporaryDirectory(prefix="package-") as temp_dir:
+            root = Path(temp_dir) / "golden-package"
+            build_valid_package_tree(root, slug="patient-outcomes")
+            zip_bytes = build_zip_bytes(root)
+
+            with package_test_context():
+                upload = client().post(
+                    "/api/v1/admin/use-case-templates/upload",
+                    headers={"x-opencare-admin-context": "admin"},
+                    files={"package": ("golden.zip", zip_bytes, "application/zip")},
+                )
+                package_id = upload.json()["package"]["id"]
+
+                for action in ("validate", "compile", "materialize", "activate", "verify-live"):
+                    response = client().post(
+                        f"/api/v1/admin/use-case-templates/{package_id}/{action}",
+                        headers={"x-opencare-admin-context": "admin"},
+                    )
+                    self.assertEqual(response.status_code, 200, response.text)
+
+                before = client().get(
+                    f"/api/v1/admin/use-case-templates/{package_id}",
+                    headers={"x-opencare-admin-context": "admin"},
+                )
+                self.assertEqual(before.status_code, 200)
+                self.assertEqual(before.json()["package"]["last_action"], "verify-live")
+                self.assertEqual(before.json()["package"]["product_promotion_status"], "promoted")
+
+                workspace = client().get("/api/v1/use-cases/patient-outcomes/workspace")
+                self.assertEqual(workspace.status_code, 200)
+                overview = client().get("/api/v1/use-cases/patient-outcomes/overview")
+                self.assertEqual(overview.status_code, 200)
+
+                after = client().get(
+                    f"/api/v1/admin/use-case-templates/{package_id}",
+                    headers={"x-opencare-admin-context": "admin"},
+                )
+                self.assertEqual(after.status_code, 200)
+                self.assertEqual(after.json()["package"]["last_action"], "verify-live")
+                self.assertEqual(after.json()["package"]["status"], "degraded")
+                self.assertEqual(after.json()["package"]["product_promotion_status"], "promoted")

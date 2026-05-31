@@ -354,6 +354,7 @@ class UseCaseTemplateStorage:
         validation_result: str | None = None,
         log: str | None = None,
         error_message: str | None = None,
+        update_package_state: bool = True,
     ) -> dict[str, Any]:
         event = {
             "event_id": str(uuid.uuid4()),
@@ -412,12 +413,13 @@ class UseCaseTemplateStorage:
                 actions = record.setdefault("actions", [])
                 if isinstance(actions, list):
                     event["previous_state"] = previous_state
-                record["last_action"] = action
-                record["last_action_at"] = event["timestamp"]
-                record["status"] = status
-                if error_message:
-                    record["error_message"] = error_message
-                    record["last_error"] = error_message
+                if update_package_state:
+                    record["last_action"] = action
+                    record["last_action_at"] = event["timestamp"]
+                    record["status"] = status
+                    if error_message:
+                        record["error_message"] = error_message
+                        record["last_error"] = error_message
                 event["new_state"] = {
                     "status": record.get("status"),
                     "package_validation_status": record.get("package_validation_status"),
