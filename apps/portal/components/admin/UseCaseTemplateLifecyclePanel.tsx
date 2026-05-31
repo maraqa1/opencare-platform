@@ -168,7 +168,7 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
         headers: {
           "content-type": "application/json",
         },
-        body: action === "uninstall" ? JSON.stringify({ confirm: true, preserve_audit: true }) : undefined,
+        body: action === "uninstall" ? JSON.stringify({ confirm: true, preserve_audit: false }) : undefined,
       });
       const payload = (await readJsonSafely(response)) as { status?: string; detail?: string };
       if (!response.ok || payload.status !== "ok") {
@@ -206,7 +206,7 @@ export function UseCaseTemplateLifecyclePanel({ pkg }: { pkg: UseCaseTemplatePac
   async function runAction(action: string) {
     const confirmed =
       action !== "uninstall" ||
-      window.confirm("Uninstall this package? This removes active visibility and requires explicit confirmation.");
+      window.confirm("Delete this package permanently? This removes active visibility, staged assets, and uploaded package files.");
     if (!confirmed) {
       return;
     }

@@ -267,6 +267,28 @@ class UseCaseTemplateStorage:
                 self._write_yaml_atomic(self.registry_path, registry)
                 self._write_yaml_atomic(self.registry_snapshot_path, registry)
 
+    def purge_package_record(self, package_id: str, version: str) -> None:
+        package_key = f"{package_id}@{version}"
+        with self._registry_guard():
+            registry = self._load_registry_file(self.registry_path)
+            packages = registry.get("packages", {})
+            if isinstance(packages, dict):
+                packages.pop(package_key, None)
+                for candidate_key, candidate in list(packages.items()):
+                    if not isinstance(candidate, dict):
+                        continue
+                    if candidate.get("package_id") == package_id and candidate.get("version") == version:
+                        packages.pop(candidate_key, None)
+            pointers = registry.get("active_versions", {})
+            if isinstance(pointers, dict):
+                for slug, pointer in list(pointers.items()):
+                    if not isinstance(pointer, dict):
+                        continue
+                    if pointer.get("package_key") == package_key and pointer.get("version") == version:
+                        pointers.pop(slug, None)
+            self._write_yaml_atomic(self.registry_path, registry)
+            self._write_yaml_atomic(self.registry_snapshot_path, registry)
+
     def get_active_package_by_slug(self, slug: str) -> dict[str, Any] | None:
         pointer = self.get_active_pointer(slug)
         if pointer:

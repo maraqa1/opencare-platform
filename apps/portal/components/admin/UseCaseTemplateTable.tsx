@@ -53,7 +53,7 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
     const packageRef = pkg.id ?? pkg.package_id;
     const confirmed =
       endpoint !== "uninstall" ||
-      window.confirm(`Delete package ${pkg.name}? This will uninstall the uploaded package record.`);
+      window.confirm(`Delete package ${pkg.name}? This will permanently remove the uploaded package and its staged assets.`);
     if (!confirmed) {
       return;
     }
@@ -66,7 +66,7 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
           headers: {
             "content-type": "application/json",
           },
-          body: endpoint === "uninstall" ? JSON.stringify({ confirm: true, preserve_audit: true }) : undefined,
+          body: endpoint === "uninstall" ? JSON.stringify({ confirm: true, preserve_audit: false }) : undefined,
         });
         const payload = (await response.json()) as { status?: string; detail?: string };
         if (!response.ok || payload.status !== "ok") {
@@ -100,7 +100,7 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
             headers: {
               "content-type": "application/json",
             },
-            body: JSON.stringify({ confirm: true, preserve_audit: true }),
+            body: JSON.stringify({ confirm: true, preserve_audit: false }),
           });
           const payload = (await response.json()) as { status?: string; detail?: string };
           if (!response.ok || payload.status !== "ok") {

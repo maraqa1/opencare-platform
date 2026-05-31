@@ -111,10 +111,17 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
             uninstall_ok = client().post(
                 f"/api/v1/admin/use-case-templates/{package_id}/uninstall",
                 headers={"x-opencare-admin-context": "admin"},
-                json={"confirm": True, "preserve_audit": True},
+                json={"confirm": True, "preserve_audit": False},
             )
             self.assertEqual(uninstall_ok.status_code, 200)
             self.assertEqual(uninstall_ok.json()["package"]["status"], "uninstalled")
+
+            packages_after_uninstall = client().get(
+                "/api/v1/admin/use-case-templates",
+                headers={"x-opencare-admin-context": "admin"},
+            )
+            self.assertEqual(packages_after_uninstall.status_code, 200)
+            self.assertEqual(packages_after_uninstall.json()["packages"], [])
 
     def test_materialization_module_can_be_disabled_without_breaking_preview_flow(self):
         with package_test_context():

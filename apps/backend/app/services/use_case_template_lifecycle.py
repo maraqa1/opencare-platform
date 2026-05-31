@@ -181,7 +181,11 @@ class UseCaseTemplateLifecycleService:
             raise ValueError("Uninstall requires confirm=true")
 
         record = self._require_record(package_id)
-        self.storage.mark_uninstalled(package_id, record["version"], preserve_audit=preserve_audit)
+        package_slug = record["slug"]
+        package_version = record["version"]
+        package_validation_status = record.get("package_validation_status")
+        self.storage.clear_active_pointer(package_slug)
+        self.storage.mark_uninstalled(package_id, package_version, preserve_audit=preserve_audit)
         record["enabled"] = False
         record["activation_status"] = "uninstalled"
         record["status"] = "uninstalled"
@@ -189,21 +193,23 @@ class UseCaseTemplateLifecycleService:
         record["last_action"] = "uninstall"
         record["last_action_at"] = utc_now_iso()
         record["installed_path"] = ""
+        record["staged_path"] = ""
+        record["original_zip_path"] = ""
         record["preserve_audit"] = preserve_audit
-        self.storage.clear_active_pointer(record["slug"])
-        self.storage.upsert_package(record)
-        self.storage.record_action(
-            package_id=package_id,
-            slug=record["slug"],
-            version=record["version"],
-            actor=actor,
-            action="uninstall",
-            status="uninstalled",
-            validation_result=record.get("package_validation_status"),
-            log="Package uninstalled from managed package storage. Audit history preserved."
-            if preserve_audit
-            else "Package uninstalled from managed package storage.",
-        )
+        if preserve_audit:
+            self.storage.upsert_package(record)
+            self.storage.record_action(
+                package_id=package_id,
+                slug=package_slug,
+                version=package_version,
+                actor=actor,
+                action="uninstall",
+                status="uninstalled",
+                validation_result=package_validation_status,
+                log="Package uninstalled from managed package storage. Audit history preserved.",
+            )
+        else:
+            self.storage.purge_package_record(package_id, package_version)
         return deepcopy(record)
 
     # Backward-compatible aliases.
