@@ -10,12 +10,31 @@ import { filterVisibleUseCases, projectImportedPackagesToUseCases, useCases } fr
 type UseCaseConfigResponse = {
   all_use_cases?: Record<string, { enabled?: boolean }>;
   active_imported_use_cases?: UseCaseTemplatePackage[];
+  imported_use_cases?: UseCaseTemplatePackage[];
 };
 
-const defaultUseCaseConfig: UseCaseConfigResponse = { all_use_cases: {}, active_imported_use_cases: [] };
+const defaultConfig: UseCaseConfigResponse = {
+  all_use_cases: {},
+  active_imported_use_cases: [],
+  imported_use_cases: [],
+};
+
+function getImportedSource(config: UseCaseConfigResponse) {
+  if ((config.active_imported_use_cases?.length ?? 0) > 0) {
+    return config.active_imported_use_cases ?? [];
+  }
+
+  return (config.imported_use_cases ?? []).filter(
+    (pkg) =>
+      pkg.enabled === true &&
+      pkg.status !== "uninstalled" &&
+      pkg.materialization_status === "materialized" &&
+      (pkg.activation_status === "active" || pkg.activation_status === "live_verified"),
+  );
+}
 
 export function UseCasesClient() {
-  const [config, setConfig] = useState<UseCaseConfigResponse>(defaultUseCaseConfig);
+  const [config, setConfig] = useState<UseCaseConfigResponse>(defaultConfig);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,12 +45,12 @@ export function UseCasesClient() {
         if (!response.ok) {
           return;
         }
-        const nextConfig = (await response.json()) as UseCaseConfigResponse;
+        const payload = (await response.json()) as UseCaseConfigResponse;
         if (!cancelled) {
-          setConfig(nextConfig);
+          setConfig(payload);
         }
       } catch {
-        // Keep the initial lightweight shell if config fetch fails.
+        // Keep the shell visible if config fetch fails.
       }
     }
 
@@ -43,7 +62,7 @@ export function UseCasesClient() {
   }, []);
 
   const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});
-  const importedUseCases = projectImportedPackagesToUseCases(config.active_imported_use_cases ?? []);
+  const importedUseCases = projectImportedPackagesToUseCases(getImportedSource(config));
   const activeUseCases = [...importedUseCases, ...visibleUseCases];
 
   return (
