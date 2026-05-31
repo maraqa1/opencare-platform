@@ -174,12 +174,27 @@ class UseCaseTemplateStorage:
 
         # Legacy fallback: treat packages that completed live verification as promoted
         # so existing records remain visible until they are rewritten with the new field.
+        actions = record.get("actions", [])
+        verify_live_seen = False
+        demoted_after_verify = False
+        if isinstance(actions, list):
+            for event in actions:
+                if not isinstance(event, dict):
+                    continue
+                action = str(event.get("action") or "").strip().lower()
+                if action == "verify-live":
+                    verify_live_seen = True
+                elif verify_live_seen and action in {"exclude", "remove-operational", "uninstall"}:
+                    demoted_after_verify = True
+                    break
+
         return (
             record.get("enabled") is True
             and record.get("materialization_status") == "materialized"
             and record.get("activation_status") in {"active", "live_verified"}
             and record.get("live_verification_status") in {"degraded", "live_verified"}
-            and record.get("last_action") == "verify-live"
+            and verify_live_seen
+            and not demoted_after_verify
         )
 
     def get_package(self, package_id: str) -> dict[str, Any] | None:
@@ -296,7 +311,8 @@ class UseCaseTemplateStorage:
         record.setdefault("compile_report", {})
         record.setdefault("materialization_report", {})
         record.setdefault("live_verification_report", {})
-        record.setdefault("product_promotion_status", "pending")
+        if not record.get("product_promotion_status"):
+            record["product_promotion_status"] = "pending"
         record.setdefault("last_error", record.get("error_message", ""))
         with self._registry_guard():
             registry = self._load_registry_file(self.registry_path)

@@ -111,6 +111,39 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertEqual(len(active_packages), 1)
             self.assertEqual(active_packages[0]["id"], "pkg-promoted")
 
+    def test_legacy_promoted_package_survives_runtime_access_audit_events(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            storage.upsert_package(
+                {
+                    "id": "pkg-legacy",
+                    "package_id": "pkg-legacy",
+                    "slug": "patient-outcomes",
+                    "version": "1.0.0",
+                    "status": "degraded",
+                    "enabled": True,
+                    "materialization_status": "materialized",
+                    "activation_status": "active",
+                    "live_verification_status": "degraded",
+                    "product_promotion_status": None,
+                    "last_action": "patient-level drilldown access",
+                    "actions": [
+                        {"action": "upload"},
+                        {"action": "compile"},
+                        {"action": "materialize"},
+                        {"action": "activate"},
+                        {"action": "verify-live"},
+                        {"action": "patient-level drilldown access"},
+                    ],
+                }
+            )
+            storage.set_active_pointer("patient-outcomes", "pkg-legacy", "1.0.0")
+
+            active_packages = storage.list_active_packages()
+
+            self.assertEqual(len(active_packages), 1)
+            self.assertEqual(active_packages[0]["id"], "pkg-legacy")
+
 
 if __name__ == "__main__":
     unittest.main()
