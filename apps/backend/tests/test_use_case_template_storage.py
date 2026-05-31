@@ -224,6 +224,39 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertIsNotNone(record)
             self.assertEqual(record["id"], "golden-example@1.0.0")
 
+    def test_list_active_packages_recovers_promoted_package_when_registry_is_empty(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            staged_root = storage.staged_dir("golden-example", "1.0.0")
+            staged_root.mkdir(parents=True, exist_ok=True)
+            build_valid_package_tree(staged_root, slug="patient-outcomes")
+
+            for action, status in (
+                ("upload", "validated"),
+                ("compile", "compiled"),
+                ("materialize", "materialized"),
+                ("activate", "active"),
+                ("verify-live", "degraded"),
+            ):
+                storage.record_action(
+                    package_id="golden-example",
+                    slug="patient-outcomes",
+                    version="1.0.0",
+                    actor="portal-admin",
+                    action=action,
+                    status=status,
+                    validation_result="warning",
+                    log=f"{action} completed.",
+                )
+
+            storage.save_registry({"packages": {}, "active_versions": {}})
+
+            active_packages = storage.list_active_packages()
+
+            self.assertEqual(len(active_packages), 1)
+            self.assertEqual(active_packages[0]["slug"], "patient-outcomes")
+            self.assertEqual(active_packages[0]["product_promotion_status"], "promoted")
+
 
 if __name__ == "__main__":
     unittest.main()

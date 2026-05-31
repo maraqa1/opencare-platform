@@ -425,27 +425,36 @@ class UseCaseTemplateStorage:
         registry = self.load_registry()
         packages = registry.get("packages", {})
         active_versions = registry.get("active_versions", {})
+        if not isinstance(packages, dict):
+            packages = {}
+        package_records: dict[str, dict[str, Any]] = {
+            str(package_key): deepcopy(record)
+            for package_key, record in packages.items()
+            if isinstance(record, dict)
+        }
+        for recovered in self._recover_packages_from_disk():
+            recovered_key = str(recovered.get("id") or recovered.get("package_id"))
+            package_records.setdefault(recovered_key, deepcopy(recovered))
         active_records: list[dict[str, Any]] = []
         seen_keys: set[str] = set()
 
-        if isinstance(active_versions, dict) and isinstance(packages, dict):
+        if isinstance(active_versions, dict):
             for pointer in active_versions.values():
                 if not isinstance(pointer, dict):
                     continue
                 package_key = pointer.get("package_key")
                 if not isinstance(package_key, str):
                     continue
-                record = packages.get(package_key)
+                record = package_records.get(package_key)
                 if isinstance(record, dict) and self.is_product_promoted(record):
                     active_records.append(deepcopy(record))
                     seen_keys.add(package_key)
 
-        if isinstance(packages, dict):
-            for package_key, record in packages.items():
-                if package_key in seen_keys or not isinstance(record, dict):
-                    continue
-                if self.is_product_promoted(record):
-                    active_records.append(deepcopy(record))
+        for package_key, record in package_records.items():
+            if package_key in seen_keys or not isinstance(record, dict):
+                continue
+            if self.is_product_promoted(record):
+                active_records.append(deepcopy(record))
 
         active_records.sort(key=lambda candidate: str(candidate.get("last_action_at", "")), reverse=True)
         return active_records
