@@ -139,10 +139,6 @@ export type TabPayload = {
   };
 };
 
-type TabPayloadResponse = {
-  tab_payload?: TabPayload;
-};
-
 export type WorkspaceDefinition = {
   identity?: {
     package_id?: string;
@@ -252,13 +248,6 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
         ? activeTab === "overview" || activeTab === item.id || activeTab === routeSegment
         : activeTab === item.id || activeTab === routeSegment;
     })?.widgets ?? [];
-  const initialTabPayloadResponse = await getApiJson<TabPayloadResponse>({
-    path: `/api/v1/use-cases/${slug}/tabs/${selectedTab?.id ?? activeTab}`,
-    fallback: { tab_payload: undefined },
-    cacheMode: "no-store",
-  });
-  const initialTabPayload = initialTabPayloadResponse.tab_payload;
-
   return (
     <PageFrame
       eyebrow="Use Case Workspace"
@@ -298,7 +287,6 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
         selectedWidgetModels={selectedWidgetModels}
         allTabs={workspace.tabs ?? []}
         diagnosticsHref={diagnosticsHref}
-        initialTabPayload={initialTabPayload}
       />
     </PageFrame>
   );
