@@ -243,8 +243,11 @@ export default async function HomePage() {
           <Link className="button primary" href="/jazan-performance/admin">
             Configure Foundation
           </Link>
-          <Link className="secondary-link" href="/jazan-performance/early-warning">
+          <Link className="secondary-link" href="/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop?demo=1">
             Prepare Use Case
+          </Link>
+          <Link className="secondary-link" href="/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop?demo=1">
+            Urban Service Quality Loop
           </Link>
         </div>
         <p>Platform data status: Not connected</p>
