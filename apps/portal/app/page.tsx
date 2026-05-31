@@ -100,9 +100,9 @@ export default async function HomePage() {
         <Link key="use-cases" className="button primary" href="/use-cases">
           View Use Cases
         </Link>,
-        <Link key="status" className="secondary-link" href={defaultUseCaseHref}>
+        <a key="status" className="secondary-link" href={defaultUseCaseHref}>
           Open Primary Workspace
-        </Link>,
+        </a>,
       ]}
     >
       <KPISummaryBar />
@@ -133,20 +133,29 @@ export default async function HomePage() {
           </div>
           <div className="use-case-card-grid">
             {activeUseCases.map((useCase) => (
-              <Link
-                key={useCase.id}
-                href={
-                  useCase.status === "active"
-                    ? useCase.defaultHref ?? `/use-cases/${useCase.slug}/status`
-                    : "/use-cases"
-                }
-                className={`use-case-card ${useCase.status === "active" ? "active" : "muted"}`}
-              >
-                <span className="use-case-icon">{useCase.icon}</span>
-                <h4>{useCase.name}</h4>
-                <p>{useCase.summary}</p>
-                <span className="inline-link">{useCase.status === "active" ? useCase.ctaLabel ?? "Enter workspace" : "Coming soon"}</span>
-              </Link>
+              useCase.status === "active" ? (
+                <a
+                  key={useCase.id}
+                  href={useCase.defaultHref ?? `/use-cases/${useCase.slug}/status`}
+                  className="use-case-card active"
+                >
+                  <span className="use-case-icon">{useCase.icon}</span>
+                  <h4>{useCase.name}</h4>
+                  <p>{useCase.summary}</p>
+                  <span className="inline-link">{useCase.ctaLabel ?? "Enter workspace"}</span>
+                </a>
+              ) : (
+                <Link
+                  key={useCase.id}
+                  href="/use-cases"
+                  className="use-case-card muted"
+                >
+                  <span className="use-case-icon">{useCase.icon}</span>
+                  <h4>{useCase.name}</h4>
+                  <p>{useCase.summary}</p>
+                  <span className="inline-link">Coming soon</span>
+                </Link>
+              )
             ))}
           </div>
         </article>
