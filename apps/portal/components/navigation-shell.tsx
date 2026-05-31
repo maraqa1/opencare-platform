@@ -1,10 +1,12 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 import type { NavItem } from "@/config/navigation";
 import { getUseCaseByPath } from "@/lib/use-cases";
 
 type Props = {
-  pathname: string;
   navigation: NavItem[];
   children: ReactNode;
 };
@@ -116,7 +118,8 @@ function NavSection({
   );
 }
 
-export function NavigationShell({ pathname, navigation, children }: Props) {
+export function NavigationShell({ navigation, children }: Props) {
+  const pathname = usePathname() ?? "/";
   const topbar = getTopbarContext(pathname);
 
   return (

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 
 import { NavigationShell } from "@/components/navigation-shell";
 import { buildNavigation } from "@/config/navigation";
@@ -12,23 +11,17 @@ export const metadata: Metadata = {
   description: "Customer and admin portal for bed occupancy intelligence.",
 };
 
-async function getPathname() {
-  const headerStore = await headers();
-  return headerStore.get("x-pathname") ?? "/";
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const pathname = await getPathname();
-  const navigation = await buildNavigation("admin");
+  const navigation = buildNavigation("admin");
 
   return (
     <html lang="en">
       <body>
-        <NavigationShell pathname={pathname} navigation={navigation}>
+        <NavigationShell navigation={navigation}>
           {children}
         </NavigationShell>
       </body>

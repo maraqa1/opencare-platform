@@ -15,6 +15,6 @@ const staticNav: NavItem[] = [
   { label: "Administration", href: "/admin", icon: "settings", requiresRole: "admin" },
 ];
 
-export async function buildNavigation(userRole: string): Promise<NavItem[]> {
+export function buildNavigation(userRole: string): NavItem[] {
   return staticNav.filter((item) => !item.requiresRole || item.requiresRole === userRole);
 }
