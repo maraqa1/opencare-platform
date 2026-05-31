@@ -74,6 +74,9 @@ class UseCaseTemplateStorage:
     def original_zip_path(self, package_id: str, version: str) -> Path:
         return self.upload_dir(package_id, version) / "original.zip"
 
+    def package_snapshot_path(self, package_id: str, version: str) -> Path:
+        return self.log_dir(package_id, version) / "package-state.yaml"
+
     @staticmethod
     def _empty_registry() -> dict[str, Any]:
         return {"packages": {}, "active_versions": {}}
@@ -299,6 +302,9 @@ class UseCaseTemplateStorage:
                 record = packages.get(package_key) if isinstance(packages, dict) else None
                 if isinstance(record, dict):
                     return deepcopy(record)
+                recovered = self._recover_package_by_ref(package_key)
+                if isinstance(recovered, dict):
+                    return deepcopy(recovered)
 
         candidates = [
             record
@@ -341,6 +347,10 @@ class UseCaseTemplateStorage:
         return None
 
     def _recover_package_record(self, package_id: str, version: str) -> dict[str, Any] | None:
+        snapshot = self._load_package_snapshot(package_id, version)
+        if snapshot:
+            return snapshot
+
         staged_dir = self.staged_dir(package_id, version)
         installed_dir = self.installed_dir(package_id, version)
         package_root = staged_dir if staged_dir.exists() else installed_dir
@@ -455,6 +465,18 @@ class UseCaseTemplateStorage:
         }
         return record
 
+    def _load_package_snapshot(self, package_id: str, version: str) -> dict[str, Any] | None:
+        snapshot_path = self.package_snapshot_path(package_id, version)
+        if not snapshot_path.exists():
+            return None
+        try:
+            payload = yaml.safe_load(snapshot_path.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        return deepcopy(payload)
+
     def list_materialized_packages(self) -> list[dict[str, Any]]:
         return [
             record
@@ -520,6 +542,7 @@ class UseCaseTemplateStorage:
             packages[package_key] = deepcopy(record)
             self._write_yaml_atomic(self.registry_path, registry)
             self._write_yaml_atomic(self.registry_snapshot_path, registry)
+            self._write_package_snapshot(record)
         return deepcopy(record)
 
     def save_original_zip(self, package_id: str, version: str, content: bytes) -> Path:
@@ -643,8 +666,18 @@ class UseCaseTemplateStorage:
                 packages[package_key] = deepcopy(record)
                 self._write_yaml_atomic(self.registry_path, registry)
                 self._write_yaml_atomic(self.registry_snapshot_path, registry)
+                self._write_package_snapshot(record)
 
         return event
+
+    def _write_package_snapshot(self, record: dict[str, Any]) -> None:
+        package_id = str(record.get("package_id") or "")
+        version = str(record.get("version") or "")
+        if not package_id or not version:
+            return
+        snapshot_path = self.package_snapshot_path(package_id, version)
+        snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+        self._write_yaml_atomic(snapshot_path, deepcopy(record))
 
     def safe_file_tree(self, package_id: str, version: str, state: str = "staged") -> list[dict[str, Any]]:
         base = self.staged_dir(package_id, version) if state == "staged" else self.installed_dir(package_id, version)

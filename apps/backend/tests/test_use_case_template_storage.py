@@ -340,6 +340,49 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertIsNotNone(active_record)
             self.assertEqual(active_record["version"], "1.7.0")
 
+    def test_recovered_active_package_uses_persisted_snapshot_runtime_definition(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            storage.upsert_package(
+                {
+                    "id": "golden-example@1.7.0",
+                    "package_id": "golden-example",
+                    "slug": "patient-outcomes",
+                    "name": "Patient Outcomes",
+                    "version": "1.7.0",
+                    "status": "degraded",
+                    "enabled": True,
+                    "package_validation_status": "warning",
+                    "compile_status": "compiled",
+                    "materialization_status": "materialized",
+                    "activation_status": "active",
+                    "live_verification_status": "degraded",
+                    "product_promotion_status": "promoted",
+                    "runtime_definition": {
+                        "identity": {"slug": "patient-outcomes", "name": "Patient Outcomes", "version": "1.7.0"},
+                        "workspace_route": "/use-cases/patient-outcomes",
+                        "tabs": [{"id": "overview", "route": "/use-cases/patient-outcomes"}],
+                        "dashboard_model": {"version": 1, "tabs": [{"id": "overview", "widgets": [{"id": "readmission"}]}]},
+                    },
+                    "last_action": "verify-live",
+                    "last_action_at": "2026-05-31T19:00:00Z",
+                    "actions": [{"action": "verify-live", "timestamp": "2026-05-31T19:00:00Z"}],
+                }
+            )
+            storage.set_active_pointer("patient-outcomes", "golden-example@1.7.0", "1.7.0")
+            storage.save_registry({"packages": {}, "active_versions": {"patient-outcomes": {"package_key": "golden-example@1.7.0", "version": "1.7.0"}}})
+
+            active_record = storage.get_active_package_by_slug("patient-outcomes")
+
+            self.assertIsNotNone(active_record)
+            assert active_record is not None
+            self.assertEqual(active_record["version"], "1.7.0")
+            self.assertEqual(active_record["runtime_definition"]["workspace_route"], "/use-cases/patient-outcomes")
+            self.assertEqual(
+                active_record["runtime_definition"]["dashboard_model"]["tabs"][0]["widgets"][0]["id"],
+                "readmission",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
