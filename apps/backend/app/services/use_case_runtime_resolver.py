@@ -229,21 +229,22 @@ class UseCaseRuntimeResolver:
         }
 
     def _sample_endpoint_payload(self, slug: str, endpoint: str) -> dict[str, Any]:
-        if endpoint == "/overview":
+        relative_endpoint = self._relative_endpoint(endpoint, f"/api/v1/use-cases/{slug}")
+        if relative_endpoint == "/overview":
             return self._sample_overview_payload(slug)
-        if endpoint == "/kpis":
+        if relative_endpoint == "/kpis":
             return self._sample_kpis_payload()
-        if endpoint == "/filters":
+        if relative_endpoint == "/filters":
             return self._sample_filters_payload()
-        if endpoint == "/trends":
+        if relative_endpoint == "/trends":
             return self._sample_trend_payload()
-        if endpoint == "/variation":
+        if relative_endpoint == "/variation":
             return self._sample_variation_payload()
-        if endpoint == "/governance":
+        if relative_endpoint == "/governance":
             return self._sample_governance_payload(slug)
-        if endpoint.startswith("/queues/"):
-            return self._sample_queue_payload(endpoint.rsplit("/", 1)[-1])
-        if endpoint == "/drilldown":
+        if relative_endpoint.startswith("/queues/"):
+            return self._sample_queue_payload(relative_endpoint.rsplit("/", 1)[-1])
+        if relative_endpoint == "/drilldown":
             return self._sample_queue_payload("drilldown")
         return {
             "data": [],
@@ -258,6 +259,15 @@ class UseCaseRuntimeResolver:
         return endpoint if endpoint.startswith("/") else f"/{endpoint}"
 
     @staticmethod
+    def _relative_endpoint(endpoint: str, route_prefix: str | None) -> str:
+        normalized_endpoint = UseCaseRuntimeResolver._normalize_endpoint(endpoint)
+        normalized_prefix = (route_prefix or "").rstrip("/")
+        if normalized_prefix and normalized_endpoint.startswith(normalized_prefix):
+            relative = normalized_endpoint[len(normalized_prefix):] or "/"
+            return relative if relative.startswith("/") else f"/{relative}"
+        return normalized_endpoint
+
+    @staticmethod
     def _route_segment(route: str | None) -> str:
         if not route:
             return ""
@@ -268,11 +278,14 @@ class UseCaseRuntimeResolver:
         bindings = runtime_definition.get("backend_endpoint_bindings", {})
         endpoints = bindings.get("endpoints", [])
         normalized_endpoint = self._normalize_endpoint(endpoint)
+        route_prefix = str(bindings.get("route_prefix") or "").rstrip("/")
+        relative_endpoint = self._relative_endpoint(normalized_endpoint, route_prefix)
         match = next(
             (
                 candidate
                 for candidate in endpoints
-                if isinstance(candidate, dict) and candidate.get("path") == normalized_endpoint
+                if isinstance(candidate, dict)
+                and self._normalize_endpoint(str(candidate.get("path") or "")) in {normalized_endpoint, relative_endpoint}
             ),
             None,
         )

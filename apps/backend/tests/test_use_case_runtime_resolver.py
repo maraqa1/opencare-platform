@@ -10,9 +10,33 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tests.use_case_template_test_helpers import build_valid_package_tree, build_zip_bytes, client, package_test_context
+from app.services.use_case_runtime_resolver import UseCaseRuntimeResolver
 
 
 class UseCaseRuntimeResolverTests(unittest.TestCase):
+    def test_tab_payload_resolves_components_with_absolute_endpoint_paths(self):
+        resolver = UseCaseRuntimeResolver(storage=None)  # type: ignore[arg-type]
+        runtime_definition = {
+            "backend_endpoint_bindings": {
+                "route_prefix": "/api/v1/use-cases/patient-outcomes",
+                "endpoints": [
+                    {
+                        "path": "/overview",
+                        "phi_handling": None,
+                    }
+                ],
+            }
+        }
+
+        match = resolver._endpoint_binding(runtime_definition, "/api/v1/use-cases/patient-outcomes/overview")
+        payload = resolver._sample_endpoint_payload(
+            "patient-outcomes",
+            "/api/v1/use-cases/patient-outcomes/overview",
+        )
+
+        self.assertEqual(match["path"], "/overview")
+        self.assertFalse(payload["meta"]["empty"])
+
     def test_materialized_package_resolves_workspace_and_kpis(self):
         with tempfile.TemporaryDirectory(prefix="package-") as temp_dir:
             root = Path(temp_dir) / "golden-package"
