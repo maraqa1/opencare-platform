@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.services.use_case_template_storage import UseCaseTemplateStorage
+from use_case_template_test_helpers import build_valid_package_tree
 
 
 class UseCaseTemplateStorageTests(unittest.TestCase):
@@ -183,6 +184,45 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertEqual(record["last_action"], "verify-live")
             self.assertEqual(record["product_promotion_status"], "promoted")
             self.assertEqual(record["actions"][-1]["action"], "restricted PHI attribute access")
+
+    def test_list_packages_recovers_from_staged_package_when_registry_is_empty(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            staged_root = storage.staged_dir("golden-example", "1.0.0")
+            staged_root.mkdir(parents=True, exist_ok=True)
+            build_valid_package_tree(staged_root, slug="patient-outcomes")
+
+            storage.record_action(
+                package_id="golden-example",
+                slug="patient-outcomes",
+                version="1.0.0",
+                actor="portal-admin",
+                action="upload",
+                status="validated",
+                validation_result="warning",
+                log="Package uploaded.",
+            )
+            storage.record_action(
+                package_id="golden-example",
+                slug="patient-outcomes",
+                version="1.0.0",
+                actor="portal-admin",
+                action="compile",
+                status="compiled",
+                validation_result="warning",
+                log="Package compiled.",
+            )
+
+            storage.save_registry({"packages": {}, "active_versions": {}})
+
+            packages = storage.list_packages()
+            record = storage.get_package("golden-example")
+
+            self.assertEqual(len(packages), 1)
+            self.assertEqual(packages[0]["slug"], "patient-outcomes")
+            self.assertEqual(packages[0]["compile_status"], "compiled")
+            self.assertIsNotNone(record)
+            self.assertEqual(record["id"], "golden-example@1.0.0")
 
 
 if __name__ == "__main__":

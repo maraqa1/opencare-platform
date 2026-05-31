@@ -163,8 +163,18 @@ class UseCaseTemplateStorage:
         registry = self.load_registry()
         packages = registry.get("packages", {})
         if not isinstance(packages, dict):
-            return []
-        return [deepcopy(record) for record in packages.values() if isinstance(record, dict)]
+            packages = {}
+        records = [deepcopy(record) for record in packages.values() if isinstance(record, dict)]
+        known_keys = {
+            str(record.get("id") or record.get("package_id"))
+            for record in records
+            if isinstance(record, dict)
+        }
+        for recovered in self._recover_packages_from_disk():
+            recovered_key = str(recovered.get("id") or recovered.get("package_id"))
+            if recovered_key not in known_keys:
+                records.append(recovered)
+        return records
 
     @staticmethod
     def is_product_promoted(record: dict[str, Any]) -> bool:
@@ -201,7 +211,7 @@ class UseCaseTemplateStorage:
         registry = self.load_registry()
         packages = registry.get("packages", {})
         if not isinstance(packages, dict):
-            return None
+            return self._recover_package_by_ref(package_id)
         record = packages.get(package_id)
         if isinstance(record, dict):
             return deepcopy(record)
@@ -212,7 +222,7 @@ class UseCaseTemplateStorage:
             if isinstance(candidate, dict) and candidate.get("package_id") == package_id
         ]
         if not matches:
-            return None
+            return self._recover_package_by_ref(package_id)
         matches.sort(key=lambda candidate: str(candidate.get("uploaded_at", "")), reverse=True)
         return deepcopy(matches[0])
 
@@ -263,6 +273,146 @@ class UseCaseTemplateStorage:
         ]
         candidates.sort(key=lambda candidate: str(candidate.get("last_action_at", "")), reverse=True)
         return deepcopy(candidates[0]) if candidates else None
+
+    def _recover_packages_from_disk(self) -> list[dict[str, Any]]:
+        recovered: list[dict[str, Any]] = []
+        seen_keys: set[str] = set()
+        roots = (self.staged_root, self.installed_root)
+        for root in roots:
+            if not root.exists():
+                continue
+            for package_dir in root.iterdir():
+                if not package_dir.is_dir():
+                    continue
+                for version_dir in package_dir.iterdir():
+                    if not version_dir.is_dir():
+                        continue
+                    record = self._recover_package_record(package_dir.name, version_dir.name)
+                    if not record:
+                        continue
+                    package_key = str(record.get("id") or record.get("package_id"))
+                    if package_key in seen_keys:
+                        continue
+                    recovered.append(record)
+                    seen_keys.add(package_key)
+        recovered.sort(key=lambda candidate: str(candidate.get("uploaded_at", "")), reverse=True)
+        return recovered
+
+    def _recover_package_by_ref(self, package_id: str) -> dict[str, Any] | None:
+        exact_key = package_id.strip()
+        for record in self._recover_packages_from_disk():
+            record_key = str(record.get("id") or record.get("package_id"))
+            if record_key == exact_key or str(record.get("package_id")) == exact_key:
+                return deepcopy(record)
+        return None
+
+    def _recover_package_record(self, package_id: str, version: str) -> dict[str, Any] | None:
+        staged_dir = self.staged_dir(package_id, version)
+        installed_dir = self.installed_dir(package_id, version)
+        package_root = staged_dir if staged_dir.exists() else installed_dir
+        package_yaml_path = package_root / "package.yaml"
+        if not package_yaml_path.exists():
+            return None
+
+        payload = yaml.safe_load(package_yaml_path.read_text(encoding="utf-8")) or {}
+        if not isinstance(payload, dict):
+            return None
+        metadata = payload.get("metadata", {}) if isinstance(payload.get("metadata"), dict) else {}
+        slug = str(metadata.get("slug") or payload.get("package_id") or package_id)
+        record_id = f"{package_id}@{version}"
+        log_dir = self.log_dir(package_id, version)
+        actions: list[dict[str, Any]] = []
+        if log_dir.exists():
+            for log_path in sorted(log_dir.glob("*.yaml")):
+                try:
+                    event = yaml.safe_load(log_path.read_text(encoding="utf-8")) or {}
+                except yaml.YAMLError:
+                    continue
+                if isinstance(event, dict):
+                    actions.append(event)
+
+        compile_status = "parsed"
+        materialization_status = "staged"
+        activation_status = "previewable"
+        live_verification_status = "previewable"
+        package_validation_status = "uploaded"
+        enabled = False
+        product_promotion_status = "pending"
+        status = "uploaded"
+
+        for event in actions:
+            action = str(event.get("action") or "").strip().lower()
+            event_status = str(event.get("status") or status).strip().lower() or status
+            status = event_status
+            validation_result = str(event.get("validation_result") or "").strip().lower()
+            if validation_result:
+                package_validation_status = validation_result
+            if action == "upload":
+                compile_status = "parsed"
+                materialization_status = "staged"
+                activation_status = "previewable"
+                live_verification_status = "previewable"
+                enabled = False
+            elif action == "compile":
+                compile_status = "compiled"
+            elif action == "materialize":
+                materialization_status = "materialized"
+            elif action == "activate":
+                activation_status = "active"
+                enabled = True
+            elif action == "verify-live":
+                live_verification_status = event_status
+                product_promotion_status = "promoted"
+            elif action == "exclude":
+                activation_status = "excluded"
+                product_promotion_status = "excluded"
+                enabled = False
+            elif action == "remove-operational":
+                product_promotion_status = "excluded"
+            elif action == "uninstall":
+                activation_status = "uninstalled"
+                product_promotion_status = "uninstalled"
+                enabled = False
+
+        uploaded_at = actions[0].get("timestamp") if actions else utc_now_iso()
+        last_event = actions[-1] if actions else {}
+        record: dict[str, Any] = {
+            "id": record_id,
+            "package_id": package_id,
+            "slug": slug,
+            "name": metadata.get("name") or slug,
+            "version": version,
+            "domain": metadata.get("domain"),
+            "owner": metadata.get("owner"),
+            "uploaded_by": last_event.get("actor") if actions else "unknown",
+            "uploaded_at": uploaded_at,
+            "status": status,
+            "enabled": enabled,
+            "package_validation_status": package_validation_status,
+            "compile_status": compile_status,
+            "materialization_status": materialization_status,
+            "activation_status": activation_status,
+            "live_verification_status": live_verification_status,
+            "product_promotion_status": product_promotion_status,
+            "original_zip_path": str(self.original_zip_path(package_id, version)),
+            "staged_path": str(staged_dir),
+            "installed_path": str(installed_dir),
+            "package_yaml": payload,
+            "preview_summary": {
+                "package_id": package_id,
+                "slug": slug,
+                "version": version,
+                "name": metadata.get("name") or slug,
+                "domain": metadata.get("domain"),
+                "owner": metadata.get("owner"),
+            },
+            "last_action": last_event.get("action") if actions else "recovered",
+            "last_action_at": last_event.get("timestamp") if actions else uploaded_at,
+            "error_message": str(last_event.get("error_message") or ""),
+            "last_error": str(last_event.get("error_message") or ""),
+            "actions": actions,
+        }
+        return record
 
     def list_materialized_packages(self) -> list[dict[str, Any]]:
         return [
