@@ -2196,9 +2196,16 @@ function DecisionRhythmWorkspacePage({ pillar, actionKey }: { pillar: JazanPilla
               {correctiveActionQueue.map((row) => (
                 <tr className={row.key === selectedActionKey ? "selected" : undefined} key={row.ticket}>
                   <td>
-                    <Link className="decision-action-link" href={`${pillar.route}?action=${row.key}#focused-action`}>
-                      {row.action}
-                    </Link>
+                    {row.key in decisionActionDetails ? (
+                      <Link className="decision-action-link" href={`${pillar.route}?action=${row.key}#focused-action`}>
+                        {row.action}
+                      </Link>
+                    ) : (
+                      <span className="decision-action-static">
+                        {row.action}
+                        <small>No focused demo</small>
+                      </span>
+                    )}
                   </td>
                   <td>{row.impacted}</td>
                   <td><StrategicStatusChip status={row.lifecycle.toLowerCase().replaceAll(" ", "_")} /></td>
