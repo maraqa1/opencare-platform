@@ -67,6 +67,48 @@ const demoMetrics = [
   ["Open corrective actions", "14", "8 municipalities"],
 ];
 
+const dashboardKpis = [
+  ["Closure Quality", "100%", "Target >=90%"],
+  ["Permit Time", "1.2 days", "Target <=1.4"],
+  ["Coverage", "96%", "Target >=95%"],
+  ["Readiness", "97%", "Target >=90%"],
+  ["Satisfaction", "4.2 / 5", "Target >=4.0"],
+];
+
+const dashboardKpiRows = [
+  ["Visual distortion closure quality", "valid closed / total * 100", ">=90%", "100%", "On track", "Field Compliance", "visual_distortion_cases"],
+  ["Average permit issuance time", "avg issued - submitted", "<=1.4d", "1.2d", "On track", "Licensing", "permit_requests"],
+  ["Urban service coverage", "covered / total * 100", ">=95%", "96%", "On track", "Services Agency", "service_coverage_assets"],
+  ["Emergency readiness", "weighted readiness score", ">=90%", "97%", "On track", "Emergency Team", "readiness_checks"],
+  ["Citizen satisfaction", "average score", ">=4.0", "4.2", "On track", "Service Quality", "surveys"],
+  ["Service request closure rate", "closed / total * 100", ">=90%", "91%", "On track", "Services Agency", "service_requests"],
+];
+
+const kpiObjectiveStats = [
+  ["Municipalities", "25 / 25"],
+  ["KPIs", "6"],
+  ["Data sources", "9"],
+  ["Alignment", "100%"],
+];
+
+const decisionStats = [
+  ["New decisions", "7"],
+  ["Under review", "5"],
+  ["Approved", "9"],
+  ["In progress", "12"],
+  ["Overdue", "3"],
+  ["Escalated", "2"],
+];
+
+const outcomeStats = [
+  ["Total actions", "12"],
+  ["In progress", "6"],
+  ["Awaiting evidence", "2"],
+  ["Verified", "2"],
+  ["Closed", "2"],
+  ["Avg improvement", "+10.2 pp"],
+];
+
 const goldenThread = [
   ["Pillar 1", "Objective certified", "Service quality and visual-distortion response aligned to Jazan strategy."],
   ["Pillar 2", "KPI contract", "Targets, thresholds, owners, and source systems defined."],
@@ -93,15 +135,18 @@ const decisionButtons = [
 ];
 
 const decisionRows = [
-  ["JZN-DEC-1007", "Samtah · visual distortion", "78%", "Field Compliance", "Joint inspection sweep", "Proposed"],
-  ["JZN-DEC-1011", "Sabya · service closure", "84%", "Services Agency", "Field response rebalance", "Approved"],
-  ["JZN-DEC-1015", "Abu Arish · permits", "72%", "Licensing Department", "Permit SLA recovery", "In review"],
+  ["JZN-DEC-1007", "Samtah", "Visual distortion complaints", "78%", "Joint inspection sweep + owner notification", "Field Compliance", "+5 days", "Evidence pending"],
+  ["JZN-DEC-1011", "Sabya", "Service closure delay", "84%", "Rebalance field-response capacity", "Services Agency", "+23 days", "In progress"],
+  ["JZN-DEC-1015", "Abu Arish", "Permit SLA breach", "72%", "Permit backlog recovery sprint", "Licensing Department", "+14 days", "Under review"],
+  ["JZN-DEC-1020", "Municipality 13", "Readiness degradation", "69%", "Emergency readiness checklist refresh", "Emergency Team", "+10 days", "Approved"],
+  ["JZN-DEC-1024", "Jazan Central", "Citizen satisfaction drop", "64%", "Service center quality review", "Service Quality", "+21 days", "Escalate"],
 ];
 
 const recoveryRows = [
-  ["Samtah visual distortion", "82%", "91%", "+9pp", "Evidence submitted"],
-  ["Sabya service closure", "68%", "88%", "+20pp", "In progress"],
-  ["Abu Arish permit SLA", "2.4d", "1.6d", "improving", "Review"],
+  ["Visual distortion closure quality", "82%", ">=90%", "91%", "Recovered", "+9 pp"],
+  ["Service request closure rate", "68%", ">=90%", "88%", "Improving", "+20 pp"],
+  ["Average permit issuance time", "2.4d", "<=1.4d", "1.6d", "Watch", "-0.8d"],
+  ["Citizen satisfaction", "3.7 / 5", ">=4.0", "4.2 / 5", "Recovered", "+0.5"],
 ];
 
 const evidenceGroups = [
@@ -169,60 +214,99 @@ function EvidenceGrid() {
   );
 }
 
+function DashboardMetricStrip({ items }: { items: string[][] }) {
+  return (
+    <div className="usecase-dashboard-metrics">
+      {items.map(([label, value, note]) => (
+        <article key={label}>
+          <span>{label}</span>
+          <strong>{value}</strong>
+          {note ? <p>{note}</p> : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function StatusDonut({ value, tone = "green" }: { value: string; tone?: "green" | "orange" | "red" }) {
+  return (
+    <div className={`usecase-donut ${tone}`} aria-label={`${value} status`}>
+      <strong>{value}</strong>
+      <span>status</span>
+    </div>
+  );
+}
+
+function NumberedFlow({ labels }: { labels: string[] }) {
+  return (
+    <div className="usecase-numbered-flow">
+      {labels.map((label, index) => (
+        <article key={label}>
+          <span>{index + 1}</span>
+          <p>{label}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function OverviewScreen({ demo }: { demo: boolean }) {
   return (
     <>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Golden thread overview</p>
-        <h2>Strategy to recovery loop</h2>
-        {demo ? (
-          <div className="usecase-thread">
-            {goldenThread.map(([stage, title, text]) => (
-              <article key={stage}>
-                <span>{stage}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
+      <section className="usecase-dashboard-row hero-row">
+        <article className="panel usecase-section golden-thread-card">
+          <p className="eyebrow">Golden thread</p>
+          <h2>Closed-loop operating cycle</h2>
+          <p>Set targets, predict risk, recommend action, track execution, measure recovery, and learn.</p>
+          {demo ? (
+            <NumberedFlow labels={["Strategic objective", "KPI contract", "Certified data", "Predict & recommend", "Track", "Improve"]} />
+          ) : (
+            <EmptyPanel />
+          )}
+        </article>
+        <article className="panel usecase-section status-card">
+          <p className="eyebrow">Overall status</p>
+          {demo ? <StatusDonut value="94%" /> : <EmptyPanel />}
+        </article>
       </section>
 
       <section className="panel usecase-section">
         <p className="eyebrow">Headline KPI strip</p>
-        <h2>Urban service signal</h2>
-        <MetricStrip demo={demo} />
+        <h2>Urban service quality signal</h2>
+        {demo ? <DashboardMetricStrip items={dashboardKpis} /> : <MetricStrip demo={false} />}
       </section>
 
-      <section className="usecase-two-column">
-        <article className="panel usecase-section">
-          <p className="eyebrow">Risk case preview</p>
-          <h2>Samtah district 4 visual distortion</h2>
-          {demo ? (
-            <div className="usecase-risk-card">
-              <strong>78% breach probability</strong>
-              <p>RNN forecast predicts complaint-closure SLA breach within 4 weeks; anomaly detector confirms +287% complaint surge.</p>
-              <span>Decision candidate: JZN-DEC-1007</span>
-            </div>
-          ) : (
-            <EmptyPanel />
-          )}
-        </article>
-        <article className="panel usecase-section">
-          <p className="eyebrow">Recommendation preview</p>
-          <h2>Human-in-the-loop action</h2>
-          {demo ? (
-            <div className="usecase-risk-card">
-              <strong>Joint inspection sweep</strong>
-              <p>Recommendation lookup found 22 comparable clusters with average resolution in 28-35 days.</p>
-              <span>Owner: Field Compliance</span>
-            </div>
-          ) : (
-            <EmptyPanel />
-          )}
-        </article>
+      <section className="usecase-dashboard-row three-card-row">
+        {demo ? (
+          <>
+            <article className="panel usecase-section big-risk-card">
+              <p className="eyebrow">Top Risk Municipality</p>
+              <h2>Municipality 13 <span>High risk</span></h2>
+              <p>Risk score</p>
+              <strong>84 / 100</strong>
+              <p>Breach probability: 78%</p>
+            </article>
+            <article className="panel usecase-section">
+              <p className="eyebrow">Recommended Intervention</p>
+              <h2>Field-response rebalancing + SLA escalation + repeat-zone prioritization.</h2>
+              <p>Similar cases: 3</p>
+              <p>Expected lift: +9 to +13 pp</p>
+            </article>
+            <article className="panel usecase-section action-status-card">
+              <p className="eyebrow">Active Corrective Actions</p>
+              <StatusDonut value="62%" tone="orange" />
+              <table>
+                <tbody>
+                  {["Approved 7", "In progress 12", "Evidence 3", "Closed 18"].map((item) => (
+                    <tr key={item}><td>{item}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </article>
+          </>
+        ) : (
+          <EmptyPanel />
+        )}
       </section>
 
       <section className="panel usecase-section">
@@ -237,22 +321,30 @@ function OverviewScreen({ demo }: { demo: boolean }) {
 function KpiContractScreen({ demo }: { demo: boolean }) {
   return (
     <>
-      <section className="panel usecase-section">
+      <section className="panel usecase-section objective-contract-card">
         <p className="eyebrow">Strategic objective</p>
         <h2>Sustain and improve municipal service quality and visual-distortion response</h2>
-        <p>Aligned to Vision 2030 service excellence, ministry municipal transformation, and Jazan quality-of-life improvement.</p>
+        {demo ? (
+          <div className="usecase-dashboard-metrics compact">
+            {kpiObjectiveStats.map(([label, value]) => (
+              <article key={label}><span>{label}</span><strong>{value}</strong></article>
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel />
+        )}
       </section>
       <section className="panel usecase-section">
-        <p className="eyebrow">KPI contract table</p>
-        <h2>Definitions, targets, owners, and sources</h2>
+        <p className="eyebrow">Governed KPI contract</p>
+        <h2>Definitions, targets, current status, owners, and sources</h2>
         {demo ? (
           <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
-                <tr>{["KPI", "Formula", "Target", "Owner", "Source"].map((column) => <th key={column}>{column}</th>)}</tr>
+                <tr>{["KPI", "Formula", "Target", "Current", "Status", "Owner", "Source"].map((column) => <th key={column}>{column}</th>)}</tr>
               </thead>
               <tbody>
-                {kpis.map((row) => (
+                {dashboardKpiRows.map((row) => (
                   <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
                 ))}
               </tbody>
@@ -262,6 +354,11 @@ function KpiContractScreen({ demo }: { demo: boolean }) {
           <EmptyPanel />
         )}
       </section>
+      <section className="panel usecase-section">
+        <p className="eyebrow">Notes</p>
+        <h2>Thresholds and accountability</h2>
+        <p>Green is on track, amber is at risk, and red is off track. Owners and data owners are explicit so every KPI is auditable and actionable.</p>
+      </section>
     </>
   );
 }
@@ -270,35 +367,51 @@ function ModelIntelligenceScreen({ demo }: { demo: boolean }) {
   return (
     <>
       <section className="panel usecase-section">
-        <p className="eyebrow">Data lineage</p>
-        <h2>Certified data to transparent decision candidates</h2>
+        <p className="eyebrow">Certified lineage</p>
+        <h2>Source systems to decision layer</h2>
         {demo ? (
-          <div className="usecase-lineage">
-            {["source_jazan", "staging", "analytics marts", "output models", "decision candidates"].map((stage) => (
-              <span key={stage}>{stage}</span>
-            ))}
-          </div>
+          <NumberedFlow labels={["source systems", "staging", "analytics mart", "model outputs", "decision layer"]} />
+        ) : (
+          <EmptyPanel />
+        )}
+      </section>
+      <section className="usecase-dashboard-row model-layout">
+        {demo ? (
+          <>
+            <article className="panel usecase-section big-risk-card">
+              <p className="eyebrow">High Risk Municipality</p>
+              <h2>Municipality 13 <span>High risk</span></h2>
+              <p>Risk score</p>
+              <strong>84 / 100</strong>
+              <p>Breach probability</p>
+              <strong className="blue">78%</strong>
+              <p>Top driver: visual distortion closure quality and repeated complaints.</p>
+            </article>
+            <div className="usecase-card-grid model-cards">
+              <article><h3>RNN Forecast</h3><strong>78% probability of missing target</strong><p>GRU/LSTM runtime</p></article>
+              <article><h3>Anomaly Detection</h3><strong>+23% resolution-time deviation</strong><p>z-score vs history</p></article>
+              <article><h3>Composite Risk Score</h3><strong>84 / 100 high risk</strong><StatusDonut value="84%" tone="red" /></article>
+              <article><h3>Recommendation Lookup</h3><strong>Field-response rebalancing</strong><p>similar cases: 3</p></article>
+            </div>
+          </>
         ) : (
           <EmptyPanel />
         )}
       </section>
       <section className="panel usecase-section">
-        <p className="eyebrow">Model intelligence</p>
-        <h2>Forecast, anomaly, risk, and recommendation layer</h2>
+        <p className="eyebrow">Runtime run summary</p>
+        <h2>Latest scoring run</h2>
         {demo ? (
-          <div className="usecase-card-grid">
-            {models.map(([title, method, text, output]) => (
-              <article key={title}>
-                <span>{method}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-                <code>{output}</code>
-              </article>
-            ))}
+          <div className="jazan-table-wrap strategic-scroll-table">
+            <table className="table jazan-data-table">
+              <thead><tr>{["Runtime", "Last run", "Rows", "Status"].map((column) => <th key={column}>{column}</th>)}</tr></thead>
+              <tbody>
+                <tr><td>RNN forecast</td><td>12 May 2025 02:00</td><td>300</td><td>Success</td></tr>
+                <tr><td>Anomaly detector</td><td>12 May 2025 02:10</td><td>42</td><td>Success</td></tr>
+              </tbody>
+            </table>
           </div>
-        ) : (
-          <EmptyPanel />
-        )}
+        ) : <EmptyPanel />}
       </section>
     </>
   );
@@ -308,13 +421,18 @@ function DecisionTrackerScreen({ demo }: { demo: boolean }) {
   return (
     <>
       <section className="panel usecase-section">
-        <p className="eyebrow">Generated decision candidates</p>
-        <h2>Model flags awaiting review</h2>
+        <p className="eyebrow">Decision Command Centre</p>
+        <h2>Queue status</h2>
+        {demo ? <DashboardMetricStrip items={decisionStats} /> : <MetricStrip demo={false} />}
+      </section>
+      <section className="panel usecase-section">
+        <p className="eyebrow">Decision queue</p>
+        <h2>Generated decisions requiring action</h2>
         {demo ? (
           <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
-                <tr>{["Decision", "Risk", "Probability", "Owner", "Recommendation", "Status"].map((column) => <th key={column}>{column}</th>)}</tr>
+                <tr>{["Decision ID", "Municipality", "Risk", "Breach prob.", "Recommended action", "Owner", "Due", "Actions"].map((column) => <th key={column}>{column}</th>)}</tr>
               </thead>
               <tbody>
                 {decisionRows.map((row) => (
@@ -327,18 +445,19 @@ function DecisionTrackerScreen({ demo }: { demo: boolean }) {
           <EmptyPanel />
         )}
       </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Controlled action buttons</p>
-        <h2>Portal actions backed by audited workflow endpoints</h2>
-        <div className="usecase-action-grid">
-          {decisionButtons.map(([label, endpoint]) => (
-            <article key={label}>
-              <strong>{label}</strong>
-              <code>{endpoint}</code>
-              <p>{demo ? "Demo only - backend workflow contract defined" : "Not connected"}</p>
-            </article>
-          ))}
-        </div>
+      <section className="usecase-dashboard-row">
+        <article className="panel usecase-section action-button-legend">
+          <p className="eyebrow">Action button legend</p>
+          <h2>Controlled actions</h2>
+          <div>
+            {["Approve", "Request Revision", "Escalate", "Create Ticket", "Email Owner"].map((item) => <span key={item}>{item}</span>)}
+          </div>
+        </article>
+        <article className="panel usecase-section">
+          <p className="eyebrow">Generated escalation event</p>
+          <h2>Audit-safe backend workflow</h2>
+          <p>When the user clicks Escalate or Create Ticket, the backend writes an action event, creates an escalation request, and adds email or ticket records to the notification outbox.</p>
+        </article>
       </section>
     </>
   );
@@ -348,13 +467,18 @@ function OutcomeFeedbackScreen({ demo }: { demo: boolean }) {
   return (
     <>
       <section className="panel usecase-section">
-        <p className="eyebrow">Before / after KPI recovery</p>
-        <h2>Did the action work?</h2>
+        <p className="eyebrow">Corrective Action Tracking & Outcome</p>
+        <h2>Action recovery status</h2>
+        {demo ? <DashboardMetricStrip items={outcomeStats} /> : <MetricStrip demo={false} />}
+      </section>
+      <section className="panel usecase-section">
+        <p className="eyebrow">Recovery summary - Municipality 13</p>
+        <h2>Before, target, after, and result</h2>
         {demo ? (
           <div className="jazan-table-wrap strategic-scroll-table">
             <table className="table jazan-data-table">
               <thead>
-                <tr>{["Case", "Before", "After", "Recovery", "Lifecycle"].map((column) => <th key={column}>{column}</th>)}</tr>
+                <tr>{["KPI", "Before", "Target", "After", "Result", "Change"].map((column) => <th key={column}>{column}</th>)}</tr>
               </thead>
               <tbody>
                 {recoveryRows.map((row) => (
@@ -367,15 +491,13 @@ function OutcomeFeedbackScreen({ demo }: { demo: boolean }) {
           <EmptyPanel />
         )}
       </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Learning feedback</p>
-        <h2>Updates to model and operating model</h2>
+      <section className="usecase-dashboard-row three-card-row">
         {demo ? (
-          <div className="usecase-thread compact">
-            {["Forecast accuracy recorded", "Recommendation effectiveness updated", "Monthly review pack refreshed", "Pillar 6 training need created if repeated"].map((item) => (
-              <article key={item}><h3>{item}</h3></article>
-            ))}
-          </div>
+          <>
+            <article className="panel usecase-section status-card"><p className="eyebrow">Forecast accuracy</p><StatusDonut value="78%" /><h2>Breach correctly predicted</h2></article>
+            <article className="panel usecase-section"><p className="eyebrow">Recommendation effectiveness</p><h2 className="giant-value">+10 pp</h2><p>average KPI lift</p><p>Similar cases matched: 3</p></article>
+            <article className="panel usecase-section learning-card"><p className="eyebrow">Learning & feedback</p><h2>Feedback to pillars</h2>{["Pillar 1: Objective remains certified", "Pillar 4: Recommendation history updated", "Pillar 5: Decision log records recovery", "Pillar 6: Training need generated if repeated"].map((item) => <p key={item}>{item}</p>)}</article>
+          </>
         ) : (
           <EmptyPanel />
         )}
