@@ -295,6 +295,7 @@ class UseCaseNativeBIMaterializerTests(unittest.TestCase):
             verified = materializer.verify_live("pkg-1", actor="test")
 
             self.assertEqual(verified["live_verification_status"], "degraded")
+            self.assertEqual(verified["product_promotion_status"], "promoted")
             self.assertTrue(verified["live_verification_report"]["checks"]["components_resolved"])
             self.assertTrue(verified["live_verification_report"]["checks"]["governance_enforced"])
             self.assertTrue(verified["live_verification_report"]["checks"]["checksum_verified"])

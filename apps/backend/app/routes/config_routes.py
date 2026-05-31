@@ -68,6 +68,7 @@ def _runtime_catalog_entry(record: dict[str, object]) -> dict[str, object]:
         "materialization_status": record.get("materialization_status"),
         "activation_status": record.get("activation_status"),
         "live_verification_status": record.get("live_verification_status"),
+        "product_promotion_status": record.get("product_promotion_status"),
     }
 
 
@@ -84,6 +85,7 @@ def _public_package_summary(record: dict[str, object]) -> dict[str, object]:
         "materialization_status": record.get("materialization_status"),
         "activation_status": record.get("activation_status"),
         "live_verification_status": record.get("live_verification_status"),
+        "product_promotion_status": record.get("product_promotion_status"),
         "preview_summary": record.get("preview_summary"),
         "runtime_catalog_entry": _runtime_catalog_entry(record),
         "last_action_at": record.get("last_action_at"),

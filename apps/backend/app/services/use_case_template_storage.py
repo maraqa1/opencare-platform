@@ -166,6 +166,22 @@ class UseCaseTemplateStorage:
             return []
         return [deepcopy(record) for record in packages.values() if isinstance(record, dict)]
 
+    @staticmethod
+    def is_product_promoted(record: dict[str, Any]) -> bool:
+        promotion_status = str(record.get("product_promotion_status") or "").strip().lower()
+        if promotion_status:
+            return promotion_status == "promoted"
+
+        # Legacy fallback: treat packages that completed live verification as promoted
+        # so existing records remain visible until they are rewritten with the new field.
+        return (
+            record.get("enabled") is True
+            and record.get("materialization_status") == "materialized"
+            and record.get("activation_status") in {"active", "live_verified"}
+            and record.get("live_verification_status") in {"degraded", "live_verified"}
+            and record.get("last_action") == "verify-live"
+        )
+
     def get_package(self, package_id: str) -> dict[str, Any] | None:
         registry = self.load_registry()
         packages = registry.get("packages", {})
@@ -255,7 +271,7 @@ class UseCaseTemplateStorage:
                 if not isinstance(package_key, str):
                     continue
                 record = packages.get(package_key)
-                if isinstance(record, dict):
+                if isinstance(record, dict) and self.is_product_promoted(record):
                     active_records.append(deepcopy(record))
                     seen_keys.add(package_key)
 
@@ -263,11 +279,7 @@ class UseCaseTemplateStorage:
             for package_key, record in packages.items():
                 if package_key in seen_keys or not isinstance(record, dict):
                     continue
-                if (
-                    record.get("enabled") is True
-                    and record.get("materialization_status") == "materialized"
-                    and record.get("activation_status") in {"active", "live_verified"}
-                ):
+                if self.is_product_promoted(record):
                     active_records.append(deepcopy(record))
 
         active_records.sort(key=lambda candidate: str(candidate.get("last_action_at", "")), reverse=True)
@@ -284,6 +296,7 @@ class UseCaseTemplateStorage:
         record.setdefault("compile_report", {})
         record.setdefault("materialization_report", {})
         record.setdefault("live_verification_report", {})
+        record.setdefault("product_promotion_status", "pending")
         record.setdefault("last_error", record.get("error_message", ""))
         with self._registry_guard():
             registry = self._load_registry_file(self.registry_path)
@@ -377,6 +390,7 @@ class UseCaseTemplateStorage:
                     "materialization_status": record.get("materialization_status"),
                     "activation_status": record.get("activation_status"),
                     "live_verification_status": record.get("live_verification_status"),
+                    "product_promotion_status": record.get("product_promotion_status"),
                     "enabled": record.get("enabled"),
                 }
                 actions = record.setdefault("actions", [])
@@ -395,6 +409,7 @@ class UseCaseTemplateStorage:
                     "materialization_status": record.get("materialization_status"),
                     "activation_status": record.get("activation_status"),
                     "live_verification_status": record.get("live_verification_status"),
+                    "product_promotion_status": record.get("product_promotion_status"),
                     "enabled": record.get("enabled"),
                 }
                 if isinstance(actions, list):

@@ -103,6 +103,7 @@ export type UseCaseRuntimeCatalogEntry = {
   materialization_status?: string;
   activation_status?: string;
   live_verification_status?: string;
+  product_promotion_status?: string;
 };
 
 export type UseCaseTemplateAction = {
@@ -147,6 +148,7 @@ export type UseCaseTemplatePackage = {
   materialization_status?: string;
   activation_status?: string;
   live_verification_status?: string;
+  product_promotion_status?: string;
   validation_summary?: UseCaseTemplateValidationReport;
   compile_report?: UseCaseTemplateCompileReport;
   materialization_report?: UseCaseTemplateMaterializationReport;

@@ -359,6 +359,7 @@ class UseCaseNativeBIMaterializer:
             "receipt_preview": self._materialization_receipt(runtime_definition, record),
         }
         record["materialization_status"] = "materialization_planned"
+        record["product_promotion_status"] = "pending"
         record["materialization_report"] = {
             "status": "materialization_planned",
             "plan": plan,
@@ -397,6 +398,7 @@ class UseCaseNativeBIMaterializer:
             record["materialization_status"] = "materialization_failed"
             record["activation_status"] = "staged"
             record["status"] = "materialization_failed"
+            record["product_promotion_status"] = "blocked"
             record["last_error"] = "; ".join(
                 serialize_reason(reason) for reason in receipt.get("blocked_reasons", [])
             )
@@ -435,6 +437,7 @@ class UseCaseNativeBIMaterializer:
         record["materialization_status"] = "materialized"
         record["activation_status"] = "activation_ready"
         record["status"] = "materialized"
+        record["product_promotion_status"] = "pending"
         record["materialization_report"] = {
             "status": "materialized",
             "registry": materialized_registry,
@@ -525,11 +528,13 @@ class UseCaseNativeBIMaterializer:
         if passed:
             record["live_verification_status"] = "degraded"
             record["status"] = "degraded"
+            record["product_promotion_status"] = "promoted"
             report_status = "degraded"
             log = "Live verification passed for route/component/API readiness, but populated-state proof is still pending."
         else:
             record["live_verification_status"] = "materialization_failed"
             record["status"] = "degraded"
+            record["product_promotion_status"] = "verification_failed"
             report_status = "materialization_failed"
             log = "Live verification failed due to missing runtime readiness checks."
 

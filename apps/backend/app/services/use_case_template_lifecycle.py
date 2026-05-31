@@ -47,6 +47,7 @@ class UseCaseTemplateLifecycleService:
         record["materialization_status"] = "staged"
         record["activation_status"] = "previewable"
         record["live_verification_status"] = "previewable"
+        record["product_promotion_status"] = "pending"
         record["preview_summary"] = {
             **record.get("preview_summary", {}),
             "install_impact": {
@@ -110,6 +111,7 @@ class UseCaseTemplateLifecycleService:
         record["enabled"] = True
         record["activation_status"] = "active"
         record["status"] = "active"
+        record["product_promotion_status"] = "pending_live_verification"
         record["last_action"] = "activate"
         record["last_action_at"] = utc_now_iso()
         self.storage.set_active_pointer(record["slug"], str(record.get("id") or record["package_id"]), record["version"])
@@ -135,6 +137,7 @@ class UseCaseTemplateLifecycleService:
         record["enabled"] = False
         record["status"] = "excluded"
         record["activation_status"] = "excluded"
+        record["product_promotion_status"] = "excluded"
         record["last_action"] = "exclude"
         record["last_action_at"] = utc_now_iso()
         self.storage.clear_active_pointer(record["slug"])
@@ -156,6 +159,7 @@ class UseCaseTemplateLifecycleService:
         record["enabled"] = False
         record["status"] = "operationally_removed"
         record["activation_status"] = "operationally_removed"
+        record["product_promotion_status"] = "removed"
         record["last_action"] = "remove-operational"
         record["last_action_at"] = utc_now_iso()
         self.storage.clear_active_pointer(record["slug"])
@@ -181,6 +185,7 @@ class UseCaseTemplateLifecycleService:
         record["enabled"] = False
         record["activation_status"] = "uninstalled"
         record["status"] = "uninstalled"
+        record["product_promotion_status"] = "uninstalled"
         record["last_action"] = "uninstall"
         record["last_action_at"] = utc_now_iso()
         record["installed_path"] = ""

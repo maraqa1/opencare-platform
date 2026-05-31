@@ -72,6 +72,45 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertEqual(saved["id"], "pkg-2")
             self.assertFalse(storage.registry_lock_path.exists())
 
+    def test_list_active_packages_requires_product_promotion(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            storage.upsert_package(
+                {
+                    "id": "pkg-pending",
+                    "package_id": "pkg-pending",
+                    "slug": "patient-outcomes",
+                    "version": "1.0.0",
+                    "status": "active",
+                    "enabled": True,
+                    "materialization_status": "materialized",
+                    "activation_status": "active",
+                    "live_verification_status": "previewable",
+                    "product_promotion_status": "pending_live_verification",
+                }
+            )
+            storage.upsert_package(
+                {
+                    "id": "pkg-promoted",
+                    "package_id": "pkg-promoted",
+                    "slug": "patient-outcomes",
+                    "version": "1.0.1",
+                    "status": "degraded",
+                    "enabled": True,
+                    "materialization_status": "materialized",
+                    "activation_status": "active",
+                    "live_verification_status": "degraded",
+                    "product_promotion_status": "promoted",
+                    "last_action": "verify-live",
+                }
+            )
+            storage.set_active_pointer("patient-outcomes", "pkg-promoted", "1.0.1")
+
+            active_packages = storage.list_active_packages()
+
+            self.assertEqual(len(active_packages), 1)
+            self.assertEqual(active_packages[0]["id"], "pkg-promoted")
+
 
 if __name__ == "__main__":
     unittest.main()

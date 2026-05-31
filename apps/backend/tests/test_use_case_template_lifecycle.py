@@ -64,6 +64,17 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
             self.assertEqual(include_response.status_code, 200)
             self.assertTrue(include_response.json()["package"]["enabled"])
             self.assertEqual(include_response.json()["package"]["activation_status"], "active")
+            self.assertEqual(
+                include_response.json()["package"]["product_promotion_status"],
+                "pending_live_verification",
+            )
+
+            config_before_verify = client().get("/api/v1/config/use-cases")
+            self.assertEqual(config_before_verify.status_code, 200)
+            self.assertEqual(
+                len(config_before_verify.json().get("active_imported_use_cases", [])),
+                0,
+            )
 
             verify_response = client().post(
                 f"/api/v1/admin/use-case-templates/{package_id}/verify-live",
@@ -71,6 +82,17 @@ class UseCaseTemplateLifecycleTests(unittest.TestCase):
             )
             self.assertEqual(verify_response.status_code, 200)
             self.assertIn(verify_response.json()["package"]["live_verification_status"], {"degraded", "live_verified"})
+            self.assertEqual(
+                verify_response.json()["package"]["product_promotion_status"],
+                "promoted",
+            )
+
+            config_after_verify = client().get("/api/v1/config/use-cases")
+            self.assertEqual(config_after_verify.status_code, 200)
+            active_imported = config_after_verify.json().get("active_imported_use_cases", [])
+            self.assertEqual(len(active_imported), 1)
+            self.assertEqual(active_imported[0]["package_id"], include_response.json()["package"]["package_id"])
+            self.assertEqual(active_imported[0]["product_promotion_status"], "promoted")
 
             exclude_response = client().post(
                 f"/api/v1/admin/use-case-templates/{package_id}/exclude",
