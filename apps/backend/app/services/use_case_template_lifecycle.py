@@ -30,6 +30,7 @@ class UseCaseTemplateLifecycleService:
 
     def compile(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        canonical_package_id = str(record["package_id"])
         validation_status = record.get("package_validation_status") or record.get("validation_summary", {}).get("status")
         if validation_status not in {"passed", "warning"}:
             raise ValueError("Package must pass validation before compile.")
@@ -61,7 +62,7 @@ class UseCaseTemplateLifecycleService:
         record["last_action_at"] = utc_now_iso()
         self.storage.upsert_package(record)
         self.storage.record_action(
-            package_id=package_id,
+            package_id=canonical_package_id,
             slug=record["slug"],
             version=record["version"],
             actor=actor,
@@ -80,7 +81,7 @@ class UseCaseTemplateLifecycleService:
         record = self._require_record(package_id)
         if record.get("compile_status") != "compiled":
             raise ValueError("Package must be compiled before materialization planning.")
-        planned = self.materializer.plan(package_id, actor=actor)
+        planned = self.materializer.plan(str(record["package_id"]), actor=actor)
         planned["last_action"] = "plan-materialization"
         planned["last_action_at"] = utc_now_iso()
         self.storage.upsert_package(planned)
@@ -91,11 +92,12 @@ class UseCaseTemplateLifecycleService:
         record = self._require_record(package_id)
         if record.get("compile_status") != "compiled":
             raise ValueError("Package must be compiled before materialization.")
-        return self.materializer.materialize(package_id, actor=actor)
+        return self.materializer.materialize(str(record["package_id"]), actor=actor)
 
     def activate(self, package_id: str, *, actor: str) -> dict[str, Any]:
         self._ensure_materialization_enabled()
         record = self._require_record(package_id)
+        canonical_package_id = str(record["package_id"])
         if record.get("package_validation_status") not in {"passed", "warning"}:
             raise ValueError("Package must pass validation before activation.")
         if record.get("compile_status") != "compiled":
@@ -117,7 +119,7 @@ class UseCaseTemplateLifecycleService:
         self.storage.set_active_pointer(record["slug"], str(record.get("id") or record["package_id"]), record["version"])
         self.storage.upsert_package(record)
         self.storage.record_action(
-            package_id=package_id,
+            package_id=canonical_package_id,
             slug=record["slug"],
             version=record["version"],
             actor=actor,
@@ -130,10 +132,12 @@ class UseCaseTemplateLifecycleService:
 
     def verify_live(self, package_id: str, *, actor: str) -> dict[str, Any]:
         self._ensure_materialization_enabled()
-        return self.materializer.verify_live(package_id, actor=actor)
+        record = self._require_record(package_id)
+        return self.materializer.verify_live(str(record["package_id"]), actor=actor)
 
     def exclude(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        canonical_package_id = str(record["package_id"])
         record["enabled"] = False
         record["status"] = "excluded"
         record["activation_status"] = "excluded"
@@ -143,7 +147,7 @@ class UseCaseTemplateLifecycleService:
         self.storage.clear_active_pointer(record["slug"])
         self.storage.upsert_package(record)
         self.storage.record_action(
-            package_id=package_id,
+            package_id=canonical_package_id,
             slug=record["slug"],
             version=record["version"],
             actor=actor,
@@ -156,6 +160,7 @@ class UseCaseTemplateLifecycleService:
 
     def remove_operational(self, package_id: str, *, actor: str) -> dict[str, Any]:
         record = self._require_record(package_id)
+        canonical_package_id = str(record["package_id"])
         record["enabled"] = False
         record["status"] = "operationally_removed"
         record["activation_status"] = "operationally_removed"
@@ -165,7 +170,7 @@ class UseCaseTemplateLifecycleService:
         self.storage.clear_active_pointer(record["slug"])
         self.storage.upsert_package(record)
         self.storage.record_action(
-            package_id=package_id,
+            package_id=canonical_package_id,
             slug=record["slug"],
             version=record["version"],
             actor=actor,
@@ -181,11 +186,12 @@ class UseCaseTemplateLifecycleService:
             raise ValueError("Uninstall requires confirm=true")
 
         record = self._require_record(package_id)
+        canonical_package_id = str(record["package_id"])
         package_slug = record["slug"]
         package_version = record["version"]
         package_validation_status = record.get("package_validation_status")
         self.storage.clear_active_pointer(package_slug)
-        self.storage.mark_uninstalled(package_id, package_version, preserve_audit=preserve_audit)
+        self.storage.mark_uninstalled(canonical_package_id, package_version, preserve_audit=preserve_audit)
         record["enabled"] = False
         record["activation_status"] = "uninstalled"
         record["status"] = "uninstalled"
@@ -199,7 +205,7 @@ class UseCaseTemplateLifecycleService:
         if preserve_audit:
             self.storage.upsert_package(record)
             self.storage.record_action(
-                package_id=package_id,
+                package_id=canonical_package_id,
                 slug=package_slug,
                 version=package_version,
                 actor=actor,
@@ -209,7 +215,7 @@ class UseCaseTemplateLifecycleService:
                 log="Package uninstalled from managed package storage. Audit history preserved.",
             )
         else:
-            self.storage.purge_package_record(package_id, package_version)
+            self.storage.purge_package_record(canonical_package_id, package_version)
         return deepcopy(record)
 
     # Backward-compatible aliases.

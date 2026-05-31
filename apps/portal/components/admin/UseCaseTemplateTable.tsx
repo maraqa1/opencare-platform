@@ -50,6 +50,18 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
     setSelectedIds(allSelected ? [] : selectableIds);
   }
 
+  async function readJsonSafely(response: Response) {
+    const text = await response.text();
+    if (!text.trim()) {
+      return {};
+    }
+    try {
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      throw new Error(text.trim() || "The server returned an invalid response.");
+    }
+  }
+
   function runRowAction(pkg: UseCaseTemplatePackage, endpoint: string) {
     const packageRef = pkg.id ?? pkg.package_id;
     const confirmed =
@@ -70,9 +82,9 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
           },
           body: endpoint === "uninstall" ? JSON.stringify({ confirm: true, preserve_audit: false }) : undefined,
         });
-        const payload = (await response.json()) as { status?: string; detail?: string };
+        const payload = (await readJsonSafely(response)) as { status?: string; detail?: string; message?: string };
         if (!response.ok || payload.status !== "ok") {
-          throw new Error(payload.detail ?? `Unable to ${endpoint} package.`);
+          throw new Error(payload.detail ?? payload.message ?? `Unable to ${endpoint} package.`);
         }
         setMessage(`Action completed for ${pkg.name}.`);
         setSelectedIds((current) => current.filter((id) => id !== packageRef));
@@ -107,9 +119,9 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
             },
             body: JSON.stringify({ confirm: true, preserve_audit: false }),
           });
-          const payload = (await response.json()) as { status?: string; detail?: string };
+          const payload = (await readJsonSafely(response)) as { status?: string; detail?: string; message?: string };
           if (!response.ok || payload.status !== "ok") {
-            throw new Error(payload.detail ?? `Unable to delete package ${packageRef}.`);
+            throw new Error(payload.detail ?? payload.message ?? `Unable to delete package ${packageRef}.`);
           }
         }
         setMessage("Selected packages deleted.");
