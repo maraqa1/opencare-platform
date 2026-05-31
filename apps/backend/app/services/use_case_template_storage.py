@@ -155,15 +155,25 @@ class UseCaseTemplateStorage:
         os.replace(temp_path, path)
 
     def load_registry(self) -> dict[str, Any]:
-        with self._registry_guard():
+        try:
+            with self._registry_guard():
+                try:
+                    return self._load_registry_file(self.registry_path)
+                except yaml.YAMLError:
+                    self._backup_corrupt_registry()
+                    if self.registry_snapshot_path.exists():
+                        payload = self._load_registry_file(self.registry_snapshot_path)
+                        self._write_yaml_atomic(self.registry_path, payload)
+                        return payload
+                    return self._empty_registry()
+        except TimeoutError:
+            # Reads should fail open to the last durable snapshot rather than
+            # throw 500s during transient registry-lock contention.
             try:
+                if self.registry_snapshot_path.exists():
+                    return self._load_registry_file(self.registry_snapshot_path)
                 return self._load_registry_file(self.registry_path)
             except yaml.YAMLError:
-                self._backup_corrupt_registry()
-                if self.registry_snapshot_path.exists():
-                    payload = self._load_registry_file(self.registry_snapshot_path)
-                    self._write_yaml_atomic(self.registry_path, payload)
-                    return payload
                 return self._empty_registry()
 
     def save_registry(self, payload: dict[str, Any]) -> None:

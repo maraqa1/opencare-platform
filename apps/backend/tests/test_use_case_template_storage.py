@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -72,6 +73,25 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
 
             self.assertEqual(saved["id"], "pkg-2")
             self.assertFalse(storage.registry_lock_path.exists())
+
+    def test_load_registry_falls_back_to_snapshot_on_lock_timeout(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            storage.upsert_package(
+                {
+                    "id": "pkg-3",
+                    "package_id": "pkg-3",
+                    "slug": "patient-outcomes",
+                    "version": "1.0.0",
+                    "status": "uploaded",
+                }
+            )
+
+            with patch.object(storage, "_registry_guard", side_effect=TimeoutError("busy")):
+                registry = storage.load_registry()
+
+            self.assertIn("pkg-3", registry["packages"])
+            self.assertEqual(registry["packages"]["pkg-3"]["slug"], "patient-outcomes")
 
     def test_list_active_packages_requires_product_promotion(self):
         with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
