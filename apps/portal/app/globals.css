@@ -2873,6 +2873,233 @@ code {
   margin-top: 14px;
 }
 
+.usecase-loop-page .hero {
+  border-color: rgba(37, 99, 235, 0.12);
+}
+
+.usecase-screen-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.usecase-screen-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 13px;
+  border: 1px solid rgba(31, 56, 100, 0.12);
+  border-radius: 999px;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.usecase-screen-tabs a.active {
+  background: #2f5fb8;
+  border-color: #2f5fb8;
+  color: #ffffff;
+}
+
+.usecase-section {
+  display: grid;
+  gap: 14px;
+}
+
+.usecase-section > h2,
+.usecase-hero-contract h2 {
+  margin: 0;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 24px;
+}
+
+.usecase-section > p,
+.usecase-hero-contract p {
+  margin: 0;
+  max-width: 960px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.usecase-thread {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.usecase-thread.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.usecase-thread article,
+.usecase-card-grid article,
+.usecase-action-grid article,
+.usecase-evidence-grid article,
+.usecase-risk-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+}
+
+.usecase-thread span,
+.usecase-card-grid span,
+.usecase-risk-card span {
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #e5f5ef;
+  color: #07564f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.usecase-thread h3,
+.usecase-card-grid h3,
+.usecase-evidence-grid h3,
+.usecase-action-grid strong {
+  margin: 0;
+  color: #07194a;
+  font-family: var(--font-heading);
+  font-size: 15px;
+}
+
+.usecase-thread p,
+.usecase-card-grid p,
+.usecase-risk-card p,
+.usecase-action-grid p,
+.usecase-evidence-grid li {
+  margin: 0;
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.usecase-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.usecase-metric-strip article {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 10px;
+  background: #fbfaf6;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.usecase-metric-strip span {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.usecase-metric-strip strong {
+  color: #111827;
+  font-family: var(--font-heading);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.usecase-metric-strip p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.usecase-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.usecase-risk-card strong {
+  color: #111827;
+  font-family: var(--font-heading);
+  font-size: 24px;
+}
+
+.usecase-evidence-grid,
+.usecase-card-grid,
+.usecase-action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.usecase-action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.usecase-evidence-grid ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.usecase-card-grid code,
+.usecase-action-grid code {
+  white-space: normal;
+  word-break: break-word;
+  color: #07564f;
+  font-size: 11px;
+}
+
+.usecase-lineage {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.usecase-lineage span {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fbfaf6;
+  border: 1px solid rgba(31, 56, 100, 0.1);
+  color: #07194a;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.usecase-lineage span:not(:last-child)::after {
+  content: ">";
+  position: absolute;
+  right: -20px;
+  color: #6b7280;
+  font-size: 22px;
+}
+
+.usecase-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 82px;
+  border: 1px dashed rgba(37, 99, 235, 0.28);
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 900;
+}
+
 @media (max-width: 1100px) {
   .strategic-hierarchy-flow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2884,7 +3111,13 @@ code {
 
   .decision-flow-grid,
   .decision-summary-grid,
-  .decision-action-meta {
+  .decision-action-meta,
+  .usecase-thread,
+  .usecase-thread.compact,
+  .usecase-evidence-grid,
+  .usecase-card-grid,
+  .usecase-metric-strip,
+  .usecase-lineage {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -2900,13 +3133,22 @@ code {
   .decision-action-meta,
   .decision-lifecycle-line,
   .decision-detail-grid,
-  .decision-evidence-grid {
+  .decision-evidence-grid,
+  .usecase-thread,
+  .usecase-thread.compact,
+  .usecase-metric-strip,
+  .usecase-two-column,
+  .usecase-evidence-grid,
+  .usecase-card-grid,
+  .usecase-action-grid,
+  .usecase-lineage {
     grid-template-columns: 1fr;
   }
 
   .strategic-hierarchy-flow article::after,
   .decision-flow-grid article::after,
-  .decision-lifecycle-line div::before {
+  .decision-lifecycle-line div::before,
+  .usecase-lineage span::after {
     display: none;
   }
 
