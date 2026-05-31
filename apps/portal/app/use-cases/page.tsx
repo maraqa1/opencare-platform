@@ -25,7 +25,7 @@ export default async function UseCasesPage() {
 
   const visibleUseCases = filterVisibleUseCases(useCases, config.all_use_cases ?? {});
   const importedUseCases = projectImportedPackagesToUseCases(config.active_imported_use_cases ?? []);
-  const activeUseCases = [...visibleUseCases, ...importedUseCases];
+  const activeUseCases = [...importedUseCases, ...visibleUseCases];
 
   return (
     <PageFrame

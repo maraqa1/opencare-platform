@@ -61,6 +61,14 @@ class UseCasePackageCompiler:
                 return True
         return False
 
+    @staticmethod
+    def _business_problem(contract: dict[str, Any]) -> str | None:
+        for key in ("business_problem", "problem", "description", "summary"):
+            value = contract.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return None
+
     def _read_text(self, relative_path: str) -> str:
         path = self.package_root / relative_path
         if not path.is_file():
@@ -786,6 +794,9 @@ class UseCasePackageCompiler:
                 "name": metadata.get("name") or self.manifest_yaml.get("name") or slug,
                 "version": metadata.get("version"),
                 "domain": metadata.get("domain"),
+                "description": metadata.get("description")
+                or self.manifest_yaml.get("description")
+                or self._business_problem(business_contract),
                 "package_standard": self._package_standard(),
             },
             "personas": business_contract.get("personas", []),

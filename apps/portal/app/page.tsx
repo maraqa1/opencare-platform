@@ -58,7 +58,7 @@ export default async function HomePage() {
 
   const visibleUseCases = filterVisibleUseCases(useCases, useCaseConfig.all_use_cases ?? {});
   const importedUseCases = projectImportedPackagesToUseCases(useCaseConfig.active_imported_use_cases ?? []);
-  const activeUseCases = [...visibleUseCases, ...importedUseCases];
+  const activeUseCases = [...importedUseCases, ...visibleUseCases];
   const defaultUseCaseHref =
     activeUseCases.find((useCase) => useCase.status === "active")?.defaultHref ?? "/use-cases";
 

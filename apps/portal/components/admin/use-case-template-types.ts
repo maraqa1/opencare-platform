@@ -84,6 +84,27 @@ export type UseCaseTemplatePreview = {
   };
 };
 
+export type UseCaseRuntimeCatalogEntry = {
+  name?: string;
+  slug?: string;
+  domain?: string;
+  description?: string;
+  workspace_route?: string | null;
+  default_tab_route?: string | null;
+  tabs?: Array<{
+    id?: string;
+    label?: string;
+    route?: string;
+    widget_count?: number;
+  }>;
+  widget_count?: number;
+  personas?: string[];
+  kpis?: string[];
+  materialization_status?: string;
+  activation_status?: string;
+  live_verification_status?: string;
+};
+
 export type UseCaseTemplateAction = {
   event_id: string;
   actor: string;
@@ -131,6 +152,7 @@ export type UseCaseTemplatePackage = {
   materialization_report?: UseCaseTemplateMaterializationReport;
   live_verification_report?: UseCaseTemplateLiveVerificationReport;
   preview_summary?: UseCaseTemplatePreview;
+  runtime_catalog_entry?: UseCaseRuntimeCatalogEntry;
   last_action?: string;
   last_action_at?: string;
   error_message?: string;

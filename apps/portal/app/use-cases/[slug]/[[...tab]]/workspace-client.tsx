@@ -128,7 +128,7 @@ function componentTitle(spec: ComponentSpec) {
 }
 
 function componentSubtitle(spec: ComponentSpec) {
-  return spec.display_contract?.subtitle ?? spec.purpose ?? "Materialized from uploaded package specs.";
+  return spec.display_contract?.subtitle ?? spec.purpose ?? "Configured in the persisted workspace model.";
 }
 
 function widgetTitle(widget: DashboardWidgetModel, spec: ComponentSpec) {
@@ -789,9 +789,9 @@ export function MaterializedWorkspaceClient({
     <section className="grid">
       <article className="panel span-8">
         <p className="eyebrow">{selectedTabLabel}</p>
-        <h3 className="section-heading">Dashboard workspace</h3>
+        <h3 className="section-heading">Operational workspace</h3>
         <p className="section-subtitle">
-          Rendered from the package display contract. Live widget data loads after the shell paints so the workspace stays responsive.
+          The persisted dashboard model opens first, then the selected tab hydrates through one runtime payload so navigation stays warm.
         </p>
         <div className="use-case-outcome-list">
           {selectedComponents.map((component) => (
@@ -801,20 +801,20 @@ export function MaterializedWorkspaceClient({
       </article>
 
       <article className="panel span-4">
-        <p className="eyebrow">Runtime status</p>
-        <h3 className="section-heading">Live checks</h3>
+        <p className="eyebrow">Workspace status</p>
+        <h3 className="section-heading">Current tab posture</h3>
         <dl className="use-case-evidence-list">
           <div>
-            <dt>Materialization</dt>
-            <dd>{workspace.state?.materialization_status ?? "unknown"}</dd>
+            <dt>Verification</dt>
+            <dd>{trusted ? "trusted" : workspace.state?.live_verification_status ?? "active"}</dd>
           </div>
           <div>
-            <dt>Activation</dt>
-            <dd>{workspace.state?.activation_status ?? "unknown"}</dd>
+            <dt>Current tab</dt>
+            <dd>{selectedTabLabel}</dd>
           </div>
           <div>
-            <dt>Trust</dt>
-            <dd>{trusted ? "trusted" : "governance_review"}</dd>
+            <dt>Widgets</dt>
+            <dd>{selectedWidgetModels.length || selectedComponents.length}</dd>
           </div>
           <div>
             <dt>As of</dt>

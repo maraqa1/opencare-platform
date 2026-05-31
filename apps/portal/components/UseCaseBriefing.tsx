@@ -22,6 +22,15 @@ function statusLabel(value: string) {
   return value.replaceAll("_", " ");
 }
 
+function runtimeWorkspaceLinks(module: UseCaseModule) {
+  return (module.runtimeCatalog?.tabs ?? [])
+    .filter((tab) => Boolean(tab.route))
+    .map((tab) => ({
+      label: tab.label ?? tab.id ?? "Workspace",
+      href: tab.route as string,
+    }));
+}
+
 function matchGovernanceUseCase(module: UseCaseModule, governedUseCases: GovernanceUseCase[]) {
   return governedUseCases.find((useCase) => useCase.id === module.id) ?? null;
 }
@@ -50,8 +59,12 @@ export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
   const selectedModule = useCases.find((useCase) => useCase.id === selectedUseCaseId) ?? useCases[0];
   const governedUseCase = selectedModule ? matchGovernanceUseCase(selectedModule, governedUseCases) : null;
   const sourceInputs = governedUseCase?.sourceTables ?? [];
-  const outcomeTargets = governedUseCase?.downstreamConsumers ?? selectedModule?.kpis.map((kpi) => kpi.label) ?? [];
-  const workspaceLinks = governedUseCase?.workspaceCoverage ?? [];
+  const outcomeTargets =
+    governedUseCase?.downstreamConsumers ??
+    selectedModule?.runtimeCatalog?.tabs?.map((tab) => tab.label ?? tab.id ?? "Workspace") ??
+    selectedModule?.kpis.map((kpi) => kpi.label) ??
+    [];
+  const workspaceLinks = governedUseCase?.workspaceCoverage ?? (selectedModule ? runtimeWorkspaceLinks(selectedModule) : []);
   const lineage = lineageNodes(governedUseCase);
 
   if (!selectedModule) {

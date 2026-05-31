@@ -1,4 +1,7 @@
-import type { UseCaseTemplatePackage } from "@/components/admin/use-case-template-types";
+import type {
+  UseCaseRuntimeCatalogEntry,
+  UseCaseTemplatePackage,
+} from "@/components/admin/use-case-template-types";
 
 export type UseCaseStatus = "active" | "coming_soon";
 
@@ -13,6 +16,7 @@ export type UseCaseModule = {
   defaultHref?: string;
   ctaLabel?: string;
   kpis: Array<{ label: string; value: string; note: string }>;
+  runtimeCatalog?: UseCaseRuntimeCatalogEntry;
   shell: {
     label: string;
     title: string;
@@ -230,7 +234,7 @@ export function filterVisibleUseCases(
 ) {
   const enabledIds = getManifestEnabledUseCaseIds(manifest);
   if (enabledIds === null) {
-    return modules;
+    return modules.filter((module) => module.status === "active");
   }
 
   return modules.filter((module) => enabledIds.includes(module.id));
@@ -269,15 +273,55 @@ export function projectImportedPackagesToUseCases(
     .map((pkg) => {
       const adminHref = `/admin/use-case-templates/${encodeURIComponent(pkg.id ?? pkg.package_id)}`;
       const preview = pkg.preview_summary;
+      const runtime = pkg.runtime_catalog_entry;
       const importedWorkspaceHref = `/use-cases/imported/${encodeURIComponent(pkg.id ?? pkg.package_id)}`;
-      const routeHref = preview?.install_impact?.full_runtime_supported
-        ? preview?.route_to_be_added ?? importedWorkspaceHref
-        : importedWorkspaceHref;
+      const routeHref =
+        runtime?.default_tab_route ??
+        (preview?.install_impact?.full_runtime_supported
+          ? preview?.route_to_be_added ?? importedWorkspaceHref
+          : importedWorkspaceHref);
       const personas = preview?.business_summary?.personas ?? [];
-      const kpis = (preview?.business_summary?.kpis ?? []).slice(0, 3);
+      const businessKpis = (preview?.business_summary?.kpis ?? []).slice(0, 3);
       const decisions = (preview?.business_summary?.decisions ?? []).slice(0, 2);
-      const routeLabel = preview?.route_to_be_added?.split("/").filter(Boolean).pop();
-      const summary = importedUseCaseSummary(pkg);
+      const routeLabel =
+        runtime?.default_tab_route?.split("/").filter(Boolean).pop() ??
+        preview?.route_to_be_added?.split("/").filter(Boolean).pop();
+      const summary =
+        firstMeaningfulText([
+          runtime?.description,
+          importedUseCaseSummary(pkg),
+          runtime?.domain,
+        ]) ?? importedUseCaseSummary(pkg);
+      const runtimeTabs = runtime?.tabs ?? [];
+      const runtimeKpis =
+        businessKpis.length > 0
+          ? businessKpis.map((kpi) => ({
+              label: kpi,
+              value: "Defined",
+              note: runtime?.domain ?? pkg.domain ?? "Runtime contract",
+            }))
+          : [
+              {
+                label: "Tabs",
+                value: String(runtimeTabs.length || 1),
+                note: "Persisted workspace navigation",
+              },
+              {
+                label: "Widgets",
+                value: String(runtime?.widget_count ?? 0),
+                note: "Compiled dashboard model",
+              },
+              {
+                label: "Trust",
+                value:
+                  runtime?.live_verification_status === "live_verified"
+                    ? "Verified"
+                    : runtime?.live_verification_status === "degraded"
+                      ? "Degraded"
+                      : "Active",
+                note: "Runtime verification state",
+              },
+            ];
 
       return {
         id: `imported:${pkg.package_id}`,
@@ -286,38 +330,26 @@ export function projectImportedPackagesToUseCases(
         name: pkg.name,
         description:
           firstMeaningfulText([
+            runtime?.description,
             preview?.business_summary?.problem,
             personas.length > 0 ? `Designed for ${personas.join(", ")}.` : null,
             pkg.domain,
-          ]) ?? "Imported use case activated in the OpenCare portal.",
+          ]) ?? "Runtime-promoted use case available in the OpenCare portal.",
         status: "active",
         summary,
         defaultHref: routeHref,
-        ctaLabel: `Open ${pkg.name}`,
-        kpis:
-          kpis.length > 0
-            ? kpis.map((kpi) => ({
-                label: kpi,
-                value: "Defined",
-                note: pkg.domain ?? "Package contract",
-              }))
-            : [
-                { label: "Package Status", value: "Active", note: "Visible in portal" },
-                { label: "Version", value: pkg.version, note: "Imported package version" },
-                {
-                  label: "Runtime Route",
-                  value: routeLabel ?? pkg.slug,
-                  note:
-                    decisions[0] ??
-                    (preview?.install_impact?.full_runtime_supported
-                      ? "Materialized runtime route available"
-                      : "Review in admin for next steps"),
-                },
-              ],
+        ctaLabel: `Open ${pkg.name} Workspace`,
+        kpis: runtimeKpis,
+        runtimeCatalog: runtime,
         shell: {
-          label: pkg.name,
-          title: pkg.name,
-          badge: pkg.domain ?? "Imported",
+          label: runtime?.domain ?? pkg.domain ?? pkg.name,
+          title: runtime?.name ?? pkg.name,
+          badge:
+            runtime?.live_verification_status === "live_verified"
+              ? "Trusted Runtime"
+              : runtime?.activation_status === "active"
+                ? "Runtime Active"
+                : runtime?.domain ?? pkg.domain ?? "Imported",
           actionHref: adminHref,
           actionLabel: "Use Case Admin",
         },

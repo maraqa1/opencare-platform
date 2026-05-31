@@ -10,7 +10,7 @@ import { getUseCaseByPath } from "@/lib/use-cases";
 import { MaterializedWorkspaceClient } from "./workspace-client";
 
 export const metadata: Metadata = {
-  title: "Materialized Use Case Workspace - OpenCare Portal",
+  title: "Use Case Workspace - OpenCare Portal",
 };
 
 type RouteContext = {
@@ -146,6 +146,7 @@ export type WorkspaceDefinition = {
     slug?: string;
     version?: string;
     domain?: string;
+    description?: string;
   };
   workspace_route?: string;
   tabs?: Array<{
@@ -250,12 +251,24 @@ export default async function MaterializedUseCaseWorkspacePage({ params }: Route
 
   return (
     <PageFrame
-      eyebrow="Materialized Use Case"
+      eyebrow="Use Case Workspace"
       title={workspace.identity?.name ?? slug}
-      description={workspace.identity?.domain ?? "Compiled and materialized workspace definition."}
+      description={
+        workspace.identity?.description ??
+        workspace.identity?.domain ??
+        "Persisted workspace definition resolved from the active runtime model."
+      }
       chips={[
-        { label: workspace.state?.materialization_status ?? "unknown", tone: "accent" },
-        { label: workspace.state?.activation_status ?? "inactive", tone: "primary" },
+        {
+          label:
+            workspace.state?.live_verification_status === "live_verified"
+              ? "Trusted runtime"
+              : workspace.state?.activation_status === "active"
+                ? "Runtime active"
+                : "Runtime review",
+          tone: workspace.state?.live_verification_status === "live_verified" ? "accent" : "primary",
+        },
+        { label: `${tabs.length} tabs`, tone: "primary" },
       ]}
       actions={
         diagnosticsHref ? (
