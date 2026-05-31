@@ -36,6 +36,7 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingOperation, setPendingOperation] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const selectableIds = useMemo(() => packages.map((pkg) => pkg.id ?? pkg.package_id), [packages]);
@@ -59,6 +60,7 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
     }
 
     setMessage("");
+    setPendingOperation(`${endpoint}:${packageRef}`);
     startTransition(async () => {
       try {
         const response = await fetch(`/api/portal/api/v1/admin/use-case-templates/${encodeURIComponent(packageRef)}/${endpoint}`, {
@@ -77,6 +79,8 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
         router.refresh();
       } catch (error) {
         setMessage(error instanceof Error ? error.message : `Unable to ${endpoint} package.`);
+      } finally {
+        setPendingOperation(null);
       }
     });
   }
@@ -91,7 +95,8 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
       return;
     }
 
-    setMessage("");
+    setMessage(`Deleting ${selectedIds.length} selected package${selectedIds.length === 1 ? "" : "s"}...`);
+    setPendingOperation("bulk-delete");
     startTransition(async () => {
       try {
         for (const packageRef of selectedIds) {
@@ -112,6 +117,8 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
         router.refresh();
       } catch (error) {
         setMessage(error instanceof Error ? error.message : "Unable to delete selected packages.");
+      } finally {
+        setPendingOperation(null);
       }
     });
   }
@@ -122,10 +129,11 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
         <div>
           <p className="eyebrow">Templates</p>
           <h3 className="section-heading">Uploaded and installed use-case packages</h3>
+          {isPending ? <p className="section-subtitle">Working on the selected package action...</p> : null}
         </div>
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
           <button className="button secondary" disabled={isPending || selectedIds.length === 0} onClick={deleteSelected} type="button">
-            Delete Selected
+            {pendingOperation === "bulk-delete" ? "Deleting..." : "Delete Selected"}
           </button>
         </div>
       </div>
@@ -133,7 +141,7 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
         <thead>
           <tr>
             <th>
-              <input aria-label="Select all packages" checked={allSelected} onChange={toggleAll} type="checkbox" />
+              <input aria-label="Select all packages" checked={allSelected} disabled={isPending} onChange={toggleAll} type="checkbox" />
             </th>
             <th>Name</th>
             <th>Slug</th>
@@ -157,12 +165,15 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
           ) : (
             packages.map((pkg) => {
               const packageRef = pkg.id ?? pkg.package_id;
+              const rowDeletePending = pendingOperation === `uninstall:${packageRef}`;
+              const rowPrimaryPending = pendingOperation === `${actionEndpoint(pkg)}:${packageRef}`;
               return (
                 <tr key={packageRef}>
                   <td>
                     <input
                       aria-label={`Select ${pkg.name}`}
                       checked={selectedIds.includes(packageRef)}
+                      disabled={isPending}
                       onChange={() => toggleSelected(packageRef)}
                       type="checkbox"
                     />
@@ -181,10 +192,10 @@ export function UseCaseTemplateTable({ packages }: { packages: UseCaseTemplatePa
                   <td>
                     <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                       <button className="button primary" disabled={isPending} onClick={() => runRowAction(pkg, actionEndpoint(pkg))} type="button">
-                        {actionLabel(pkg)}
+                        {rowPrimaryPending ? "Working..." : actionLabel(pkg)}
                       </button>
                       <button className="button secondary" disabled={isPending} onClick={() => runRowAction(pkg, "uninstall")} type="button">
-                        Delete
+                        {rowDeletePending ? "Deleting..." : "Delete"}
                       </button>
                       <Link className="secondary-link" href={`/admin/use-case-templates/${encodeURIComponent(packageRef)}`}>
                         Open
