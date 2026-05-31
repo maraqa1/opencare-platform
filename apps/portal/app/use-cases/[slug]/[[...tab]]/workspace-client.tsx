@@ -42,7 +42,7 @@ type WidgetKind = "metric" | "metric-group" | "chart" | "table" | "governance" |
 
 const TAB_CACHE_TTL_MS = 2 * 60 * 1000;
 
-const tabPayloadCache = new Map<string, { payload: TabPayload; fetchedAt: number }>();
+const tabPayloadCache = new Map<string, { payload: TabPayloadResult; fetchedAt: number }>();
 const tabRequestCache = new Map<string, Promise<TabPayloadResult>>();
 
 function normalizeEndpoint(path: string | undefined) {
@@ -453,7 +453,7 @@ function tabCacheKey(slug: string, tabId: string) {
   return `${slug}:${tabId}`;
 }
 
-function getCachedTabPayload(slug: string, tabId: string) {
+function getCachedTabPayload(slug: string, tabId: string): TabPayloadResult | undefined {
   const entry = tabPayloadCache.get(tabCacheKey(slug, tabId));
   if (!entry) {
     return undefined;
@@ -465,7 +465,7 @@ function getCachedTabPayload(slug: string, tabId: string) {
   return entry.payload;
 }
 
-function setCachedTabPayload(slug: string, tabId: string, payload: TabPayload) {
+function setCachedTabPayload(slug: string, tabId: string, payload: TabPayloadResult) {
   tabPayloadCache.set(tabCacheKey(slug, tabId), {
     payload,
     fetchedAt: Date.now(),
@@ -502,7 +502,7 @@ function fetchTabPayload({
   tabId: string;
   workspace: WorkspaceDefinition;
   prefetch?: boolean;
-}) {
+}): Promise<TabPayloadResult> {
   const cached = getCachedTabPayload(slug, tabId);
   if (cached) {
     return Promise.resolve(cached);
@@ -521,7 +521,7 @@ function fetchTabPayload({
       if (!response.ok) {
         throw new Error(`${response.status}:${correlationId}`);
       }
-      const payload = ((await response.json()) as { tab_payload?: TabPayload }).tab_payload ?? {};
+      const payload = (((await response.json()) as { tab_payload?: TabPayload }).tab_payload ?? {}) as TabPayloadResult;
       setCachedTabPayload(slug, tabId, payload);
       return payload;
     })
