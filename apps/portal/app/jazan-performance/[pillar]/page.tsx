@@ -30,7 +30,7 @@ import {
 
 type PageProps = {
   params: Promise<{ pillar: string }>;
-  searchParams?: Promise<{ demo?: string }>;
+  searchParams?: Promise<{ demo?: string; action?: string }>;
 };
 
 type PillarResponse = {
@@ -483,6 +483,7 @@ const decisionSummary = [
 
 const correctiveActionQueue = [
   {
+    key: "rebalance-field-response",
     action: "Rebalance field-response capacity & SLA escalation",
     impacted: "Sabya - service quality",
     lifecycle: "In progress",
@@ -490,9 +491,9 @@ const correctiveActionQueue = [
     ticket: "JZN-SVC-2347",
     due: "+23 days",
     escalation: "Med",
-    selected: true,
   },
   {
+    key: "revenue-collection-drop",
     action: "Investigate revenue collection drop",
     impacted: "Abu Arish - revenue",
     lifecycle: "Approved",
@@ -502,6 +503,7 @@ const correctiveActionQueue = [
     escalation: "Med",
   },
   {
+    key: "visual-distortion-compliance",
     action: "Compliance follow-up - visual distortion",
     impacted: "Samtah - compliance",
     lifecycle: "Evidence",
@@ -511,6 +513,7 @@ const correctiveActionQueue = [
     escalation: "Low",
   },
   {
+    key: "service-center-reopening",
     action: "Service center reopening plan",
     impacted: "Bish - service quality",
     lifecycle: "Proposed",
@@ -520,6 +523,7 @@ const correctiveActionQueue = [
     escalation: "Low",
   },
   {
+    key: "road-resurfacing-escalation",
     action: "Project escalation - road resurfacing",
     impacted: "Sabya - project",
     lifecycle: "Approved",
@@ -529,6 +533,7 @@ const correctiveActionQueue = [
     escalation: "High",
   },
   {
+    key: "citizen-satisfaction-recovery",
     action: "Citizen satisfaction recovery program",
     impacted: "Al Aridah - service quality",
     lifecycle: "In progress",
@@ -539,10 +544,12 @@ const correctiveActionQueue = [
   },
 ];
 
-const selectedDecisionAction = {
+const decisionActionDetails = {
+  "rebalance-field-response": {
   title: "Rebalance field-response capacity and activate SLA escalation protocol",
   arabic: "إعادة توازن استجابة الميدان وتفعيل بروتوكول تصعيد اتفاقية مستوى الخدمة",
   status: "In progress",
+  focusLabel: "Focused action - Sabya SLA escalation",
   owner: "Services Agency",
   supporting: "Municipality Coordinator",
   due: "+23 days",
@@ -574,6 +581,46 @@ const selectedDecisionAction = {
     ["9d ago - Weekly tactical review", "Weekly review approved the intervention; +30-day target set."],
     ["12d ago - Early Warning runtime", "Auto-triggered by Early Warning composite risk score 84 / 100 for Sabya."],
   ],
+  },
+  "visual-distortion-compliance": {
+    title: "Resolve visual-distortion complaints in Samtah district 4",
+    arabic: "معالجة بلاغات التشوه البصري في الحي الرابع بمحافظة صامطة",
+    status: "Evidence submitted",
+    focusLabel: "Focused action - Samtah visual-distortion resolution",
+    owner: "Field Compliance",
+    supporting: "Samtah Municipality Office",
+    due: "+5 days",
+    escalation: "Low",
+    ticket: "JZN-CMP-2339",
+    lifecycle: [
+      ["Proposed", "28d ago", true],
+      ["Approved", "24d ago", true],
+      ["In progress", "done 2d ago", true],
+      ["Evidence", "submitted 2d ago", true],
+      ["Verified", "due +5d", false],
+      ["Closed", "", false],
+    ] as const,
+    evidence: [
+      ["Complaint anomaly", "Citizen complaints +287% over 14 days - 47 reports vs baseline 12.", "z = +3.2 - Runtime"],
+      ["Backlog forecast", "Complaint backlog projected to breach 30-day SLA in 21 days without action.", "High confidence - Runtime"],
+      ["Composite risk", "42 / 100 - Moderate - complaint surge, cluster concentration in 3 blocks, property-owner non-response.", "Deterministic - not a black box"],
+      ["Recommendation", "Joint inspection sweep + property-owner notifications under municipal compliance code.", "Basis: 22 comparable clusters - avg resolution 28-35 days - advisory"],
+    ],
+    actors: [
+      ["JZN-CMP-2339", "OpenCare Action Tracker", "In review - evidence pending"],
+      ["Field Compliance Inspectors", "5 inspectors - Field Compliance", ""],
+      ["Samtah Municipality Office", "2 coordinators - Municipality Coordinator", ""],
+      ["Property-Owner Liaison", "1 officer - Field Compliance", ""],
+    ],
+    expectedOutcome:
+      "Close 47 of 47 citizen reports within the 30-day SLA, restore Samtah district 4 complaint rate to baseline, and achieve property-owner compliance on 9 remaining cases.",
+    decisionLog: [
+      ["2d ago - Field Compliance Inspectors", "Evidence package submitted to verification queue - 38 of 47 hot-spots resolved."],
+      ["14d ago - Field Inspection sweep", "Joint inspection completed across 3 blocks - 47 hot-spots documented and photographed."],
+      ["21d ago - Property-Owner Liaison", "Property-owner notifications dispatched - 22 letters issued under municipal compliance code."],
+      ["28d ago - Early Warning runtime", "Auto-triggered by Early Warning complaint-anomaly detector for Samtah district 4."],
+    ],
+  },
 };
 
 function componentHref(component: DeliveryComponent) {
@@ -2011,7 +2058,11 @@ function EarlyWarningWorkspacePage({ pillar }: { pillar: JazanPillar }) {
   );
 }
 
-function DecisionRhythmWorkspacePage({ pillar }: { pillar: JazanPillar }) {
+function DecisionRhythmWorkspacePage({ pillar, actionKey }: { pillar: JazanPillar; actionKey?: string }) {
+  const selectedActionKey =
+    actionKey && actionKey in decisionActionDetails ? (actionKey as keyof typeof decisionActionDetails) : "rebalance-field-response";
+  const selectedDecisionAction = decisionActionDetails[selectedActionKey];
+
   return (
     <PageFrame
       eyebrow="Pillar 05"
@@ -2143,8 +2194,12 @@ function DecisionRhythmWorkspacePage({ pillar }: { pillar: JazanPillar }) {
             </thead>
             <tbody>
               {correctiveActionQueue.map((row) => (
-                <tr className={row.selected ? "selected" : undefined} key={row.ticket}>
-                  <td><strong>{row.action}</strong></td>
+                <tr className={row.key === selectedActionKey ? "selected" : undefined} key={row.ticket}>
+                  <td>
+                    <Link className="decision-action-link" href={`${pillar.route}?action=${row.key}#focused-action`}>
+                      {row.action}
+                    </Link>
+                  </td>
                   <td>{row.impacted}</td>
                   <td><StrategicStatusChip status={row.lifecycle.toLowerCase().replaceAll(" ", "_")} /></td>
                   <td>{row.owner}</td>
@@ -2158,14 +2213,14 @@ function DecisionRhythmWorkspacePage({ pillar }: { pillar: JazanPillar }) {
         </div>
       </section>
 
-      <section className="panel jazan-workspace-section decision-action-detail">
+      <section className="panel jazan-workspace-section decision-action-detail" id="focused-action">
         <div className="jazan-section-header">
           <div>
-            <p className="eyebrow">Selected action detail</p>
+            <p className="eyebrow">{selectedDecisionAction.focusLabel}</p>
             <h2>{selectedDecisionAction.title}</h2>
             <p>{selectedDecisionAction.arabic}</p>
           </div>
-          <StrategicStatusChip status="in_progress" />
+          <StrategicStatusChip status={selectedDecisionAction.status.toLowerCase().replaceAll(" ", "_")} />
         </div>
 
         <div className="decision-action-meta">
@@ -2218,7 +2273,11 @@ function DecisionRhythmWorkspacePage({ pillar }: { pillar: JazanPillar }) {
                 </div>
               ))}
             </div>
-            <p className="strategic-helper-text">Last field update 8 hours ago - 2 service centers re-staffed, intake queue down 12%.</p>
+            <p className="strategic-helper-text">
+              {selectedActionKey === "visual-distortion-compliance"
+                ? "Last field update 2 days ago - 38 of 47 hot-spots resolved; evidence package submitted for verification. 9 cases pending property-owner compliance."
+                : "Last field update 8 hours ago - 2 service centers re-staffed, intake queue down 12%."}
+            </p>
           </article>
         </div>
 
@@ -2279,7 +2338,7 @@ export default async function JazanPerformancePillarPage({ params, searchParams 
   }
 
   if (pillar.id === "decision-rhythm-corrective-actions") {
-    return <DecisionRhythmWorkspacePage pillar={pillar} />;
+    return <DecisionRhythmWorkspacePage pillar={pillar} actionKey={query.action} />;
   }
 
   return (

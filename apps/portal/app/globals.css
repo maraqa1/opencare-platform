@@ -1039,6 +1039,7 @@ code {
 .jazan-status-chip.partial,
 .jazan-status-chip.in_review,
 .jazan-status-chip.in_progress,
+.jazan-status-chip.evidence_submitted,
 .jazan-status-chip.evidence,
 .jazan-status-chip.proposed,
 .jazan-status-chip.low {
@@ -2725,6 +2726,17 @@ code {
 .decision-action-table tr.selected {
   background: #dbeafe;
   box-shadow: inset 4px 0 0 #2563eb;
+}
+
+.decision-action-link {
+  color: #111827;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.decision-action-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 .decision-action-detail {
