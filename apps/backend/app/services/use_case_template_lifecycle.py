@@ -181,7 +181,7 @@ class UseCaseTemplateLifecycleService:
             raise ValueError("Uninstall requires confirm=true")
 
         record = self._require_record(package_id)
-        self.storage.mark_uninstalled(package_id, record["version"])
+        self.storage.mark_uninstalled(package_id, record["version"], preserve_audit=preserve_audit)
         record["enabled"] = False
         record["activation_status"] = "uninstalled"
         record["status"] = "uninstalled"

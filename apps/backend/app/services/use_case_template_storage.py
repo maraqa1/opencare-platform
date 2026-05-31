@@ -496,10 +496,18 @@ class UseCaseTemplateStorage:
         shutil.copytree(staged, target)
         return target
 
-    def mark_uninstalled(self, package_id: str, version: str) -> None:
-        installed = self.installed_dir(package_id, version)
-        if installed.exists():
-            shutil.rmtree(installed)
+    def mark_uninstalled(self, package_id: str, version: str, *, preserve_audit: bool) -> None:
+        paths_to_remove = [
+            self.installed_dir(package_id, version),
+            self.staged_dir(package_id, version),
+            self.upload_dir(package_id, version),
+        ]
+        if not preserve_audit:
+            paths_to_remove.append(self.log_dir(package_id, version))
+
+        for target in paths_to_remove:
+            if target.exists():
+                shutil.rmtree(target)
 
     def record_action(
         self,

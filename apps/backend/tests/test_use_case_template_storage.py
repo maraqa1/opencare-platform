@@ -257,6 +257,34 @@ class UseCaseTemplateStorageTests(unittest.TestCase):
             self.assertEqual(active_packages[0]["slug"], "patient-outcomes")
             self.assertEqual(active_packages[0]["product_promotion_status"], "promoted")
 
+    def test_mark_uninstalled_removes_staged_and_uploaded_assets_from_recovery(self):
+        with tempfile.TemporaryDirectory(prefix="use-case-storage-") as temp_dir:
+            storage = UseCaseTemplateStorage(Path(temp_dir) / "data")
+            staged_root = storage.staged_dir("golden-example", "1.0.0")
+            staged_root.mkdir(parents=True, exist_ok=True)
+            build_valid_package_tree(staged_root, slug="patient-outcomes")
+            storage.save_original_zip("golden-example", "1.0.0", b"zip-bytes")
+
+            storage.record_action(
+                package_id="golden-example",
+                slug="patient-outcomes",
+                version="1.0.0",
+                actor="portal-admin",
+                action="upload",
+                status="validated",
+                validation_result="warning",
+                log="Package uploaded.",
+            )
+
+            storage.mark_uninstalled("golden-example", "1.0.0", preserve_audit=True)
+            storage.save_registry({"packages": {}, "active_versions": {}})
+
+            packages = storage.list_packages()
+
+            self.assertEqual(packages, [])
+            self.assertFalse(storage.staged_dir("golden-example", "1.0.0").exists())
+            self.assertFalse(storage.upload_dir("golden-example", "1.0.0").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
