@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { getGovernanceUseCases, type GovernanceUseCase } from "@/lib/governance-registry";
@@ -108,13 +107,13 @@ export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
             {selectedModule.status === "active" ? "Active use case" : "Planned use case"}
           </span>
           {selectedModule.status === "active" ? (
-            <Link className="button primary" href={selectedModule.defaultHref ?? `/use-cases/${selectedModule.slug}`}>
+            <a className="button primary" href={selectedModule.defaultHref ?? `/use-cases/${selectedModule.slug}`}>
               {selectedModule.ctaLabel ?? "Open Workspace"}
-            </Link>
+            </a>
           ) : (
-            <Link className="button secondary" href="/admin/configuration">
+            <a className="button secondary" href="/admin/configuration">
               View Configuration
-            </Link>
+            </a>
           )}
         </div>
       </article>
@@ -196,9 +195,9 @@ export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
             <p className="eyebrow">Source-To-Decision Story</p>
             <h3>How data becomes an operational decision</h3>
           </div>
-          <Link className="secondary-link" href="/admin/governance">
+          <a className="secondary-link" href="/admin/governance">
             Open Governance Trust Map
-          </Link>
+          </a>
         </div>
         {lineage.length > 0 ? (
           <div className="use-case-lineage-strip">
@@ -219,9 +218,9 @@ export function UseCaseBriefing({ useCases }: { useCases: UseCaseModule[] }) {
           <p className="eyebrow">Workspace Navigation</p>
           <div className="button-row">
             {workspaceLinks.map((link) => (
-              <Link className="button secondary" href={link.href} key={link.href}>
+              <a className="button secondary" href={link.href} key={link.href}>
                 {link.label}
-              </Link>
+              </a>
             ))}
           </div>
         </section>
