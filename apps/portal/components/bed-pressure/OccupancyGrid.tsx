@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSharedJsonResource } from "@/lib/useSharedJsonResource";
 
 type OccupancyItem = {
   ward_id: string;
@@ -63,36 +64,10 @@ export function OccupancyGrid({
 }: {
   forecastBasePath?: string;
 }) {
-  const [payload, setPayload] = useState<OccupancyPayload | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadOccupancy() {
-      const response = await fetch("/api/portal/api/v1/occupancy/current", {
-        cache: "no-store",
-      });
-      const nextPayload = (await response.json()) as OccupancyPayload;
-      if (!cancelled) {
-        setPayload(nextPayload);
-      }
-    }
-
-    loadOccupancy().catch(() => {
-      if (!cancelled) {
-        setPayload({ summary: { critical: 0, warning: 0, normal: 0 }, items: [] });
-      }
-    });
-
-    const intervalId = window.setInterval(() => {
-      loadOccupancy().catch(() => undefined);
-    }, 60000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, []);
+  const { data: payload } = useSharedJsonResource<OccupancyPayload>("/api/portal/api/v1/occupancy/current", {
+    fallbackData: { summary: { critical: 0, warning: 0, normal: 0 }, items: [] },
+    refreshIntervalMs: 60000,
+  });
 
   const items = useMemo(() => {
     return [...(payload?.items ?? [])].sort((left, right) => {

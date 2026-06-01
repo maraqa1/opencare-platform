@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSharedJsonResource } from "@/lib/useSharedJsonResource";
 
 import {
   Area,
@@ -100,37 +101,18 @@ export function ForecastView({
   selectedWardId?: string;
   statusHref?: string;
 }) {
-  const [wards, setWards] = useState<OccupancyItem[]>([]);
+  const occupancy = useSharedJsonResource<{ items?: Array<OccupancyItem> }>("/api/portal/api/v1/occupancy/current", {
+    fallbackData: { items: [] },
+    refreshIntervalMs: 60000,
+  });
+  const wards = occupancy.data?.items ?? [];
   const [activeWardId, setActiveWardId] = useState<string | undefined>(selectedWardId);
   const [forecastRows, setForecastRows] = useState<ForecastRow[] | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadWards() {
-      const response = await fetch("/api/portal/api/v1/occupancy/current", { cache: "no-store" });
-      const payload = (await response.json()) as { items?: Array<OccupancyItem> };
-      if (cancelled) {
-        return;
-      }
-
-      const nextWards = payload.items ?? [];
-      setWards(nextWards);
-      setActiveWardId((currentWardId) => currentWardId ?? selectedWardId ?? nextWards[0]?.ward_id);
-    }
-
-    loadWards().catch(() => {
-      if (!cancelled) {
-        setWards([]);
-        setActiveWardId(undefined);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedWardId]);
+    setActiveWardId((currentWardId) => currentWardId ?? selectedWardId ?? wards[0]?.ward_id);
+  }, [selectedWardId, wards]);
 
   useEffect(() => {
     if (!activeWardId) {

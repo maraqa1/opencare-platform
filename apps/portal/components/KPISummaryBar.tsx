@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useSharedJsonResource } from "@/lib/useSharedJsonResource";
 
 type DashboardSummary = {
   critical_wards: number;
@@ -10,6 +11,18 @@ type DashboardSummary = {
   pipeline_status: "live" | "stale" | "error";
   last_refresh_minutes: number | null;
   next_refresh_minutes: number | null;
+};
+
+type OccupancyPayload = {
+  summary?: { critical?: number; warning?: number; normal?: number };
+  items?: Array<{ occupancy_rate?: number | null }>;
+};
+
+type RuntimePayload = {
+  runtimes?: Array<{
+    name?: string;
+    last_run?: string | null;
+  }>;
 };
 
 function formatMinutes(value: number | null) {
@@ -77,44 +90,40 @@ function KPICard({
 }
 
 export function KPISummaryBar() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const occupancy = useSharedJsonResource<OccupancyPayload>("/api/portal/api/v1/occupancy/current", {
+    fallbackData: { summary: { critical: 0, warning: 0, normal: 0 }, items: [] },
+    refreshIntervalMs: 60000,
+  });
+  const runtime = useSharedJsonResource<RuntimePayload>("/api/portal/api/v1/admin/runtime-status", {
+    fallbackData: { runtimes: [] },
+    refreshIntervalMs: 60000,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadSummary() {
-      const response = await fetch("/api/portal/dashboard/summary", {
-        cache: "no-store",
-      });
-      const payload = (await response.json()) as DashboardSummary;
-      if (!cancelled) {
-        setSummary(payload);
-      }
+  const summary = useMemo<DashboardSummary | null>(() => {
+    if (!occupancy.data || !runtime.data) {
+      return null;
     }
 
-    loadSummary().catch(() => {
-      if (!cancelled) {
-        setSummary({
-          critical_wards: 0,
-          warning_wards: 0,
-          normal_wards: 0,
-          avg_occupancy: 0,
-          pipeline_status: "error",
-          last_refresh_minutes: null,
-          next_refresh_minutes: null,
-        });
-      }
-    });
+    const forecastRuntime = (runtime.data.runtimes ?? []).find((item) => item.name === "forecast");
+    const lastRefreshMinutes = formatDiffMinutes(forecastRuntime?.last_run);
+    const items = occupancy.data.items ?? [];
+    const avgOccupancy =
+      items.length > 0
+        ? items.reduce((total, item) => total + (item.occupancy_rate ?? 0), 0) / items.length
+        : 0;
 
-    const intervalId = window.setInterval(() => {
-      loadSummary().catch(() => undefined);
-    }, 60000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
+    return {
+      critical_wards: occupancy.data.summary?.critical ?? 0,
+      warning_wards: occupancy.data.summary?.warning ?? 0,
+      normal_wards: occupancy.data.summary?.normal ?? 0,
+      avg_occupancy: avgOccupancy,
+      pipeline_status:
+        lastRefreshMinutes === null ? "error" : lastRefreshMinutes <= 75 ? "live" : "stale",
+      last_refresh_minutes: lastRefreshMinutes,
+      next_refresh_minutes:
+        lastRefreshMinutes === null ? null : Math.max(0, 60 - (lastRefreshMinutes % 60)),
     };
-  }, []);
+  }, [occupancy.data, runtime.data]);
 
   if (!summary) {
     return <KPISkeleton />;
@@ -160,4 +169,15 @@ export function KPISummaryBar() {
       </div>
     </section>
   );
+}
+
+function formatDiffMinutes(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return Math.max(0, Math.round((Date.now() - parsed.getTime()) / 60000));
 }

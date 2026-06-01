@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSharedJsonResource } from "@/lib/useSharedJsonResource";
 
 type SummaryPayload = {
   generated_at?: string | null;
@@ -73,47 +74,18 @@ export function AnomalyAlerts({
   statusHref?: string;
   forecastBasePath?: string;
 }) {
-  const [summary, setSummary] = useState<SummaryPayload | null>(null);
-  const [anomalies, setAnomalies] = useState<AnomalyPayload | null>(null);
   const activeFilter = severity ?? "all";
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadAlerts() {
-      const [summaryResponse, anomalyResponse] = await Promise.all([
-        fetch("/api/portal/api/v1/anomalies/summary", { cache: "no-store" }),
-        fetch(
-          `/api/portal/api/v1/anomalies${severity ? `?severity=${encodeURIComponent(severity)}` : ""}`,
-          { cache: "no-store" },
-        ),
-      ]);
-
-      const nextSummary = (await summaryResponse.json()) as SummaryPayload;
-      const nextAnomalies = (await anomalyResponse.json()) as AnomalyPayload;
-
-      if (!cancelled) {
-        setSummary(nextSummary);
-        setAnomalies(nextAnomalies);
-      }
-    }
-
-    loadAlerts().catch(() => {
-      if (!cancelled) {
-        setSummary({ summary: { critical: 0, warning: 0, info: 0 }, total: 0 });
-        setAnomalies({ items: [] });
-      }
-    });
-
-    const intervalId = window.setInterval(() => {
-      loadAlerts().catch(() => undefined);
-    }, 60000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [severity]);
+  const { data: summary } = useSharedJsonResource<SummaryPayload>("/api/portal/api/v1/anomalies/summary", {
+    fallbackData: { summary: { critical: 0, warning: 0, info: 0 }, total: 0 },
+    refreshIntervalMs: 60000,
+  });
+  const { data: anomalies } = useSharedJsonResource<AnomalyPayload>(
+    `/api/portal/api/v1/anomalies${severity ? `?severity=${encodeURIComponent(severity)}` : ""}`,
+    {
+      fallbackData: { items: [] },
+      refreshIntervalMs: 60000,
+    },
+  );
 
   const groupedAlerts = useMemo(() => {
     const grouped: Record<string, AnomalyItem[]> = {

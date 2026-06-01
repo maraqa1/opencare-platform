@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useSharedJsonResource } from "@/lib/useSharedJsonResource";
 
 type FetchState<T> = {
   data: T | null;
@@ -20,50 +21,19 @@ const ENDPOINT_MAP: Record<string, string> = {
 };
 
 export function useRCMFetch<T>(view: string, params?: Record<string, string>): FetchState<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [stale, setStale] = useState(false);
-  const [tick, setTick] = useState(0);
-
-  const refetch = useCallback(() => setTick((n) => n + 1), []);
-
-  useEffect(() => {
-    const base = ENDPOINT_MAP[view];
-    if (!base) return;
-
-    const url = params && Object.keys(params).length > 0
+  const base = ENDPOINT_MAP[view];
+  const url = useMemo(() => {
+    if (!base) {
+      return "";
+    }
+    return params && Object.keys(params).length > 0
       ? `${base}?${new URLSearchParams(params).toString()}`
       : base;
+  }, [base, params]);
+  const { data, loading, error, refetch } = useSharedJsonResource<T & { meta?: { freshness?: string } }>(url, {
+    enabled: Boolean(base),
+  });
+  const stale = data?.meta?.freshness === "stale";
 
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await fetch(url, { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json() as T & { meta?: { freshness?: string } };
-        if (!cancelled) {
-          setData(payload);
-          setStale(
-            (payload as { meta?: { freshness?: string } }).meta?.freshness === "stale"
-          );
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unable to reach backend.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void load();
-    return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, tick, JSON.stringify(params)]);
-
-  return { data, loading, error, stale, refetch };
+  return { data: data as T | null, loading, error, stale, refetch };
 }
