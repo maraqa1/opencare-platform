@@ -92,38 +92,46 @@ function KPICard({
 export function KPISummaryBar({
   initialOccupancy,
   initialRuntime,
+  occupancyData,
+  runtimeData,
 }: {
   initialOccupancy?: OccupancyPayload;
   initialRuntime?: RuntimePayload;
+  occupancyData?: OccupancyPayload;
+  runtimeData?: RuntimePayload;
 } = {}) {
   const occupancy = useSharedJsonResource<OccupancyPayload>("/api/portal/api/v1/occupancy/current", {
     fallbackData: { summary: { critical: 0, warning: 0, normal: 0 }, items: [] },
     initialData: initialOccupancy,
     refreshIntervalMs: 60000,
+    enabled: !occupancyData,
   });
   const runtime = useSharedJsonResource<RuntimePayload>("/api/portal/api/v1/admin/runtime-status", {
     fallbackData: { runtimes: [] },
     initialData: initialRuntime,
     refreshIntervalMs: 60000,
+    enabled: !runtimeData,
   });
+  const occupancySource = occupancyData ?? occupancy.data;
+  const runtimeSource = runtimeData ?? runtime.data;
 
   const summary = useMemo<DashboardSummary | null>(() => {
-    if (!occupancy.data || !runtime.data) {
+    if (!occupancySource || !runtimeSource) {
       return null;
     }
 
-    const forecastRuntime = (runtime.data.runtimes ?? []).find((item) => item.name === "forecast");
+    const forecastRuntime = (runtimeSource.runtimes ?? []).find((item) => item.name === "forecast");
     const lastRefreshMinutes = formatDiffMinutes(forecastRuntime?.last_run);
-    const items = occupancy.data.items ?? [];
+    const items = occupancySource.items ?? [];
     const avgOccupancy =
       items.length > 0
         ? items.reduce((total, item) => total + (item.occupancy_rate ?? 0), 0) / items.length
         : 0;
 
     return {
-      critical_wards: occupancy.data.summary?.critical ?? 0,
-      warning_wards: occupancy.data.summary?.warning ?? 0,
-      normal_wards: occupancy.data.summary?.normal ?? 0,
+      critical_wards: occupancySource.summary?.critical ?? 0,
+      warning_wards: occupancySource.summary?.warning ?? 0,
+      normal_wards: occupancySource.summary?.normal ?? 0,
       avg_occupancy: avgOccupancy,
       pipeline_status:
         lastRefreshMinutes === null ? "error" : lastRefreshMinutes <= 75 ? "live" : "stale",
@@ -131,7 +139,7 @@ export function KPISummaryBar({
       next_refresh_minutes:
         lastRefreshMinutes === null ? null : Math.max(0, 60 - (lastRefreshMinutes % 60)),
     };
-  }, [occupancy.data, runtime.data]);
+  }, [occupancySource, runtimeSource]);
 
   if (!summary) {
     return <KPISkeleton />;

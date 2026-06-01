@@ -62,36 +62,40 @@ function OccupancySkeleton() {
 export function OccupancyGrid({
   forecastBasePath = "/occupancy?tab=forecast",
   initialPayload,
+  occupancyData,
 }: {
   forecastBasePath?: string;
   initialPayload?: OccupancyPayload;
+  occupancyData?: OccupancyPayload;
 }) {
   const { data: payload } = useSharedJsonResource<OccupancyPayload>("/api/portal/api/v1/occupancy/current", {
     fallbackData: { summary: { critical: 0, warning: 0, normal: 0 }, items: [] },
     initialData: initialPayload,
     refreshIntervalMs: 60000,
+    enabled: !occupancyData,
   });
+  const sourcePayload = occupancyData ?? payload;
 
   const items = useMemo(() => {
-    return [...(payload?.items ?? [])].sort((left, right) => {
+    return [...(sourcePayload?.items ?? [])].sort((left, right) => {
       const statusDelta = STATUS_ORDER[left.status] - STATUS_ORDER[right.status];
       if (statusDelta !== 0) {
         return statusDelta;
       }
       return right.occupancy_rate - left.occupancy_rate;
     });
-  }, [payload]);
+  }, [sourcePayload]);
 
-  if (!payload) {
+  if (!sourcePayload) {
     return <OccupancySkeleton />;
   }
 
   return (
     <>
       <section className="summary-badges">
-        <span className="summary-badge critical">{payload.summary?.critical ?? 0} Critical</span>
-        <span className="summary-badge warning">{payload.summary?.warning ?? 0} Warning</span>
-        <span className="summary-badge normal">{payload.summary?.normal ?? 0} Normal</span>
+        <span className="summary-badge critical">{sourcePayload.summary?.critical ?? 0} Critical</span>
+        <span className="summary-badge warning">{sourcePayload.summary?.warning ?? 0} Warning</span>
+        <span className="summary-badge normal">{sourcePayload.summary?.normal ?? 0} Normal</span>
       </section>
       <section className="card-grid">
         {items.map((item, index) => {
