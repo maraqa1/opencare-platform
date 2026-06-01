@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function BedPressureStatusPage() {
   const occupancy = await getApiJson<{
-    summary?: { critical?: number; warning?: number; normal?: number };
+    summary?: { critical: number; warning: number; normal: number };
     items?: Array<{
       ward_id: string;
       ward_code?: string;
