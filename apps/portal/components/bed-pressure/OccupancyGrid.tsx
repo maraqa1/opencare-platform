@@ -61,11 +61,14 @@ function OccupancySkeleton() {
 
 export function OccupancyGrid({
   forecastBasePath = "/occupancy?tab=forecast",
+  initialPayload,
 }: {
   forecastBasePath?: string;
+  initialPayload?: OccupancyPayload;
 }) {
   const { data: payload } = useSharedJsonResource<OccupancyPayload>("/api/portal/api/v1/occupancy/current", {
     fallbackData: { summary: { critical: 0, warning: 0, normal: 0 }, items: [] },
+    initialData: initialPayload,
     refreshIntervalMs: 60000,
   });
 

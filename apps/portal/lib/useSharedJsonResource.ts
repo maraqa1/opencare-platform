@@ -67,14 +67,22 @@ export function useSharedJsonResource<T>(
   url: string,
   {
     fallbackData,
+    initialData,
     refreshIntervalMs,
     enabled = true,
   }: {
     fallbackData?: T;
+    initialData?: T;
     refreshIntervalMs?: number;
     enabled?: boolean;
   } = {},
 ) {
+  const entry = getCacheEntry<T>(url);
+  if (enabled && initialData !== undefined && entry.data === null) {
+    entry.data = initialData;
+    entry.error = "";
+  }
+
   const [, setVersion] = useState(0);
   const refresh = useCallback(() => {
     if (!enabled) {
@@ -111,13 +119,12 @@ export function useSharedJsonResource<T>(
     };
   }, [enabled, fallbackData, refreshIntervalMs, url]);
 
-  const entry = getCacheEntry<T>(url);
   const data = useMemo(() => {
     if (entry.data !== null) {
       return entry.data;
     }
-    return fallbackData ?? null;
-  }, [entry.data, fallbackData]);
+    return initialData ?? fallbackData ?? null;
+  }, [entry.data, fallbackData, initialData]);
 
   return {
     data: data as T | null,

@@ -11,6 +11,10 @@ type FetchState<T> = {
   refetch: () => void;
 };
 
+type UseRCMFetchOptions<T> = {
+  initialData?: T;
+};
+
 const ENDPOINT_MAP: Record<string, string> = {
   "cash-command":        "/api/portal/api/v1/revenue-cycle/cash-command",
   "recovery-queue":      "/api/portal/api/v1/revenue-cycle/recovery-queue",
@@ -20,7 +24,11 @@ const ENDPOINT_MAP: Record<string, string> = {
   "executive-narrative": "/api/portal/api/v1/revenue-cycle/executive-narrative",
 };
 
-export function useRCMFetch<T>(view: string, params?: Record<string, string>): FetchState<T> {
+export function useRCMFetch<T>(
+  view: string,
+  params?: Record<string, string>,
+  options: UseRCMFetchOptions<T> = {},
+): FetchState<T> {
   const base = ENDPOINT_MAP[view];
   const url = useMemo(() => {
     if (!base) {
@@ -32,6 +40,7 @@ export function useRCMFetch<T>(view: string, params?: Record<string, string>): F
   }, [base, params]);
   const { data, loading, error, refetch } = useSharedJsonResource<T & { meta?: { freshness?: string } }>(url, {
     enabled: Boolean(base),
+    initialData: options.initialData as (T & { meta?: { freshness?: string } }) | undefined,
   });
   const stale = data?.meta?.freshness === "stale";
 

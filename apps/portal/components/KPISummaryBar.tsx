@@ -89,13 +89,21 @@ function KPICard({
   );
 }
 
-export function KPISummaryBar() {
+export function KPISummaryBar({
+  initialOccupancy,
+  initialRuntime,
+}: {
+  initialOccupancy?: OccupancyPayload;
+  initialRuntime?: RuntimePayload;
+} = {}) {
   const occupancy = useSharedJsonResource<OccupancyPayload>("/api/portal/api/v1/occupancy/current", {
     fallbackData: { summary: { critical: 0, warning: 0, normal: 0 }, items: [] },
+    initialData: initialOccupancy,
     refreshIntervalMs: 60000,
   });
   const runtime = useSharedJsonResource<RuntimePayload>("/api/portal/api/v1/admin/runtime-status", {
     fallbackData: { runtimes: [] },
+    initialData: initialRuntime,
     refreshIntervalMs: 60000,
   });
 

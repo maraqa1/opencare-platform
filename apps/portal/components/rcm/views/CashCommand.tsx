@@ -46,9 +46,13 @@ function isOverdue(dueDate?: string | null) {
   return new Date(dueDate) < new Date(new Date().toDateString());
 }
 
-export function CashCommand() {
+export function CashCommand({
+  initialData,
+}: {
+  initialData?: CashCommandPayload;
+} = {}) {
   const { data, loading, error, stale, refetch } =
-    useRCMFetch<CashCommandPayload>("cash-command");
+    useRCMFetch<CashCommandPayload>("cash-command", undefined, { initialData });
   const [showExecutiveDashboard, setShowExecutiveDashboard] = useState(false);
 
   useEffect(() => {

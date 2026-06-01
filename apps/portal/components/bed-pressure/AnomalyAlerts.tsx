@@ -68,21 +68,27 @@ export function AnomalyAlerts({
   basePath = "/occupancy?tab=alerts",
   statusHref = "/occupancy?tab=occupancy",
   forecastBasePath = "/occupancy?tab=forecast",
+  initialSummary,
+  initialAnomalies,
 }: {
   severity?: string;
   basePath?: string;
   statusHref?: string;
   forecastBasePath?: string;
+  initialSummary?: SummaryPayload;
+  initialAnomalies?: AnomalyPayload;
 }) {
   const activeFilter = severity ?? "all";
   const { data: summary } = useSharedJsonResource<SummaryPayload>("/api/portal/api/v1/anomalies/summary", {
     fallbackData: { summary: { critical: 0, warning: 0, info: 0 }, total: 0 },
+    initialData: initialSummary,
     refreshIntervalMs: 60000,
   });
   const { data: anomalies } = useSharedJsonResource<AnomalyPayload>(
     `/api/portal/api/v1/anomalies${severity ? `?severity=${encodeURIComponent(severity)}` : ""}`,
     {
       fallbackData: { items: [] },
+      initialData: initialAnomalies,
       refreshIntervalMs: 60000,
     },
   );
