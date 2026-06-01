@@ -9,7 +9,7 @@ type PageProps = {
   searchParams?: Promise<{ demo?: string; decision?: string; model?: string }>;
 };
 
-type ScreenId = "overview" | "kpi-contract" | "model-intelligence" | "decision-action-tracker" | "outcome-feedback";
+type ScreenId = "overview" | "kpi-contract" | "model-intelligence" | "decision-action-tracker" | "outcome-feedback" | "governance-evidence";
 
 const baseRoute = "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop";
 
@@ -48,6 +48,13 @@ const screens: Array<{ id: ScreenId; label: string; title: string; titleAr: stri
     title: "Outcome Recovery & Learning Feedback",
     titleAr: "قياس التعافي والتغذية الراجعة",
     href: `${baseRoute}/outcome-feedback`,
+  },
+  {
+    id: "governance-evidence",
+    label: "06 · Governance evidence",
+    title: "Governance Evidence",
+    titleAr: "Data governance, lineage, quality, classification, and evidence packs",
+    href: `${baseRoute}/governance-evidence`,
   },
 ];
 
@@ -91,6 +98,22 @@ const kpiObjectiveStats = [
   ["Alignment", "100%"],
 ];
 
+const kpiMonitorCards = [
+  ["Visual distortion closure quality", "100%", ">=90%", "On track", "No action"],
+  ["Service request closure rate", "91%", ">=90%", "On track", "Monitor"],
+  ["Average permit issuance time", "1.2d", "<=1.4d", "On track", "No action"],
+  ["Urban service coverage", "96%", ">=95%", "On track", "No action"],
+  ["Emergency readiness", "97%", ">=90%", "On track", "No action"],
+  ["Citizen satisfaction", "4.2/5", ">=4.0", "On track", "Monitor"],
+];
+
+const triggerRules = [
+  ["KPI breach", "Current below target", "Create decision candidate", "Pillar 5"],
+  ["Forecast breach", "RNN predicts target miss within 4 weeks", "Queue advisory action", "Pillar 4 -> 5"],
+  ["Anomaly", "z-score exceeds threshold", "Request review", "Pillar 4"],
+  ["Repeated gap", "Same municipality at risk twice", "Training / sustainability need", "Pillar 6"],
+];
+
 const decisionStats = [
   ["New decisions", "7"],
   ["Under review", "5"],
@@ -108,6 +131,15 @@ const outcomeStats = [
   ["Closed", "2"],
   ["Avg improvement", "+10.2 pp"],
 ];
+
+const activeCase = {
+  municipality: "Samtah",
+  riskScore: "84 / 100",
+  breachProbability: "78%",
+  stage: "Evidence",
+  owner: "Field Compliance",
+  due: "+5 days",
+};
 
 const pipelineStages = [
   ["KPI contract", `${baseRoute}/kpi-contract`],
@@ -240,6 +272,14 @@ const evidenceGroups = [
   ["Analytics marts", "analytics.fct_jazan_visual_distortion_performance", "analytics.fct_jazan_service_quality", "analytics.fct_jazan_corrective_action"],
   ["Outputs", "output.jazan_service_rnn_forecast", "output.jazan_service_quality_anomaly", "output.jazan_municipality_service_risk_score"],
   ["Decision tables", "decision.jazan_generated_service_decisions", "decision.jazan_service_quality_action_queue", "decision.jazan_visual_distortion_recovery_outcome"],
+  ["APIs", "GET /api/v1/jazan/service-quality/overview", "POST /api/v1/jazan/service-quality/decisions/{id}/approve", "POST /api/v1/jazan/service-quality/actions/{id}/close"],
+];
+
+const governanceRows = [
+  ["visual_distortion_cases", "Restricted", "Field Compliance", "DQ pass", "source -> raw -> staging -> analytics -> output -> decision"],
+  ["service_requests", "Internal", "Services Agency", "DQ watch", "source -> raw -> staging -> analytics.fct_jazan_service_quality"],
+  ["jazan_service_rnn_forecast", "Internal model output", "Forecast Runtime", "Fresh", "analytics features -> RNN output -> decision candidate"],
+  ["jazan_generated_service_decisions", "Restricted", "Decision Engine", "Audited", "model outputs -> human approval -> action queue"],
 ];
 
 export const metadata: Metadata = {
@@ -297,6 +337,46 @@ function EvidenceGrid() {
         </article>
       ))}
     </div>
+  );
+}
+
+function ActiveCaseBanner({ demo }: { demo: boolean }) {
+  if (!demo) return <EmptyPanel label="No active case loaded" />;
+
+  return (
+    <section className="panel usecase-active-case">
+      <div>
+        <p className="eyebrow">Active case banner</p>
+        <h2>{activeCase.municipality} visual-distortion decision loop</h2>
+      </div>
+      {[
+        ["Risk score", activeCase.riskScore],
+        ["Breach probability", activeCase.breachProbability],
+        ["Stage", activeCase.stage],
+        ["Owner", activeCase.owner],
+        ["Due", activeCase.due],
+      ].map(([label, value]) => (
+        <article key={label}>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function GovernanceMiniPanel() {
+  return (
+    <section className="panel usecase-governance-mini">
+      <p className="eyebrow">Data governance evidence</p>
+      <div>
+        <span>Freshness: demo runtime</span>
+        <span>Owner: Field Compliance</span>
+        <span>Classification: Restricted</span>
+        <span>DQ: monitored</span>
+        <Link href={`${baseRoute}/governance-evidence?demo=1`}>Open governance evidence</Link>
+      </div>
+    </section>
   );
 }
 
@@ -455,6 +535,49 @@ function KpiContractScreen({ demo }: { demo: boolean }) {
         )}
       </section>
       <section className="panel usecase-section">
+        <p className="eyebrow">Objective-to-KPI mapping & monitoring</p>
+        <h2>Strategic objective branches into governed KPIs</h2>
+        {demo ? (
+          <div className="usecase-kpi-map">
+            <article className="objective-node">
+              <span>Strategic objective</span>
+              <strong>Sustain and improve municipal service quality and visual-distortion response</strong>
+            </article>
+            <div className="kpi-node-grid">
+              {dashboardKpiRows.map(([kpi, formula, target, current, status, owner, source]) => (
+                <article key={kpi}>
+                  <span>{status}</span>
+                  <strong>{kpi}</strong>
+                  <p>{current} vs {target}</p>
+                  <small>{owner} · {source} · {formula}</small>
+                </article>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <EmptyPanel />
+        )}
+      </section>
+      <section className="panel usecase-section">
+        <p className="eyebrow">KPI monitoring cards</p>
+        <h2>Every KPI has status, risk, and next action</h2>
+        {demo ? (
+          <div className="usecase-monitor-grid">
+            {kpiMonitorCards.map(([kpi, current, target, status, nextAction]) => (
+              <article key={kpi}>
+                <span>{status}</span>
+                <h3>{kpi}</h3>
+                <strong>{current}</strong>
+                <p>Target: {target}</p>
+                <small>Next: {nextAction}</small>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel />
+        )}
+      </section>
+      <section className="panel usecase-section">
         <p className="eyebrow">Governed KPI contract</p>
         <h2>Definitions, targets, current status, owners, and sources</h2>
         {demo ? (
@@ -475,9 +598,18 @@ function KpiContractScreen({ demo }: { demo: boolean }) {
         )}
       </section>
       <section className="panel usecase-section">
-        <p className="eyebrow">Notes</p>
-        <h2>Thresholds and accountability</h2>
-        <p>Green is on track, amber is at risk, and red is off track. Owners and data owners are explicit so every KPI is auditable and actionable.</p>
+        <p className="eyebrow">Monitoring trigger rules</p>
+        <h2>How KPI risk becomes a decision pipeline item</h2>
+        {demo ? (
+          <div className="jazan-table-wrap strategic-scroll-table">
+            <table className="table jazan-data-table">
+              <thead><tr>{["Trigger", "Condition", "Action", "Carry forward"].map((column) => <th key={column}>{column}</th>)}</tr></thead>
+              <tbody>{triggerRules.map((row) => <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyPanel />
+        )}
       </section>
     </>
   );
@@ -598,9 +730,13 @@ function DecisionTrackerScreen({ demo, selectedDecision }: { demo: boolean; sele
                     <td>{row.owner}</td>
                     <td>{row.due}</td>
                     <td>
-                      <Link className="decision-action-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=${row.id}#decision-detail`}>
-                        Open
-                      </Link>
+                      <div className="usecase-command-buttons">
+                        {["Approve", "Escalate", "Create ticket", "Email owner"].map((action) => (
+                          <Link className="decision-action-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=${row.id}#decision-detail`} key={action}>
+                            {action}
+                          </Link>
+                        ))}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -725,6 +861,57 @@ function OutcomeFeedbackScreen({ demo }: { demo: boolean }) {
   );
 }
 
+function GovernanceEvidenceScreen({ demo }: { demo: boolean }) {
+  return (
+    <>
+      <section className="panel usecase-section">
+        <p className="eyebrow">Governance evidence workspace</p>
+        <h2>Catalog, ownership, classification, quality, lineage, and evidence packs</h2>
+        <p>
+          v1.0.7 makes governance a visible operating layer. Every KPI, runtime output, decision candidate, and action event
+          has owner metadata, classification, DQ status, lineage, and evidence-pack traceability.
+        </p>
+      </section>
+      <section className="panel usecase-section">
+        <p className="eyebrow">Governed assets</p>
+        <h2>Source-to-decision catalog</h2>
+        {demo ? (
+          <div className="jazan-table-wrap strategic-scroll-table">
+            <table className="table jazan-data-table">
+              <thead><tr>{["Asset", "Classification", "Owner", "DQ / freshness", "Lineage"].map((column) => <th key={column}>{column}</th>)}</tr></thead>
+              <tbody>{governanceRows.map((row) => <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>)}</tbody>
+            </table>
+          </div>
+        ) : (
+          <EmptyPanel />
+        )}
+      </section>
+      <section className="panel usecase-section">
+        <p className="eyebrow">Evidence pack exports</p>
+        <h2>Audit-ready evidence</h2>
+        {demo ? (
+          <div className="usecase-monitor-grid">
+            {[
+              ["KPI definition pack", "Formulas, targets, owners, source mappings"],
+              ["Runtime evidence pack", "RNN run, anomaly run, scored rows, output tables"],
+              ["Decision audit pack", "Human approval, actions, ticket/email outbox, decision log"],
+              ["Outcome learning pack", "Before/after results, forecast accuracy, recommendation effectiveness"],
+            ].map(([title, text]) => (
+              <article key={title}>
+                <span>Exportable</span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel />
+        )}
+      </section>
+    </>
+  );
+}
+
 function ScreenBody({
   screen,
   demo,
@@ -740,6 +927,7 @@ function ScreenBody({
   if (screen === "model-intelligence") return <ModelIntelligenceScreen demo={demo} selectedModel={selectedModel} />;
   if (screen === "decision-action-tracker") return <DecisionTrackerScreen demo={demo} selectedDecision={selectedDecision} />;
   if (screen === "outcome-feedback") return <OutcomeFeedbackScreen demo={demo} />;
+  if (screen === "governance-evidence") return <GovernanceEvidenceScreen demo={demo} />;
   return <OverviewScreen demo={demo} />;
 }
 
@@ -773,6 +961,7 @@ export default async function UrbanServiceQualityUseCasePage({ params, searchPar
       pageClassName="jazan-workspace-page usecase-loop-page"
     >
       <UseCaseTabs active={screen} demo={demo} />
+      <ActiveCaseBanner demo={demo} />
       <section className="panel usecase-section usecase-hero-contract">
         <p className="eyebrow">Purpose</p>
         <h2>Full golden thread from strategy to recovery</h2>
@@ -782,6 +971,7 @@ export default async function UrbanServiceQualityUseCasePage({ params, searchPar
         </p>
       </section>
       <ScreenBody screen={screen} demo={demo} selectedDecision={query.decision} selectedModel={query.model} />
+      <GovernanceMiniPanel />
     </PageFrame>
   );
 }
