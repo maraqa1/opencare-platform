@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type OccupancyItem = {
@@ -158,12 +157,12 @@ export function OccupancyGrid({
                   <dd>{item.discharges_today}</dd>
                 </div>
               </dl>
-              <Link
+              <a
                 className="inline-link"
                 href={`${forecastBasePath}${forecastBasePath.includes("?") ? "&" : "?"}ward=${encodeURIComponent(item.ward_id)}`}
               >
                 View Forecast
-              </Link>
+              </a>
             </article>
           );
         })}

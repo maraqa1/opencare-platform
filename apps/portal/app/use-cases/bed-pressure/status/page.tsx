@@ -1,10 +1,69 @@
 import type { Metadata } from "next";
-import { AnomalyAlerts } from "@/components/bed-pressure/AnomalyAlerts";
-import { OccupancyGrid } from "@/components/bed-pressure/OccupancyGrid";
-import { KPISummaryBar } from "@/components/KPISummaryBar";
+import dynamic from "next/dynamic";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
+
+const KPISummaryBar = dynamic(
+  () => import("@/components/KPISummaryBar").then((module) => module.KPISummaryBar),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="kpi-summary-bar" aria-label="Loading dashboard summary">
+        <div className="kpi-cards">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div className="kpi-skeleton-card" key={index}>
+              <span className="skeleton-line short" />
+              <span className="skeleton-line tall" />
+              <span className="skeleton-line medium" style={{ marginTop: 18 }} />
+            </div>
+          ))}
+        </div>
+      </section>
+    ),
+  },
+);
+
+const OccupancyGrid = dynamic(
+  () => import("@/components/bed-pressure/OccupancyGrid").then((module) => module.OccupancyGrid),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="card-grid" aria-label="Loading occupancy cards">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <article key={index} className="ward-card normal">
+            <span className="skeleton-line medium" />
+            <span className="skeleton-line tall" />
+            <span className="skeleton-line medium" style={{ marginTop: 18 }} />
+          </article>
+        ))}
+      </section>
+    ),
+  },
+);
+
+const AnomalyAlerts = dynamic(
+  () => import("@/components/bed-pressure/AnomalyAlerts").then((module) => module.AnomalyAlerts),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="panel" aria-label="Loading alerts">
+        <div className="button-row">
+          <span className="skeleton-line medium" style={{ width: 480, height: 44 }} />
+        </div>
+        <div className="alert-feed">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="alert-card severity-warning">
+              <span className="skeleton-line medium" />
+              <span className="skeleton-line short" style={{ marginTop: 14 }} />
+              <span className="skeleton-line medium" style={{ marginTop: 14 }} />
+            </div>
+          ))}
+        </div>
+      </section>
+    ),
+  },
+);
 
 export const metadata: Metadata = {
   title: "Bed Pressure Status - OpenCare Portal",

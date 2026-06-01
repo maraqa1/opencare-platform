@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type SummaryPayload = {
@@ -166,13 +165,13 @@ export function AnomalyAlerts({
         </div>
         <div className="filter-row">
           {filters.map((filter) => (
-            <Link
+            <a
               key={filter.key}
               href={filter.href}
               className={filter.key === activeFilter ? "filter-chip active" : "filter-chip"}
             >
               {filter.label}
-            </Link>
+            </a>
           ))}
         </div>
       </div>
@@ -230,18 +229,18 @@ export function AnomalyAlerts({
                     </div>
                   </div>
                   <div className="alert-actions">
-                    <Link
+                    <a
                       className="secondary-link"
                       href={statusHref}
                     >
                       View Ward
-                    </Link>
-                    <Link
+                    </a>
+                    <a
                       className="button primary"
                       href={`${forecastBasePath}${forecastBasePath.includes("?") ? "&" : "?"}ward=${encodeURIComponent(item.ward_id)}`}
                     >
                       View Forecast
-                    </Link>
+                    </a>
                   </div>
                 </details>
               ))}

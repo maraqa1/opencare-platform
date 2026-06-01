@@ -1,6 +1,7 @@
 "use client";
 
-import { RCMDashboard } from "@/components/RCMDashboard";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { RCMNavTabs }   from "../layout/RCMNavTabs";
 import { CFO_DASHBOARD_URL, RCMPageHeader } from "../layout/RCMPageHeader";
 import { KPIGrid }       from "../layout/KPIGrid";
@@ -16,6 +17,30 @@ import {
   issueTypeLabel, ownerLabel, payerLabel, departmentLabel,
 } from "@/lib/displayNames";
 
+const RCMDashboard = dynamic(
+  () => import("@/components/RCMDashboard").then((module) => module.RCMDashboard),
+  {
+    ssr: false,
+    loading: () => (
+      <section className="rcm-dashboard-shell">
+        <div className="panel">
+          <span className="skeleton-line short" />
+          <span className="skeleton-line medium" style={{ marginTop: "0.75rem" }} />
+        </div>
+        <div className="kpi-cards">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article className="kpi-skeleton-card" key={index}>
+              <span className="skeleton-line short" />
+              <span className="skeleton-line tall" />
+              <span className="skeleton-line medium" style={{ marginTop: "1rem" }} />
+            </article>
+          ))}
+        </div>
+      </section>
+    ),
+  },
+);
+
 function isOverdue(dueDate?: string | null) {
   if (!dueDate) return false;
   return new Date(dueDate) < new Date(new Date().toDateString());
@@ -24,6 +49,26 @@ function isOverdue(dueDate?: string | null) {
 export function CashCommand() {
   const { data, loading, error, stale, refetch } =
     useRCMFetch<CashCommandPayload>("cash-command");
+  const [showExecutiveDashboard, setShowExecutiveDashboard] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: number | undefined;
+    const windowWithIdleScheduler = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const schedule = () => setShowExecutiveDashboard(true);
+    if (windowWithIdleScheduler.requestIdleCallback && windowWithIdleScheduler.cancelIdleCallback) {
+      const idleId = windowWithIdleScheduler.requestIdleCallback(schedule);
+      return () => windowWithIdleScheduler.cancelIdleCallback?.(idleId);
+    }
+    timeoutId = window.setTimeout(schedule, 0);
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
 
   const topActions      = data?.top_actions ?? [];
   const expiring        = data?.expiring_opportunities ?? [];
@@ -55,9 +100,6 @@ export function CashCommand() {
           { label: "EXPECTED COLLECTIONS",   value: currencyCompact(data.expected_collections) },
         ]} />
       )}
-
-      {/* Executive dashboard with charts (uses its own fetch internally) */}
-      <RCMDashboard />
 
       {/* Operational action section */}
       {loading && <LoadingView />}
@@ -197,6 +239,9 @@ export function CashCommand() {
           </div>
         </>
       )}
+
+      {/* Defer the heavier executive dashboard until after the workspace shell has painted. */}
+      {showExecutiveDashboard && <RCMDashboard />}
 
       {/* AR Days footer badge */}
       <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
