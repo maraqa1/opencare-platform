@@ -6,7 +6,7 @@ import { PageFrame } from "@/components/page-frame";
 
 type PageProps = {
   params: Promise<{ screen?: string[] }>;
-  searchParams?: Promise<{ demo?: string }>;
+  searchParams?: Promise<{ demo?: string; decision?: string; model?: string }>;
 };
 
 type ScreenId = "overview" | "kpi-contract" | "model-intelligence" | "decision-action-tracker" | "outcome-feedback";
@@ -109,6 +109,53 @@ const outcomeStats = [
   ["Avg improvement", "+10.2 pp"],
 ];
 
+const pipelineStages = [
+  ["KPI contract", `${baseRoute}/kpi-contract`],
+  ["Forecast model", `${baseRoute}/model-intelligence?model=rnn-forecast`],
+  ["Risk decision", `${baseRoute}/decision-action-tracker?decision=JZN-DEC-1007`],
+  ["Corrective action", `${baseRoute}/decision-action-tracker?decision=JZN-DEC-1011`],
+  ["Outcome learning", `${baseRoute}/outcome-feedback`],
+];
+
+const forecastSeries = [
+  ["Week 0", 82, 90],
+  ["Week 1", 80, 90],
+  ["Week 2", 76, 90],
+  ["Week 3", 72, 90],
+  ["Week 4", 68, 90],
+];
+
+const modelCards = [
+  {
+    key: "rnn-forecast",
+    title: "RNN Forecast",
+    value: "78% breach probability",
+    note: "GRU/LSTM sequence runtime forecasts target breach within 4 weeks.",
+    output: "output.jazan_service_rnn_forecast",
+  },
+  {
+    key: "anomaly-detection",
+    title: "Anomaly Detection",
+    value: "+23% deviation",
+    note: "Resolution time and complaint volume are above local historical baseline.",
+    output: "output.jazan_service_quality_anomaly",
+  },
+  {
+    key: "composite-risk",
+    title: "Composite Risk Score",
+    value: "84 / 100 high risk",
+    note: "Weighted model combining forecast, anomaly, backlog, SLA, and complaints.",
+    output: "output.jazan_municipality_service_risk_score",
+  },
+  {
+    key: "recommendation-lookup",
+    title: "Recommendation Lookup",
+    value: "Field-response rebalancing",
+    note: "Similarity lookup finds recovered cases and proposes advisory actions.",
+    output: "output.jazan_recommended_intervention",
+  },
+];
+
 const goldenThread = [
   ["Pillar 1", "Objective certified", "Service quality and visual-distortion response aligned to Jazan strategy."],
   ["Pillar 2", "KPI contract", "Targets, thresholds, owners, and source systems defined."],
@@ -134,12 +181,51 @@ const decisionButtons = [
   ["Verify & Close", "POST /api/v1/jazan/service-quality/actions/{action_id}/close"],
 ];
 
-const decisionRows = [
-  ["JZN-DEC-1007", "Samtah", "Visual distortion complaints", "78%", "Joint inspection sweep + owner notification", "Field Compliance", "+5 days", "Evidence pending"],
-  ["JZN-DEC-1011", "Sabya", "Service closure delay", "84%", "Rebalance field-response capacity", "Services Agency", "+23 days", "In progress"],
-  ["JZN-DEC-1015", "Abu Arish", "Permit SLA breach", "72%", "Permit backlog recovery sprint", "Licensing Department", "+14 days", "Under review"],
-  ["JZN-DEC-1020", "Municipality 13", "Readiness degradation", "69%", "Emergency readiness checklist refresh", "Emergency Team", "+10 days", "Approved"],
-  ["JZN-DEC-1024", "Jazan Central", "Citizen satisfaction drop", "64%", "Service center quality review", "Service Quality", "+21 days", "Escalate"],
+const decisionCases = [
+  {
+    id: "JZN-DEC-1007",
+    municipality: "Samtah",
+    risk: "Visual distortion complaints",
+    probability: "78%",
+    action: "Joint inspection sweep + owner notification",
+    owner: "Field Compliance",
+    due: "+5 days",
+    status: "Evidence pending",
+    stage: "Evidence",
+    evidence: [
+      ["Complaint anomaly", "Citizen complaints +287% over 14 days - 47 reports vs baseline 12.", "z = +3.2"],
+      ["Backlog forecast", "Complaint backlog projected to breach 30-day SLA in 21 days without action.", "LSTM runtime"],
+      ["Composite risk", "42 / 100 - Moderate: complaint surge, cluster concentration, property-owner non-response.", "dbt mart"],
+      ["Recommendation", "Joint inspection sweep and property-owner notification under municipal compliance code.", "similarity lookup"],
+    ],
+    log: [
+      "Auto-triggered by early-warning complaint-anomaly detector.",
+      "Property-owner notifications dispatched.",
+      "Evidence package submitted to verification queue.",
+    ],
+  },
+  {
+    id: "JZN-DEC-1011",
+    municipality: "Sabya",
+    risk: "Service closure delay",
+    probability: "84%",
+    action: "Rebalance field-response capacity",
+    owner: "Services Agency",
+    due: "+23 days",
+    status: "In progress",
+    stage: "In progress",
+    evidence: [
+      ["Forecast", "78% probability of missing closure-rate target within 4 weeks.", "RNN runtime"],
+      ["Anomaly", "Resolution time +23% above Sabya baseline.", "z = +2.4"],
+      ["Composite risk", "84 / 100 - High: forecast 78%, anomaly +2.4, backlog +18%, SLA -8pp.", "dbt mart"],
+      ["Recommendation", "Field-response rebalancing and SLA escalation protocol.", "advisory"],
+    ],
+    log: [
+      "Auto-triggered by early-warning composite risk score.",
+      "Weekly review approved intervention.",
+      "Services Agency activated field-response protocol.",
+    ],
+  },
 ];
 
 const recoveryRows = [
@@ -250,6 +336,34 @@ function NumberedFlow({ labels }: { labels: string[] }) {
   );
 }
 
+function PipelineLinks({ demo }: { demo: boolean }) {
+  const suffix = demo ? "&demo=1" : "";
+  return (
+    <div className="usecase-pipeline-links" aria-label="Clickable decision pipeline">
+      {pipelineStages.map(([label, href], index) => (
+        <Link href={`${href}${href.includes("?") ? suffix : demo ? "?demo=1" : ""}`} key={label}>
+          <span>{index + 1}</span>
+          {label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function ForecastMiniChart() {
+  return (
+    <div className="usecase-forecast-chart" aria-label="Four week service quality forecast">
+      {forecastSeries.map(([week, value]) => (
+        <div className="usecase-forecast-column" key={week}>
+          <strong style={{ height: `${Number(value) / 1.4}%` }} />
+          <small>{week}</small>
+        </div>
+      ))}
+      <em>target 90%</em>
+    </div>
+  );
+}
+
 function OverviewScreen({ demo }: { demo: boolean }) {
   return (
     <>
@@ -259,7 +373,10 @@ function OverviewScreen({ demo }: { demo: boolean }) {
           <h2>Closed-loop operating cycle</h2>
           <p>Set targets, predict risk, recommend action, track execution, measure recovery, and learn.</p>
           {demo ? (
-            <NumberedFlow labels={["Strategic objective", "KPI contract", "Certified data", "Predict & recommend", "Track", "Improve"]} />
+            <>
+              <NumberedFlow labels={["Strategic objective", "KPI contract", "Certified data", "Predict & recommend", "Track", "Improve"]} />
+              <PipelineLinks demo={demo} />
+            </>
           ) : (
             <EmptyPanel />
           )}
@@ -291,6 +408,9 @@ function OverviewScreen({ demo }: { demo: boolean }) {
               <h2>Field-response rebalancing + SLA escalation + repeat-zone prioritization.</h2>
               <p>Similar cases: 3</p>
               <p>Expected lift: +9 to +13 pp</p>
+              <Link className="secondary-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=JZN-DEC-1011`}>
+                Open decision pipeline
+              </Link>
             </article>
             <article className="panel usecase-section action-status-card">
               <p className="eyebrow">Active Corrective Actions</p>
@@ -363,7 +483,9 @@ function KpiContractScreen({ demo }: { demo: boolean }) {
   );
 }
 
-function ModelIntelligenceScreen({ demo }: { demo: boolean }) {
+function ModelIntelligenceScreen({ demo, selectedModel }: { demo: boolean; selectedModel?: string }) {
+  const activeModel = modelCards.find((item) => item.key === selectedModel) ?? modelCards[0];
+
   return (
     <>
       <section className="panel usecase-section">
@@ -386,12 +508,20 @@ function ModelIntelligenceScreen({ demo }: { demo: boolean }) {
               <p>Breach probability</p>
               <strong className="blue">78%</strong>
               <p>Top driver: visual distortion closure quality and repeated complaints.</p>
+              <ForecastMiniChart />
             </article>
             <div className="usecase-card-grid model-cards">
-              <article><h3>RNN Forecast</h3><strong>78% probability of missing target</strong><p>GRU/LSTM runtime</p></article>
-              <article><h3>Anomaly Detection</h3><strong>+23% resolution-time deviation</strong><p>z-score vs history</p></article>
-              <article><h3>Composite Risk Score</h3><strong>84 / 100 high risk</strong><StatusDonut value="84%" tone="red" /></article>
-              <article><h3>Recommendation Lookup</h3><strong>Field-response rebalancing</strong><p>similar cases: 3</p></article>
+              {modelCards.map((model) => (
+                <Link
+                  className={model.key === activeModel.key ? "selected-model-card" : undefined}
+                  href={`${baseRoute}/model-intelligence?demo=1&model=${model.key}`}
+                  key={model.key}
+                >
+                  <h3>{model.title}</h3>
+                  <strong>{model.value}</strong>
+                  <p>{model.note}</p>
+                </Link>
+              ))}
             </div>
           </>
         ) : (
@@ -413,11 +543,30 @@ function ModelIntelligenceScreen({ demo }: { demo: boolean }) {
           </div>
         ) : <EmptyPanel />}
       </section>
+      <section className="panel usecase-section">
+        <p className="eyebrow">Selected predictive runtime</p>
+        <h2>{activeModel.title}</h2>
+        {demo ? (
+          <div className="usecase-runtime-detail">
+            <ForecastMiniChart />
+            <div>
+              <strong>{activeModel.value}</strong>
+              <p>{activeModel.note}</p>
+              <code>{activeModel.output}</code>
+              <Link className="secondary-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=JZN-DEC-1007`}>
+                Send model output to decision queue
+              </Link>
+            </div>
+          </div>
+        ) : <EmptyPanel />}
+      </section>
     </>
   );
 }
 
-function DecisionTrackerScreen({ demo }: { demo: boolean }) {
+function DecisionTrackerScreen({ demo, selectedDecision }: { demo: boolean; selectedDecision?: string }) {
+  const activeDecision = decisionCases.find((item) => item.id === selectedDecision) ?? decisionCases[0];
+
   return (
     <>
       <section className="panel usecase-section">
@@ -435,8 +584,25 @@ function DecisionTrackerScreen({ demo }: { demo: boolean }) {
                 <tr>{["Decision ID", "Municipality", "Risk", "Breach prob.", "Recommended action", "Owner", "Due", "Actions"].map((column) => <th key={column}>{column}</th>)}</tr>
               </thead>
               <tbody>
-                {decisionRows.map((row) => (
-                  <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
+                {decisionCases.map((row) => (
+                  <tr className={row.id === activeDecision.id ? "selected" : undefined} key={row.id}>
+                    <td>
+                      <Link className="decision-action-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=${row.id}#decision-detail`}>
+                        {row.id}
+                      </Link>
+                    </td>
+                    <td>{row.municipality}</td>
+                    <td>{row.risk}</td>
+                    <td>{row.probability}</td>
+                    <td>{row.action}</td>
+                    <td>{row.owner}</td>
+                    <td>{row.due}</td>
+                    <td>
+                      <Link className="decision-action-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=${row.id}#decision-detail`}>
+                        Open
+                      </Link>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -458,6 +624,59 @@ function DecisionTrackerScreen({ demo }: { demo: boolean }) {
           <h2>Audit-safe backend workflow</h2>
           <p>When the user clicks Escalate or Create Ticket, the backend writes an action event, creates an escalation request, and adds email or ticket records to the notification outbox.</p>
         </article>
+      </section>
+      <section className="panel usecase-section usecase-decision-detail" id="decision-detail">
+        <div className="usecase-detail-header">
+          <div>
+            <p className="eyebrow">Focused decision pipeline</p>
+            <h2>{activeDecision.action}</h2>
+            <p>{activeDecision.municipality} - {activeDecision.risk}</p>
+          </div>
+          <span>{activeDecision.stage}</span>
+        </div>
+        {demo ? (
+          <>
+            <div className="decision-lifecycle-line">
+              {["Proposed", "Approved", "In progress", "Evidence", "Verified", "Closed"].map((stage) => (
+                <div className={stage === activeDecision.stage || ["Proposed", "Approved"].includes(stage) ? "done" : undefined} key={stage}>
+                  <span />
+                  <strong>{stage}</strong>
+                  <small>{stage === activeDecision.stage ? "current" : "workflow"}</small>
+                </div>
+              ))}
+            </div>
+            <div className="decision-detail-grid">
+              <article>
+                <p className="eyebrow">Model evidence</p>
+                <div className="decision-evidence-grid">
+                  {activeDecision.evidence.map(([title, text, note]) => (
+                    <div key={title}>
+                      <span>{note}</span>
+                      <strong>{title}</strong>
+                      <p>{text}</p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+              <article>
+                <p className="eyebrow">Decision log</p>
+                <div className="decision-log-list">
+                  {activeDecision.log.map((entry) => (
+                    <div key={entry}>
+                      <strong>{entry}</strong>
+                      <span>demo audit event</span>
+                    </div>
+                  ))}
+                </div>
+                <Link className="secondary-link" href={`${baseRoute}/outcome-feedback?demo=1`}>
+                  Track outcome recovery
+                </Link>
+              </article>
+            </div>
+          </>
+        ) : (
+          <EmptyPanel />
+        )}
       </section>
     </>
   );
@@ -506,10 +725,20 @@ function OutcomeFeedbackScreen({ demo }: { demo: boolean }) {
   );
 }
 
-function ScreenBody({ screen, demo }: { screen: ScreenId; demo: boolean }) {
+function ScreenBody({
+  screen,
+  demo,
+  selectedDecision,
+  selectedModel,
+}: {
+  screen: ScreenId;
+  demo: boolean;
+  selectedDecision?: string;
+  selectedModel?: string;
+}) {
   if (screen === "kpi-contract") return <KpiContractScreen demo={demo} />;
-  if (screen === "model-intelligence") return <ModelIntelligenceScreen demo={demo} />;
-  if (screen === "decision-action-tracker") return <DecisionTrackerScreen demo={demo} />;
+  if (screen === "model-intelligence") return <ModelIntelligenceScreen demo={demo} selectedModel={selectedModel} />;
+  if (screen === "decision-action-tracker") return <DecisionTrackerScreen demo={demo} selectedDecision={selectedDecision} />;
   if (screen === "outcome-feedback") return <OutcomeFeedbackScreen demo={demo} />;
   return <OverviewScreen demo={demo} />;
 }
@@ -552,7 +781,7 @@ export default async function UrbanServiceQualityUseCasePage({ params, searchPar
           scoring, recommendation lookup, controlled decision buttons, corrective-action closure, and learning feedback.
         </p>
       </section>
-      <ScreenBody screen={screen} demo={demo} />
+      <ScreenBody screen={screen} demo={demo} selectedDecision={query.decision} selectedModel={query.model} />
     </PageFrame>
   );
 }
