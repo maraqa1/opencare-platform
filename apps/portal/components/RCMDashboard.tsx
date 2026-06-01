@@ -80,6 +80,10 @@ type PayerControlResponse = {
   dashboard?: PayerDashboardPayload | null;
 };
 
+type RCMDashboardProps = {
+  initialCash?: CashCommandResponse | null;
+};
+
 const fallbackMonths = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"];
 const fallbackCharges = [7.1, 6.8, 7.4, 7.0, 7.6, 6.9, 5.8, 7.2, 7.5, 7.8, 7.3, 8.0];
 const fallbackCollections = [6.4, 6.2, 6.9, 6.5, 7.0, 6.3, 5.2, 6.7, 6.9, 7.2, 6.8, 7.4];
@@ -182,8 +186,8 @@ function LoadingState() {
   );
 }
 
-export function RCMDashboard() {
-  const [cash, setCash] = useState<CashCommandResponse | null>(null);
+export function RCMDashboard({ initialCash = null }: RCMDashboardProps) {
+  const [cash, setCash] = useState<CashCommandResponse | null>(initialCash);
   const [queue, setQueue] = useState<RecoveryQueueResponse | null>(null);
   const [payer, setPayer] = useState<PayerControlResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,21 +199,28 @@ export function RCMDashboard() {
       setLoading(true);
       setError("");
       try {
-        const [cashResponse, queueResponse, payerResponse] = await Promise.all([
-          fetch("/api/portal/api/v1/revenue-cycle/cash-command", { cache: "no-store" }),
+        const requests: Array<Promise<Response>> = [
           fetch("/api/portal/api/v1/revenue-cycle/recovery-queue", { cache: "no-store" }),
           fetch("/api/portal/api/v1/revenue-cycle/payer-control", { cache: "no-store" }),
-        ]);
+        ];
+        if (!initialCash) {
+          requests.unshift(fetch("/api/portal/api/v1/revenue-cycle/cash-command", { cache: "no-store" }));
+        }
+        const responses = await Promise.all(requests);
+        const [cashResponse, queueResponse, payerResponse] = initialCash
+          ? [null, responses[0], responses[1]]
+          : [responses[0], responses[1], responses[2]];
 
-        if (!cashResponse.ok || !queueResponse.ok || !payerResponse.ok) {
-          throw new Error(`HTTP ${cashResponse.status}/${queueResponse.status}/${payerResponse.status}`);
+        if ((cashResponse && !cashResponse.ok) || !queueResponse.ok || !payerResponse.ok) {
+          throw new Error(`HTTP ${cashResponse?.status ?? 200}/${queueResponse.status}/${payerResponse.status}`);
         }
 
-        const [cashPayload, queuePayload, payerPayload] = await Promise.all([
-          cashResponse.json(),
+        const payloads = await Promise.all([
+          cashResponse ? cashResponse.json() : Promise.resolve(initialCash),
           queueResponse.json(),
           payerResponse.json(),
         ]);
+        const [cashPayload, queuePayload, payerPayload] = payloads;
 
         setCash(cashPayload as CashCommandResponse);
         setQueue(queuePayload as RecoveryQueueResponse);
@@ -222,7 +233,7 @@ export function RCMDashboard() {
     }
 
     void load();
-  }, []);
+  }, [initialCash]);
 
   const isEmpty = Boolean(cash?.meta?.empty || queue?.meta?.empty || payer?.meta?.empty);
 

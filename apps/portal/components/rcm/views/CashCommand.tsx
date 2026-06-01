@@ -59,10 +59,12 @@ export function CashCommand() {
     };
     const schedule = () => setShowExecutiveDashboard(true);
     if (windowWithIdleScheduler.requestIdleCallback && windowWithIdleScheduler.cancelIdleCallback) {
-      const idleId = windowWithIdleScheduler.requestIdleCallback(schedule);
+      const idleId = windowWithIdleScheduler.requestIdleCallback(() => {
+        timeoutId = window.setTimeout(schedule, 250);
+      });
       return () => windowWithIdleScheduler.cancelIdleCallback?.(idleId);
     }
-    timeoutId = window.setTimeout(schedule, 0);
+    timeoutId = window.setTimeout(schedule, 250);
     return () => {
       if (timeoutId !== undefined) {
         window.clearTimeout(timeoutId);
@@ -241,7 +243,7 @@ export function CashCommand() {
       )}
 
       {/* Defer the heavier executive dashboard until after the workspace shell has painted. */}
-      {showExecutiveDashboard && <RCMDashboard />}
+      {showExecutiveDashboard && <RCMDashboard initialCash={data ?? null} />}
 
       {/* AR Days footer badge */}
       <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
