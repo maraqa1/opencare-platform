@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { AnomalyAlerts } from "@/components/bed-pressure/AnomalyAlerts";
 import { OccupancyGrid } from "@/components/bed-pressure/OccupancyGrid";
 import { KPISummaryBar } from "@/components/KPISummaryBar";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
+import { RecordSpecificationFallback } from "@/components/RecordSpecificationFallback";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
 import { getApiJson } from "@/lib/api";
 
@@ -99,7 +101,9 @@ export default async function BedPressureStatusPage() {
                 initialPayload={occupancy}
               />
             </section>
-            <RecordSpecification table="analytics.fct_bed_occupancy" />
+            <Suspense fallback={<RecordSpecificationFallback label="Record specification" />}>
+              <RecordSpecification table="analytics.fct_bed_occupancy" />
+            </Suspense>
           </div>
           <aside className="status-alert-rail">
             <AnomalyAlerts

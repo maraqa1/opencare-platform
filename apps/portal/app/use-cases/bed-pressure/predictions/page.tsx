@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { ForecastView } from "@/components/bed-pressure/ForecastView";
 import { PageFrame } from "@/components/page-frame";
 import { RecordSpecification } from "@/components/RecordSpecification";
+import { RecordSpecificationFallback } from "@/components/RecordSpecificationFallback";
 import { UseCaseWorkspace } from "@/components/UseCaseWorkspace";
 
 type SearchParams = Promise<{ ward?: string }>;
@@ -70,7 +72,9 @@ export default async function BedPressurePredictionsPage({
         </section>
 
         <ForecastView selectedWardId={params.ward} statusHref="/use-cases/bed-pressure/status" />
-        <RecordSpecification table="output.forecast" />
+        <Suspense fallback={<RecordSpecificationFallback label="Forecast record specification" />}>
+          <RecordSpecification table="output.forecast" />
+        </Suspense>
       </UseCaseWorkspace>
     </PageFrame>
   );
