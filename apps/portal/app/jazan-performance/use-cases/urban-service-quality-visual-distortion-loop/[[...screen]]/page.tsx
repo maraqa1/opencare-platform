@@ -168,7 +168,7 @@ const screens: Array<{ id: ScreenId; label: string; title: string; titleAr: stri
   },
 ];
 
-const kpis = [
+const kpis: Array<[string, string, string, string, string]> = [
   ["Visual distortion complaint closure quality", "valid closed cases / total cases * 100", ">= 90%", "Field Compliance", "source_jazan.visual_distortion_cases"],
   ["Average permit issuance time", "average(permit issued - submitted)", "<= 1.4 days", "Licensing Department", "source_jazan.permit_requests"],
   ["Urban service coverage", "covered service zones / total zones * 100", ">= 95%", "Services Agency", "source_jazan.service_coverage_assets"],
@@ -177,14 +177,14 @@ const kpis = [
   ["Service request closure rate", "closed service requests / total requests * 100", ">= 90%", "Services Agency", "source_jazan.service_requests"],
 ];
 
-const demoMetrics = [
+const demoMetrics: MetricItem[] = [
   ["Municipalities covered", "25 / 25", "all linked to service-quality objective"],
   ["Visual closure quality", "82%", "watch · target >= 90%"],
   ["Breach probability", "78%", "RNN forecast · 4-week horizon"],
   ["Open corrective actions", "14", "8 municipalities"],
 ];
 
-const dashboardKpis = [
+const dashboardKpis: MetricItem[] = [
   ["Closure Quality", "100%", "Target >=90%"],
   ["Permit Time", "1.2 days", "Target <=1.4"],
   ["Coverage", "96%", "Target >=95%"],
@@ -192,7 +192,7 @@ const dashboardKpis = [
   ["Satisfaction", "4.2 / 5", "Target >=4.0"],
 ];
 
-const dashboardKpiRows = [
+const dashboardKpiRows: SevenColRow[] = [
   ["Visual distortion closure quality", "valid closed / total * 100", ">=90%", "100%", "On track", "Field Compliance", "visual_distortion_cases"],
   ["Average permit issuance time", "avg issued - submitted", "<=1.4d", "1.2d", "On track", "Licensing", "permit_requests"],
   ["Urban service coverage", "covered / total * 100", ">=95%", "96%", "On track", "Services Agency", "service_coverage_assets"],
@@ -201,14 +201,14 @@ const dashboardKpiRows = [
   ["Service request closure rate", "closed / total * 100", ">=90%", "91%", "On track", "Services Agency", "service_requests"],
 ];
 
-const kpiObjectiveStats = [
+const kpiObjectiveStats: TwoColRow[] = [
   ["Municipalities", "25 / 25"],
   ["KPIs", "6"],
   ["Data sources", "9"],
   ["Alignment", "100%"],
 ];
 
-const kpiMonitorCards = [
+const kpiMonitorCards: FiveColRow[] = [
   ["Visual distortion closure quality", "100%", ">=90%", "On track", "No action"],
   ["Service request closure rate", "91%", ">=90%", "On track", "Monitor"],
   ["Average permit issuance time", "1.2d", "<=1.4d", "On track", "No action"],
@@ -217,14 +217,14 @@ const kpiMonitorCards = [
   ["Citizen satisfaction", "4.2/5", ">=4.0", "On track", "Monitor"],
 ];
 
-const triggerRules = [
+const triggerRules: FourColRow[] = [
   ["KPI breach", "Current below target", "Create decision candidate", "Pillar 5"],
   ["Forecast breach", "RNN predicts target miss within 4 weeks", "Queue advisory action", "Pillar 4 -> 5"],
   ["Anomaly", "z-score exceeds threshold", "Request review", "Pillar 4"],
   ["Repeated gap", "Same municipality at risk twice", "Training / sustainability need", "Pillar 6"],
 ];
 
-const decisionStats = [
+const decisionStats: TwoColRow[] = [
   ["New decisions", "7"],
   ["Under review", "5"],
   ["Approved", "9"],
@@ -233,7 +233,7 @@ const decisionStats = [
   ["Escalated", "2"],
 ];
 
-const outcomeStats = [
+const outcomeStats: TwoColRow[] = [
   ["Total actions", "12"],
   ["In progress", "6"],
   ["Awaiting evidence", "2"],
@@ -251,7 +251,7 @@ const activeCase = {
   due: "+5 days",
 };
 
-const pipelineStages = [
+const pipelineStages: TwoColRow[] = [
   ["KPI contract", `${baseRoute}/kpi-contract`],
   ["Forecast model", `${baseRoute}/model-intelligence?model=rnn-forecast`],
   ["Risk decision", `${baseRoute}/decision-action-tracker?decision=JZN-DEC-1007`],
@@ -259,7 +259,7 @@ const pipelineStages = [
   ["Outcome learning", `${baseRoute}/outcome-feedback`],
 ];
 
-const forecastSeries = [
+const forecastSeries: ForecastPoint[] = [
   ["Week 0", 82, 90],
   ["Week 1", 80, 90],
   ["Week 2", 76, 90],
@@ -267,7 +267,7 @@ const forecastSeries = [
   ["Week 4", 68, 90],
 ];
 
-const modelCards = [
+const modelCards: ModelCard[] = [
   {
     key: "rnn-forecast",
     title: "RNN Forecast",
@@ -298,7 +298,7 @@ const modelCards = [
   },
 ];
 
-const goldenThread = [
+const goldenThread: Array<[string, string, string]> = [
   ["Pillar 1", "Objective certified", "Service quality and visual-distortion response aligned to Jazan strategy."],
   ["Pillar 2", "KPI contract", "Targets, thresholds, owners, and source systems defined."],
   ["Pillar 3", "Data foundation", "Certified marts feed forecasts, anomaly detection, and risk scoring."],
@@ -307,14 +307,14 @@ const goldenThread = [
   ["Pillar 6", "Learning loop", "Repeated patterns become procedures, training, and sustainability evidence."],
 ];
 
-const models = [
+const models: Array<[string, string, string, string]> = [
   ["RNN service-quality breach forecast", "GRU or LSTM sequence model", "Predict KPI values and breach probability 4-8 weeks ahead.", "output.jazan_service_rnn_forecast"],
   ["Service-quality anomaly detector", "historical deviation z-score", "Detect unusual deterioration against municipality history.", "output.jazan_service_quality_anomaly"],
   ["Municipality service risk score", "transparent weighted score", "Rank combined risk using interpretable dbt inputs and model outputs.", "output.jazan_municipality_service_risk_score"],
   ["Recommended intervention lookup", "similarity lookup", "Recommend corrective actions based on similar recovered cases.", "output.jazan_recommended_intervention"],
 ];
 
-const decisionButtons = [
+const decisionButtons: TwoColRow[] = [
   ["Approve Action", "POST /api/v1/jazan/service-quality/decisions/{decision_id}/approve"],
   ["Escalate", "POST /api/v1/jazan/service-quality/decisions/{decision_id}/escalate"],
   ["Create Ticket", "POST /api/v1/jazan/service-quality/decisions/{decision_id}/create-ticket"],
@@ -323,7 +323,7 @@ const decisionButtons = [
   ["Verify & Close", "POST /api/v1/jazan/service-quality/actions/{action_id}/close"],
 ];
 
-const decisionCases = [
+const decisionCases: DecisionCase[] = [
   {
     id: "JZN-DEC-1007",
     municipality: "Samtah",
@@ -370,14 +370,14 @@ const decisionCases = [
   },
 ];
 
-const recoveryRows = [
+const recoveryRows: SixColRow[] = [
   ["Visual distortion closure quality", "82%", ">=90%", "91%", "Recovered", "+9 pp"],
   ["Service request closure rate", "68%", ">=90%", "88%", "Improving", "+20 pp"],
   ["Average permit issuance time", "2.4d", "<=1.4d", "1.6d", "Watch", "-0.8d"],
   ["Citizen satisfaction", "3.7 / 5", ">=4.0", "4.2 / 5", "Recovered", "+0.5"],
 ];
 
-const evidenceGroups = [
+const evidenceGroups: string[][] = [
   ["Sources", "source_jazan.visual_distortion_cases", "source_jazan.service_requests", "source_jazan.permit_requests", "source_jazan.municipalities"],
   ["Analytics marts", "analytics.fct_jazan_visual_distortion_performance", "analytics.fct_jazan_service_quality", "analytics.fct_jazan_corrective_action"],
   ["Outputs", "output.jazan_service_rnn_forecast", "output.jazan_service_quality_anomaly", "output.jazan_municipality_service_risk_score"],
@@ -385,7 +385,7 @@ const evidenceGroups = [
   ["APIs", "GET /api/v1/jazan/service-quality/overview", "POST /api/v1/jazan/service-quality/decisions/{id}/approve", "POST /api/v1/jazan/service-quality/actions/{id}/close"],
 ];
 
-const governanceRows = [
+const governanceRows: FiveColRow[] = [
   ["visual_distortion_cases", "Restricted", "Field Compliance", "DQ pass", "source -> raw -> staging -> analytics -> output -> decision"],
   ["service_requests", "Internal", "Services Agency", "DQ watch", "source -> raw -> staging -> analytics.fct_jazan_service_quality"],
   ["jazan_service_rnn_forecast", "Internal model output", "Forecast Runtime", "Fresh", "analytics features -> RNN output -> decision candidate"],
