@@ -11,6 +11,8 @@
 - Executive audience:
 - Operational audience:
 - Governance audience:
+- Locale(s):
+- Direction(s):
 
 ## Source systems
 
@@ -57,12 +59,30 @@ For each endpoint define:
 - Workspace root route:
 - Default route:
 - Tabs:
+- Dashboard count:
+- Story flow contract path:
+- Dashboard implementation matrix path:
 
 ## Dashboard contract
 
 - Dashboard suite contract path:
 - Primary datasets:
 - Required dashboard entry points:
+- Dashboard fidelity contract path:
+
+## Runtime contract
+
+- Runtime declaration path:
+- Runtime image declaration path:
+- Runtime evidence path:
+
+## Platform capability bindings
+
+- Platform capability map path:
+- For each capability declare:
+  - `reuse_existing`
+  - `partially_supported`
+  - `requires_extension`
 
 ## Governance contract
 
@@ -82,6 +102,9 @@ For each endpoint define:
 - required mart row-count checks
 - required API checks
 - required portal route checks
+- required dashboard fidelity checks
+- required locale/direction checks
+- required human-authorization checks
 
 ## Remove or exclude contract
 
@@ -94,3 +117,6 @@ For each endpoint define:
 - API endpoints populated
 - governance contract visible
 - include/exclude tested
+- dashboards rendered as declared
+- story flow preserved
+- external actions remain human-authorized

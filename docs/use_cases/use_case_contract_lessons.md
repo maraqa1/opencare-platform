@@ -414,6 +414,77 @@ Future use cases should use the TALEMIA implementation as the best current worki
 
 Those files are intended to reduce prompt ambiguity and make new use cases easier to add with the same shape every time.
 
+## Additional lessons from the Urban Service Quality golden bundle
+
+The later Jazan golden bundle added a second class of lesson beyond platform structure: dashboard fidelity.
+
+### 14. Dashboard fidelity contract
+
+If a bundle declares dashboards explicitly, implementation must render those dashboards explicitly.
+
+Important lessons:
+
+- a declared dashboard is not optional
+- a declared dashboard should not be silently merged into another page
+- route existence is not enough if the intended dashboard composition and story are lost
+
+Future bundles should require:
+
+- `screens/dashboard_implementation_matrix.yaml`
+- `screens/story_flow.yaml`
+- `acceptance/dashboard_fidelity_contract.yaml`
+
+### 15. Story contract
+
+The dashboard order is part of the operating model.
+
+Future bundles should define:
+
+- what the user should learn from each dashboard
+- what question each dashboard answers
+- which dashboard comes next in the intended decision journey
+
+### 16. Locale and direction are structural
+
+For Saudi public-sector use cases, bilingual readiness should be contractual.
+
+Future bundles should require:
+
+- locale metadata
+- direction metadata
+- bilingual labels for critical user-facing elements
+
+### 17. External actions must remain human-authorized
+
+External actions such as email, escalation, ticket creation, approval, and closure should explicitly declare:
+
+- who is allowed to authorize the action
+- what audit event is written
+- what notification or external side effect is emitted
+
+### 18. Runtime images must be explicit
+
+Future bundles should keep runtime declarations explicit through:
+
+- `runtime/runtimes.yaml`
+- `runtime/images.yaml`
+- `runtime/schedules.yaml`
+- `runtime/evidence.yaml`
+
+### 19. Capability truthfulness must be evidence-based
+
+Future bundles should require a capability map where each entry is labeled:
+
+- `reuse_existing`
+- `partially_supported`
+- `requires_extension`
+
+Each entry should cite:
+
+- intended platform binding
+- current platform evidence
+- known limitation
+
 ## Final takeaway
 
 The platform architecture is sound.
