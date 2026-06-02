@@ -159,6 +159,30 @@ export const useCases: UseCaseModule[] = [
       actionLabel: "Configuration",
     },
   },
+  {
+    id: "jazan_urban_service_quality_visual_distortion_loop",
+    slug: "urban-service-quality-visual-distortion-loop",
+    icon: "Loop",
+    name: "Urban Service Quality & Visual Distortion Loop",
+    description:
+      "A native Jazan shell connecting KPI contracts, runtime evidence, decision workflow, outcome recovery, and governance proof.",
+    status: "active",
+    summary:
+      "Strategic landing, KPI contract, runtime intelligence, decision queue, outcome recovery, and governance evidence in one governed shell.",
+    defaultHref: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop?demo=1",
+    kpis: [
+      { label: "Closure Quality", value: ">= 90%", note: "Visual-distortion complaint closure target" },
+      { label: "Breach Forecast", value: "4-week horizon", note: "Runtime evidence and risk scoring" },
+      { label: "Governance Proof", value: "Required", note: "Lineage, record spec, audit, and evidence pack" },
+    ],
+    shell: {
+      label: "Jazan Use Case",
+      title: "Urban Service Quality Loop",
+      badge: "Golden Shell",
+      actionHref: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/governance-evidence?demo=1",
+      actionLabel: "Evidence",
+    },
+  },
 ];
 
 export const bedPressureTabs = [
@@ -216,6 +240,12 @@ export function getFallbackUseCaseManifestEntries(): Record<string, UseCaseManif
 export function getUseCaseByPath(pathname: string): UseCaseModule | null {
   if (pathname.startsWith("/occupancy") || pathname.startsWith("/use-cases/bed-pressure")) {
     return useCases.find((item) => item.id === "bed_pressure") ?? null;
+  }
+
+  if (pathname.startsWith("/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop")) {
+    return (
+      useCases.find((item) => item.id === "jazan_urban_service_quality_visual_distortion_loop") ?? null
+    );
   }
 
   const slugMatch = useCases.find((item) => pathname.startsWith(`/use-cases/${item.slug}`));

@@ -319,3 +319,41 @@ use_cases:
         grain: "One row per TALEMIA KPI or metric."
       - table: "dictionary.dict_talemia_terms"
         grain: "One row per TALEMIA business glossary term."
+  jazan_urban_service_quality_visual_distortion_loop:
+    name: "Urban Service Quality & Visual Distortion Loop"
+    description: "Run the Jazan service-quality shell from KPI contract through runtime evidence, decision workflow, outcome recovery, and governance proof."
+    enabled: true
+    source_tables:
+      - visual_distortion_cases
+      - service_requests
+      - permit_requests
+      - service_coverage_assets
+      - emergency_readiness_checks
+      - citizen_satisfaction_surveys
+      - municipalities
+    portal_pages:
+      - slug: "urban-service-quality-visual-distortion-loop"
+        label: "Urban Service Quality Loop"
+        icon: "activity"
+        tab_order: 1
+    api_prefix: "/api/v1/jazan/service-quality"
+    api_endpoints:
+      - path: "/overview"
+        method: "GET"
+      - path: "/decision-queue"
+        method: "GET"
+      - path: "/runtime-evidence"
+        method: "GET"
+      - path: "/governance-evidence"
+        method: "GET"
+    business_objectives:
+      - "Connect the Jazan service-quality KPI contract to governed runtime outputs, decision actions, and outcome recovery."
+      - "Surface municipality-level risk, breach probability, and corrective-action status in one shell."
+      - "Keep each metric, decision, and action backed by runtime evidence, lineage, record specs, and audit-safe governance proof."
+    record_specs:
+      - table: "analytics.fct_jazan_visual_distortion_performance"
+        grain: "One row per municipality, period, and service-quality KPI measurement."
+      - table: "analytics.fct_jazan_service_quality"
+        grain: "One row per municipality, period, and service-response quality signal."
+      - table: "decision.jazan_generated_service_decisions"
+        grain: "One row per generated service-quality decision candidate and lifecycle state."

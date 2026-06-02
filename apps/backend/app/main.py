@@ -10,6 +10,7 @@ from app.routes.decisions import router as decisions_router
 from app.routes.facts import router as facts_router
 from app.routes.forecasts import router as forecasts_router
 from app.routes.health import router as health_router
+from app.routes.jazan import router as jazan_router
 from app.routes.lineage import router as lineage_router
 from app.routes.occupancy import router as occupancy_router
 from app.routes.record_spec import router as record_spec_router
@@ -42,6 +43,7 @@ app.include_router(reports_router)
 app.include_router(facts_router)
 app.include_router(revenue_cycle_router)
 app.include_router(talemia_router)
+app.include_router(jazan_router)
 
 
 @app.get("/")
