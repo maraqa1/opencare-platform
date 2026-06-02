@@ -642,6 +642,8 @@ function sectionCard(props: { eyebrow?: string; title: string; children: ReactNo
   );
 }
 
+const SectionCard = sectionCard;
+
 function metricStrip(items: Metric[]) {
   return (
     <div className="jazan-metric-strip">
@@ -751,7 +753,7 @@ function StrategicScreen(props: { data: ShellData; demoMode: boolean }) {
 
       {metricStrip(strategic.summary_strip)}
 
-      <sectionCard eyebrow="Golden thread" title="One governed objective from monitoring to audit">
+      <SectionCard eyebrow="Golden thread" title="One governed objective from monitoring to audit">
         <div className="jazan-stage-flow">
           {strategic.golden_thread.map((item, index) => (
             <article key={item} className="jazan-stage-card">
@@ -760,9 +762,9 @@ function StrategicScreen(props: { data: ShellData; demoMode: boolean }) {
             </article>
           ))}
         </div>
-      </sectionCard>
+      </SectionCard>
 
-      <sectionCard eyebrow="KPI threshold cards" title="All six KPI dashboards are declared and routable">
+      <SectionCard eyebrow="KPI threshold cards" title="All six KPI dashboards are declared and routable">
         <div className="jazan-kpi-card-grid">
           {strategic.kpi_cards.map((card) => (
             <article key={card.slug} className="jazan-kpi-card">
@@ -787,9 +789,9 @@ function StrategicScreen(props: { data: ShellData; demoMode: boolean }) {
             </article>
           ))}
         </div>
-      </sectionCard>
+      </SectionCard>
 
-      <sectionCard eyebrow="Active case" title="The story starts from the highest-priority seeded case">
+      <SectionCard eyebrow="Active case" title="The story starts from the highest-priority seeded case">
         <div className="jazan-active-case-banner">
           <div>
             <h3>{`${strategic.active_case_banner.municipality} - ${strategic.active_case_banner.kpi}`}</h3>
@@ -809,7 +811,7 @@ function StrategicScreen(props: { data: ShellData; demoMode: boolean }) {
             </Link>
           </div>
         </div>
-      </sectionCard>
+      </SectionCard>
     </div>
   );
 }
