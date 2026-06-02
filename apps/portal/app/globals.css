@@ -7083,3 +7083,538 @@ code {
     grid-template-columns: 1fr;
   }
 }
+
+.jazan-screen-header,
+.jazan-objective-band,
+.jazan-summary-band,
+.jazan-connector-rail-shell,
+.jazan-zone-card,
+.jazan-threshold-card,
+.jazan-runtime-card,
+.jazan-alert-band {
+  border-radius: 24px;
+  border: 1px solid rgba(30, 67, 126, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 48px rgba(15, 32, 62, 0.08);
+}
+
+.jazan-screen-header {
+  display: grid;
+  gap: 14px;
+  padding: 18px 22px;
+}
+
+.jazan-screen-topbar,
+.jazan-screen-identity,
+.jazan-screen-topbar-actions,
+.jazan-zone-card--context,
+.jazan-zone-card-meta,
+.jazan-threshold-card-header,
+.jazan-alert-metrics,
+.jazan-runtime-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.jazan-screen-identity {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.jazan-screen-emblem {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #0f7d47, #0b5e36);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.jazan-screen-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.jazan-screen-meta > span,
+.jazan-screen-shell,
+.jazan-screen-snapshot,
+.jazan-bilingual-copy,
+.jazan-alert-tag,
+.jazan-threshold-trigger {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--oc-gray-600);
+}
+
+.jazan-screen-meta > strong {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.jazan-screen-topbar-actions {
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.jazan-mode-chip,
+.jazan-locale-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(30, 67, 126, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.jazan-mode-chip.accent,
+.jazan-locale-chip.is-active {
+  background: rgba(36, 91, 191, 0.08);
+  color: #214f9f;
+}
+
+.jazan-mode-chip.neutral,
+.jazan-locale-chip {
+  background: rgba(31, 56, 100, 0.04);
+}
+
+.jazan-locale-switch {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.jazan-screen-shell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.jazan-shell-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(31, 56, 100, 0.08);
+  color: var(--oc-blue-700);
+  font-weight: 700;
+}
+
+.jazan-objective-band {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  background: linear-gradient(180deg, rgba(242, 239, 255, 0.92), rgba(250, 249, 255, 0.98));
+}
+
+.jazan-objective-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.jazan-objective-copy h2,
+.jazan-threshold-card h3,
+.jazan-runtime-card h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  line-height: 1.08;
+}
+
+.jazan-objective-tag {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(77, 76, 183, 0.14);
+  color: #4b42b5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.jazan-objective-chips,
+.jazan-threshold-footer,
+.jazan-runtime-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.jazan-summary-band {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.jazan-summary-counter {
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px;
+  border-right: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.jazan-summary-counter:last-child {
+  border-right: 0;
+}
+
+.jazan-summary-counter strong,
+.jazan-threshold-value-row strong,
+.jazan-risk-orb strong {
+  font-family: var(--font-heading);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.jazan-connector-rail-shell {
+  position: relative;
+  padding: 18px 24px 10px;
+}
+
+.jazan-connector-line {
+  position: absolute;
+  top: 28px;
+  left: 42px;
+  right: 42px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(210, 71, 60, 0.4), rgba(62, 151, 92, 0.5), rgba(70, 106, 199, 0.4));
+}
+
+.jazan-connector-node-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.jazan-connector-node {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.jazan-node-dot {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 0 1px rgba(31, 56, 100, 0.14);
+}
+
+.jazan-node-dot.tone-critical {
+  background: #d44d40;
+}
+
+.jazan-node-dot.tone-warning {
+  background: #dca437;
+}
+
+.jazan-node-dot.tone-positive {
+  background: #3a915c;
+}
+
+.jazan-threshold-grid,
+.jazan-runtime-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.jazan-threshold-card,
+.jazan-runtime-card,
+.jazan-zone-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.jazan-status-pair {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  text-align: end;
+}
+
+.jazan-threshold-value-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.jazan-threshold-target {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.jazan-threshold-rail {
+  position: relative;
+  display: grid;
+  gap: 10px;
+}
+
+.jazan-threshold-segments {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.jazan-threshold-segment {
+  height: 10px;
+}
+
+.jazan-threshold-segment.is-danger {
+  background: rgba(212, 77, 64, 0.32);
+}
+
+.jazan-threshold-segment.is-warning {
+  background: rgba(220, 164, 55, 0.38);
+}
+
+.jazan-threshold-segment.is-success {
+  background: rgba(58, 145, 92, 0.32);
+}
+
+.jazan-threshold-rail.is-lower-better .jazan-threshold-segments {
+  direction: rtl;
+}
+
+.jazan-threshold-marker {
+  position: absolute;
+  top: -16px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--oc-gray-600);
+}
+
+.jazan-threshold-marker::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 2px;
+  height: 14px;
+  transform: translateX(-50%);
+  background: rgba(31, 56, 100, 0.22);
+}
+
+.jazan-threshold-marker.is-current {
+  color: var(--oc-blue-700);
+}
+
+.jazan-threshold-scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--oc-gray-600);
+}
+
+.jazan-alert-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 0.8fr);
+  gap: 20px;
+  padding: 20px 22px;
+  background: linear-gradient(180deg, rgba(255, 244, 243, 0.96), rgba(255, 251, 251, 0.98));
+}
+
+.jazan-alert-band--case {
+  background: linear-gradient(180deg, rgba(243, 247, 255, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.jazan-alert-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.jazan-alert-tag {
+  color: #b23c34;
+  font-weight: 700;
+}
+
+.jazan-case-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(179, 60, 52, 0.18);
+  color: #a23931;
+  background: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.jazan-zone-card {
+  padding: 20px 22px;
+}
+
+.jazan-zone-card--context,
+.jazan-zone-card-meta {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.jazan-zone-card-meta {
+  justify-content: flex-end;
+  color: var(--oc-gray-600);
+  font-size: 13px;
+}
+
+.jazan-two-column-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.jazan-two-column-grid--wide-right {
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+}
+
+.jazan-two-column-grid--wide-left {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
+}
+
+.jazan-three-column-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
+  gap: 18px;
+}
+
+.jazan-list-stack,
+.jazan-driver-list,
+.jazan-lifecycle-strip {
+  display: grid;
+  gap: 12px;
+}
+
+.jazan-list-row,
+.jazan-driver-row,
+.jazan-lifecycle-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(31, 56, 100, 0.03);
+}
+
+.jazan-risk-summary,
+.jazan-runtime-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
+}
+
+.jazan-risk-orb {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  padding: 16px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 247, 246, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.jazan-recommendation-grid,
+.jazan-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.jazan-recommendation-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(31, 56, 100, 0.03);
+}
+
+.jazan-action-notice {
+  margin: 0;
+  color: var(--oc-gray-600);
+}
+
+.jazan-action-button {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.jazan-runtime-card-grid {
+  align-items: stretch;
+}
+
+.jazan-runtime-card-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.jazan-runtime-stats {
+  font-size: 13px;
+  color: var(--oc-gray-600);
+}
+
+.jazan-three-column-grid .jazan-section-card,
+.jazan-two-column-grid .jazan-section-card {
+  height: 100%;
+}
+
+@media (max-width: 1200px) {
+  .jazan-threshold-grid,
+  .jazan-runtime-card-grid,
+  .jazan-connector-node-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .jazan-summary-band,
+  .jazan-three-column-grid,
+  .jazan-two-column-grid,
+  .jazan-two-column-grid--wide-right,
+  .jazan-two-column-grid--wide-left,
+  .jazan-risk-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .jazan-screen-topbar,
+  .jazan-screen-identity,
+  .jazan-screen-topbar-actions,
+  .jazan-zone-card--context,
+  .jazan-zone-card-meta,
+  .jazan-threshold-card-header,
+  .jazan-alert-band,
+  .jazan-alert-metrics {
+    display: grid;
+  }
+
+  .jazan-summary-band,
+  .jazan-threshold-grid,
+  .jazan-runtime-card-grid,
+  .jazan-connector-node-row,
+  .jazan-three-column-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jazan-summary-counter {
+    border-right: 0;
+    border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+  }
+
+  .jazan-summary-counter:last-child {
+    border-bottom: 0;
+  }
+}

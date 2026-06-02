@@ -731,6 +731,219 @@ function governanceMiniRail(items: GovernanceChip[]) {
   );
 }
 
+const KPI_ARABIC_LABELS: Record<string, string> = {
+  "visual-distortion-closure-quality": "جودة إغلاق التشوه البصري",
+  "service-request-closure-rate": "نسبة إغلاق طلبات الخدمات",
+  "average-permit-issuance-time": "متوسط إصدار الرخص",
+  "urban-service-coverage": "نسبة تغطية الخدمات الحضرية",
+  "emergency-resilience-readiness": "مؤشر صمود الأزمات والطوارئ",
+  "citizen-satisfaction": "رضا المستفيدين",
+};
+
+const STATUS_ARABIC_LABELS: Record<string, string> = {
+  "in breach": "مُخل بالحد",
+  "approaching trigger": "يقترب من العتبة",
+  "meeting target": "محقق الهدف",
+  watch: "قيد المراقبة",
+  queued: "قيد الانتظار",
+  "awaiting review": "بانتظار المراجعة",
+  approved: "معتمد",
+  escalated: "مصعد",
+  online: "متصل",
+  offline: "متوقف",
+};
+
+const ACTION_ARABIC_LABELS: Record<string, string> = {
+  approve: "اعتماد",
+  "request-revision": "طلب تعديل",
+  revise: "طلب تعديل",
+  escalate: "تصعيد",
+  "create-ticket": "إنشاء تذكرة",
+  "notify-owner": "إشعار المالك",
+  "view-details": "عرض التفاصيل",
+};
+
+const THRESHOLD_CONFIG: Record<
+  string,
+  { min: number; trigger: number; target: number; max: number; direction?: "higher" | "lower" }
+> = {
+  "visual-distortion-closure-quality": { min: 0.5, trigger: 0.75, target: 0.85, max: 1 },
+  "service-request-closure-rate": { min: 0.5, trigger: 0.85, target: 0.9, max: 1 },
+  "average-permit-issuance-time": { min: 0, trigger: 7, target: 5, max: 10, direction: "lower" },
+  "urban-service-coverage": { min: 0.5, trigger: 0.93, target: 0.95, max: 1 },
+  "emergency-resilience-readiness": { min: 0.5, trigger: 0.75, target: 0.8, max: 1 },
+  "citizen-satisfaction": { min: 0, trigger: 0.7, target: 0.75, max: 1 },
+};
+
+function extractNumber(value: string) {
+  const match = value.match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function statusLookup(text: string) {
+  return STATUS_ARABIC_LABELS[text.toLowerCase()] ?? "جاهزية تشغيلية";
+}
+
+function actionLookup(id: string) {
+  return ACTION_ARABIC_LABELS[id] ?? "إجراء";
+}
+
+function screenSnapshot(data: ShellData) {
+  const referenceRun = data.runtime_evidence.runtime_cards[0]?.last_run ?? "Seed snapshot";
+  return `Seed snapshot ${referenceRun}`;
+}
+
+function ensureActionButtons(buttons: ActionButton[]) {
+  if (buttons.some((button) => button.id === "view-details")) {
+    return buttons;
+  }
+
+  return [
+    ...buttons,
+    {
+      id: "view-details",
+      label: "View details",
+      tone: "outline",
+      note: "Open the linked case workspace",
+    },
+  ];
+}
+
+function buildDecisionCounters(data: ShellData): Metric[] {
+  const queue = data.decision_command.queue;
+  const statusCount = (value: string) => queue.filter((row) => row.status.toLowerCase() === value).length.toString();
+
+  return [
+    { label: "New decisions", value: queue.length.toString() },
+    { label: "Under review", value: statusCount("awaiting review") },
+    { label: "Approved", value: statusCount("approved") },
+    { label: "Escalated", value: statusCount("escalated") },
+    { label: "Tickets created", value: data.decision_action_audit.ticket_log.length.toString() },
+    { label: "Emails sent", value: data.decision_action_audit.email_log.length.toString() },
+  ];
+}
+
+function buildAuditCounters(data: ShellData): Metric[] {
+  const actions = data.decision_action_audit.corrective_actions;
+  const inProgress = actions.filter((row) => row.status.toLowerCase() !== "approved").length.toString();
+  const closed = actions.filter((row) => row.status.toLowerCase() === "approved").length.toString();
+
+  return [
+    { label: "Emails sent", value: data.decision_action_audit.email_log.length.toString() },
+    { label: "Tickets created", value: data.decision_action_audit.ticket_log.length.toString() },
+    { label: "Actions in progress", value: inProgress },
+    { label: "Actions closed", value: closed },
+  ];
+}
+
+function renderStatusBadge(text: string, tone: string) {
+  return (
+    <div className="jazan-status-pair">
+      {statusBadge(text, tone)}
+      <small>{statusLookup(text)}</small>
+    </div>
+  );
+}
+
+function renderScreenHeader(props: {
+  screenId: string;
+  title: string;
+  subtitle: string;
+  routeText: string;
+  snapshot: string;
+  demoMode: boolean;
+}) {
+  return (
+    <section className="jazan-screen-header">
+      <div className="jazan-screen-topbar">
+        <div className="jazan-screen-identity">
+          <div className="jazan-screen-emblem" aria-hidden="true">
+            <span>JZ</span>
+          </div>
+          <div className="jazan-screen-meta">
+            <span>JAZAN PERFORMANCE MANAGEMENT</span>
+            <strong>{props.title}</strong>
+            <small>{props.subtitle}</small>
+          </div>
+        </div>
+        <div className="jazan-screen-topbar-actions">
+          <span className="jazan-mode-chip accent">{props.demoMode ? "Demo data - seeded" : "Live route"}</span>
+          <span className="jazan-mode-chip neutral">{props.routeText}</span>
+          <div className="jazan-locale-switch" aria-label="Locale readiness">
+            <span className="jazan-locale-chip is-active">EN</span>
+            <span className="jazan-locale-chip">عربي</span>
+          </div>
+          <small className="jazan-screen-snapshot">{props.snapshot}</small>
+        </div>
+      </div>
+      <div className="jazan-screen-shell">
+        <span className="jazan-shell-index">{props.screenId}</span>
+        <p>{props.subtitle}</p>
+      </div>
+    </section>
+  );
+}
+
+function renderThresholdRail(card: KpiCard) {
+  const config = THRESHOLD_CONFIG[card.slug];
+  if (!config) {
+    return null;
+  }
+
+  const current = extractNumber(card.current_value);
+  const { min, trigger, target, max, direction = "higher" } = config;
+  const span = Math.max(1, max - min);
+  const pos = (value: number) => `${Math.min(100, Math.max(0, ((value - min) / span) * 100))}%`;
+  const tone = direction === "lower" ? "is-lower-better" : "is-higher-better";
+
+  return (
+    <div className={`jazan-threshold-rail ${tone}`}>
+      <div className="jazan-threshold-segments">
+        <span className="jazan-threshold-segment is-danger" />
+        <span className="jazan-threshold-segment is-warning" />
+        <span className="jazan-threshold-segment is-success" />
+      </div>
+      <span className="jazan-threshold-marker is-trigger" style={{ left: pos(trigger) }}>
+        trigger
+      </span>
+      <span className="jazan-threshold-marker is-target" style={{ left: pos(target) }}>
+        target
+      </span>
+      <span className="jazan-threshold-marker is-current" style={{ left: pos(current) }}>
+        current
+      </span>
+      <div className="jazan-threshold-scale">
+        <small>{min.toFixed(direction === "lower" ? 0 : 2)}</small>
+        <small>{trigger.toFixed(direction === "lower" ? 0 : 2)}</small>
+        <small>{target.toFixed(direction === "lower" ? 0 : 2)}</small>
+        <small>{max.toFixed(direction === "lower" ? 0 : 2)}</small>
+      </div>
+    </div>
+  );
+}
+
+function renderDecisionButtons(buttons: ActionButton[], detailHref?: string) {
+  const normalized = ensureActionButtons(buttons);
+
+  return (
+    <div className="jazan-action-strip">
+      {normalized.map((button) =>
+        button.id === "view-details" && detailHref ? (
+          <Link key={button.id} href={detailHref} className={`jazan-action-button tone-${button.tone}`}>
+            <span>{button.label}</span>
+            <small>{actionLookup(button.id)}</small>
+          </Link>
+        ) : (
+          <button key={button.id} type="button" className={`jazan-action-button tone-${button.tone}`}>
+            <span>{button.label}</span>
+            <small>{actionLookup(button.id)}</small>
+          </button>
+        ),
+      )}
+    </div>
+  );
+}
+
 function StrategicScreen(props: { data: ShellData; demoMode: boolean }) {
   const { strategic_dashboard: strategic } = props.data;
 
@@ -1198,7 +1411,7 @@ function RuntimeEvidenceScreen(props: { data: ShellData }) {
           <h2>Show that predictive runtimes ran on governed inputs and produced expected outputs</h2>
           <p>{props.data.runtime_evidence.evidence_note}</p>
         </div>
-        <span className="jazan-seed-note">{`${props.data.runtime_evidence.status} · ${props.data.runtime_evidence.seed_note}`}</span>
+        <span className="jazan-seed-note">{`${props.data.runtime_evidence.status} - ${props.data.runtime_evidence.seed_note}`}</span>
       </section>
 
       {sectionCard({
@@ -1213,7 +1426,7 @@ function RuntimeEvidenceScreen(props: { data: ShellData }) {
                   {statusBadge(runtime.status, runtime.status === "online" ? "positive" : "warning")}
                 </div>
                 <p>{runtime.image}</p>
-                <small>{`Last run ${runtime.last_run} · ${runtime.duration} · ${runtime.rows_out} rows`}</small>
+                <small>{`Last run ${runtime.last_run} - ${runtime.duration} - ${runtime.rows_out} rows`}</small>
                 <div className="jazan-runtime-io">
                   <span>{`Inputs: ${runtime.inputs.join(", ")}`}</span>
                   <span>{`Outputs: ${runtime.outputs.join(", ")}`}</span>
@@ -1356,6 +1569,683 @@ function AuditScreen(props: { data: ShellData }) {
   );
 }
 
+function BundleStrategicScreen(props: { data: ShellData; demoMode: boolean }) {
+  const { strategic_dashboard: strategic } = props.data;
+  const activeCase =
+    props.data.case_workspaces.find((item) => item.case_id === strategic.active_case_banner.case_id) ??
+    props.data.case_workspaces[0] ??
+    emptyCaseWorkspace;
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "01",
+        title: "Strategic objective cascade - monitoring & thresholds",
+        subtitle: "One objective - six governed KPIs - live threshold state",
+        routeText: "Route 01 - strategic",
+        snapshot: screenSnapshot(props.data),
+        demoMode: props.demoMode,
+      })}
+
+      <section className="jazan-objective-band">
+        <div className="jazan-objective-copy">
+          <span className="jazan-objective-tag">OBJECTIVE</span>
+          <h2>{strategic.title}</h2>
+          <p>{strategic.subtitle}</p>
+          <small className="jazan-bilingual-copy">استدامة وتحسين جودة الخدمات البلدية ومعالجة التشوه البصري</small>
+        </div>
+        <div className="jazan-objective-chips">
+          {strategic.objective_context.map((item) => (
+            <span key={item} className="jazan-pill is-light">
+              {item}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className="jazan-summary-band">
+        {strategic.summary_strip.map((item) => (
+          <article key={item.label} className="jazan-summary-counter">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{statusLookup(item.label)}</small>
+          </article>
+        ))}
+      </section>
+
+      <section className="jazan-connector-rail-shell">
+        <div className="jazan-connector-line" />
+        <div className="jazan-connector-node-row">
+          {strategic.kpi_cards.map((card) => (
+            <div key={card.slug} className="jazan-connector-node">
+              <span className={`jazan-node-dot tone-${card.status_tone}`} />
+              <small>{card.short_label}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="jazan-threshold-grid">
+        {strategic.kpi_cards.map((card) => (
+          <article key={card.slug} className="jazan-threshold-card">
+            <div className="jazan-threshold-card-header">
+              <div>
+                <span>{card.short_label}</span>
+                <h3>{card.name}</h3>
+                <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[card.slug] ?? "مؤشر تشغيلي"}</small>
+              </div>
+              {renderStatusBadge(card.status, card.status_tone)}
+            </div>
+            <div className="jazan-threshold-value-row">
+              <div>
+                <strong>{card.current_value}</strong>
+                <span>current</span>
+              </div>
+              <div className="jazan-threshold-target">
+                <span>{`target ${card.target_value}`}</span>
+                <small>{card.delta}</small>
+              </div>
+            </div>
+            {renderThresholdRail(card)}
+            <p className="jazan-threshold-trigger">{card.trigger}</p>
+            <div className="jazan-threshold-footer">
+              <span>{card.owner}</span>
+              <span>{card.cadence}</span>
+            </div>
+            <Link href={card.href} className="jazan-inline-link">
+              Open KPI workspace
+            </Link>
+          </article>
+        ))}
+      </section>
+
+      <section className="jazan-alert-band">
+        <div className="jazan-alert-copy">
+          <span className="jazan-alert-tag">ACTIVE RISK CASE - HIGHEST PRIORITY</span>
+          <h3>{`${strategic.active_case_banner.municipality} - ${strategic.active_case_banner.kpi}`}</h3>
+          <p>{strategic.active_case_banner.summary}</p>
+          <small>{activeCase.status}</small>
+        </div>
+        <div className="jazan-alert-metrics">
+          <div>
+            <span>Risk score</span>
+            <strong>{strategic.active_case_banner.risk_score}</strong>
+          </div>
+          <div>
+            <span>Forecast breach</span>
+            <strong>{strategic.active_case_banner.breach_probability}</strong>
+          </div>
+          <Link href={strategic.active_case_banner.href} className="jazan-case-link-button">
+            Review case
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function BundleKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean; data: ShellData }) {
+  const { kpi, demoMode, data } = props;
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "02",
+        title: "KPI workspace - municipality monitoring and governance",
+        subtitle: "Show KPI status by municipality, forecast path, governance evidence, and open cases",
+        routeText: "Route 02 - KPI workspace",
+        snapshot: screenSnapshot(data),
+        demoMode,
+      })}
+
+      <section className="jazan-zone-card jazan-zone-card--context">
+        <div>
+          <p className="jazan-eyebrow">{kpi.short_label}</p>
+          <h2>{kpi.name}</h2>
+          <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[kpi.slug] ?? "مؤشر تشغيلي"}</small>
+        </div>
+        <div className="jazan-zone-card-meta">
+          {renderStatusBadge(kpi.status, kpi.status_tone)}
+          <span>{`Owner: ${kpi.owner}`}</span>
+          <span>{`Cadence: ${kpi.cadence}`}</span>
+          <span>{kpi.trigger}</span>
+        </div>
+      </section>
+
+      <section className="jazan-summary-band">
+        {kpi.summary_strip.map((item) => (
+          <article key={item.label} className="jazan-summary-counter">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            {item.note ? <small>{item.note}</small> : null}
+          </article>
+        ))}
+      </section>
+
+      <div className="jazan-two-column-grid">
+        <SectionCard eyebrow="Municipality ranking" title="Ranked municipality risk and trigger state">
+          {dataTable({
+            columns: ["Municipality", "Current", "Target", "Risk score", "Breach", "Status", "Action"],
+            rows:
+              kpi.municipality_ranking.length > 0
+                ? kpi.municipality_ranking.map((row) => [
+                    row.municipality,
+                    row.current,
+                    row.target,
+                    row.risk_score,
+                    row.breach_probability,
+                    renderStatusBadge(row.status, row.status === "In breach" ? "critical" : "warning"),
+                    row.case_id ? (
+                      <Link
+                        href={buildCaseHref(kpi.slug, row.case_id, "overview", demoMode)}
+                        className="jazan-inline-link"
+                      >
+                        Open case
+                      </Link>
+                    ) : (
+                      "No case"
+                    ),
+                  ])
+                : [["No municipalities ranked yet", "-", "-", "-", "-", "-", "-"]],
+          })}
+        </SectionCard>
+
+        <SectionCard eyebrow="Trend and forecast" title="Observed trend and threshold reference line">
+          {trendChart(kpi.trend)}
+        </SectionCard>
+      </div>
+
+      <div className="jazan-two-column-grid jazan-two-column-grid--wide-right">
+        <SectionCard eyebrow="Governance evidence" title="Classification, ownership, freshness, and lineage">
+          {governanceMiniRail(kpi.governance)}
+        </SectionCard>
+
+        <SectionCard eyebrow="Open cases" title="Municipality cases generated from this KPI">
+          <div className="jazan-list-stack">
+            {kpi.open_cases.length > 0 ? (
+              kpi.open_cases.map((item) => (
+                <article key={item.case_id} className="jazan-list-row">
+                  <div>
+                    <strong>{item.municipality}</strong>
+                    <p>{item.reason}</p>
+                    <small>{item.owner}</small>
+                  </div>
+                  <Link href={item.href} className="jazan-inline-link">
+                    Open case
+                  </Link>
+                </article>
+              ))
+            ) : (
+              <p className="jazan-empty-copy">No open cases on this KPI.</p>
+            )}
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
+
+function BundleCaseWorkspaceScreen(props: {
+  route: Extract<RouteState, { kind: "case" }>;
+  caseWorkspace: CaseWorkspace;
+  demoMode: boolean;
+  data: ShellData;
+}) {
+  const { route, caseWorkspace, demoMode, data } = props;
+  const detailHref = buildCaseHref(caseWorkspace.kpi_slug, caseWorkspace.case_id, "overview", demoMode);
+  const tabs: Array<{ id: CaseTab; label: string }> = [
+    { id: "overview", label: "Overview" },
+    { id: "intelligence", label: "Model intelligence" },
+    { id: "decisions", label: "Decision command" },
+    { id: "recovery", label: "Outcome recovery" },
+  ];
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "03",
+        title: "Case workspace - model intelligence, recommendation, decision, and recovery",
+        subtitle: "One municipality case from forecast and anomaly evidence through approval and recovery path",
+        routeText: `Route 03 - ${route.tab}`,
+        snapshot: screenSnapshot(data),
+        demoMode,
+      })}
+
+      <section className="jazan-alert-band jazan-alert-band--case">
+        <div className="jazan-alert-copy">
+          <span className="jazan-alert-tag">ACTIVE CASE - MODEL INTELLIGENCE</span>
+          <h3>{`${caseWorkspace.municipality} - ${caseWorkspace.kpi_name}`}</h3>
+          <p>{caseWorkspace.rationale}</p>
+        </div>
+        <div className="jazan-alert-metrics">
+          <div>
+            <span>Risk score</span>
+            <strong>{`${caseWorkspace.risk_score} / 100`}</strong>
+          </div>
+          <div>
+            <span>Forecast breach</span>
+            <strong>{caseWorkspace.breach_probability}</strong>
+          </div>
+          <div>
+            <span>Status</span>
+            <strong>{caseWorkspace.status}</strong>
+          </div>
+        </div>
+      </section>
+
+      <div className="jazan-case-tabs">
+        {tabs.map((tab) => (
+          <Link
+            key={tab.id}
+            href={buildCaseHref(caseWorkspace.kpi_slug, caseWorkspace.case_id, tab.id, demoMode)}
+            className={`jazan-case-tab${route.tab === tab.id ? " is-active" : ""}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
+
+      <div className="jazan-two-column-grid">
+        <SectionCard eyebrow="Composite risk score" title="Feature contribution and model drivers">
+          <div className="jazan-risk-summary">
+            <div className="jazan-risk-orb">
+              <span>Composite risk score</span>
+              <strong>{caseWorkspace.risk_score}</strong>
+              <small>out of 100</small>
+            </div>
+            <div className="jazan-driver-list">
+              {caseWorkspace.intelligence.feature_contributions.map((item) => (
+                <article key={item.label} className="jazan-driver-row">
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                </article>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard eyebrow="Forecast path" title="Observed and forecast path against the target line">
+          {trendChart(caseWorkspace.intelligence.trend)}
+        </SectionCard>
+      </div>
+
+      <div className="jazan-two-column-grid jazan-two-column-grid--wide-right">
+        <SectionCard eyebrow="Anomaly signal" title="Anomaly score and operating context">
+          <div className="jazan-card-grid">
+            <article className="jazan-detail-card">
+              <strong>Anomaly score</strong>
+              <p>2.6</p>
+              <small>Complaint-cluster severity against the 24-month baseline</small>
+            </article>
+            <article className="jazan-detail-card">
+              <strong>Current KPI vs target</strong>
+              <p>{`${caseWorkspace.current_value} against ${caseWorkspace.target_value}`}</p>
+              <small>{caseWorkspace.owner}</small>
+            </article>
+          </div>
+        </SectionCard>
+
+        <SectionCard eyebrow="Recommendation rankings" title="Ranked interventions from comparable municipalities">
+          <div className="jazan-recommendation-grid">
+            {caseWorkspace.intelligence.ranked_actions.map((action, index) => (
+              <article key={action.title} className="jazan-recommendation-card">
+                <span className="jazan-pill is-light">{`#${index + 1}`}</span>
+                <strong>{action.title}</strong>
+                <p>{action.impact}</p>
+                <small>{action.note}</small>
+              </article>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+
+      <SectionCard eyebrow="Decision evidence" title="Human-authorised action sits on certified evidence">
+        <div className="jazan-two-column-grid jazan-two-column-grid--wide-right">
+          <div className="jazan-card-grid">
+            {caseWorkspace.decisions.evidence_pack.map((item) => (
+              <article key={item.label} className="jazan-detail-card">
+                <strong>{item.label}</strong>
+                <p>{item.value}</p>
+              </article>
+            ))}
+          </div>
+          <div className="jazan-screen-stack compact">
+            {renderDecisionButtons(caseWorkspace.decisions.action_buttons, detailHref)}
+            <p className="jazan-action-notice">{caseWorkspace.decisions.human_authorisation_note}</p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard eyebrow="Recovery path" title="Expected recovery trajectory and learning feedback">
+        <div className="jazan-card-grid">
+          <article className="jazan-detail-card">
+            <strong>Baseline</strong>
+            <p>{caseWorkspace.recovery.baseline}</p>
+          </article>
+          <article className="jazan-detail-card">
+            <strong>Target</strong>
+            <p>{caseWorkspace.recovery.target}</p>
+          </article>
+          <article className="jazan-detail-card">
+            <strong>After 30 days</strong>
+            <p>{caseWorkspace.recovery.after_30_days}</p>
+          </article>
+          <article className="jazan-detail-card">
+            <strong>Forecast accuracy</strong>
+            <p>{caseWorkspace.recovery.forecast_accuracy}</p>
+          </article>
+          <article className="jazan-detail-card">
+            <strong>Intervention effectiveness</strong>
+            <p>{caseWorkspace.recovery.intervention_effectiveness}</p>
+          </article>
+          <article className="jazan-detail-card">
+            <strong>Learning pillars</strong>
+            <ul className="jazan-bullet-list">
+              {caseWorkspace.recovery.learning_pillars.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function BundleDecisionCommandScreen(props: { data: ShellData; selected: CaseWorkspace; demoMode: boolean }) {
+  const counters = buildDecisionCounters(props.data);
+  const detailHref = buildCaseHref(props.selected.kpi_slug, props.selected.case_id, "overview", props.demoMode);
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "04",
+        title: "Decision command centre",
+        subtitle: "Generated decisions awaiting human review and approval",
+        routeText: "Route 04 - decision command",
+        snapshot: screenSnapshot(props.data),
+        demoMode: props.demoMode,
+      })}
+
+      <section className="jazan-summary-band jazan-summary-band--decision">
+        {counters.map((item) => (
+          <article key={item.label} className="jazan-summary-counter">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </section>
+
+      <div className="jazan-two-column-grid jazan-two-column-grid--wide-left">
+        <SectionCard eyebrow="Decision candidate queue" title="Generated decisions waiting for human review">
+          {dataTable({
+            columns: ["Decision", "Municipality", "KPI", "Risk", "Breach", "Owner", "Status", "Actions"],
+            rows: props.data.decision_command.queue.map((row) => [
+              row.decision_id,
+              row.municipality,
+              row.kpi,
+              row.risk_score,
+              row.breach_probability,
+              row.owner,
+              renderStatusBadge(row.status, row.status === "Awaiting review" ? "warning" : "positive"),
+              renderDecisionButtons(
+                props.data.decision_command.action_buttons,
+                buildHref(`${baseRoute}/decisions?selected=${row.decision_id}`, props.demoMode),
+              ),
+            ]),
+          })}
+        </SectionCard>
+
+        <div className="jazan-screen-stack compact">
+          <SectionCard eyebrow="Selected decision detail" title={`${props.selected.case_id} - ${props.selected.municipality}`}>
+            <div className="jazan-card-grid">
+              <article className="jazan-detail-card">
+                <strong>Rationale</strong>
+                <p>{props.selected.rationale}</p>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Recommended actions</strong>
+                <p>{props.selected.decisions.recommended_actions.join(", ")}</p>
+              </article>
+            </div>
+          </SectionCard>
+
+          <SectionCard eyebrow="Human-authorised action area" title="External side effects require explicit confirmation">
+            {renderDecisionButtons(props.data.decision_command.action_buttons, detailHref)}
+            <p className="jazan-action-notice">{props.data.decision_command.human_authorisation_note}</p>
+          </SectionCard>
+        </div>
+      </div>
+
+      <div className="jazan-two-column-grid">
+        <SectionCard eyebrow="Confirmation drawer" title="No external workflow runs without review">
+          <div className="jazan-card-grid">
+            <article className="jazan-detail-card">
+              <strong>External side effects</strong>
+              <p>Email owner, create municipal ticket, create corrective action</p>
+            </article>
+            <article className="jazan-detail-card">
+              <strong>Recipient and owner summary</strong>
+              <p>{`${props.selected.owner} - due ${props.selected.due_date}`}</p>
+            </article>
+          </div>
+        </SectionCard>
+
+        <SectionCard eyebrow="Corrective action lifecycle" title="Action stages remain visible after approval">
+          <div className="jazan-lifecycle-strip">
+            {props.data.decision_action_audit.corrective_actions.map((action) => (
+              <article key={action.action_id} className="jazan-lifecycle-card">
+                <strong>{action.action_id}</strong>
+                <p>{action.action_plan}</p>
+                <small>{`${action.owner} - ${action.status}`}</small>
+              </article>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
+
+function BundleRuntimeEvidenceScreen(props: { data: ShellData; demoMode: boolean }) {
+  const onlineCount = props.data.runtime_evidence.runtime_cards.filter((runtime) => runtime.status === "online").length;
+  const summaryItems: Metric[] = [
+    { label: "Online runtimes", value: `${onlineCount} / ${props.data.runtime_evidence.runtime_cards.length}` },
+    { label: "Last executions", value: props.data.runtime_evidence.execution_history.length.toString() },
+    { label: "Next run", value: props.data.runtime_evidence.runtime_cards[0]?.next_run ?? "-" },
+    { label: "Mode", value: props.data.runtime_evidence.seed_note },
+  ];
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "05",
+        title: "Runtime evidence and execution history",
+        subtitle: "Show predictive runtimes, input marts, output tables, and the last execution trail",
+        routeText: "Route 05 - runtime evidence",
+        snapshot: screenSnapshot(props.data),
+        demoMode: props.demoMode,
+      })}
+
+      <section className="jazan-summary-band">
+        {summaryItems.map((item) => (
+          <article key={item.label} className="jazan-summary-counter">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </section>
+
+      <section className="jazan-runtime-card-grid">
+        {props.data.runtime_evidence.runtime_cards.map((runtime) => (
+          <article key={runtime.runtime_id} className="jazan-runtime-card">
+            <div className="jazan-runtime-card-header">
+              <div>
+                <span>{runtime.runtime_id}</span>
+                <h3>{runtime.name}</h3>
+              </div>
+              {renderStatusBadge(runtime.status, runtime.status === "online" ? "positive" : "warning")}
+            </div>
+            <p>{runtime.image}</p>
+            <div className="jazan-runtime-stats">
+              <span>{`Last run ${runtime.last_run}`}</span>
+              <span>{runtime.duration}</span>
+              <span>{`${runtime.rows_out} rows`}</span>
+              <span>{`Next ${runtime.next_run}`}</span>
+            </div>
+            <div className="jazan-runtime-io">
+              <strong>Inputs</strong>
+              <span>{runtime.inputs.join(", ")}</span>
+              <strong>Outputs</strong>
+              <span>{runtime.outputs.join(", ")}</span>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <SectionCard eyebrow="Execution history" title="Last seven execution traces">
+        {dataTable({
+          columns: ["Runtime", "Started at", "Status", "Duration"],
+          rows: props.data.runtime_evidence.execution_history.map((row) => [
+            row.runtime,
+            row.started_at,
+            row.status,
+            row.duration,
+          ]),
+        })}
+      </SectionCard>
+
+      <div className="jazan-two-column-grid">
+        <SectionCard eyebrow="Input and output lineage" title="Runtime path stays above raw layer and under governance">
+          <div className="jazan-pill-row">
+            {props.data.runtime_evidence.lineage_flow.map((step) => (
+              <span key={step} className="jazan-pill">
+                {step}
+              </span>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard eyebrow="Schedules and next run" title="Declared cadence and next execution window">
+          <div className="jazan-list-stack">
+            {props.data.runtime_evidence.runtime_cards.map((runtime) => (
+              <article key={`${runtime.runtime_id}-schedule`} className="jazan-list-row">
+                <div>
+                  <strong>{runtime.name}</strong>
+                  <p>{runtime.image}</p>
+                </div>
+                <small>{runtime.next_run}</small>
+              </article>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
+
+function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
+  const counters = buildAuditCounters(props.data);
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "06",
+        title: "Decision queue and action audit",
+        subtitle: "See actions taken, emails sent, tickets created, and corrective-action closure",
+        routeText: "Route 06 - action audit",
+        snapshot: screenSnapshot(props.data),
+        demoMode: props.demoMode,
+      })}
+
+      <section className="jazan-summary-band jazan-summary-band--audit">
+        {counters.map((item) => (
+          <article key={item.label} className="jazan-summary-counter">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </section>
+
+      <SectionCard eyebrow="Decision queue" title="Queue state carried into audit and corrective action follow-through">
+        {dataTable({
+          columns: ["Decision", "Municipality", "KPI", "Risk", "Status", "Due"],
+          rows: props.data.decision_action_audit.queue.map((row) => [
+            row.decision_id,
+            row.municipality,
+            row.kpi,
+            row.risk_score,
+            renderStatusBadge(row.status, row.status === "Awaiting review" ? "warning" : "positive"),
+            row.due_date,
+          ]),
+        })}
+      </SectionCard>
+
+      <div className="jazan-three-column-grid">
+        <SectionCard eyebrow="Action event timeline" title="Who acted, through which channel, and with what result">
+          {dataTable({
+            columns: ["Time", "Actor", "Action", "Channel", "Result"],
+            rows: props.data.decision_action_audit.action_history.map((row) => [
+              row.time,
+              row.actor,
+              row.action,
+              row.channel,
+              row.result,
+            ]),
+          })}
+        </SectionCard>
+
+        <SectionCard eyebrow="Email delivery log" title="Notification outbox and delivery evidence">
+          {dataTable({
+            columns: ["Recipient", "Template", "Status", "Sent at"],
+            rows:
+              props.data.decision_action_audit.email_log.length > 0
+                ? props.data.decision_action_audit.email_log.map((row) => [
+                    row.recipient,
+                    row.template,
+                    row.status,
+                    row.sent_at,
+                  ])
+                : [["No seeded emails yet", "-", "-", "-"]],
+          })}
+        </SectionCard>
+
+        <SectionCard eyebrow="Ticket request log" title="External ticketing references linked to actions">
+          {dataTable({
+            columns: ["System", "Ticket", "Priority", "Status", "Case"],
+            rows:
+              props.data.decision_action_audit.ticket_log.length > 0
+                ? props.data.decision_action_audit.ticket_log.map((row) => [
+                    row.system,
+                    row.ticket_id,
+                    row.priority,
+                    row.status,
+                    row.linked_case,
+                  ])
+                : [["No seeded tickets yet", "-", "-", "-", "-"]],
+          })}
+        </SectionCard>
+      </div>
+
+      <SectionCard eyebrow="Corrective action tracker" title="Tracked to closure instead of disappearing after approval">
+        {dataTable({
+          columns: ["Action ID", "Decision", "Action plan", "Owner", "Status", "Due", "Evidence", "Next step"],
+          rows: props.data.decision_action_audit.corrective_actions.map((row) => [
+            row.action_id,
+            row.decision_id,
+            row.action_plan,
+            row.owner,
+            row.status,
+            row.due_in,
+            row.evidence_status,
+            row.next_step,
+          ]),
+        })}
+      </SectionCard>
+    </div>
+  );
+}
+
 function breadcrumb(route: RouteState, data: ShellData) {
   if (route.kind === "strategic" || route.kind === "decisions" || route.kind === "runtimes" || route.kind === "audit") {
     return null;
@@ -1406,23 +2296,24 @@ export default async function UrbanServiceQualityLoopPage({ params, searchParams
   let content: ReactNode;
 
   if (route.kind === "strategic") {
-    content = <StrategicScreen data={data} demoMode={demoMode} />;
+    content = <BundleStrategicScreen data={data} demoMode={demoMode} />;
   } else if (route.kind === "kpi") {
-    content = <KpiWorkspaceScreen kpi={findKpiWorkspace(data, route.kpiSlug)} demoMode={demoMode} />;
+    content = <BundleKpiWorkspaceScreen kpi={findKpiWorkspace(data, route.kpiSlug)} demoMode={demoMode} data={data} />;
   } else if (route.kind === "case") {
     content = (
-      <CaseWorkspaceScreen
+      <BundleCaseWorkspaceScreen
         route={route}
         caseWorkspace={findCaseWorkspace(data, route.kpiSlug, route.caseId)}
         demoMode={demoMode}
+        data={data}
       />
     );
   } else if (route.kind === "decisions") {
-    content = <DecisionCommandScreen data={data} selected={selectedCase(data, selectedId)} />;
+    content = <BundleDecisionCommandScreen data={data} selected={selectedCase(data, selectedId)} demoMode={demoMode} />;
   } else if (route.kind === "runtimes") {
-    content = <RuntimeEvidenceScreen data={data} />;
+    content = <BundleRuntimeEvidenceScreen data={data} demoMode={demoMode} />;
   } else {
-    content = <AuditScreen data={data} />;
+    content = <BundleAuditScreen data={data} demoMode={demoMode} />;
   }
 
   return (
