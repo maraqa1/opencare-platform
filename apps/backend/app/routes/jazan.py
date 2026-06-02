@@ -230,6 +230,21 @@ def service_quality_kpi_contract() -> dict[str, object]:
     return jazan_service_quality_service.kpi_contract_payload()
 
 
+@router.get("/service-quality/kpi-workspace")
+def service_quality_kpi_workspace() -> dict[str, object]:
+    return jazan_service_quality_service.kpi_workspace_payload()
+
+
+@router.get("/service-quality/case-workspace")
+def service_quality_case_workspace() -> dict[str, object]:
+    return jazan_service_quality_service.case_workspace_payload()
+
+
+@router.get("/service-quality/decision-command")
+def service_quality_decision_command() -> dict[str, object]:
+    return jazan_service_quality_service.decision_command_payload()
+
+
 @router.get("/service-quality/runtime-evidence")
 def service_quality_runtime_evidence() -> dict[str, object]:
     return jazan_service_quality_service.runtime_evidence_payload()
@@ -243,6 +258,11 @@ def service_quality_decision_queue() -> dict[str, object]:
 @router.get("/service-quality/outcome-feedback")
 def service_quality_outcome_feedback() -> dict[str, object]:
     return jazan_service_quality_service.outcome_feedback_payload()
+
+
+@router.get("/service-quality/decision-action-audit")
+def service_quality_decision_action_audit() -> dict[str, object]:
+    return jazan_service_quality_service.decision_action_audit_payload()
 
 
 @router.get("/service-quality/governance-evidence")

@@ -4,264 +4,991 @@ from copy import deepcopy
 from typing import Any
 
 
+BASE_ROUTE = "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop"
+DEFAULT_KPI_SLUG = "visual-distortion-closure-quality"
+DEFAULT_CASE_ID = "JZN-DEC-1007"
+SUPPORTED_TABS = ["overview", "intelligence", "decisions", "recovery"]
+
+KPI_WORKSPACES: list[dict[str, Any]] = [
+    {
+        "slug": "visual-distortion-closure-quality",
+        "short_label": "KPI 1",
+        "name": "Visual distortion closure quality",
+        "current_value": "0.71",
+        "target_value": "0.85",
+        "status": "In breach",
+        "status_tone": "critical",
+        "delta": "-0.14 below",
+        "owner": "Field Compliance",
+        "cadence": "Monthly",
+        "trigger": "Forecast risk 0.78 for 2 weeks",
+        "summary_strip": [
+            {"label": "Current score", "value": "0.71", "note": "Population-weighted latest month"},
+            {"label": "Target", "value": "0.85", "note": "Strategic objective threshold"},
+            {"label": "At-risk municipalities", "value": "4", "note": "Composite risk >= 70"},
+            {"label": "Open cases", "value": "2", "note": "Human review required"},
+        ],
+        "municipality_ranking": [
+            {
+                "municipality": "Sabya",
+                "current": "0.71",
+                "target": "0.85",
+                "risk_score": "84",
+                "breach_probability": "78%",
+                "status": "In breach",
+                "case_id": "JZN-DEC-1007",
+            },
+            {
+                "municipality": "Abu Arish",
+                "current": "0.62",
+                "target": "0.85",
+                "risk_score": "62",
+                "breach_probability": "62%",
+                "status": "Watch",
+                "case_id": "JZN-DEC-1011",
+            },
+            {
+                "municipality": "Samtah",
+                "current": "0.48",
+                "target": "0.85",
+                "risk_score": "48",
+                "breach_probability": "44%",
+                "status": "Recovery",
+                "case_id": "JZN-DEC-1015",
+            },
+            {
+                "municipality": "Farasan",
+                "current": "0.71",
+                "target": "0.85",
+                "risk_score": "71",
+                "breach_probability": "65%",
+                "status": "Watch",
+                "case_id": "JZN-DEC-1018",
+            },
+        ],
+        "trend": [
+            {"label": "Jun", "actual": 0.82, "target": 0.85},
+            {"label": "Jul", "actual": 0.8, "target": 0.85},
+            {"label": "Aug", "actual": 0.76, "target": 0.85},
+            {"label": "Sep", "actual": 0.71, "target": 0.85},
+            {"label": "Oct", "forecast": 0.69, "target": 0.85},
+            {"label": "Nov", "forecast": 0.66, "target": 0.85},
+            {"label": "Dec", "forecast": 0.63, "target": 0.85},
+        ],
+        "open_cases": [
+            {
+                "case_id": "JZN-DEC-1007",
+                "municipality": "Sabya",
+                "reason": "Complaint cluster and repeat closures degrading below target.",
+                "owner": "Field Compliance",
+                "href": f"{BASE_ROUTE}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1007/overview?demo=1",
+            },
+            {
+                "case_id": "JZN-DEC-1011",
+                "municipality": "Abu Arish",
+                "reason": "Forecast breach probability remains above 60% for four weeks.",
+                "owner": "Services Agency",
+                "href": f"{BASE_ROUTE}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1011/overview?demo=1",
+            },
+        ],
+        "governance": [
+            {"label": "Source", "value": "source_jazan.visual_distortion_cases"},
+            {"label": "Analytics mart", "value": "analytics.fct_jazan_visual_distortion_performance"},
+            {"label": "Output", "value": "output.jazan_municipality_service_risk_score"},
+            {"label": "Freshness", "value": "8m old"},
+        ],
+    },
+    {
+        "slug": "service-request-closure-rate",
+        "short_label": "KPI 2",
+        "name": "Service request closure rate",
+        "current_value": "0.92",
+        "target_value": "0.90",
+        "status": "Meeting target",
+        "status_tone": "positive",
+        "delta": "+0.02 above",
+        "owner": "Services Agency",
+        "cadence": "Monthly",
+        "trigger": "SLA drift or backlog growth",
+        "summary_strip": [
+            {"label": "Current score", "value": "0.92", "note": "Latest validated month"},
+            {"label": "Target", "value": "0.90", "note": "Strategic objective threshold"},
+            {"label": "Watch municipalities", "value": "3", "note": "Trend softening"},
+            {"label": "Open cases", "value": "1", "note": "Rebalance capacity"},
+        ],
+        "municipality_ranking": [
+            {
+                "municipality": "Abu Arish",
+                "current": "0.89",
+                "target": "0.90",
+                "risk_score": "62",
+                "breach_probability": "62%",
+                "status": "Watch",
+                "case_id": "JZN-DEC-1011",
+            },
+            {
+                "municipality": "Jazan",
+                "current": "0.94",
+                "target": "0.90",
+                "risk_score": "22",
+                "breach_probability": "18%",
+                "status": "Healthy",
+                "case_id": "",
+            },
+        ],
+        "trend": [
+            {"label": "Jun", "actual": 0.95, "target": 0.90},
+            {"label": "Jul", "actual": 0.94, "target": 0.90},
+            {"label": "Aug", "actual": 0.93, "target": 0.90},
+            {"label": "Sep", "actual": 0.92, "target": 0.90},
+            {"label": "Oct", "forecast": 0.9, "target": 0.90},
+            {"label": "Nov", "forecast": 0.89, "target": 0.90},
+            {"label": "Dec", "forecast": 0.88, "target": 0.90},
+        ],
+        "open_cases": [
+            {
+                "case_id": "JZN-DEC-1011",
+                "municipality": "Abu Arish",
+                "reason": "Backlog and repeated SLA misses require field rebalance.",
+                "owner": "Services Agency",
+                "href": f"{BASE_ROUTE}/kpi/service-request-closure-rate/case/JZN-DEC-1011/overview?demo=1",
+            }
+        ],
+        "governance": [
+            {"label": "Source", "value": "source_jazan.service_requests"},
+            {"label": "Analytics mart", "value": "analytics.fct_jazan_service_quality"},
+            {"label": "Output", "value": "output.jazan_service_rnn_forecast"},
+            {"label": "Freshness", "value": "8m old"},
+        ],
+    },
+    {
+        "slug": "average-permit-issuance-time",
+        "short_label": "KPI 3",
+        "name": "Average permit issuance time",
+        "current_value": "6.4 days",
+        "target_value": "<=5 days",
+        "status": "Approaching trigger",
+        "status_tone": "warning",
+        "delta": "+1.4 over",
+        "owner": "Permit Office",
+        "cadence": "Monthly",
+        "trigger": "5-day commercial or 14-day building permit threshold",
+        "summary_strip": [
+            {"label": "Current cycle", "value": "6.4d", "note": "Weighted across permit classes"},
+            {"label": "Target", "value": "<=5d", "note": "Strategic objective threshold"},
+            {"label": "At-risk municipalities", "value": "2", "note": "Permit delay clusters"},
+            {"label": "Open cases", "value": "1", "note": "Permit backlog recovery"},
+        ],
+        "municipality_ranking": [
+            {
+                "municipality": "Samtah",
+                "current": "6.4d",
+                "target": "<=5d",
+                "risk_score": "48",
+                "breach_probability": "44%",
+                "status": "Approaching trigger",
+                "case_id": "JZN-DEC-1015",
+            }
+        ],
+        "trend": [
+            {"label": "Jun", "actual": 5.4, "target": 5.0},
+            {"label": "Jul", "actual": 5.7, "target": 5.0},
+            {"label": "Aug", "actual": 6.0, "target": 5.0},
+            {"label": "Sep", "actual": 6.4, "target": 5.0},
+            {"label": "Oct", "forecast": 6.1, "target": 5.0},
+            {"label": "Nov", "forecast": 5.8, "target": 5.0},
+            {"label": "Dec", "forecast": 5.4, "target": 5.0},
+        ],
+        "open_cases": [
+            {
+                "case_id": "JZN-DEC-1015",
+                "municipality": "Samtah",
+                "reason": "Permit backlog recovery sprint required before quarter close.",
+                "owner": "Licensing Department",
+                "href": f"{BASE_ROUTE}/kpi/average-permit-issuance-time/case/JZN-DEC-1015/overview?demo=1",
+            }
+        ],
+        "governance": [
+            {"label": "Source", "value": "source_jazan.permit_requests"},
+            {"label": "Analytics mart", "value": "analytics.fct_jazan_permit_performance"},
+            {"label": "Output", "value": "output.jazan_permit_service_risk_score"},
+            {"label": "Freshness", "value": "14m old"},
+        ],
+    },
+    {
+        "slug": "urban-service-coverage",
+        "short_label": "KPI 4",
+        "name": "Urban service coverage",
+        "current_value": "0.96",
+        "target_value": "0.95",
+        "status": "Most target",
+        "status_tone": "positive",
+        "delta": "+0.01 above",
+        "owner": "Planning Office",
+        "cadence": "Monthly",
+        "trigger": "Coverage drops in any zone",
+        "summary_strip": [
+            {"label": "Current score", "value": "0.96", "note": "Latest geographic rollup"},
+            {"label": "Target", "value": "0.95", "note": "Strategic objective threshold"},
+            {"label": "Watch municipalities", "value": "1", "note": "Remote zone access"},
+            {"label": "Open cases", "value": "0", "note": "Healthy portfolio"},
+        ],
+        "municipality_ranking": [],
+        "trend": [
+            {"label": "Jun", "actual": 0.94, "target": 0.95},
+            {"label": "Jul", "actual": 0.95, "target": 0.95},
+            {"label": "Aug", "actual": 0.96, "target": 0.95},
+            {"label": "Sep", "actual": 0.96, "target": 0.95},
+            {"label": "Oct", "forecast": 0.96, "target": 0.95},
+        ],
+        "open_cases": [],
+        "governance": [
+            {"label": "Source", "value": "source_jazan.service_coverage_assets"},
+            {"label": "Analytics mart", "value": "analytics.fct_jazan_service_coverage"},
+            {"label": "Output", "value": "output.jazan_service_coverage_health"},
+            {"label": "Freshness", "value": "1d old"},
+        ],
+    },
+    {
+        "slug": "emergency-readiness",
+        "short_label": "KPI 5",
+        "name": "Emergency and resilience readiness",
+        "current_value": "0.82",
+        "target_value": "0.80",
+        "status": "Most target",
+        "status_tone": "positive",
+        "delta": "+0.02 above",
+        "owner": "Civil Defence",
+        "cadence": "Monthly",
+        "trigger": "Any critical drill failure",
+        "summary_strip": [
+            {"label": "Current score", "value": "0.82", "note": "Weighted readiness assessment"},
+            {"label": "Target", "value": "0.80", "note": "Strategic objective threshold"},
+            {"label": "Watch municipalities", "value": "1", "note": "Remote response gap"},
+            {"label": "Open cases", "value": "1", "note": "Exercise remediation"},
+        ],
+        "municipality_ranking": [
+            {
+                "municipality": "Farasan",
+                "current": "0.71",
+                "target": "0.80",
+                "risk_score": "71",
+                "breach_probability": "65%",
+                "status": "Watch",
+                "case_id": "JZN-DEC-1018",
+            }
+        ],
+        "trend": [
+            {"label": "Jun", "actual": 0.78, "target": 0.80},
+            {"label": "Jul", "actual": 0.79, "target": 0.80},
+            {"label": "Aug", "actual": 0.81, "target": 0.80},
+            {"label": "Sep", "actual": 0.82, "target": 0.80},
+            {"label": "Oct", "forecast": 0.8, "target": 0.80},
+        ],
+        "open_cases": [
+            {
+                "case_id": "JZN-DEC-1018",
+                "municipality": "Farasan",
+                "reason": "Emergency drill gap needs action plan before next review.",
+                "owner": "Civil Defence",
+                "href": f"{BASE_ROUTE}/kpi/emergency-readiness/case/JZN-DEC-1018/overview?demo=1",
+            }
+        ],
+        "governance": [
+            {"label": "Source", "value": "source_jazan.emergency_readiness_checks"},
+            {"label": "Analytics mart", "value": "analytics.fct_jazan_emergency_readiness"},
+            {"label": "Output", "value": "output.jazan_emergency_risk_score"},
+            {"label": "Freshness", "value": "3h old"},
+        ],
+    },
+    {
+        "slug": "citizen-satisfaction",
+        "short_label": "KPI 6",
+        "name": "Citizen satisfaction",
+        "current_value": "0.78",
+        "target_value": "0.75",
+        "status": "Emerging",
+        "status_tone": "positive",
+        "delta": "+0.03 above",
+        "owner": "Performance Office",
+        "cadence": "Quarterly",
+        "trigger": "Quarterly drop greater than 0.05",
+        "summary_strip": [
+            {"label": "Current score", "value": "0.78", "note": "Latest weighted satisfaction survey"},
+            {"label": "Target", "value": "0.75", "note": "Strategic objective threshold"},
+            {"label": "Watch municipalities", "value": "2", "note": "Feedback concentration"},
+            {"label": "Open cases", "value": "0", "note": "No active workflow"},
+        ],
+        "municipality_ranking": [],
+        "trend": [
+            {"label": "Q1", "actual": 0.73, "target": 0.75},
+            {"label": "Q2", "actual": 0.76, "target": 0.75},
+            {"label": "Q3", "actual": 0.78, "target": 0.75},
+            {"label": "Q4", "forecast": 0.79, "target": 0.75},
+        ],
+        "open_cases": [],
+        "governance": [
+            {"label": "Source", "value": "source_jazan.citizen_satisfaction_surveys"},
+            {"label": "Analytics mart", "value": "analytics.fct_jazan_citizen_satisfaction"},
+            {"label": "Output", "value": "output.jazan_satisfaction_watchlist"},
+            {"label": "Freshness", "value": "Quarterly"},
+        ],
+    },
+]
+
+CASE_WORKSPACES: list[dict[str, Any]] = [
+    {
+        "case_id": "JZN-DEC-1007",
+        "kpi_slug": "visual-distortion-closure-quality",
+        "kpi_name": "Visual distortion closure quality",
+        "municipality": "Sabya",
+        "status": "Awaiting review",
+        "owner": "Field Compliance",
+        "due_date": "09 Sep 2026",
+        "risk_score": "84",
+        "breach_probability": "0.78",
+        "current_value": "0.71",
+        "target_value": "0.85",
+        "rationale": (
+            "Sabya municipality is forecast to breach the visual distortion closure-quality target "
+            "with a 4-week lead. Drivers are a complaint cluster, declining closure quality, "
+            "and repeated unresolved recurrence."
+        ),
+        "overview_metrics": [
+            {"label": "Current KPI", "value": "0.71", "note": "Target 0.85"},
+            {"label": "Forecast breach", "value": "0.78", "note": "4-6 week horizon"},
+            {"label": "Anomaly score", "value": "2.6", "note": "Complaint cluster severity"},
+            {"label": "Risk score", "value": "84 / 100", "note": "Composite municipal risk"},
+        ],
+        "intelligence": {
+            "feature_contributions": [
+                {"label": "Forecast breach probability", "value": "32.0"},
+                {"label": "Anomaly z-score", "value": "20.8"},
+                {"label": "Complaint recurrence", "value": "13.7"},
+                {"label": "Backlog growth", "value": "17.5"},
+            ],
+            "trend": [
+                {"label": "Jun", "actual": 0.82, "target": 0.85},
+                {"label": "Jul", "actual": 0.8, "target": 0.85},
+                {"label": "Aug", "actual": 0.76, "target": 0.85},
+                {"label": "Sep", "actual": 0.71, "target": 0.85},
+                {"label": "Oct", "forecast": 0.7, "target": 0.85},
+                {"label": "Nov", "forecast": 0.67, "target": 0.85},
+                {"label": "Dec", "forecast": 0.63, "target": 0.85},
+            ],
+            "ranked_actions": [
+                {"title": "Accelerated inspection cycle", "impact": "+0.14 recovery", "note": "29 days"},
+                {"title": "Contractor performance audit", "impact": "+0.09 recovery", "note": "35 days"},
+                {"title": "Mobile evidence app deployment", "impact": "+0.11 recovery", "note": "42 days"},
+            ],
+            "outputs": [
+                "output.jazan_service_rnn_forecast",
+                "output.jazan_service_quality_anomaly",
+                "output.jazan_municipality_service_risk_score",
+                "output.jazan_recommended_intervention",
+            ],
+        },
+        "decisions": {
+            "recommended_actions": [
+                "Accelerated inspection cycle",
+                "Contractor performance audit",
+                "Mobile evidence app deployment",
+            ],
+            "evidence_pack": [
+                {"label": "Forecast", "value": "0.78 breach probability"},
+                {"label": "Anomaly", "value": "Complaint cluster +2.6"},
+                {"label": "Runtime note", "value": "RNN forecast and anomaly outputs certified"},
+                {"label": "Governance", "value": "Lineage, freshness, owner, classification visible"},
+            ],
+            "action_buttons": [
+                {"id": "approve", "label": "Approve", "tone": "approve"},
+                {"id": "request-revision", "label": "Request revision", "tone": "neutral"},
+                {"id": "escalate", "label": "Escalate", "tone": "warning"},
+                {"id": "create-ticket", "label": "Create ticket", "tone": "outline"},
+                {"id": "notify-owner", "label": "Email owner", "tone": "outline"},
+            ],
+            "human_authorisation_note": (
+                "Every external action is human authorised, audit logged, and bilingual ready."
+            ),
+        },
+        "recovery": {
+            "baseline": "0.71",
+            "target": "0.85",
+            "after_30_days": "0.85",
+            "forecast_accuracy": "High",
+            "intervention_effectiveness": "High",
+            "learning_pillars": [
+                "Pillar 1 strategic alignment remains certified.",
+                "Pillar 2 KPI governance thresholds held without reinterpretation.",
+                "Pillar 4 recommendation history updated for similar municipalities.",
+                "Pillar 6 knowledge transfer package prepared for repeat clusters.",
+            ],
+        },
+    },
+    {
+        "case_id": "JZN-DEC-1011",
+        "kpi_slug": "service-request-closure-rate",
+        "kpi_name": "Service request closure rate",
+        "municipality": "Abu Arish",
+        "status": "Queued",
+        "owner": "Services Agency",
+        "due_date": "10 Sep 2026",
+        "risk_score": "62",
+        "breach_probability": "0.62",
+        "current_value": "0.89",
+        "target_value": "0.90",
+        "rationale": "Backlog growth and slower field response are softening closure performance.",
+        "overview_metrics": [
+            {"label": "Current KPI", "value": "0.89", "note": "Target 0.90"},
+            {"label": "Forecast breach", "value": "0.62", "note": "4-week horizon"},
+            {"label": "Anomaly score", "value": "1.8", "note": "Backlog severity"},
+            {"label": "Risk score", "value": "62 / 100", "note": "Moderate risk"},
+        ],
+        "intelligence": {
+            "feature_contributions": [
+                {"label": "Backlog growth", "value": "18.2"},
+                {"label": "Route coverage variance", "value": "11.4"},
+                {"label": "Repeat requests", "value": "9.8"},
+                {"label": "Owner capacity", "value": "7.3"},
+            ],
+            "trend": [
+                {"label": "Jun", "actual": 0.95, "target": 0.90},
+                {"label": "Jul", "actual": 0.94, "target": 0.90},
+                {"label": "Aug", "actual": 0.93, "target": 0.90},
+                {"label": "Sep", "actual": 0.89, "target": 0.90},
+                {"label": "Oct", "forecast": 0.89, "target": 0.90},
+                {"label": "Nov", "forecast": 0.88, "target": 0.90},
+            ],
+            "ranked_actions": [
+                {"title": "Rebalance field-response capacity", "impact": "+0.08 recovery", "note": "21 days"},
+                {"title": "Permit-team cross-support", "impact": "+0.05 recovery", "note": "28 days"},
+            ],
+            "outputs": [
+                "output.jazan_service_rnn_forecast",
+                "output.jazan_service_quality_anomaly",
+            ],
+        },
+        "decisions": {
+            "recommended_actions": [
+                "Rebalance field-response capacity",
+                "Permit-team cross-support",
+            ],
+            "evidence_pack": [
+                {"label": "Forecast", "value": "0.62 breach probability"},
+                {"label": "Anomaly", "value": "Backlog softening +1.8"},
+            ],
+            "action_buttons": [
+                {"id": "approve", "label": "Approve", "tone": "approve"},
+                {"id": "request-revision", "label": "Request revision", "tone": "neutral"},
+                {"id": "notify-owner", "label": "Email owner", "tone": "outline"},
+            ],
+            "human_authorisation_note": (
+                "Owner notification is human authorised before any external email is sent."
+            ),
+        },
+        "recovery": {
+            "baseline": "0.89",
+            "target": "0.90",
+            "after_30_days": "0.91",
+            "forecast_accuracy": "Medium",
+            "intervention_effectiveness": "Improving",
+            "learning_pillars": [
+                "Route balancing improves closure rhythm before SLA failure.",
+                "Action templates now reference owner capacity by municipality.",
+            ],
+        },
+    },
+    {
+        "case_id": "JZN-DEC-1015",
+        "kpi_slug": "average-permit-issuance-time",
+        "kpi_name": "Average permit issuance time",
+        "municipality": "Samtah",
+        "status": "Under review",
+        "owner": "Licensing Department",
+        "due_date": "11 Sep 2026",
+        "risk_score": "48",
+        "breach_probability": "0.44",
+        "current_value": "6.4 days",
+        "target_value": "<=5 days",
+        "rationale": "Commercial permit backlog is nearing the review threshold for intervention.",
+        "overview_metrics": [
+            {"label": "Current KPI", "value": "6.4d", "note": "Target <=5d"},
+            {"label": "Forecast breach", "value": "0.44", "note": "3-week horizon"},
+            {"label": "Anomaly score", "value": "1.1", "note": "Queue pressure"},
+            {"label": "Risk score", "value": "48 / 100", "note": "Advisory state"},
+        ],
+        "intelligence": {
+            "feature_contributions": [
+                {"label": "Commercial permit backlog", "value": "12.3"},
+                {"label": "Review queue length", "value": "8.1"},
+            ],
+            "trend": [
+                {"label": "Jun", "actual": 5.4, "target": 5.0},
+                {"label": "Jul", "actual": 5.7, "target": 5.0},
+                {"label": "Aug", "actual": 6.0, "target": 5.0},
+                {"label": "Sep", "actual": 6.4, "target": 5.0},
+                {"label": "Oct", "forecast": 6.1, "target": 5.0},
+            ],
+            "ranked_actions": [
+                {"title": "Permit backlog recovery sprint", "impact": "-0.8d", "note": "14 days"},
+            ],
+            "outputs": [
+                "output.jazan_permit_service_risk_score",
+            ],
+        },
+        "decisions": {
+            "recommended_actions": ["Permit backlog recovery sprint"],
+            "evidence_pack": [{"label": "Forecast", "value": "0.44 breach probability"}],
+            "action_buttons": [
+                {"id": "approve", "label": "Approve", "tone": "approve"},
+                {"id": "request-revision", "label": "Request revision", "tone": "neutral"},
+            ],
+            "human_authorisation_note": "Advisory action remains human authorised before execution.",
+        },
+        "recovery": {
+            "baseline": "6.4d",
+            "target": "<=5d",
+            "after_30_days": "5.2d",
+            "forecast_accuracy": "Medium",
+            "intervention_effectiveness": "Moderate",
+            "learning_pillars": [
+                "Permit backlog recovery should be templated for quarterly peaks.",
+            ],
+        },
+    },
+    {
+        "case_id": "JZN-DEC-1018",
+        "kpi_slug": "emergency-readiness",
+        "kpi_name": "Emergency and resilience readiness",
+        "municipality": "Farasan",
+        "status": "Queued",
+        "owner": "Civil Defence",
+        "due_date": "12 Sep 2026",
+        "risk_score": "71",
+        "breach_probability": "0.65",
+        "current_value": "0.71",
+        "target_value": "0.80",
+        "rationale": "Drill performance and equipment readiness point to an intervention need.",
+        "overview_metrics": [
+            {"label": "Current KPI", "value": "0.71", "note": "Target 0.80"},
+            {"label": "Forecast breach", "value": "0.65", "note": "5-week horizon"},
+            {"label": "Anomaly score", "value": "1.9", "note": "Remote response gap"},
+            {"label": "Risk score", "value": "71 / 100", "note": "High watch"},
+        ],
+        "intelligence": {
+            "feature_contributions": [
+                {"label": "Drill failure recurrence", "value": "16.2"},
+                {"label": "Equipment readiness", "value": "12.5"},
+            ],
+            "trend": [
+                {"label": "Jun", "actual": 0.78, "target": 0.80},
+                {"label": "Jul", "actual": 0.79, "target": 0.80},
+                {"label": "Aug", "actual": 0.74, "target": 0.80},
+                {"label": "Sep", "actual": 0.71, "target": 0.80},
+                {"label": "Oct", "forecast": 0.72, "target": 0.80},
+            ],
+            "ranked_actions": [
+                {"title": "Emergency drill action plan", "impact": "+0.07 recovery", "note": "30 days"},
+            ],
+            "outputs": [
+                "output.jazan_emergency_risk_score",
+            ],
+        },
+        "decisions": {
+            "recommended_actions": ["Emergency drill action plan"],
+            "evidence_pack": [{"label": "Forecast", "value": "0.65 breach probability"}],
+            "action_buttons": [
+                {"id": "approve", "label": "Approve", "tone": "approve"},
+                {"id": "escalate", "label": "Escalate", "tone": "warning"},
+            ],
+            "human_authorisation_note": "Escalation remains blocked until a human reviewer confirms it.",
+        },
+        "recovery": {
+            "baseline": "0.71",
+            "target": "0.80",
+            "after_30_days": "0.77",
+            "forecast_accuracy": "Medium",
+            "intervention_effectiveness": "In progress",
+            "learning_pillars": [
+                "Remote emergency-readiness cases need municipality owner directory coverage.",
+            ],
+        },
+    },
+]
+
+STRATEGIC_DASHBOARD: dict[str, Any] = {
+    "eyebrow": "01 Strategic objective cascade",
+    "title": "Sustain and improve municipal service quality and visual distortion response",
+    "subtitle": "One objective, six governed KPIs, and a dashboard-rigid story from monitoring to audit.",
+    "objective_context": [
+        "Vision 2030 Quality of Life",
+        "MOMRAH municipal index",
+        "25 municipalities and 1.6M residents",
+    ],
+    "summary_strip": [
+        {"label": "Meeting target", "value": "5"},
+        {"label": "Approaching trigger", "value": "1"},
+        {"label": "In breach", "value": "1"},
+        {"label": "Decision candidates", "value": "4"},
+    ],
+    "golden_thread": [
+        "Strategic objective",
+        "KPI contract",
+        "Certified data",
+        "Predict and recommend",
+        "Human-authorised action",
+        "Audit and learn",
+    ],
+    "kpi_cards": [
+        {
+            "slug": workspace["slug"],
+            "short_label": workspace["short_label"],
+            "name": workspace["name"],
+            "status": workspace["status"],
+            "status_tone": workspace["status_tone"],
+            "current_value": workspace["current_value"],
+            "target_value": workspace["target_value"],
+            "delta": workspace["delta"],
+            "owner": workspace["owner"],
+            "cadence": workspace["cadence"],
+            "trigger": workspace["trigger"],
+            "href": f"{BASE_ROUTE}/kpi/{workspace['slug']}?demo=1",
+        }
+        for workspace in KPI_WORKSPACES
+    ],
+    "active_case_banner": {
+        "case_id": "JZN-DEC-1007",
+        "municipality": "Sabya",
+        "kpi": "Visual distortion closure quality",
+        "risk_score": "84 / 100",
+        "breach_probability": "0.78",
+        "summary": "Decision candidate awaiting review after complaint-cluster anomaly and forecast breach.",
+        "href": f"{BASE_ROUTE}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1007/overview?demo=1",
+    },
+}
+
+DECISION_QUEUE_ROWS = [
+    {
+        "decision_id": "JZN-DEC-1007",
+        "municipality": "Sabya",
+        "kpi": "Visual distortion closure quality",
+        "risk_score": "84",
+        "breach_probability": "78%",
+        "recommendation": "Accelerated inspection cycle",
+        "owner": "Field Compliance",
+        "status": "Awaiting review",
+        "due_date": "09 Sep 2026",
+    },
+    {
+        "decision_id": "JZN-DEC-1011",
+        "municipality": "Abu Arish",
+        "kpi": "Service request closure rate",
+        "risk_score": "62",
+        "breach_probability": "62%",
+        "recommendation": "Rebalance field-response capacity",
+        "owner": "Services Agency",
+        "status": "Queued",
+        "due_date": "10 Sep 2026",
+    },
+    {
+        "decision_id": "JZN-DEC-1015",
+        "municipality": "Samtah",
+        "kpi": "Average permit issuance time",
+        "risk_score": "48",
+        "breach_probability": "44%",
+        "recommendation": "Permit backlog recovery sprint",
+        "owner": "Licensing Department",
+        "status": "Under review",
+        "due_date": "11 Sep 2026",
+    },
+    {
+        "decision_id": "JZN-DEC-1018",
+        "municipality": "Farasan",
+        "kpi": "Emergency and resilience readiness",
+        "risk_score": "71",
+        "breach_probability": "65%",
+        "recommendation": "Emergency drill action plan",
+        "owner": "Civil Defence",
+        "status": "Queued",
+        "due_date": "12 Sep 2026",
+    },
+]
+
 SHELL_DATA: dict[str, Any] = {
     "meta": {
         "use_case": "jazan_urban_service_quality_visual_distortion_loop",
         "mode": "seeded",
         "connected": False,
         "source": "platform_seed",
-        "message": "First native shell slice seeded from the golden bundle contract while platform data connections are still being wired.",
-    },
-    "purpose": {
-        "eyebrow": "Purpose",
-        "title": "Full golden thread from strategy to recovery",
-        "description": (
-            "This use case connects KPI contracts, certified data, RNN forecast outputs, anomaly detection, "
-            "transparent risk scoring, recommendation lookup, controlled decision buttons, corrective-action closure, "
-            "and learning feedback."
+        "message": (
+            "Dashboard-rigid golden bundle implemented as a seeded native shell while "
+            "real source integrations are still being wired."
         ),
     },
-    "active_case": {
-        "municipality": "Samtah",
-        "risk_score": "84 / 100",
-        "breach_probability": "78%",
-        "stage": "Evidence",
-        "owner": "Field Compliance",
-        "due": "+5 days",
+    "navigation": {
+        "base_route": BASE_ROUTE,
+        "default_kpi_slug": DEFAULT_KPI_SLUG,
+        "default_case_id": DEFAULT_CASE_ID,
+        "supported_tabs": SUPPORTED_TABS,
     },
-    "overview": {
-        "demo_metrics": [
-            ["Municipalities covered", "25 / 25", "all linked to service-quality objective"],
-            ["Visual closure quality", "82%", "watch · target >= 90%"],
-            ["Breach probability", "78%", "RNN forecast · 4-week horizon"],
-            ["Open corrective actions", "14", "8 municipalities"],
-        ],
-        "golden_thread_labels": [
-            "Strategic objective",
-            "KPI contract",
-            "Certified data",
-            "Predict & recommend",
-            "Track",
-            "Improve",
-        ],
-        "status_value": "94%",
-        "headline_kpis": [
-            ["Closure Quality", "100%", "Target >=90%"],
-            ["Permit Time", "1.2 days", "Target <=1.4"],
-            ["Coverage", "96%", "Target >=95%"],
-            ["Readiness", "97%", "Target >=90%"],
-            ["Satisfaction", "4.2 / 5", "Target >=4.0"],
-        ],
-        "top_risk": {
-            "municipality": "Municipality 13",
-            "status": "High risk",
-            "risk_score": "84 / 100",
-            "breach_probability": "78%",
-        },
-        "recommended_intervention": {
-            "title": "Field-response rebalancing + SLA escalation + repeat-zone prioritization.",
-            "similar_cases": "3",
-            "expected_lift": "+9 to +13 pp",
-            "decision_href": "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decision-action-tracker?demo=1&decision=JZN-DEC-1011",
-        },
-        "action_summary": ["Approved 7", "In progress 12", "Evidence 3", "Closed 18"],
-        "evidence_groups": [
-            ["Sources", "source_jazan.visual_distortion_cases", "source_jazan.service_requests", "source_jazan.permit_requests", "source_jazan.municipalities"],
-            ["Analytics marts", "analytics.fct_jazan_visual_distortion_performance", "analytics.fct_jazan_service_quality", "analytics.fct_jazan_corrective_action"],
-            ["Outputs", "output.jazan_service_rnn_forecast", "output.jazan_service_quality_anomaly", "output.jazan_municipality_service_risk_score"],
-            ["Decision tables", "decision.jazan_generated_service_decisions", "decision.jazan_service_quality_action_queue", "decision.jazan_visual_distortion_recovery_outcome"],
-            ["APIs", "GET /api/v1/jazan/service-quality/overview", "GET /api/v1/jazan/service-quality/decision-queue", "GET /api/v1/jazan/service-quality/runtime-evidence"],
-        ],
+    "purpose": {
+        "eyebrow": "Jazan Performance Management",
+        "title": "Urban Service Quality & Visual Distortion Loop",
+        "description": (
+            "A governed, seeded shell that preserves the bundle's six-dashboard story from "
+            "strategic monitoring through KPI workspace, case intelligence, decision command, "
+            "runtime evidence, and action audit."
+        ),
     },
-    "kpi_contract": {
-        "objective_title": "Sustain and improve municipal service quality and visual-distortion response",
-        "objective_stats": [
-            ["Municipalities", "25 / 25"],
-            ["KPIs", "6"],
-            ["Data sources", "9"],
-            ["Alignment", "100%"],
+    "strategic_dashboard": STRATEGIC_DASHBOARD,
+    "kpi_workspaces": KPI_WORKSPACES,
+    "case_workspaces": CASE_WORKSPACES,
+    "decision_command": {
+        "counters": [
+            {"label": "New decisions", "value": "7"},
+            {"label": "Under review", "value": "5"},
+            {"label": "Approved", "value": "9"},
+            {"label": "Escalated", "value": "2"},
+            {"label": "Tickets created", "value": "4"},
+            {"label": "Emails sent", "value": "6"},
         ],
-        "kpi_rows": [
-            ["Visual distortion closure quality", "valid closed / total * 100", ">=90%", "100%", "On track", "Field Compliance", "visual_distortion_cases"],
-            ["Average permit issuance time", "avg issued - submitted", "<=1.4d", "1.2d", "On track", "Licensing", "permit_requests"],
-            ["Urban service coverage", "covered / total * 100", ">=95%", "96%", "On track", "Services Agency", "service_coverage_assets"],
-            ["Emergency readiness", "weighted readiness score", ">=90%", "97%", "On track", "Emergency Team", "readiness_checks"],
-            ["Citizen satisfaction", "average score", ">=4.0", "4.2", "On track", "Service Quality", "surveys"],
-            ["Service request closure rate", "closed / total * 100", ">=90%", "91%", "On track", "Services Agency", "service_requests"],
+        "queue": DECISION_QUEUE_ROWS,
+        "selected_case_id": DEFAULT_CASE_ID,
+        "action_buttons": [
+            {"id": "approve", "label": "Approve", "tone": "approve", "note": "Create corrective action"},
+            {"id": "request-revision", "label": "Request revision", "tone": "neutral", "note": "Return to owner"},
+            {"id": "escalate", "label": "Escalate", "tone": "warning", "note": "Escalate with approval"},
+            {"id": "create-ticket", "label": "Create ticket", "tone": "outline", "note": "Requires human authorisation"},
+            {"id": "notify-owner", "label": "Email owner", "tone": "outline", "note": "SMTP workflow evidence logged"},
         ],
-        "monitor_cards": [
-            ["Visual distortion closure quality", "100%", ">=90%", "On track", "No action"],
-            ["Service request closure rate", "91%", ">=90%", "On track", "Monitor"],
-            ["Average permit issuance time", "1.2d", "<=1.4d", "On track", "No action"],
-            ["Urban service coverage", "96%", ">=95%", "On track", "No action"],
-            ["Emergency readiness", "97%", ">=90%", "On track", "No action"],
-            ["Citizen satisfaction", "4.2/5", ">=4.0", "On track", "Monitor"],
-        ],
-        "trigger_rules": [
-            ["KPI breach", "Current below target", "Create decision candidate", "Pillar 5"],
-            ["Forecast breach", "RNN predicts target miss within 4 weeks", "Queue advisory action", "Pillar 4 -> 5"],
-            ["Anomaly", "z-score exceeds threshold", "Request review", "Pillar 4"],
-            ["Repeated gap", "Same municipality at risk twice", "Training / sustainability need", "Pillar 6"],
-        ],
+        "human_authorisation_note": (
+            "Every external action is human authorised, audit logged, and bilingual ready."
+        ),
     },
     "runtime_evidence": {
-        "lineage_labels": ["source systems", "staging", "analytics mart", "model outputs", "decision layer"],
-        "high_risk_municipality": {
-            "name": "Municipality 13",
-            "status": "High risk",
-            "risk_score": "84 / 100",
-            "breach_probability": "78%",
-            "driver": "Top driver: visual distortion closure quality and repeated complaints.",
-        },
-        "forecast_series": [
-            ["Week 0", 82, 90],
-            ["Week 1", 80, 90],
-            ["Week 2", 76, 90],
-            ["Week 3", 72, 90],
-            ["Week 4", 68, 90],
+        "status": "3 / 3 online",
+        "seed_note": "Demo data - seeded",
+        "runtime_cards": [
+            {
+                "runtime_id": "rt_jazan_service_rnn_forecast",
+                "name": "Jazan Service Quality RNN Forecast",
+                "status": "online",
+                "last_run": "07 Sep 06:14",
+                "duration": "4m 18s",
+                "rows_out": "1,247",
+                "next_run": "08 Sep 00:00",
+                "image": "ghcr.io/opencare/runtimes/jazan-service-rnn:1.0.0",
+                "inputs": [
+                    "analytics.fct_jazan_service_quality",
+                    "analytics.fct_jazan_visual_distortion_performance",
+                ],
+                "outputs": [
+                    "output.jazan_service_rnn_forecast",
+                ],
+            },
+            {
+                "runtime_id": "rt_jazan_service_anomaly",
+                "name": "Jazan Service Quality Anomaly Detector",
+                "status": "online",
+                "last_run": "07 Sep 06:18",
+                "duration": "1m 47s",
+                "rows_out": "312",
+                "next_run": "08 Sep 00:10",
+                "image": "ghcr.io/opencare/runtimes/jazan-anomaly:1.0.0",
+                "inputs": [
+                    "analytics.fct_jazan_service_quality",
+                    "analytics.fct_jazan_visual_distortion_performance",
+                ],
+                "outputs": [
+                    "output.jazan_service_quality_anomaly",
+                ],
+            },
+            {
+                "runtime_id": "rt_jazan_decision_candidate",
+                "name": "Jazan Decision Candidate Generator",
+                "status": "online",
+                "last_run": "07 Sep 06:22",
+                "duration": "0m 38s",
+                "rows_out": "8",
+                "next_run": "08 Sep 00:20",
+                "image": "ghcr.io/opencare/runtimes/jazan-decision-candidate:1.0.0",
+                "inputs": [
+                    "output.jazan_service_rnn_forecast",
+                    "output.jazan_service_quality_anomaly",
+                ],
+                "outputs": [
+                    "decision.jazan_generated_service_decisions",
+                    "decision.jazan_service_quality_action_queue",
+                ],
+            },
         ],
-        "model_cards": [
-            {
-                "key": "rnn-forecast",
-                "title": "RNN Forecast",
-                "value": "78% breach probability",
-                "note": "GRU/LSTM sequence runtime forecasts target breach within 4 weeks.",
-                "output": "output.jazan_service_rnn_forecast",
-            },
-            {
-                "key": "anomaly-detection",
-                "title": "Anomaly Detection",
-                "value": "+23% deviation",
-                "note": "Resolution time and complaint volume are above local historical baseline.",
-                "output": "output.jazan_service_quality_anomaly",
-            },
-            {
-                "key": "composite-risk",
-                "title": "Composite Risk Score",
-                "value": "84 / 100 high risk",
-                "note": "Weighted model combining forecast, anomaly, backlog, SLA, and complaints.",
-                "output": "output.jazan_municipality_service_risk_score",
-            },
-            {
-                "key": "recommendation-lookup",
-                "title": "Recommendation Lookup",
-                "value": "Field-response rebalancing",
-                "note": "Similarity lookup finds recovered cases and proposes advisory actions.",
-                "output": "output.jazan_recommended_intervention",
-            },
+        "execution_history": [
+            {"runtime": "RNN forecast", "started_at": "07 Sep 06:14", "status": "success", "duration": "4m 18s"},
+            {"runtime": "Anomaly detector", "started_at": "07 Sep 06:18", "status": "success", "duration": "1m 47s"},
+            {"runtime": "Decision generator", "started_at": "07 Sep 06:22", "status": "success", "duration": "0m 38s"},
         ],
-        "runtime_runs": [
-            ["RNN forecast", "12 May 2025 02:00", "300", "Success"],
-            ["Anomaly detector", "12 May 2025 02:10", "42", "Success"],
+        "lineage_flow": [
+            "source",
+            "raw",
+            "staging",
+            "analytics",
+            "output",
+            "decision",
+            "dashboard",
         ],
+        "evidence_note": "Runtime evidence remains seeded but structurally aligned to the bundle.",
     },
-    "decision_queue": {
-        "stats": [
-            ["New decisions", "7"],
-            ["Under review", "5"],
-            ["Approved", "9"],
-            ["In progress", "12"],
-            ["Overdue", "3"],
-            ["Escalated", "2"],
+    "decision_action_audit": {
+        "counters": [
+            {"label": "New decisions", "value": "7"},
+            {"label": "Under review", "value": "5"},
+            {"label": "Approved", "value": "9"},
+            {"label": "Escalated", "value": "2"},
+            {"label": "Actions in progress", "value": "12"},
+            {"label": "Actions closed", "value": "18"},
         ],
-        "action_buttons": ["Approve", "Request Revision", "Escalate", "Create Ticket", "Email Owner"],
-        "cases": [
+        "queue": DECISION_QUEUE_ROWS,
+        "action_history": [
             {
-                "id": "JZN-DEC-1007",
-                "municipality": "Samtah",
-                "risk": "Visual distortion complaints",
-                "probability": "78%",
-                "action": "Joint inspection sweep + owner notification",
+                "time": "07 Sep 06:24",
+                "actor": "Performance Office",
+                "action": "Approved decision",
+                "channel": "Portal",
+                "result": "Success",
+            },
+            {
+                "time": "07 Sep 06:31",
+                "actor": "System",
+                "action": "Created corrective action",
+                "channel": "Workflow",
+                "result": "Success",
+            },
+            {
+                "time": "07 Sep 06:42",
+                "actor": "Field Compliance",
+                "action": "Sent owner notification",
+                "channel": "Email",
+                "result": "Sent",
+            },
+        ],
+        "email_log": [
+            {
+                "recipient": "Field Compliance Owner",
+                "template": "visual_distortion_closure_risk",
+                "status": "Sent",
+                "sent_at": "07 Sep 06:42",
+            }
+        ],
+        "ticket_log": [
+            {
+                "system": "Service Desk",
+                "ticket_id": "TCK-0045",
+                "priority": "High",
+                "status": "Open",
+                "linked_case": "JZN-DEC-1007",
+            }
+        ],
+        "corrective_actions": [
+            {
+                "action_id": "ACT-0001",
+                "decision_id": "JZN-DEC-1007",
+                "action_plan": "Accelerated inspection cycle",
                 "owner": "Field Compliance",
-                "due": "+5 days",
-                "status": "Evidence pending",
-                "stage": "Evidence",
-                "evidence": [
-                    ["Complaint anomaly", "Citizen complaints +287% over 14 days - 47 reports vs baseline 12.", "z = +3.2"],
-                    ["Backlog forecast", "Complaint backlog projected to breach 30-day SLA in 21 days without action.", "LSTM runtime"],
-                    ["Composite risk", "42 / 100 - Moderate: complaint surge, cluster concentration, property-owner non-response.", "dbt mart"],
-                    ["Recommendation", "Joint inspection sweep and property-owner notification under municipal compliance code.", "similarity lookup"],
-                ],
-                "log": [
-                    "Auto-triggered by early-warning complaint-anomaly detector.",
-                    "Property-owner notifications dispatched.",
-                    "Evidence package submitted to verification queue.",
-                ],
+                "status": "In progress",
+                "due_in": "+14d",
+                "evidence_status": "Pending",
+                "next_step": "Submit evidence",
             },
             {
-                "id": "JZN-DEC-1011",
-                "municipality": "Sabya",
-                "risk": "Service closure delay",
-                "probability": "84%",
-                "action": "Rebalance field-response capacity",
+                "action_id": "ACT-0002",
+                "decision_id": "JZN-DEC-1011",
+                "action_plan": "Rebalance field-response capacity",
                 "owner": "Services Agency",
-                "due": "+23 days",
-                "status": "In progress",
-                "stage": "In progress",
-                "evidence": [
-                    ["Forecast", "78% probability of missing closure-rate target within 4 weeks.", "RNN runtime"],
-                    ["Anomaly", "Resolution time +23% above Sabya baseline.", "z = +2.4"],
-                    ["Composite risk", "84 / 100 - High: forecast 78%, anomaly +2.4, backlog +18%, SLA -8pp.", "dbt mart"],
-                    ["Recommendation", "Field-response rebalancing and SLA escalation protocol.", "advisory"],
-                ],
-                "log": [
-                    "Auto-triggered by early-warning composite risk score.",
-                    "Weekly review approved intervention.",
-                    "Services Agency activated field-response protocol.",
-                ],
+                "status": "Queued",
+                "due_in": "+10d",
+                "evidence_status": "Not due",
+                "next_step": "Await approval",
             },
         ],
-    },
-    "outcome_feedback": {
-        "stats": [
-            ["Total actions", "12"],
-            ["In progress", "6"],
-            ["Awaiting evidence", "2"],
-            ["Verified", "2"],
-            ["Closed", "2"],
-            ["Avg improvement", "+10.2 pp"],
-        ],
-        "recovery_rows": [
-            ["Visual distortion closure quality", "82%", ">=90%", "91%", "Recovered", "+9 pp"],
-            ["Service request closure rate", "68%", ">=90%", "88%", "Improving", "+20 pp"],
-            ["Average permit issuance time", "2.4d", "<=1.4d", "1.6d", "Watch", "-0.8d"],
-            ["Citizen satisfaction", "3.7 / 5", ">=4.0", "4.2 / 5", "Recovered", "+0.5"],
-        ],
-        "forecast_accuracy": "78%",
-        "recommendation_effectiveness": "+10 pp",
-        "similar_cases": "3",
-        "learning_feedback": [
-            "Pillar 1: Objective remains certified",
-            "Pillar 4: Recommendation history updated",
-            "Pillar 5: Decision log records recovery",
-            "Pillar 6: Training need generated if repeated",
-        ],
+        "audit_note": (
+            "Audit data is seeded but preserves human-authorised email, ticket, and corrective-action traces."
+        ),
     },
     "governance_evidence": {
-        "rows": [
-            ["visual_distortion_cases", "Restricted", "Field Compliance", "DQ pass", "source -> raw -> staging -> analytics -> output -> decision"],
-            ["service_requests", "Internal", "Services Agency", "DQ watch", "source -> raw -> staging -> analytics.fct_jazan_service_quality"],
-            ["jazan_service_rnn_forecast", "Internal model output", "Forecast Runtime", "Fresh", "analytics features -> RNN output -> decision candidate"],
-            ["jazan_generated_service_decisions", "Restricted", "Decision Engine", "Audited", "model outputs -> human approval -> action queue"],
+        "lineage_flow": [
+            "source -> raw -> staging -> analytics -> output -> decision -> dashboard",
         ],
-        "exports": [
-            ["KPI definition pack", "Formulas, targets, owners, source mappings"],
-            ["Runtime evidence pack", "RNN run, anomaly run, scored rows, output tables"],
-            ["Decision audit pack", "Human approval, actions, ticket/email outbox, decision log"],
-            ["Outcome learning pack", "Before/after results, forecast accuracy, recommendation effectiveness"],
+        "datasets": [
+            {
+                "asset": "analytics.fct_jazan_visual_distortion_performance",
+                "classification": "Restricted",
+                "owner": "Field Compliance",
+                "freshness": "8m old",
+                "lineage": "source -> raw -> staging -> analytics",
+            },
+            {
+                "asset": "analytics.fct_jazan_service_quality",
+                "classification": "Internal",
+                "owner": "Services Agency",
+                "freshness": "8m old",
+                "lineage": "source -> raw -> staging -> analytics",
+            },
+            {
+                "asset": "output.jazan_service_rnn_forecast",
+                "classification": "Internal model output",
+                "owner": "Forecast Runtime",
+                "freshness": "Fresh",
+                "lineage": "analytics -> output -> decision",
+            },
+            {
+                "asset": "decision.jazan_generated_service_decisions",
+                "classification": "Restricted",
+                "owner": "Decision Engine",
+                "freshness": "Audited",
+                "lineage": "output -> decision -> dashboard",
+            },
+        ],
+        "quality_checks": [
+            "Column descriptions present for KPI marts and decision tables.",
+            "Ownership and stewardship defined for every governed asset.",
+            "Freshness badges reflect seeded runtime timestamps.",
+            "Classification rules preserved across analytics, outputs, and decision layers.",
+        ],
+        "evidence_packs": [
+            {
+                "name": "KPI definition pack",
+                "contents": "Formulas, targets, owners, source mappings",
+            },
+            {
+                "name": "Runtime evidence pack",
+                "contents": "RNN run, anomaly run, scored rows, output tables",
+            },
+            {
+                "name": "Decision audit pack",
+                "contents": "Human approval, emails, tickets, corrective actions",
+            },
+            {
+                "name": "Outcome learning pack",
+                "contents": "Before and after results, forecast accuracy, recommendation effectiveness",
+            },
         ],
     },
 }
+
+SHELL_DATA["overview"] = SHELL_DATA["strategic_dashboard"]
+SHELL_DATA["kpi_contract"] = KPI_WORKSPACES[0]
+SHELL_DATA["case_workspace"] = CASE_WORKSPACES[0]
+SHELL_DATA["decision_queue"] = SHELL_DATA["decision_command"]
+SHELL_DATA["outcome_feedback"] = CASE_WORKSPACES[0]["recovery"]
 
 
 def _payload(section: str | None = None) -> dict[str, Any]:
     if section is None:
         return deepcopy(SHELL_DATA)
 
-    payload = deepcopy(SHELL_DATA.get(section, {}))
     return {
         "meta": deepcopy(SHELL_DATA["meta"]),
-        section: payload,
+        section: deepcopy(SHELL_DATA[section]),
     }
 
 
@@ -277,6 +1004,18 @@ def kpi_contract_payload() -> dict[str, Any]:
     return _payload("kpi_contract")
 
 
+def kpi_workspace_payload() -> dict[str, Any]:
+    return _payload("kpi_workspaces")
+
+
+def case_workspace_payload() -> dict[str, Any]:
+    return _payload("case_workspaces")
+
+
+def decision_command_payload() -> dict[str, Any]:
+    return _payload("decision_command")
+
+
 def runtime_evidence_payload() -> dict[str, Any]:
     return _payload("runtime_evidence")
 
@@ -287,6 +1026,10 @@ def decision_queue_payload() -> dict[str, Any]:
 
 def outcome_feedback_payload() -> dict[str, Any]:
     return _payload("outcome_feedback")
+
+
+def decision_action_audit_payload() -> dict[str, Any]:
+    return _payload("decision_action_audit")
 
 
 def governance_evidence_payload() -> dict[str, Any]:

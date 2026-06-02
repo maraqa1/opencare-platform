@@ -1,47 +1,228 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
 
+const baseRoute = "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop";
+
+export const metadata: Metadata = {
+  title: "Urban Service Quality & Visual Distortion Loop",
+  description:
+    "Jazan dashboard-rigid shell spanning strategic monitoring, KPI workspace, case intelligence, decisions, runtimes, and audit.",
+};
+
 type PageProps = {
   params: Promise<{ screen?: string[] }>;
-  searchParams?: Promise<{ demo?: string; decision?: string; model?: string }>;
+  searchParams?: Promise<{ demo?: string; decision?: string; selected?: string }>;
 };
 
-type ScreenId = "overview" | "kpi-contract" | "model-intelligence" | "decision-action-tracker" | "outcome-feedback" | "governance-evidence";
-type MetricItem = [string, string, string?];
-type TwoColRow = [string, string];
-type FourColRow = [string, string, string, string];
-type FiveColRow = [string, string, string, string, string];
-type SixColRow = [string, string, string, string, string, string];
-type SevenColRow = [string, string, string, string, string, string, string];
-type ForecastPoint = [string, number, number];
+type CaseTab = "overview" | "intelligence" | "decisions" | "recovery";
 
-type ModelCard = {
-  key: string;
-  title: string;
+type Metric = {
+  label: string;
   value: string;
-  note: string;
-  output: string;
+  note?: string;
 };
 
-type DecisionCase = {
-  id: string;
-  municipality: string;
-  risk: string;
-  probability: string;
-  action: string;
-  owner: string;
-  due: string;
+type KpiCard = {
+  slug: string;
+  short_label: string;
+  name: string;
   status: string;
-  stage: string;
-  evidence: Array<[string, string, string]>;
-  log: string[];
+  status_tone: string;
+  current_value: string;
+  target_value: string;
+  delta: string;
+  owner: string;
+  cadence: string;
+  trigger: string;
+  href: string;
 };
 
-type UseCaseShellData = {
+type RankingRow = {
+  municipality: string;
+  current: string;
+  target: string;
+  risk_score: string;
+  breach_probability: string;
+  status: string;
+  case_id: string;
+};
+
+type TrendPoint = {
+  label: string;
+  actual?: number;
+  forecast?: number;
+  target: number;
+};
+
+type OpenCase = {
+  case_id: string;
+  municipality: string;
+  reason: string;
+  owner: string;
+  href: string;
+};
+
+type GovernanceChip = {
+  label: string;
+  value: string;
+};
+
+type KpiWorkspace = {
+  slug: string;
+  short_label: string;
+  name: string;
+  current_value: string;
+  target_value: string;
+  status: string;
+  status_tone: string;
+  delta: string;
+  owner: string;
+  cadence: string;
+  trigger: string;
+  summary_strip: Metric[];
+  municipality_ranking: RankingRow[];
+  trend: TrendPoint[];
+  open_cases: OpenCase[];
+  governance: GovernanceChip[];
+};
+
+type FeatureContribution = {
+  label: string;
+  value: string;
+};
+
+type RankedAction = {
+  title: string;
+  impact: string;
+  note: string;
+};
+
+type EvidenceItem = {
+  label: string;
+  value: string;
+};
+
+type ActionButton = {
+  id: string;
+  label: string;
+  tone: string;
+  note?: string;
+};
+
+type CaseWorkspace = {
+  case_id: string;
+  kpi_slug: string;
+  kpi_name: string;
+  municipality: string;
+  status: string;
+  owner: string;
+  due_date: string;
+  risk_score: string;
+  breach_probability: string;
+  current_value: string;
+  target_value: string;
+  rationale: string;
+  overview_metrics: Metric[];
+  intelligence: {
+    feature_contributions: FeatureContribution[];
+    trend: TrendPoint[];
+    ranked_actions: RankedAction[];
+    outputs: string[];
+  };
+  decisions: {
+    recommended_actions: string[];
+    evidence_pack: EvidenceItem[];
+    action_buttons: ActionButton[];
+    human_authorisation_note: string;
+  };
+  recovery: {
+    baseline: string;
+    target: string;
+    after_30_days: string;
+    forecast_accuracy: string;
+    intervention_effectiveness: string;
+    learning_pillars: string[];
+  };
+};
+
+type DecisionQueueRow = {
+  decision_id: string;
+  municipality: string;
+  kpi: string;
+  risk_score: string;
+  breach_probability: string;
+  recommendation: string;
+  owner: string;
+  status: string;
+  due_date: string;
+};
+
+type RuntimeCard = {
+  runtime_id: string;
+  name: string;
+  status: string;
+  last_run: string;
+  duration: string;
+  rows_out: string;
+  next_run: string;
+  image: string;
+  inputs: string[];
+  outputs: string[];
+};
+
+type AuditAction = {
+  time: string;
+  actor: string;
+  action: string;
+  channel: string;
+  result: string;
+};
+
+type EmailLog = {
+  recipient: string;
+  template: string;
+  status: string;
+  sent_at: string;
+};
+
+type TicketLog = {
+  system: string;
+  ticket_id: string;
+  priority: string;
+  status: string;
+  linked_case: string;
+};
+
+type CorrectiveAction = {
+  action_id: string;
+  decision_id: string;
+  action_plan: string;
+  owner: string;
+  status: string;
+  due_in: string;
+  evidence_status: string;
+  next_step: string;
+};
+
+type DatasetRow = {
+  asset: string;
+  classification: string;
+  owner: string;
+  freshness: string;
+  lineage: string;
+};
+
+type EvidencePack = {
+  name: string;
+  contents: string;
+};
+
+type ShellData = {
   meta: {
     use_case: string;
     mode: string;
@@ -49,1135 +230,1216 @@ type UseCaseShellData = {
     source: string;
     message: string;
   };
+  navigation: {
+    base_route: string;
+    default_kpi_slug: string;
+    default_case_id: string;
+    supported_tabs: string[];
+  };
   purpose: {
     eyebrow: string;
     title: string;
     description: string;
   };
-  active_case: {
-    municipality: string;
-    risk_score: string;
-    breach_probability: string;
-    stage: string;
-    owner: string;
-    due: string;
-  };
-  overview: {
-    demo_metrics: MetricItem[];
-    golden_thread_labels: string[];
-    status_value: string;
-    headline_kpis: MetricItem[];
-    top_risk: {
+  strategic_dashboard: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    objective_context: string[];
+    summary_strip: Metric[];
+    golden_thread: string[];
+    kpi_cards: KpiCard[];
+    active_case_banner: {
+      case_id: string;
       municipality: string;
-      status: string;
+      kpi: string;
       risk_score: string;
       breach_probability: string;
+      summary: string;
+      href: string;
     };
-    recommended_intervention: {
-      title: string;
-      similar_cases: string;
-      expected_lift: string;
-      decision_href: string;
-    };
-    action_summary: string[];
-    evidence_groups: string[][];
   };
-  kpi_contract: {
-    objective_title: string;
-    objective_stats: TwoColRow[];
-    kpi_rows: SevenColRow[];
-    monitor_cards: FiveColRow[];
-    trigger_rules: FourColRow[];
+  kpi_workspaces: KpiWorkspace[];
+  case_workspaces: CaseWorkspace[];
+  decision_command: {
+    counters: Metric[];
+    queue: DecisionQueueRow[];
+    selected_case_id: string;
+    action_buttons: ActionButton[];
+    human_authorisation_note: string;
   };
   runtime_evidence: {
-    lineage_labels: string[];
-    high_risk_municipality: {
-      name: string;
-      status: string;
-      risk_score: string;
-      breach_probability: string;
-      driver: string;
-    };
-    forecast_series: ForecastPoint[];
-    model_cards: ModelCard[];
-    runtime_runs: FourColRow[];
+    status: string;
+    seed_note: string;
+    runtime_cards: RuntimeCard[];
+    execution_history: Array<{ runtime: string; started_at: string; status: string; duration: string }>;
+    lineage_flow: string[];
+    evidence_note: string;
   };
-  decision_queue: {
-    stats: TwoColRow[];
-    action_buttons: string[];
-    cases: DecisionCase[];
-  };
-  outcome_feedback: {
-    stats: TwoColRow[];
-    recovery_rows: SixColRow[];
-    forecast_accuracy: string;
-    recommendation_effectiveness: string;
-    similar_cases: string;
-    learning_feedback: string[];
+  decision_action_audit: {
+    counters: Metric[];
+    queue: DecisionQueueRow[];
+    action_history: AuditAction[];
+    email_log: EmailLog[];
+    ticket_log: TicketLog[];
+    corrective_actions: CorrectiveAction[];
+    audit_note: string;
   };
   governance_evidence: {
-    rows: FiveColRow[];
-    exports: TwoColRow[];
+    lineage_flow: string[];
+    datasets: DatasetRow[];
+    quality_checks: string[];
+    evidence_packs: EvidencePack[];
   };
 };
 
-const baseRoute = "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop";
+type RouteState =
+  | { kind: "strategic" }
+  | { kind: "kpi"; kpiSlug: string }
+  | { kind: "case"; kpiSlug: string; caseId: string; tab: CaseTab }
+  | { kind: "decisions" }
+  | { kind: "runtimes" }
+  | { kind: "audit" };
 
-const screens: Array<{ id: ScreenId; label: string; title: string; titleAr: string; href: string }> = [
-  {
-    id: "overview",
-    label: "01 · Overview",
-    title: "Urban Service Quality & Visual Distortion Assurance Loop",
-    titleAr: "حلقة ضمان جودة الخدمات الحضرية ومعالجة التشوه البصري",
-    href: baseRoute,
-  },
-  {
-    id: "kpi-contract",
-    label: "02 · KPI contract",
-    title: "KPI Contract & Target Definition",
-    titleAr: "عقد المؤشرات وتحديد المستهدفات",
-    href: `${baseRoute}/kpi-contract`,
-  },
-  {
-    id: "model-intelligence",
-    label: "03 · Model intelligence",
-    title: "Data & Model Intelligence",
-    titleAr: "البيانات ونماذج الإنذار المبكر",
-    href: `${baseRoute}/model-intelligence`,
-  },
-  {
-    id: "decision-action-tracker",
-    label: "04 · Decision tracker",
-    title: "Decision & Corrective Action Tracker",
-    titleAr: "تتبع القرار والخطة التصحيحية",
-    href: `${baseRoute}/decision-action-tracker`,
-  },
-  {
-    id: "outcome-feedback",
-    label: "05 · Outcome feedback",
-    title: "Outcome Recovery & Learning Feedback",
-    titleAr: "قياس التعافي والتغذية الراجعة",
-    href: `${baseRoute}/outcome-feedback`,
-  },
-  {
-    id: "governance-evidence",
-    label: "06 · Governance evidence",
-    title: "Governance Evidence",
-    titleAr: "Data governance, lineage, quality, classification, and evidence packs",
-    href: `${baseRoute}/governance-evidence`,
-  },
-];
-
-const kpis: Array<[string, string, string, string, string]> = [
-  ["Visual distortion complaint closure quality", "valid closed cases / total cases * 100", ">= 90%", "Field Compliance", "source_jazan.visual_distortion_cases"],
-  ["Average permit issuance time", "average(permit issued - submitted)", "<= 1.4 days", "Licensing Department", "source_jazan.permit_requests"],
-  ["Urban service coverage", "covered service zones / total zones * 100", ">= 95%", "Services Agency", "source_jazan.service_coverage_assets"],
-  ["Emergency and resilience readiness", "weighted readiness score", ">= 90%", "Emergency Readiness Team", "source_jazan.emergency_readiness_checks"],
-  ["Citizen satisfaction", "average satisfaction score", ">= 4.0", "Service Quality", "source_jazan.citizen_satisfaction_surveys"],
-  ["Service request closure rate", "closed service requests / total requests * 100", ">= 90%", "Services Agency", "source_jazan.service_requests"],
-];
-
-const demoMetrics: MetricItem[] = [
-  ["Municipalities covered", "25 / 25", "all linked to service-quality objective"],
-  ["Visual closure quality", "82%", "watch · target >= 90%"],
-  ["Breach probability", "78%", "RNN forecast · 4-week horizon"],
-  ["Open corrective actions", "14", "8 municipalities"],
-];
-
-const dashboardKpis: MetricItem[] = [
-  ["Closure Quality", "100%", "Target >=90%"],
-  ["Permit Time", "1.2 days", "Target <=1.4"],
-  ["Coverage", "96%", "Target >=95%"],
-  ["Readiness", "97%", "Target >=90%"],
-  ["Satisfaction", "4.2 / 5", "Target >=4.0"],
-];
-
-const dashboardKpiRows: SevenColRow[] = [
-  ["Visual distortion closure quality", "valid closed / total * 100", ">=90%", "100%", "On track", "Field Compliance", "visual_distortion_cases"],
-  ["Average permit issuance time", "avg issued - submitted", "<=1.4d", "1.2d", "On track", "Licensing", "permit_requests"],
-  ["Urban service coverage", "covered / total * 100", ">=95%", "96%", "On track", "Services Agency", "service_coverage_assets"],
-  ["Emergency readiness", "weighted readiness score", ">=90%", "97%", "On track", "Emergency Team", "readiness_checks"],
-  ["Citizen satisfaction", "average score", ">=4.0", "4.2", "On track", "Service Quality", "surveys"],
-  ["Service request closure rate", "closed / total * 100", ">=90%", "91%", "On track", "Services Agency", "service_requests"],
-];
-
-const kpiObjectiveStats: TwoColRow[] = [
-  ["Municipalities", "25 / 25"],
-  ["KPIs", "6"],
-  ["Data sources", "9"],
-  ["Alignment", "100%"],
-];
-
-const kpiMonitorCards: FiveColRow[] = [
-  ["Visual distortion closure quality", "100%", ">=90%", "On track", "No action"],
-  ["Service request closure rate", "91%", ">=90%", "On track", "Monitor"],
-  ["Average permit issuance time", "1.2d", "<=1.4d", "On track", "No action"],
-  ["Urban service coverage", "96%", ">=95%", "On track", "No action"],
-  ["Emergency readiness", "97%", ">=90%", "On track", "No action"],
-  ["Citizen satisfaction", "4.2/5", ">=4.0", "On track", "Monitor"],
-];
-
-const triggerRules: FourColRow[] = [
-  ["KPI breach", "Current below target", "Create decision candidate", "Pillar 5"],
-  ["Forecast breach", "RNN predicts target miss within 4 weeks", "Queue advisory action", "Pillar 4 -> 5"],
-  ["Anomaly", "z-score exceeds threshold", "Request review", "Pillar 4"],
-  ["Repeated gap", "Same municipality at risk twice", "Training / sustainability need", "Pillar 6"],
-];
-
-const decisionStats: TwoColRow[] = [
-  ["New decisions", "7"],
-  ["Under review", "5"],
-  ["Approved", "9"],
-  ["In progress", "12"],
-  ["Overdue", "3"],
-  ["Escalated", "2"],
-];
-
-const outcomeStats: TwoColRow[] = [
-  ["Total actions", "12"],
-  ["In progress", "6"],
-  ["Awaiting evidence", "2"],
-  ["Verified", "2"],
-  ["Closed", "2"],
-  ["Avg improvement", "+10.2 pp"],
-];
-
-const activeCase = {
-  municipality: "Samtah",
-  riskScore: "84 / 100",
-  breachProbability: "78%",
-  stage: "Evidence",
-  owner: "Field Compliance",
-  due: "+5 days",
-};
-
-const pipelineStages: TwoColRow[] = [
-  ["KPI contract", `${baseRoute}/kpi-contract`],
-  ["Forecast model", `${baseRoute}/model-intelligence?model=rnn-forecast`],
-  ["Risk decision", `${baseRoute}/decision-action-tracker?decision=JZN-DEC-1007`],
-  ["Corrective action", `${baseRoute}/decision-action-tracker?decision=JZN-DEC-1011`],
-  ["Outcome learning", `${baseRoute}/outcome-feedback`],
-];
-
-const forecastSeries: ForecastPoint[] = [
-  ["Week 0", 82, 90],
-  ["Week 1", 80, 90],
-  ["Week 2", 76, 90],
-  ["Week 3", 72, 90],
-  ["Week 4", 68, 90],
-];
-
-const modelCards: ModelCard[] = [
-  {
-    key: "rnn-forecast",
-    title: "RNN Forecast",
-    value: "78% breach probability",
-    note: "GRU/LSTM sequence runtime forecasts target breach within 4 weeks.",
-    output: "output.jazan_service_rnn_forecast",
-  },
-  {
-    key: "anomaly-detection",
-    title: "Anomaly Detection",
-    value: "+23% deviation",
-    note: "Resolution time and complaint volume are above local historical baseline.",
-    output: "output.jazan_service_quality_anomaly",
-  },
-  {
-    key: "composite-risk",
-    title: "Composite Risk Score",
-    value: "84 / 100 high risk",
-    note: "Weighted model combining forecast, anomaly, backlog, SLA, and complaints.",
-    output: "output.jazan_municipality_service_risk_score",
-  },
-  {
-    key: "recommendation-lookup",
-    title: "Recommendation Lookup",
-    value: "Field-response rebalancing",
-    note: "Similarity lookup finds recovered cases and proposes advisory actions.",
-    output: "output.jazan_recommended_intervention",
-  },
-];
-
-const goldenThread: Array<[string, string, string]> = [
-  ["Pillar 1", "Objective certified", "Service quality and visual-distortion response aligned to Jazan strategy."],
-  ["Pillar 2", "KPI contract", "Targets, thresholds, owners, and source systems defined."],
-  ["Pillar 3", "Data foundation", "Certified marts feed forecasts, anomaly detection, and risk scoring."],
-  ["Pillar 4", "Early warning", "RNN forecast and anomaly detector create decision candidates."],
-  ["Pillar 5", "Corrective action", "Owners approve, assign, escalate, submit evidence, and close."],
-  ["Pillar 6", "Learning loop", "Repeated patterns become procedures, training, and sustainability evidence."],
-];
-
-const models: Array<[string, string, string, string]> = [
-  ["RNN service-quality breach forecast", "GRU or LSTM sequence model", "Predict KPI values and breach probability 4-8 weeks ahead.", "output.jazan_service_rnn_forecast"],
-  ["Service-quality anomaly detector", "historical deviation z-score", "Detect unusual deterioration against municipality history.", "output.jazan_service_quality_anomaly"],
-  ["Municipality service risk score", "transparent weighted score", "Rank combined risk using interpretable dbt inputs and model outputs.", "output.jazan_municipality_service_risk_score"],
-  ["Recommended intervention lookup", "similarity lookup", "Recommend corrective actions based on similar recovered cases.", "output.jazan_recommended_intervention"],
-];
-
-const decisionButtons: TwoColRow[] = [
-  ["Approve Action", "POST /api/v1/jazan/service-quality/decisions/{decision_id}/approve"],
-  ["Escalate", "POST /api/v1/jazan/service-quality/decisions/{decision_id}/escalate"],
-  ["Create Ticket", "POST /api/v1/jazan/service-quality/decisions/{decision_id}/create-ticket"],
-  ["Email Owner", "POST /api/v1/jazan/service-quality/decisions/{decision_id}/notify-owner"],
-  ["Submit Evidence", "POST /api/v1/jazan/service-quality/actions/{action_id}/submit-evidence"],
-  ["Verify & Close", "POST /api/v1/jazan/service-quality/actions/{action_id}/close"],
-];
-
-const decisionCases: DecisionCase[] = [
-  {
-    id: "JZN-DEC-1007",
-    municipality: "Samtah",
-    risk: "Visual distortion complaints",
-    probability: "78%",
-    action: "Joint inspection sweep + owner notification",
-    owner: "Field Compliance",
-    due: "+5 days",
-    status: "Evidence pending",
-    stage: "Evidence",
-    evidence: [
-      ["Complaint anomaly", "Citizen complaints +287% over 14 days - 47 reports vs baseline 12.", "z = +3.2"],
-      ["Backlog forecast", "Complaint backlog projected to breach 30-day SLA in 21 days without action.", "LSTM runtime"],
-      ["Composite risk", "42 / 100 - Moderate: complaint surge, cluster concentration, property-owner non-response.", "dbt mart"],
-      ["Recommendation", "Joint inspection sweep and property-owner notification under municipal compliance code.", "similarity lookup"],
-    ],
-    log: [
-      "Auto-triggered by early-warning complaint-anomaly detector.",
-      "Property-owner notifications dispatched.",
-      "Evidence package submitted to verification queue.",
-    ],
-  },
-  {
-    id: "JZN-DEC-1011",
-    municipality: "Sabya",
-    risk: "Service closure delay",
-    probability: "84%",
-    action: "Rebalance field-response capacity",
-    owner: "Services Agency",
-    due: "+23 days",
-    status: "In progress",
-    stage: "In progress",
-    evidence: [
-      ["Forecast", "78% probability of missing closure-rate target within 4 weeks.", "RNN runtime"],
-      ["Anomaly", "Resolution time +23% above Sabya baseline.", "z = +2.4"],
-      ["Composite risk", "84 / 100 - High: forecast 78%, anomaly +2.4, backlog +18%, SLA -8pp.", "dbt mart"],
-      ["Recommendation", "Field-response rebalancing and SLA escalation protocol.", "advisory"],
-    ],
-    log: [
-      "Auto-triggered by early-warning composite risk score.",
-      "Weekly review approved intervention.",
-      "Services Agency activated field-response protocol.",
-    ],
-  },
-];
-
-const recoveryRows: SixColRow[] = [
-  ["Visual distortion closure quality", "82%", ">=90%", "91%", "Recovered", "+9 pp"],
-  ["Service request closure rate", "68%", ">=90%", "88%", "Improving", "+20 pp"],
-  ["Average permit issuance time", "2.4d", "<=1.4d", "1.6d", "Watch", "-0.8d"],
-  ["Citizen satisfaction", "3.7 / 5", ">=4.0", "4.2 / 5", "Recovered", "+0.5"],
-];
-
-const evidenceGroups: string[][] = [
-  ["Sources", "source_jazan.visual_distortion_cases", "source_jazan.service_requests", "source_jazan.permit_requests", "source_jazan.municipalities"],
-  ["Analytics marts", "analytics.fct_jazan_visual_distortion_performance", "analytics.fct_jazan_service_quality", "analytics.fct_jazan_corrective_action"],
-  ["Outputs", "output.jazan_service_rnn_forecast", "output.jazan_service_quality_anomaly", "output.jazan_municipality_service_risk_score"],
-  ["Decision tables", "decision.jazan_generated_service_decisions", "decision.jazan_service_quality_action_queue", "decision.jazan_visual_distortion_recovery_outcome"],
-  ["APIs", "GET /api/v1/jazan/service-quality/overview", "POST /api/v1/jazan/service-quality/decisions/{id}/approve", "POST /api/v1/jazan/service-quality/actions/{id}/close"],
-];
-
-const governanceRows: FiveColRow[] = [
-  ["visual_distortion_cases", "Restricted", "Field Compliance", "DQ pass", "source -> raw -> staging -> analytics -> output -> decision"],
-  ["service_requests", "Internal", "Services Agency", "DQ watch", "source -> raw -> staging -> analytics.fct_jazan_service_quality"],
-  ["jazan_service_rnn_forecast", "Internal model output", "Forecast Runtime", "Fresh", "analytics features -> RNN output -> decision candidate"],
-  ["jazan_generated_service_decisions", "Restricted", "Decision Engine", "Audited", "model outputs -> human approval -> action queue"],
-];
-
-const fallbackShellData: UseCaseShellData = {
+const fallbackShellData: ShellData = {
   meta: {
     use_case: "jazan_urban_service_quality_visual_distortion_loop",
     mode: "seeded",
     connected: false,
     source: "page_fallback",
-    message: "Fallback shell data from the native portal contract.",
+    message: "Fallback seeded shell data is being used because the backend payload was unavailable.",
+  },
+  navigation: {
+    base_route: baseRoute,
+    default_kpi_slug: "visual-distortion-closure-quality",
+    default_case_id: "JZN-DEC-1007",
+    supported_tabs: ["overview", "intelligence", "decisions", "recovery"],
   },
   purpose: {
-    eyebrow: "Purpose",
-    title: "Full golden thread from strategy to recovery",
+    eyebrow: "Jazan Performance Management",
+    title: "Urban Service Quality & Visual Distortion Loop",
     description:
-      "This use case connects KPI contracts, certified data, RNN forecast outputs, anomaly detection, transparent risk scoring, recommendation lookup, controlled decision buttons, corrective-action closure, and learning feedback.",
+      "Fallback shell preserving the six-dashboard story while seeded platform data is being recovered.",
   },
-  active_case: {
-    municipality: activeCase.municipality,
-    risk_score: activeCase.riskScore,
-    breach_probability: activeCase.breachProbability,
-    stage: activeCase.stage,
-    owner: activeCase.owner,
-    due: activeCase.due,
-  },
-  overview: {
-    demo_metrics: demoMetrics,
-    golden_thread_labels: ["Strategic objective", "KPI contract", "Certified data", "Predict & recommend", "Track", "Improve"],
-    status_value: "94%",
-    headline_kpis: dashboardKpis,
-    top_risk: {
-      municipality: "Municipality 13",
-      status: "High risk",
+  strategic_dashboard: {
+    eyebrow: "01 Strategic objective cascade",
+    title: "Sustain and improve municipal service quality and visual distortion response",
+    subtitle: "Fallback strategic surface",
+    objective_context: ["Vision 2030 Quality of Life", "MOMRAH municipal index", "25 municipalities"],
+    summary_strip: [
+      { label: "Meeting target", value: "5" },
+      { label: "Approaching trigger", value: "1" },
+      { label: "In breach", value: "1" },
+      { label: "Decision candidates", value: "4" },
+    ],
+    golden_thread: [
+      "Strategic objective",
+      "KPI contract",
+      "Certified data",
+      "Predict and recommend",
+      "Human-authorised action",
+      "Audit and learn",
+    ],
+    kpi_cards: [
+      {
+        slug: "visual-distortion-closure-quality",
+        short_label: "KPI 1",
+        name: "Visual distortion closure quality",
+        status: "In breach",
+        status_tone: "critical",
+        current_value: "0.71",
+        target_value: "0.85",
+        delta: "-0.14 below",
+        owner: "Field Compliance",
+        cadence: "Monthly",
+        trigger: "Forecast risk 0.78",
+        href: `${baseRoute}/kpi/visual-distortion-closure-quality?demo=1`,
+      },
+    ],
+    active_case_banner: {
+      case_id: "JZN-DEC-1007",
+      municipality: "Sabya",
+      kpi: "Visual distortion closure quality",
       risk_score: "84 / 100",
-      breach_probability: "78%",
+      breach_probability: "0.78",
+      summary: "Fallback active case",
+      href: `${baseRoute}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1007/overview?demo=1`,
     },
-    recommended_intervention: {
-      title: "Field-response rebalancing + SLA escalation + repeat-zone prioritization.",
-      similar_cases: "3",
-      expected_lift: "+9 to +13 pp",
-      decision_href: `${baseRoute}/decision-action-tracker?demo=1&decision=JZN-DEC-1011`,
-    },
-    action_summary: ["Approved 7", "In progress 12", "Evidence 3", "Closed 18"],
-    evidence_groups: evidenceGroups,
   },
-  kpi_contract: {
-    objective_title: "Sustain and improve municipal service quality and visual-distortion response",
-    objective_stats: kpiObjectiveStats,
-    kpi_rows: dashboardKpiRows,
-    monitor_cards: kpiMonitorCards,
-    trigger_rules: triggerRules,
+  kpi_workspaces: [],
+  case_workspaces: [],
+  decision_command: {
+    counters: [],
+    queue: [],
+    selected_case_id: "JZN-DEC-1007",
+    action_buttons: [],
+    human_authorisation_note: "All external actions remain human authorised.",
   },
   runtime_evidence: {
-    lineage_labels: ["source systems", "staging", "analytics mart", "model outputs", "decision layer"],
-    high_risk_municipality: {
-      name: "Municipality 13",
-      status: "High risk",
-      risk_score: "84 / 100",
-      breach_probability: "78%",
-      driver: "Top driver: visual distortion closure quality and repeated complaints.",
-    },
-    forecast_series: forecastSeries,
-    model_cards: modelCards,
-    runtime_runs: [
-      ["RNN forecast", "12 May 2025 02:00", "300", "Success"],
-      ["Anomaly detector", "12 May 2025 02:10", "42", "Success"],
-    ],
+    status: "Unavailable",
+    seed_note: "Fallback",
+    runtime_cards: [],
+    execution_history: [],
+    lineage_flow: [],
+    evidence_note: "Runtime evidence fallback",
   },
-  decision_queue: {
-    stats: decisionStats,
-    action_buttons: ["Approve", "Request Revision", "Escalate", "Create Ticket", "Email Owner"],
-    cases: decisionCases,
-  },
-  outcome_feedback: {
-    stats: outcomeStats,
-    recovery_rows: recoveryRows,
-    forecast_accuracy: "78%",
-    recommendation_effectiveness: "+10 pp",
-    similar_cases: "3",
-    learning_feedback: [
-      "Pillar 1: Objective remains certified",
-      "Pillar 4: Recommendation history updated",
-      "Pillar 5: Decision log records recovery",
-      "Pillar 6: Training need generated if repeated",
-    ],
+  decision_action_audit: {
+    counters: [],
+    queue: [],
+    action_history: [],
+    email_log: [],
+    ticket_log: [],
+    corrective_actions: [],
+    audit_note: "Audit fallback",
   },
   governance_evidence: {
-    rows: governanceRows,
-    exports: [
-      ["KPI definition pack", "Formulas, targets, owners, source mappings"],
-      ["Runtime evidence pack", "RNN run, anomaly run, scored rows, output tables"],
-      ["Decision audit pack", "Human approval, actions, ticket/email outbox, decision log"],
-      ["Outcome learning pack", "Before/after results, forecast accuracy, recommendation effectiveness"],
-    ],
+    lineage_flow: [],
+    datasets: [],
+    quality_checks: [],
+    evidence_packs: [],
   },
 };
 
-export const metadata: Metadata = {
-  title: "Urban Service Quality & Visual Distortion Assurance Loop - Jazan Performance",
+const emptyKpiWorkspace: KpiWorkspace = {
+  slug: fallbackShellData.navigation.default_kpi_slug,
+  short_label: "KPI",
+  name: "KPI workspace",
+  current_value: "-",
+  target_value: "-",
+  status: "Seeded",
+  status_tone: "warning",
+  delta: "Awaiting data",
+  owner: "Platform",
+  cadence: "Monthly",
+  trigger: "Awaiting seeded metrics",
+  summary_strip: [],
+  municipality_ranking: [],
+  trend: [],
+  open_cases: [],
+  governance: [],
 };
 
-function getScreen(screen?: string[]): ScreenId {
-  const id = screen?.[0] ?? "overview";
-  if (screens.some((item) => item.id === id)) return id as ScreenId;
-  notFound();
+const emptyCaseWorkspace: CaseWorkspace = {
+  case_id: fallbackShellData.navigation.default_case_id,
+  kpi_slug: fallbackShellData.navigation.default_kpi_slug,
+  kpi_name: "Case workspace",
+  municipality: "Unknown",
+  status: "Seeded",
+  owner: "Platform",
+  due_date: "-",
+  risk_score: "-",
+  breach_probability: "-",
+  current_value: "-",
+  target_value: "-",
+  rationale: "Awaiting seeded case data.",
+  overview_metrics: [],
+  intelligence: {
+    feature_contributions: [],
+    trend: [],
+    ranked_actions: [],
+    outputs: [],
+  },
+  decisions: {
+    recommended_actions: [],
+    evidence_pack: [],
+    action_buttons: [],
+    human_authorisation_note: "Every external action remains human authorised.",
+  },
+  recovery: {
+    baseline: "-",
+    target: "-",
+    after_30_days: "-",
+    forecast_accuracy: "-",
+    intervention_effectiveness: "-",
+    learning_pillars: [],
+  },
+};
+
+function buildHref(path: string, demoMode: boolean) {
+  return demoMode ? `${path}${path.includes("?") ? "&" : "?"}demo=1` : path;
 }
 
-function EmptyPanel({ label = "No data loaded" }: { label?: string }) {
-  return <div className="usecase-empty-state">{label}</div>;
+function buildCaseHref(kpiSlug: string, caseId: string, tab: CaseTab, demoMode: boolean) {
+  return buildHref(`${baseRoute}/kpi/${kpiSlug}/case/${caseId}/${tab}`, demoMode);
 }
 
-function UseCaseTabs({ active, demo }: { active: ScreenId; demo: boolean }) {
-  const suffix = demo ? "?demo=1" : "";
+function resolveRoute(
+  rawSegments: string[],
+  navigation: ShellData["navigation"],
+  preferredDecisionId: string | undefined,
+): RouteState | null {
+  if (rawSegments.length === 0 || rawSegments[0] === "overview") {
+    return { kind: "strategic" };
+  }
+
+  const first = rawSegments[0];
+  const defaultCaseId = preferredDecisionId ?? navigation.default_case_id;
+
+  if (first === "kpi-contract") {
+    return { kind: "kpi", kpiSlug: navigation.default_kpi_slug };
+  }
+
+  if (first === "model-intelligence") {
+    return { kind: "case", kpiSlug: navigation.default_kpi_slug, caseId: defaultCaseId, tab: "intelligence" };
+  }
+
+  if (first === "decision-action-tracker") {
+    return { kind: "decisions" };
+  }
+
+  if (first === "outcome-feedback") {
+    return { kind: "case", kpiSlug: navigation.default_kpi_slug, caseId: defaultCaseId, tab: "recovery" };
+  }
+
+  if (first === "governance-evidence") {
+    return { kind: "audit" };
+  }
+
+  if (first === "decisions") {
+    return { kind: "decisions" };
+  }
+
+  if (first === "runtimes") {
+    return { kind: "runtimes" };
+  }
+
+  if (first === "audit") {
+    return { kind: "audit" };
+  }
+
+  if (first !== "kpi") {
+    return null;
+  }
+
+  if (rawSegments.length === 2) {
+    return { kind: "kpi", kpiSlug: rawSegments[1] };
+  }
+
+  if (rawSegments.length >= 4 && rawSegments[2] === "case") {
+    const tab = (rawSegments[4] ?? "overview") as CaseTab;
+    if (!navigation.supported_tabs.includes(tab)) {
+      return null;
+    }
+
+    return {
+      kind: "case",
+      kpiSlug: rawSegments[1],
+      caseId: rawSegments[3],
+      tab,
+    };
+  }
+
+  return null;
+}
+
+function findKpiWorkspace(data: ShellData, kpiSlug: string) {
+  return data.kpi_workspaces.find((item) => item.slug === kpiSlug) ?? data.kpi_workspaces[0] ?? emptyKpiWorkspace;
+}
+
+function findCaseWorkspace(data: ShellData, kpiSlug: string, caseId: string) {
   return (
-    <nav className="usecase-screen-tabs" aria-label="Use case screens">
-      {screens.map((screen) => (
-        <Link className={screen.id === active ? "active" : undefined} href={`${screen.href}${suffix}`} key={screen.id}>
-          {screen.label}
+    data.case_workspaces.find((item) => item.case_id === caseId && item.kpi_slug === kpiSlug) ??
+    data.case_workspaces.find((item) => item.case_id === caseId) ??
+    data.case_workspaces[0] ??
+    emptyCaseWorkspace
+  );
+}
+
+function selectedCase(data: ShellData, selectedId: string | undefined) {
+  return (
+    data.case_workspaces.find((item) => item.case_id === selectedId) ??
+    data.case_workspaces.find((item) => item.case_id === data.decision_command.selected_case_id) ??
+    data.case_workspaces[0] ??
+    emptyCaseWorkspace
+  );
+}
+
+function dashboardRail(route: RouteState, data: ShellData, demoMode: boolean) {
+  const currentKpiSlug =
+    route.kind === "kpi" || route.kind === "case"
+      ? route.kpiSlug
+      : data.navigation.default_kpi_slug;
+  const currentCaseId = route.kind === "case" ? route.caseId : data.navigation.default_case_id;
+
+  const entries = [
+    {
+      id: "01",
+      label: "Strategic objective",
+      subtitle: "Monitor thresholds",
+      href: buildHref(baseRoute, demoMode),
+      active: route.kind === "strategic",
+    },
+    {
+      id: "02",
+      label: "KPI workspace",
+      subtitle: "Municipality ranking",
+      href: buildHref(`${baseRoute}/kpi/${currentKpiSlug}`, demoMode),
+      active: route.kind === "kpi",
+    },
+    {
+      id: "03",
+      label: "Case intelligence",
+      subtitle: "Forecast and action",
+      href: buildCaseHref(currentKpiSlug, currentCaseId, "overview", demoMode),
+      active: route.kind === "case",
+    },
+    {
+      id: "04",
+      label: "Decision command",
+      subtitle: "Human review",
+      href: buildHref(`${baseRoute}/decisions`, demoMode),
+      active: route.kind === "decisions",
+    },
+    {
+      id: "05",
+      label: "Runtime evidence",
+      subtitle: "Execution history",
+      href: buildHref(`${baseRoute}/runtimes`, demoMode),
+      active: route.kind === "runtimes",
+    },
+    {
+      id: "06",
+      label: "Decision audit",
+      subtitle: "Emails, tickets, actions",
+      href: buildHref(`${baseRoute}/audit`, demoMode),
+      active: route.kind === "audit",
+    },
+  ];
+
+  return (
+    <nav className="jazan-dashboard-rail" aria-label="Bundle dashboards">
+      {entries.map((entry) => (
+        <Link
+          key={entry.id}
+          href={entry.href}
+          className={`jazan-dashboard-link${entry.active ? " is-active" : ""}`}
+        >
+          <span className="jazan-dashboard-index">{entry.id}</span>
+          <span className="jazan-dashboard-label">{entry.label}</span>
+          <span className="jazan-dashboard-subtitle">{entry.subtitle}</span>
         </Link>
       ))}
     </nav>
   );
 }
 
-function MetricStrip({ demo, items }: { demo: boolean; items: MetricItem[] }) {
-  return (
-    <div className="usecase-metric-strip">
-      {items.map(([label, value, note]) => (
-        <article key={label}>
-          <span>{label}</span>
-          <strong>{demo ? value : "No data loaded"}</strong>
-          <p>{demo ? note : "Not connected"}</p>
-        </article>
-      ))}
-    </div>
-  );
+function statusBadge(text: string, tone: string) {
+  return <span className={`jazan-status-badge tone-${tone}`}>{text}</span>;
 }
 
-function EvidenceGrid({ groups }: { groups: string[][] }) {
+function sectionCard(props: { eyebrow?: string; title: string; children: ReactNode; aside?: ReactNode }) {
   return (
-    <div className="usecase-evidence-grid">
-      {groups.map(([title, ...items]) => (
-        <article key={title}>
-          <h3>{title}</h3>
-          <ul>
-            {items.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function ActiveCaseBanner({ demo, activeCase }: { demo: boolean; activeCase: UseCaseShellData["active_case"] }) {
-  if (!demo) return <EmptyPanel label="No active case loaded" />;
-
-  return (
-    <section className="panel usecase-active-case">
-      <div>
-        <p className="eyebrow">Active case banner</p>
-        <h2>{activeCase.municipality} visual-distortion decision loop</h2>
-      </div>
-      {[
-        ["Risk score", activeCase.risk_score],
-        ["Breach probability", activeCase.breach_probability],
-        ["Stage", activeCase.stage],
-        ["Owner", activeCase.owner],
-        ["Due", activeCase.due],
-      ].map(([label, value]) => (
-        <article key={label}>
-          <span>{label}</span>
-          <strong>{value}</strong>
-        </article>
-      ))}
-    </section>
-  );
-}
-
-function GovernanceMiniPanel({ demo }: { demo: boolean }) {
-  return (
-    <section className="panel usecase-governance-mini">
-      <p className="eyebrow">Data governance evidence</p>
-      <div>
-        <span>Freshness: demo runtime</span>
-        <span>Owner: Field Compliance</span>
-        <span>Classification: Restricted</span>
-        <span>DQ: monitored</span>
-        <Link href={`${baseRoute}/governance-evidence${demo ? "?demo=1" : ""}`}>Open governance evidence</Link>
-      </div>
-    </section>
-  );
-}
-
-function DashboardMetricStrip({ items }: { items: MetricItem[] | TwoColRow[] }) {
-  return (
-    <div className="usecase-dashboard-metrics">
-      {items.map(([label, value, note]) => (
-        <article key={label}>
-          <span>{label}</span>
-          <strong>{value}</strong>
-          {note ? <p>{note}</p> : null}
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function StatusDonut({ value, tone = "green" }: { value: string; tone?: "green" | "orange" | "red" }) {
-  return (
-    <div className={`usecase-donut ${tone}`} aria-label={`${value} status`}>
-      <strong>{value}</strong>
-      <span>status</span>
-    </div>
-  );
-}
-
-function NumberedFlow({ labels }: { labels: string[] }) {
-  return (
-    <div className="usecase-numbered-flow">
-      {labels.map((label, index) => (
-        <article key={label}>
-          <span>{index + 1}</span>
-          <p>{label}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function PipelineLinks({ demo, stages }: { demo: boolean; stages: TwoColRow[] }) {
-  const suffix = demo ? "&demo=1" : "";
-  return (
-    <div className="usecase-pipeline-links" aria-label="Clickable decision pipeline">
-      {stages.map(([label, href], index) => (
-        <Link href={`${href}${href.includes("?") ? suffix : demo ? "?demo=1" : ""}`} key={label}>
-          <span>{index + 1}</span>
-          {label}
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-function ForecastMiniChart({ series }: { series: ForecastPoint[] }) {
-  return (
-    <div className="usecase-forecast-chart" aria-label="Four week service quality forecast">
-      {series.map(([week, value]) => (
-        <div className="usecase-forecast-column" key={week}>
-          <strong style={{ height: `${Number(value) / 1.4}%` }} />
-          <small>{week}</small>
+    <section className="jazan-section-card">
+      <div className="jazan-section-card-header">
+        <div>
+          {props.eyebrow ? <p className="jazan-eyebrow">{props.eyebrow}</p> : null}
+          <h2>{props.title}</h2>
         </div>
+        {props.aside ? <div className="jazan-section-aside">{props.aside}</div> : null}
+      </div>
+      {props.children}
+    </section>
+  );
+}
+
+function metricStrip(items: Metric[]) {
+  return (
+    <div className="jazan-metric-strip">
+      {items.map((item) => (
+        <article key={`${item.label}-${item.value}`} className="jazan-metric-card">
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+          {item.note ? <small>{item.note}</small> : null}
+        </article>
       ))}
-      <em>target 90%</em>
     </div>
   );
 }
 
-function OverviewScreen({ demo, data }: { demo: boolean; data: UseCaseShellData }) {
+function trendChart(points: TrendPoint[]) {
+  if (points.length === 0) {
+    return <p className="jazan-empty-copy">Seeded trend data has not been attached yet.</p>;
+  }
+
+  const maxValue = Math.max(
+    1,
+    ...points.flatMap((point) => [point.actual ?? 0, point.forecast ?? 0, point.target]),
+  );
+
   return (
-    <>
-      <section className="usecase-dashboard-row hero-row">
-        <article className="panel usecase-section golden-thread-card">
-          <p className="eyebrow">Golden thread</p>
-          <h2>Closed-loop operating cycle</h2>
-          <p>Set targets, predict risk, recommend action, track execution, measure recovery, and learn.</p>
-          {demo ? (
-            <>
-              <NumberedFlow labels={data.overview.golden_thread_labels} />
-              <PipelineLinks demo={demo} stages={pipelineStages} />
-            </>
-          ) : (
-            <EmptyPanel />
-          )}
+    <div className="jazan-trend-chart" role="img" aria-label="KPI trend and forecast">
+      {points.map((point) => {
+        const value = point.forecast ?? point.actual ?? 0;
+        return (
+          <div key={point.label} className="jazan-trend-column">
+            <div className="jazan-trend-bars">
+              <span
+                className={`jazan-trend-bar${point.forecast !== undefined ? " is-forecast" : ""}`}
+                style={{ height: `${Math.max(8, (value / maxValue) * 100)}%` }}
+              />
+              <span
+                className="jazan-target-line"
+                style={{ bottom: `${Math.max(8, (point.target / maxValue) * 100)}%` }}
+              />
+            </div>
+            <strong>{value.toFixed(2)}</strong>
+            <small>{point.label}</small>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function dataTable(props: { columns: string[]; rows: ReactNode[][] }) {
+  return (
+    <div className="jazan-table-wrap">
+      <table className="jazan-table">
+        <thead>
+          <tr>
+            {props.columns.map((column) => (
+              <th key={column}>{column}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {props.rows.map((row, rowIndex) => (
+            <tr key={`row-${rowIndex}`}>
+              {row.map((cell, cellIndex) => (
+                <td key={`cell-${rowIndex}-${cellIndex}`}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function governanceMiniRail(items: GovernanceChip[]) {
+  return (
+    <div className="jazan-governance-rail">
+      {items.map((item) => (
+        <article key={`${item.label}-${item.value}`} className="jazan-governance-chip">
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
         </article>
-        <article className="panel usecase-section status-card">
-          <p className="eyebrow">Overall status</p>
-          {demo ? <StatusDonut value={data.overview.status_value} /> : <EmptyPanel />}
-        </article>
+      ))}
+    </div>
+  );
+}
+
+function StrategicScreen(props: { data: ShellData; demoMode: boolean }) {
+  const { strategic_dashboard: strategic } = props.data;
+
+  return (
+    <div className="jazan-screen-stack">
+      <section className="jazan-focus-hero">
+        <div>
+          <p className="jazan-eyebrow">{strategic.eyebrow}</p>
+          <h2>{strategic.title}</h2>
+          <p>{strategic.subtitle}</p>
+        </div>
+        <div className="jazan-pill-row">
+          {strategic.objective_context.map((item) => (
+            <span key={item} className="jazan-pill">
+              {item}
+            </span>
+          ))}
+        </div>
       </section>
 
-      <section className="panel usecase-section">
-        <p className="eyebrow">Headline KPI strip</p>
-        <h2>Urban service quality signal</h2>
-        {demo ? <DashboardMetricStrip items={data.overview.headline_kpis} /> : <MetricStrip demo={false} items={data.overview.demo_metrics} />}
-      </section>
+      {metricStrip(strategic.summary_strip)}
 
-      <section className="usecase-dashboard-row three-card-row">
-        {demo ? (
-          <>
-            <article className="panel usecase-section big-risk-card">
-              <p className="eyebrow">Top Risk Municipality</p>
-              <h2>{data.overview.top_risk.municipality} <span>{data.overview.top_risk.status}</span></h2>
-              <p>Risk score</p>
-              <strong>{data.overview.top_risk.risk_score}</strong>
-              <p>Breach probability: {data.overview.top_risk.breach_probability}</p>
+      <sectionCard eyebrow="Golden thread" title="One governed objective from monitoring to audit">
+        <div className="jazan-stage-flow">
+          {strategic.golden_thread.map((item, index) => (
+            <article key={item} className="jazan-stage-card">
+              <span>{`0${index + 1}`}</span>
+              <strong>{item}</strong>
             </article>
-            <article className="panel usecase-section">
-              <p className="eyebrow">Recommended Intervention</p>
-              <h2>{data.overview.recommended_intervention.title}</h2>
-              <p>Similar cases: {data.overview.recommended_intervention.similar_cases}</p>
-              <p>Expected lift: {data.overview.recommended_intervention.expected_lift}</p>
-              <Link className="secondary-link" href={data.overview.recommended_intervention.decision_href}>
-                Open decision pipeline
+          ))}
+        </div>
+      </sectionCard>
+
+      <sectionCard eyebrow="KPI threshold cards" title="All six KPI dashboards are declared and routable">
+        <div className="jazan-kpi-card-grid">
+          {strategic.kpi_cards.map((card) => (
+            <article key={card.slug} className="jazan-kpi-card">
+              <div className="jazan-kpi-card-header">
+                <span>{card.short_label}</span>
+                {statusBadge(card.status, card.status_tone)}
+              </div>
+              <h3>{card.name}</h3>
+              <p className="jazan-kpi-metric">
+                <strong>{card.current_value}</strong>
+                <span>{`target ${card.target_value}`}</span>
+              </p>
+              <small>{card.delta}</small>
+              <div className="jazan-kpi-meta">
+                <span>{card.owner}</span>
+                <span>{card.cadence}</span>
+              </div>
+              <p className="jazan-kpi-trigger">{card.trigger}</p>
+              <Link href={card.href} className="jazan-inline-link">
+                Open KPI workspace
               </Link>
             </article>
-            <article className="panel usecase-section action-status-card">
-              <p className="eyebrow">Active Corrective Actions</p>
-              <StatusDonut value="62%" tone="orange" />
-              <table>
-                <tbody>
-                  {data.overview.action_summary.map((item) => (
-                    <tr key={item}><td>{item}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </article>
-          </>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
+          ))}
+        </div>
+      </sectionCard>
 
-      <section className="panel usecase-section">
-        <p className="eyebrow">OpenCare contract evidence</p>
-        <h2>Data and decision contract</h2>
-        <EvidenceGrid groups={data.overview.evidence_groups} />
-      </section>
-    </>
+      <sectionCard eyebrow="Active case" title="The story starts from the highest-priority seeded case">
+        <div className="jazan-active-case-banner">
+          <div>
+            <h3>{`${strategic.active_case_banner.municipality} - ${strategic.active_case_banner.kpi}`}</h3>
+            <p>{strategic.active_case_banner.summary}</p>
+          </div>
+          <div className="jazan-active-case-metrics">
+            <div>
+              <span>Risk score</span>
+              <strong>{strategic.active_case_banner.risk_score}</strong>
+            </div>
+            <div>
+              <span>Forecast breach</span>
+              <strong>{strategic.active_case_banner.breach_probability}</strong>
+            </div>
+            <Link href={strategic.active_case_banner.href} className="jazan-inline-link">
+              Review case
+            </Link>
+          </div>
+        </div>
+      </sectionCard>
+    </div>
   );
 }
 
-function KpiContractScreen({ demo, data }: { demo: boolean; data: UseCaseShellData }) {
+function KpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean }) {
+  const { kpi, demoMode } = props;
+
   return (
-    <>
-      <section className="panel usecase-section objective-contract-card">
-        <p className="eyebrow">Strategic objective</p>
-        <h2>{data.kpi_contract.objective_title}</h2>
-        {demo ? (
-          <div className="usecase-dashboard-metrics compact">
-            {data.kpi_contract.objective_stats.map(([label, value]) => (
-              <article key={label}><span>{label}</span><strong>{value}</strong></article>
-            ))}
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
+    <div className="jazan-screen-stack">
+      <section className="jazan-focus-hero">
+        <div>
+          <p className="jazan-eyebrow">02 KPI municipality workspace</p>
+          <h2>{kpi.name}</h2>
+          <p>{`Owner: ${kpi.owner}. Cadence: ${kpi.cadence}. Trigger: ${kpi.trigger}.`}</p>
+        </div>
+        {statusBadge(kpi.status, kpi.status_tone)}
       </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Objective-to-KPI mapping & monitoring</p>
-        <h2>Strategic objective branches into governed KPIs</h2>
-        {demo ? (
-          <div className="usecase-kpi-map">
-            <article className="objective-node">
-              <span>Strategic objective</span>
-              <strong>{data.kpi_contract.objective_title}</strong>
-            </article>
-            <div className="kpi-node-grid">
-              {data.kpi_contract.kpi_rows.map(([kpi, formula, target, current, status, owner, source]) => (
-                <article key={kpi}>
-                  <span>{status}</span>
-                  <strong>{kpi}</strong>
-                  <p>{current} vs {target}</p>
-                  <small>{owner} · {source} · {formula}</small>
+
+      {metricStrip(kpi.summary_strip)}
+
+      <div className="jazan-split-grid">
+        {sectionCard({
+          eyebrow: "Municipality ranking",
+          title: "Which municipalities are degrading for this KPI and why?",
+          children: dataTable({
+            columns: ["Municipality", "Current", "Target", "Risk", "Breach", "Status", "Drill"],
+            rows:
+              kpi.municipality_ranking.length > 0
+                ? kpi.municipality_ranking.map((row) => [
+                    row.municipality,
+                    row.current,
+                    row.target,
+                    row.risk_score,
+                    row.breach_probability,
+                    row.status,
+                    row.case_id ? (
+                      <Link
+                        href={buildCaseHref(kpi.slug, row.case_id, "overview", demoMode)}
+                        className="jazan-inline-link"
+                      >
+                        Open case
+                      </Link>
+                    ) : (
+                      "No case"
+                    ),
+                  ])
+                : [["No open seeded municipality rows yet", "-", "-", "-", "-", "-", "-"]],
+          }),
+        })}
+        {sectionCard({
+          eyebrow: "Governance evidence",
+          title: "Certified route from source to KPI dashboard",
+          children: governanceMiniRail(kpi.governance),
+        })}
+      </div>
+
+      {sectionCard({
+        eyebrow: "Trend",
+        title: "Portfolio trend with target and forecast extension",
+        children: trendChart(kpi.trend),
+      })}
+
+      {sectionCard({
+        eyebrow: "Open cases",
+        title: "Case drill paths emitted from KPI monitoring",
+        children:
+          kpi.open_cases.length > 0 ? (
+            <div className="jazan-card-grid">
+              {kpi.open_cases.map((openCase) => (
+                <article key={openCase.case_id} className="jazan-detail-card">
+                  <strong>{`${openCase.case_id} - ${openCase.municipality}`}</strong>
+                  <p>{openCase.reason}</p>
+                  <small>{openCase.owner}</small>
+                  <Link href={openCase.href} className="jazan-inline-link">
+                    Open case workspace
+                  </Link>
                 </article>
               ))}
             </div>
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">KPI monitoring cards</p>
-        <h2>Every KPI has status, risk, and next action</h2>
-        {demo ? (
-          <div className="usecase-monitor-grid">
-            {data.kpi_contract.monitor_cards.map(([kpi, current, target, status, nextAction]) => (
-              <article key={kpi}>
-                <span>{status}</span>
-                <h3>{kpi}</h3>
-                <strong>{current}</strong>
-                <p>Target: {target}</p>
-                <small>Next: {nextAction}</small>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Governed KPI contract</p>
-        <h2>Definitions, targets, current status, owners, and sources</h2>
-        {demo ? (
-          <div className="jazan-table-wrap strategic-scroll-table">
-            <table className="table jazan-data-table">
-              <thead>
-                <tr>{["KPI", "Formula", "Target", "Current", "Status", "Owner", "Source"].map((column) => <th key={column}>{column}</th>)}</tr>
-              </thead>
-              <tbody>
-                {data.kpi_contract.kpi_rows.map((row) => (
-                  <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Monitoring trigger rules</p>
-        <h2>How KPI risk becomes a decision pipeline item</h2>
-        {demo ? (
-          <div className="jazan-table-wrap strategic-scroll-table">
-            <table className="table jazan-data-table">
-              <thead><tr>{["Trigger", "Condition", "Action", "Carry forward"].map((column) => <th key={column}>{column}</th>)}</tr></thead>
-              <tbody>{data.kpi_contract.trigger_rules.map((row) => <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>)}</tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-    </>
+          ) : (
+            <p className="jazan-empty-copy">No open seeded cases are currently attached to this KPI.</p>
+          ),
+      })}
+    </div>
   );
 }
 
-function ModelIntelligenceScreen({ demo, selectedModel, data }: { demo: boolean; selectedModel?: string; data: UseCaseShellData }) {
-  const activeModel = data.runtime_evidence.model_cards.find((item) => item.key === selectedModel) ?? data.runtime_evidence.model_cards[0];
-
-  return (
-    <>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Certified lineage</p>
-        <h2>Source systems to decision layer</h2>
-        {demo ? (
-          <NumberedFlow labels={data.runtime_evidence.lineage_labels} />
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="usecase-dashboard-row model-layout">
-        {demo ? (
-          <>
-            <article className="panel usecase-section big-risk-card">
-              <p className="eyebrow">High Risk Municipality</p>
-              <h2>{data.runtime_evidence.high_risk_municipality.name} <span>{data.runtime_evidence.high_risk_municipality.status}</span></h2>
-              <p>Risk score</p>
-              <strong>{data.runtime_evidence.high_risk_municipality.risk_score}</strong>
-              <p>Breach probability</p>
-              <strong className="blue">{data.runtime_evidence.high_risk_municipality.breach_probability}</strong>
-              <p>{data.runtime_evidence.high_risk_municipality.driver}</p>
-              <ForecastMiniChart series={data.runtime_evidence.forecast_series} />
-            </article>
-            <div className="usecase-card-grid model-cards">
-              {data.runtime_evidence.model_cards.map((model) => (
-                <Link
-                  className={model.key === activeModel.key ? "selected-model-card" : undefined}
-                  href={`${baseRoute}/model-intelligence?demo=1&model=${model.key}`}
-                  key={model.key}
-                >
-                  <h3>{model.title}</h3>
-                  <strong>{model.value}</strong>
-                  <p>{model.note}</p>
-                </Link>
-              ))}
-            </div>
-          </>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Runtime run summary</p>
-        <h2>Latest scoring run</h2>
-        {demo ? (
-          <div className="jazan-table-wrap strategic-scroll-table">
-            <table className="table jazan-data-table">
-              <thead><tr>{["Runtime", "Last run", "Rows", "Status"].map((column) => <th key={column}>{column}</th>)}</tr></thead>
-              <tbody>
-                {data.runtime_evidence.runtime_runs.map((row) => (
-                  <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : <EmptyPanel />}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Selected predictive runtime</p>
-        <h2>{activeModel.title}</h2>
-        {demo ? (
-          <div className="usecase-runtime-detail">
-            <ForecastMiniChart series={data.runtime_evidence.forecast_series} />
-            <div>
-              <strong>{activeModel.value}</strong>
-              <p>{activeModel.note}</p>
-              <code>{activeModel.output}</code>
-              <Link className="secondary-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=JZN-DEC-1007`}>
-                Send model output to decision queue
-              </Link>
-            </div>
-          </div>
-        ) : <EmptyPanel />}
-      </section>
-    </>
-  );
-}
-
-function DecisionTrackerScreen({ demo, selectedDecision, data }: { demo: boolean; selectedDecision?: string; data: UseCaseShellData }) {
-  const activeDecision = data.decision_queue.cases.find((item) => item.id === selectedDecision) ?? data.decision_queue.cases[0];
-
-  return (
-    <>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Decision Command Centre</p>
-        <h2>Queue status</h2>
-        {demo ? <DashboardMetricStrip items={data.decision_queue.stats} /> : <MetricStrip demo={false} items={data.overview.demo_metrics} />}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Decision queue</p>
-        <h2>Generated decisions requiring action</h2>
-        {demo ? (
-          <div className="jazan-table-wrap strategic-scroll-table">
-            <table className="table jazan-data-table">
-              <thead>
-                <tr>{["Decision ID", "Municipality", "Risk", "Breach prob.", "Recommended action", "Owner", "Due", "Actions"].map((column) => <th key={column}>{column}</th>)}</tr>
-              </thead>
-              <tbody>
-                {data.decision_queue.cases.map((row) => (
-                  <tr className={row.id === activeDecision.id ? "selected" : undefined} key={row.id}>
-                    <td>
-                      <Link className="decision-action-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=${row.id}#decision-detail`}>
-                        {row.id}
-                      </Link>
-                    </td>
-                    <td>{row.municipality}</td>
-                    <td>{row.risk}</td>
-                    <td>{row.probability}</td>
-                    <td>{row.action}</td>
-                    <td>{row.owner}</td>
-                    <td>{row.due}</td>
-                    <td>
-                      <div className="usecase-command-buttons">
-                        {["Approve", "Escalate", "Create ticket", "Email owner"].map((action) => (
-                          <Link className="decision-action-link" href={`${baseRoute}/decision-action-tracker?demo=1&decision=${row.id}#decision-detail`} key={action}>
-                            {action}
-                          </Link>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="usecase-dashboard-row">
-        <article className="panel usecase-section action-button-legend">
-          <p className="eyebrow">Action button legend</p>
-          <h2>Controlled actions</h2>
-          <div>
-            {data.decision_queue.action_buttons.map((item) => <span key={item}>{item}</span>)}
-          </div>
-        </article>
-        <article className="panel usecase-section">
-          <p className="eyebrow">Generated escalation event</p>
-          <h2>Audit-safe backend workflow</h2>
-          <p>When the user clicks Escalate or Create Ticket, the backend writes an action event, creates an escalation request, and adds email or ticket records to the notification outbox.</p>
-        </article>
-      </section>
-      <section className="panel usecase-section usecase-decision-detail" id="decision-detail">
-        <div className="usecase-detail-header">
-          <div>
-            <p className="eyebrow">Focused decision pipeline</p>
-            <h2>{activeDecision.action}</h2>
-            <p>{activeDecision.municipality} - {activeDecision.risk}</p>
-          </div>
-          <span>{activeDecision.stage}</span>
-        </div>
-        {demo ? (
-          <>
-            <div className="decision-lifecycle-line">
-              {["Proposed", "Approved", "In progress", "Evidence", "Verified", "Closed"].map((stage) => (
-                <div className={stage === activeDecision.stage || ["Proposed", "Approved"].includes(stage) ? "done" : undefined} key={stage}>
-                  <span />
-                  <strong>{stage}</strong>
-                  <small>{stage === activeDecision.stage ? "current" : "workflow"}</small>
-                </div>
-              ))}
-            </div>
-            <div className="decision-detail-grid">
-              <article>
-                <p className="eyebrow">Model evidence</p>
-                <div className="decision-evidence-grid">
-                  {activeDecision.evidence.map(([title, text, note]) => (
-                    <div key={title}>
-                      <span>{note}</span>
-                      <strong>{title}</strong>
-                      <p>{text}</p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-              <article>
-                <p className="eyebrow">Decision log</p>
-                <div className="decision-log-list">
-                  {activeDecision.log.map((entry) => (
-                    <div key={entry}>
-                      <strong>{entry}</strong>
-                      <span>demo audit event</span>
-                    </div>
-                  ))}
-                </div>
-                <Link className="secondary-link" href={`${baseRoute}/outcome-feedback?demo=1`}>
-                  Track outcome recovery
-                </Link>
-              </article>
-            </div>
-          </>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-    </>
-  );
-}
-
-function OutcomeFeedbackScreen({ demo, data }: { demo: boolean; data: UseCaseShellData }) {
-  return (
-    <>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Corrective Action Tracking & Outcome</p>
-        <h2>Action recovery status</h2>
-        {demo ? <DashboardMetricStrip items={data.outcome_feedback.stats} /> : <MetricStrip demo={false} items={data.overview.demo_metrics} />}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Recovery summary - Municipality 13</p>
-        <h2>Before, target, after, and result</h2>
-        {demo ? (
-          <div className="jazan-table-wrap strategic-scroll-table">
-            <table className="table jazan-data-table">
-              <thead>
-                <tr>{["KPI", "Before", "Target", "After", "Result", "Change"].map((column) => <th key={column}>{column}</th>)}</tr>
-              </thead>
-              <tbody>
-                {data.outcome_feedback.recovery_rows.map((row) => (
-                  <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="usecase-dashboard-row three-card-row">
-        {demo ? (
-          <>
-            <article className="panel usecase-section status-card"><p className="eyebrow">Forecast accuracy</p><StatusDonut value={data.outcome_feedback.forecast_accuracy} /><h2>Breach correctly predicted</h2></article>
-            <article className="panel usecase-section"><p className="eyebrow">Recommendation effectiveness</p><h2 className="giant-value">{data.outcome_feedback.recommendation_effectiveness}</h2><p>average KPI lift</p><p>Similar cases matched: {data.outcome_feedback.similar_cases}</p></article>
-            <article className="panel usecase-section learning-card"><p className="eyebrow">Learning & feedback</p><h2>Feedback to pillars</h2>{data.outcome_feedback.learning_feedback.map((item) => <p key={item}>{item}</p>)}</article>
-          </>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-    </>
-  );
-}
-
-function GovernanceEvidenceScreen({ demo, data }: { demo: boolean; data: UseCaseShellData }) {
-  return (
-    <>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Governance evidence workspace</p>
-        <h2>Catalog, ownership, classification, quality, lineage, and evidence packs</h2>
-        <p>
-          v1.0.7 makes governance a visible operating layer. Every KPI, runtime output, decision candidate, and action event
-          has owner metadata, classification, DQ status, lineage, and evidence-pack traceability.
-        </p>
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Governed assets</p>
-        <h2>Source-to-decision catalog</h2>
-        {demo ? (
-          <div className="jazan-table-wrap strategic-scroll-table">
-            <table className="table jazan-data-table">
-              <thead><tr>{["Asset", "Classification", "Owner", "DQ / freshness", "Lineage"].map((column) => <th key={column}>{column}</th>)}</tr></thead>
-              <tbody>{data.governance_evidence.rows.map((row) => <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>)}</tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-      <section className="panel usecase-section">
-        <p className="eyebrow">Evidence pack exports</p>
-        <h2>Audit-ready evidence</h2>
-        {demo ? (
-          <div className="usecase-monitor-grid">
-            {data.governance_evidence.exports.map(([title, text]) => (
-              <article key={title}>
-                <span>Exportable</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyPanel />
-        )}
-      </section>
-    </>
-  );
-}
-
-function ScreenBody({
-  screen,
-  demo,
-  selectedDecision,
-  selectedModel,
-  data,
-}: {
-  screen: ScreenId;
-  demo: boolean;
-  selectedDecision?: string;
-  selectedModel?: string;
-  data: UseCaseShellData;
+function CaseWorkspaceScreen(props: {
+  route: Extract<RouteState, { kind: "case" }>;
+  caseWorkspace: CaseWorkspace;
+  demoMode: boolean;
 }) {
-  if (screen === "kpi-contract") return <KpiContractScreen demo={demo} data={data} />;
-  if (screen === "model-intelligence") return <ModelIntelligenceScreen demo={demo} selectedModel={selectedModel} data={data} />;
-  if (screen === "decision-action-tracker") return <DecisionTrackerScreen demo={demo} selectedDecision={selectedDecision} data={data} />;
-  if (screen === "outcome-feedback") return <OutcomeFeedbackScreen demo={demo} data={data} />;
-  if (screen === "governance-evidence") return <GovernanceEvidenceScreen demo={demo} data={data} />;
-  return <OverviewScreen demo={demo} data={data} />;
+  const { route, caseWorkspace, demoMode } = props;
+  const tabs: Array<{ id: CaseTab; label: string }> = [
+    { id: "overview", label: "Overview" },
+    { id: "intelligence", label: "Intelligence" },
+    { id: "decisions", label: "Decisions" },
+    { id: "recovery", label: "Recovery" },
+  ];
+
+  return (
+    <div className="jazan-screen-stack">
+      <section className="jazan-focus-hero">
+        <div>
+          <p className="jazan-eyebrow">03 Case model intelligence</p>
+          <h2>{`${caseWorkspace.municipality} - ${caseWorkspace.kpi_name}`}</h2>
+          <p>{caseWorkspace.rationale}</p>
+        </div>
+        <div className="jazan-hero-metrics">
+          <div>
+            <span>Risk score</span>
+            <strong>{caseWorkspace.risk_score}</strong>
+          </div>
+          <div>
+            <span>Breach probability</span>
+            <strong>{caseWorkspace.breach_probability}</strong>
+          </div>
+          <div>
+            <span>Status</span>
+            <strong>{caseWorkspace.status}</strong>
+          </div>
+        </div>
+      </section>
+
+      <div className="jazan-case-tabs">
+        {tabs.map((tab) => (
+          <Link
+            key={tab.id}
+            href={buildCaseHref(caseWorkspace.kpi_slug, caseWorkspace.case_id, tab.id, demoMode)}
+            className={`jazan-case-tab${route.tab === tab.id ? " is-active" : ""}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
+
+      {metricStrip(caseWorkspace.overview_metrics)}
+
+      {route.tab === "overview" ? (
+        <div className="jazan-screen-stack">
+          {sectionCard({
+            eyebrow: "Case rationale",
+            title: "Why this municipality reached the golden thread",
+            children: (
+              <div className="jazan-card-grid">
+                <article className="jazan-detail-card">
+                  <strong>Current KPI vs target</strong>
+                  <p>{`${caseWorkspace.current_value} against ${caseWorkspace.target_value}`}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Owner</strong>
+                  <p>{caseWorkspace.owner}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Due date</strong>
+                  <p>{caseWorkspace.due_date}</p>
+                </article>
+              </div>
+            ),
+          })}
+          {sectionCard({
+            eyebrow: "Recommended next step",
+            title: "Move from case understanding to human-authorised action",
+            children: (
+              <div className="jazan-card-grid">
+                {caseWorkspace.decisions.recommended_actions.map((action) => (
+                  <article key={action} className="jazan-detail-card">
+                    <strong>{action}</strong>
+                    <p>Declared in the bundle as a recommended intervention for this case.</p>
+                  </article>
+                ))}
+              </div>
+            ),
+          })}
+        </div>
+      ) : null}
+
+      {route.tab === "intelligence" ? (
+        <div className="jazan-screen-stack">
+          {sectionCard({
+            eyebrow: "Model intelligence",
+            title: "Feature contribution to score and risk explanation",
+            children: (
+              <div className="jazan-card-grid">
+                {caseWorkspace.intelligence.feature_contributions.map((item) => (
+                  <article key={item.label} className="jazan-detail-card">
+                    <strong>{item.value}</strong>
+                    <p>{item.label}</p>
+                  </article>
+                ))}
+              </div>
+            ),
+          })}
+          {sectionCard({
+            eyebrow: "Forecast path",
+            title: "RNN forecast and target line",
+            children: trendChart(caseWorkspace.intelligence.trend),
+          })}
+          {sectionCard({
+            eyebrow: "Top recommendations",
+            title: "Ranked actions measured in comparable municipalities",
+            children: (
+              <div className="jazan-card-grid">
+                {caseWorkspace.intelligence.ranked_actions.map((action) => (
+                  <article key={action.title} className="jazan-detail-card">
+                    <strong>{action.title}</strong>
+                    <p>{action.impact}</p>
+                    <small>{action.note}</small>
+                  </article>
+                ))}
+              </div>
+            ),
+          })}
+          {sectionCard({
+            eyebrow: "Key outputs",
+            title: "Runtime outputs bound to this case",
+            children: (
+              <div className="jazan-pill-row">
+                {caseWorkspace.intelligence.outputs.map((output) => (
+                  <span key={output} className="jazan-pill">
+                    {output}
+                  </span>
+                ))}
+              </div>
+            ),
+          })}
+        </div>
+      ) : null}
+
+      {route.tab === "decisions" ? (
+        <div className="jazan-screen-stack">
+          {sectionCard({
+            eyebrow: "Evidence pack",
+            title: "Human-authorised actions must sit on certified evidence",
+            children: (
+              <div className="jazan-card-grid">
+                {caseWorkspace.decisions.evidence_pack.map((item) => (
+                  <article key={item.label} className="jazan-detail-card">
+                    <strong>{item.label}</strong>
+                    <p>{item.value}</p>
+                  </article>
+                ))}
+              </div>
+            ),
+          })}
+          {sectionCard({
+            eyebrow: "Action buttons",
+            title: "Shared platform actions reused by this shell",
+            children: (
+              <div className="jazan-action-strip">
+                {caseWorkspace.decisions.action_buttons.map((button) => (
+                  <button key={button.id} type="button" className={`jazan-action-button tone-${button.tone}`}>
+                    {button.label}
+                  </button>
+                ))}
+              </div>
+            ),
+            aside: <span className="jazan-seed-note">Seeded workflow</span>,
+          })}
+          <p className="jazan-seed-note">{caseWorkspace.decisions.human_authorisation_note}</p>
+        </div>
+      ) : null}
+
+      {route.tab === "recovery" ? (
+        <div className="jazan-screen-stack">
+          {sectionCard({
+            eyebrow: "Recovery evidence",
+            title: "Outcome recovery and learning feedback",
+            children: (
+              <div className="jazan-card-grid">
+                <article className="jazan-detail-card">
+                  <strong>Baseline</strong>
+                  <p>{caseWorkspace.recovery.baseline}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Target</strong>
+                  <p>{caseWorkspace.recovery.target}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>After 30 days</strong>
+                  <p>{caseWorkspace.recovery.after_30_days}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Forecast accuracy</strong>
+                  <p>{caseWorkspace.recovery.forecast_accuracy}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Intervention effectiveness</strong>
+                  <p>{caseWorkspace.recovery.intervention_effectiveness}</p>
+                </article>
+              </div>
+            ),
+          })}
+          {sectionCard({
+            eyebrow: "Learning transfer",
+            title: "Lessons captured back into the platform rhythm",
+            children: (
+              <ul className="jazan-bullet-list">
+                {caseWorkspace.recovery.learning_pillars.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ),
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
-export default async function UrbanServiceQualityUseCasePage({ params, searchParams }: PageProps) {
-  const { screen: screenParam } = await params;
-  const query = searchParams ? await searchParams : {};
-  const screen = getScreen(screenParam);
-  const active = screens.find((item) => item.id === screen) ?? screens[0];
-  const shellData = await getApiJson<UseCaseShellData>({
+function DecisionCommandScreen(props: { data: ShellData; selected: CaseWorkspace }) {
+  return (
+    <div className="jazan-screen-stack">
+      <section className="jazan-focus-hero">
+        <div>
+          <p className="jazan-eyebrow">04 Decision command centre</p>
+          <h2>Generated decisions awaiting human review and approval</h2>
+          <p>{props.data.decision_command.human_authorisation_note}</p>
+        </div>
+        <span className="jazan-seed-note">Demo data - seeded</span>
+      </section>
+
+      {metricStrip(props.data.decision_command.counters)}
+
+      {sectionCard({
+        eyebrow: "Decision queue",
+        title: "Which generated decisions require intervention right now?",
+        children: dataTable({
+          columns: ["Decision ID", "Municipality", "KPI", "Risk", "Breach", "Owner", "Status", "Due"],
+          rows: props.data.decision_command.queue.map((row) => [
+            row.decision_id,
+            row.municipality,
+            row.kpi,
+            row.risk_score,
+            row.breach_probability,
+            row.owner,
+            row.status,
+            row.due_date,
+          ]),
+        }),
+      })}
+
+      <div className="jazan-split-grid">
+        {sectionCard({
+          eyebrow: "Selected decision",
+          title: `${props.selected.case_id} - ${props.selected.municipality}`,
+          children: (
+            <div className="jazan-card-grid">
+              <article className="jazan-detail-card">
+                <strong>Rationale</strong>
+                <p>{props.selected.rationale}</p>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Recommended actions</strong>
+                <p>{props.selected.decisions.recommended_actions.join(", ")}</p>
+              </article>
+            </div>
+          ),
+        })}
+        {sectionCard({
+          eyebrow: "Take action",
+          title: "Every external workflow is explicitly human authorised",
+          children: (
+            <div className="jazan-action-strip">
+              {props.data.decision_command.action_buttons.map((button) => (
+                <button key={button.id} type="button" className={`jazan-action-button tone-${button.tone}`}>
+                  {button.label}
+                </button>
+              ))}
+            </div>
+          ),
+        })}
+      </div>
+    </div>
+  );
+}
+
+function RuntimeEvidenceScreen(props: { data: ShellData }) {
+  return (
+    <div className="jazan-screen-stack">
+      <section className="jazan-focus-hero">
+        <div>
+          <p className="jazan-eyebrow">05 Runtime evidence and execution history</p>
+          <h2>Show that predictive runtimes ran on governed inputs and produced expected outputs</h2>
+          <p>{props.data.runtime_evidence.evidence_note}</p>
+        </div>
+        <span className="jazan-seed-note">{`${props.data.runtime_evidence.status} · ${props.data.runtime_evidence.seed_note}`}</span>
+      </section>
+
+      {sectionCard({
+        eyebrow: "Runtime services",
+        title: "Declared runtime images and outputs",
+        children: (
+          <div className="jazan-card-grid">
+            {props.data.runtime_evidence.runtime_cards.map((runtime) => (
+              <article key={runtime.runtime_id} className="jazan-detail-card">
+                <div className="jazan-runtime-header">
+                  <strong>{runtime.name}</strong>
+                  {statusBadge(runtime.status, runtime.status === "online" ? "positive" : "warning")}
+                </div>
+                <p>{runtime.image}</p>
+                <small>{`Last run ${runtime.last_run} · ${runtime.duration} · ${runtime.rows_out} rows`}</small>
+                <div className="jazan-runtime-io">
+                  <span>{`Inputs: ${runtime.inputs.join(", ")}`}</span>
+                  <span>{`Outputs: ${runtime.outputs.join(", ")}`}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        ),
+      })}
+
+      {sectionCard({
+        eyebrow: "Execution history",
+        title: "Last execution traces",
+        children: dataTable({
+          columns: ["Runtime", "Started at", "Status", "Duration"],
+          rows: props.data.runtime_evidence.execution_history.map((row) => [
+            row.runtime,
+            row.started_at,
+            row.status,
+            row.duration,
+          ]),
+        }),
+      })}
+
+      {sectionCard({
+        eyebrow: "Lineage path",
+        title: "Runtime evidence is only useful when the path remains governed",
+        children: (
+          <div className="jazan-pill-row">
+            {props.data.runtime_evidence.lineage_flow.map((step) => (
+              <span key={step} className="jazan-pill">
+                {step}
+              </span>
+            ))}
+          </div>
+        ),
+      })}
+    </div>
+  );
+}
+
+function AuditScreen(props: { data: ShellData }) {
+  return (
+    <div className="jazan-screen-stack">
+      <section className="jazan-focus-hero">
+        <div>
+          <p className="jazan-eyebrow">06 Decision queue and action audit</p>
+          <h2>See decisions, actions, emails, tickets, and corrective-action closure</h2>
+          <p>{props.data.decision_action_audit.audit_note}</p>
+        </div>
+        <span className="jazan-seed-note">Demo data - seeded</span>
+      </section>
+
+      {metricStrip(props.data.decision_action_audit.counters)}
+
+      {sectionCard({
+        eyebrow: "Decision queue",
+        title: "Queue snapshot carried into audit view",
+        children: dataTable({
+          columns: ["Decision ID", "Municipality", "KPI", "Risk", "Status", "Due"],
+          rows: props.data.decision_action_audit.queue.map((row) => [
+            row.decision_id,
+            row.municipality,
+            row.kpi,
+            row.risk_score,
+            row.status,
+            row.due_date,
+          ]),
+        }),
+      })}
+
+      <div className="jazan-split-grid">
+        {sectionCard({
+          eyebrow: "Action history",
+          title: "Who acted, through which channel, and with what result",
+          children: dataTable({
+            columns: ["Time", "Actor", "Action", "Channel", "Result"],
+            rows: props.data.decision_action_audit.action_history.map((row) => [
+              row.time,
+              row.actor,
+              row.action,
+              row.channel,
+              row.result,
+            ]),
+          }),
+        })}
+        {sectionCard({
+          eyebrow: "External workflow evidence",
+          title: "Emails and tickets logged alongside corrective actions",
+          children: (
+            <div className="jazan-screen-stack compact">
+              {dataTable({
+                columns: ["Recipient", "Template", "Status", "Sent at"],
+                rows:
+                  props.data.decision_action_audit.email_log.length > 0
+                    ? props.data.decision_action_audit.email_log.map((row) => [
+                        row.recipient,
+                        row.template,
+                        row.status,
+                        row.sent_at,
+                      ])
+                    : [["No seeded emails yet", "-", "-", "-"]],
+              })}
+              {dataTable({
+                columns: ["System", "Ticket", "Priority", "Status", "Case"],
+                rows:
+                  props.data.decision_action_audit.ticket_log.length > 0
+                    ? props.data.decision_action_audit.ticket_log.map((row) => [
+                        row.system,
+                        row.ticket_id,
+                        row.priority,
+                        row.status,
+                        row.linked_case,
+                      ])
+                    : [["No seeded tickets yet", "-", "-", "-", "-"]],
+              })}
+            </div>
+          ),
+        })}
+      </div>
+
+      {sectionCard({
+        eyebrow: "Corrective actions",
+        title: "Tracked to closure rather than disappearing after approval",
+        children: dataTable({
+          columns: ["Action ID", "Decision", "Action plan", "Owner", "Status", "Due", "Evidence", "Next step"],
+          rows: props.data.decision_action_audit.corrective_actions.map((row) => [
+            row.action_id,
+            row.decision_id,
+            row.action_plan,
+            row.owner,
+            row.status,
+            row.due_in,
+            row.evidence_status,
+            row.next_step,
+          ]),
+        }),
+      })}
+    </div>
+  );
+}
+
+function breadcrumb(route: RouteState, data: ShellData) {
+  if (route.kind === "strategic" || route.kind === "decisions" || route.kind === "runtimes" || route.kind === "audit") {
+    return null;
+  }
+
+  const kpi = findKpiWorkspace(data, route.kpiSlug);
+  const segments = ["Urban service quality", kpi.name];
+
+  if (route.kind === "case") {
+    segments.push(findCaseWorkspace(data, route.kpiSlug, route.caseId).municipality);
+  }
+
+  return (
+    <p className="jazan-breadcrumb">{segments.join(" -> ")}</p>
+  );
+}
+
+export default async function UrbanServiceQualityLoopPage({ params, searchParams }: PageProps) {
+  const [{ screen = [] }, query = {}] = await Promise.all([params, searchParams]);
+  const demoMode = query.demo === "1";
+  const selectedId = query.selected ?? query.decision;
+
+  const data = await getApiJson<ShellData>({
     path: "/api/v1/jazan/service-quality/shell",
     fallback: fallbackShellData,
     cacheMode: "no-store",
   });
-  const demoOverride = query.demo === "1" || process.env.NEXT_PUBLIC_JAZAN_DEMO_MODE === "true";
-  const seededMode = shellData.meta.mode === "seeded" || shellData.meta.mode === "connected";
-  const demo = demoOverride || seededMode;
+
+  const route = resolveRoute(screen, data.navigation, query.decision);
+  if (!route) {
+    notFound();
+  }
+
+  const pageActions = (
+    <div className="jazan-header-actions">
+      <Link href={buildHref(`${baseRoute}/decisions`, demoMode)} className="jazan-inline-link">
+        Decision centre
+      </Link>
+      <Link href={buildHref(`${baseRoute}/runtimes`, demoMode)} className="jazan-inline-link">
+        Runtime evidence
+      </Link>
+      <Link href={buildHref(`${baseRoute}/audit`, demoMode)} className="jazan-inline-link">
+        Action audit
+      </Link>
+    </div>
+  );
+
+  let content: ReactNode;
+
+  if (route.kind === "strategic") {
+    content = <StrategicScreen data={data} demoMode={demoMode} />;
+  } else if (route.kind === "kpi") {
+    content = <KpiWorkspaceScreen kpi={findKpiWorkspace(data, route.kpiSlug)} demoMode={demoMode} />;
+  } else if (route.kind === "case") {
+    content = (
+      <CaseWorkspaceScreen
+        route={route}
+        caseWorkspace={findCaseWorkspace(data, route.kpiSlug, route.caseId)}
+        demoMode={demoMode}
+      />
+    );
+  } else if (route.kind === "decisions") {
+    content = <DecisionCommandScreen data={data} selected={selectedCase(data, selectedId)} />;
+  } else if (route.kind === "runtimes") {
+    content = <RuntimeEvidenceScreen data={data} />;
+  } else {
+    content = <AuditScreen data={data} />;
+  }
 
   return (
     <PageFrame
-      eyebrow="Jazan use case"
-      title={active.title}
-      description={active.titleAr}
+      eyebrow={data.purpose.eyebrow}
+      title={data.purpose.title}
+      description={data.purpose.description}
       chips={[
-        { label: demoOverride ? "Demo walkthrough data" : demo ? "Seeded shell data" : "Needs data", tone: "primary" },
-        { label: shellData.meta.connected ? "Platform-connected" : "Platform slice", tone: "accent" },
-        { label: `Route: ${active.href}`, tone: "accent" },
+        { label: "Demo data - seeded", tone: "accent" },
+        { label: "Dashboard-rigid bundle", tone: "primary" },
+        { label: "Human-authorised actions", tone: "accent" },
       ]}
-      actions={
-        <>
-          <Link className="secondary-link" href="/jazan-performance">
-            Back to operating model
-          </Link>
-          <Link className="secondary-link" href="/jazan-performance/decision-rhythm-corrective-actions">
-            Open Pillar 5
-          </Link>
-        </>
-      }
-      pageClassName="jazan-workspace-page usecase-loop-page"
+      actions={pageActions}
+      pageClassName="jazan-bundle-layout"
     >
-      <UseCaseTabs active={screen} demo={demo} />
-      <ActiveCaseBanner demo={demo} activeCase={shellData.active_case} />
-      <section className="panel usecase-section usecase-hero-contract">
-        <p className="eyebrow">{shellData.purpose.eyebrow}</p>
-        <h2>{shellData.purpose.title}</h2>
-        <p>{shellData.purpose.description}</p>
-      </section>
-      <ScreenBody screen={screen} demo={demo} selectedDecision={query.decision} selectedModel={query.model} data={shellData} />
-      <GovernanceMiniPanel demo={demo} />
+      {dashboardRail(route, data, demoMode)}
+      {breadcrumb(route, data)}
+      <p className="jazan-seed-note">{data.meta.message}</p>
+      <div className="jazan-dashboard-content">{content}</div>
     </PageFrame>
   );
 }

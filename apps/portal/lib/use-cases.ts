@@ -179,8 +179,8 @@ export const useCases: UseCaseModule[] = [
       label: "Jazan Use Case",
       title: "Urban Service Quality Loop",
       badge: "Golden Shell",
-      actionHref: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/governance-evidence?demo=1",
-      actionLabel: "Evidence",
+      actionHref: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions?demo=1",
+      actionLabel: "Decision Centre",
     },
   },
 ];
