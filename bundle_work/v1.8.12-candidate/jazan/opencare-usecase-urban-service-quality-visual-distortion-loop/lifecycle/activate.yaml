@@ -1,0 +1,32 @@
+kind: LifecycleAction
+use_case_slug: urban-service-quality-visual-distortion-loop
+action: activate
+steps:
+- id: verify_ acceptance_ blockers
+  label: verify acceptance blockers
+  required: true
+- id: activate_ workspace_ navigation
+  label: activate workspace navigation
+  required: true
+- id: enable_ decision_ actions_ where_ supported
+  label: enable decision actions where supported
+  required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

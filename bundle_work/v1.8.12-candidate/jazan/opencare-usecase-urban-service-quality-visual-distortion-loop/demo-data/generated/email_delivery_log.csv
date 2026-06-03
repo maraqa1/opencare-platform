@@ -1,0 +1,5 @@
+﻿"email_delivery_id","notification_id","attempted_at","delivery_status"
+"EML-6001","NOT-5000","2026-05-21T02:15:00","sent"
+"EML-6002","NOT-5001","2026-06-21T02:15:00","sent"
+"EML-6003","NOT-5002","2026-05-21T02:15:00","sent"
+"EML-6004","NOT-5003","2026-06-21T02:15:00","sent"

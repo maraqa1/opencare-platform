@@ -1,0 +1,502 @@
+kind: DbtModelIndex
+use_case_slug: urban-service-quality-visual-distortion-loop
+models:
+- model_name: fct_jazan_service_quality
+  path: dbt/models/analytics/fct_jazan_service_quality.sql
+  purpose: analytics model for Urban Service Quality & Visual Distortion Loop
+  layer: analytics
+  input_tables: see_sql_ref_or_source_calls
+  output_table: analytics.fct_jazan_service_quality
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-SRC-02
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: fct_jazan_visual_distortion_performance
+  path: dbt/models/analytics/fct_jazan_visual_distortion_performance.sql
+  purpose: analytics model for Urban Service Quality & Visual Distortion Loop
+  layer: analytics
+  input_tables: see_sql_ref_or_source_calls
+  output_table: analytics.fct_jazan_visual_distortion_performance
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-VDQ-01
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_generated_service_decisions
+  path: dbt/models/decision/jazan_generated_service_decisions.sql
+  purpose: decision model for Urban Service Quality & Visual Distortion Loop
+  layer: decision
+  input_tables: see_sql_ref_or_source_calls
+  output_table: decision.jazan_generated_service_decisions
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_visual_distortion_recovery_outcome
+  path: dbt/models/decision/jazan_visual_distortion_recovery_outcome.sql
+  purpose: decision model for Urban Service Quality & Visual Distortion Loop
+  layer: decision
+  input_tables: see_sql_ref_or_source_calls
+  output_table: decision.jazan_visual_distortion_recovery_outcome
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_municipality_service_risk_score
+  path: dbt/models/output/jazan_municipality_service_risk_score.sql
+  purpose: output model for Urban Service Quality & Visual Distortion Loop
+  layer: output
+  input_tables: see_sql_ref_or_source_calls
+  output_table: output.jazan_municipality_service_risk_score
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_recommended_intervention
+  path: dbt/models/output/jazan_recommended_intervention.sql
+  purpose: output model for Urban Service Quality & Visual Distortion Loop
+  layer: output
+  input_tables: see_sql_ref_or_source_calls
+  output_table: output.jazan_recommended_intervention
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: stg_jazan_service_requests
+  path: dbt/models/staging/stg_jazan_service_requests.sql
+  purpose: staging model for Urban Service Quality & Visual Distortion Loop
+  layer: staging
+  input_tables: see_sql_ref_or_source_calls
+  output_table: staging.stg_jazan_service_requests
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: stg_jazan_visual_distortion_cases
+  path: dbt/models/staging/stg_jazan_visual_distortion_cases.sql
+  purpose: staging model for Urban Service Quality & Visual Distortion Loop
+  layer: staging
+  input_tables: see_sql_ref_or_source_calls
+  output_table: staging.stg_jazan_visual_distortion_cases
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: fct_jazan_permit_performance
+  path: dbt/models/analytics/fct_jazan_permit_performance.sql
+  purpose: analytics model for KPI-PIT-03 in Urban Service Quality & Visual Distortion
+    Loop
+  layer: analytics
+  input_tables:
+  - analytics.fct_jazan_service_quality
+  output_table: analytics.fct_jazan_permit_performance
+  output_grain: one row per municipality_id and month_start_date
+  key_fields_used_by_dashboards:
+  - municipality_id
+  - month_start_date
+  kpis_supported:
+  - KPI-PIT-03
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: fct_jazan_service_coverage
+  path: dbt/models/analytics/fct_jazan_service_coverage.sql
+  purpose: analytics model for KPI-USC-04 in Urban Service Quality & Visual Distortion
+    Loop
+  layer: analytics
+  input_tables:
+  - analytics.fct_jazan_service_quality
+  output_table: analytics.fct_jazan_service_coverage
+  output_grain: one row per municipality_id and month_start_date
+  key_fields_used_by_dashboards:
+  - municipality_id
+  - month_start_date
+  kpis_supported:
+  - KPI-USC-04
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: fct_jazan_emergency_readiness
+  path: dbt/models/analytics/fct_jazan_emergency_readiness.sql
+  purpose: analytics model for KPI-ERR-05 in Urban Service Quality & Visual Distortion
+    Loop
+  layer: analytics
+  input_tables:
+  - analytics.fct_jazan_service_quality
+  - analytics.fct_jazan_visual_distortion_performance
+  output_table: analytics.fct_jazan_emergency_readiness
+  output_grain: one row per municipality_id and month_start_date
+  key_fields_used_by_dashboards:
+  - municipality_id
+  - month_start_date
+  kpis_supported:
+  - KPI-ERR-05
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: fct_jazan_citizen_satisfaction
+  path: dbt/models/analytics/fct_jazan_citizen_satisfaction.sql
+  purpose: analytics model for KPI-CSI-06 in Urban Service Quality & Visual Distortion
+    Loop
+  layer: analytics
+  input_tables:
+  - analytics.fct_jazan_service_quality
+  output_table: analytics.fct_jazan_citizen_satisfaction
+  output_grain: one row per municipality_id and month_start_date
+  key_fields_used_by_dashboards:
+  - municipality_id
+  - month_start_date
+  kpis_supported:
+  - KPI-CSI-06
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: stg_jazan_municipalities
+  path: dbt/models/staging/stg_jazan_municipalities.sql
+  purpose: staging support model for Urban Service Quality & Visual Distortion Loop
+  layer: staging
+  input_tables: see_sql_ref_or_source_calls
+  output_table: staging.stg_jazan_municipalities
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: date_spine
+  path: dbt/models/staging/date_spine.sql
+  purpose: staging support model for Urban Service Quality & Visual Distortion Loop
+  layer: staging
+  input_tables: see_sql_ref_or_source_calls
+  output_table: staging.date_spine
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: dim_jazan_municipality
+  path: dbt/models/analytics/dim_jazan_municipality.sql
+  purpose: analytics support model for Urban Service Quality & Visual Distortion Loop
+  layer: analytics
+  input_tables: see_sql_ref_or_source_calls
+  output_table: analytics.dim_jazan_municipality
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: fct_jazan_kpi_portfolio_summary
+  path: dbt/models/analytics/fct_jazan_kpi_portfolio_summary.sql
+  purpose: analytics support model for Urban Service Quality & Visual Distortion Loop
+  layer: analytics
+  input_tables: see_sql_ref_or_source_calls
+  output_table: analytics.fct_jazan_kpi_portfolio_summary
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  - KPI-PIT-03
+  - KPI-USC-04
+  - KPI-ERR-05
+  - KPI-CSI-06
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_service_rnn_forecast
+  path: dbt/models/output/jazan_service_rnn_forecast.sql
+  purpose: output support model for Urban Service Quality & Visual Distortion Loop
+  layer: output
+  input_tables: see_sql_ref_or_source_calls
+  output_table: output.jazan_service_rnn_forecast
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_service_quality_anomaly
+  path: dbt/models/output/jazan_service_quality_anomaly.sql
+  purpose: output support model for Urban Service Quality & Visual Distortion Loop
+  layer: output
+  input_tables: see_sql_ref_or_source_calls
+  output_table: output.jazan_service_quality_anomaly
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_decision_action_events
+  path: dbt/models/decision/jazan_decision_action_events.sql
+  purpose: append-only decision event stream for action lifecycle transitions in Urban Service Quality & Visual Distortion Loop
+  layer: decision
+  input_tables: see_sql_ref_or_source_calls
+  output_table: decision.jazan_decision_action_events
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_action_lifecycle
+  path: dbt/models/decision/jazan_action_lifecycle.sql
+  purpose: current-state decision action lifecycle snapshot for Urban Service Quality & Visual Distortion Loop
+  layer: decision
+  input_tables: see_sql_ref_or_source_calls
+  output_table: decision.jazan_action_lifecycle
+  output_grain: one row per decision action current state
+  key_fields_used_by_dashboards:
+  - action_lifecycle_id
+  - decision_id
+  - action_id
+  - current_state
+  - notification_id
+  - ticket_id
+  - audit_event_id
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: jazan_intervention_corpus
+  path: dbt/models/output/jazan_intervention_corpus.sql
+  purpose: output support model for Urban Service Quality & Visual Distortion Loop
+  layer: output
+  input_tables: see_sql_ref_or_source_calls
+  output_table: output.jazan_intervention_corpus
+  output_grain: declared_by_model_sql
+  key_fields_used_by_dashboards: see downstream screen/component bindings
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - see screens/business_alignment_matrix.yaml
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  - range
+  - kpi_sanity
+  governance_classification: internal
+  freshness_expectations: daily_or_defined_by_source
+- model_name: stg_jazan_municipality_owners
+  path: dbt/models/staging/stg_jazan_municipality_owners.sql
+  purpose: Staging owner lookup model used by ticket/email decision actions.
+  layer: staging
+  input_tables:
+  - raw.jazan_municipality_owners
+  output_table: staging.stg_jazan_municipality_owners
+  output_grain: one row per active municipality owner role assignment
+  key_fields_used_by_dashboards:
+  - municipality_owner_id
+  - municipality_id
+  - owner_role
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - decision_command_centre
+  - decision_action_audit
+  tests_required:
+  - not_null
+  - accepted_values
+  - relationship
+  governance_classification: internal
+  freshness_expectations: weekly_or_on_owner_change
+- model_name: dim_jazan_municipality_owners
+  path: dbt/models/analytics/dim_jazan_municipality_owners.sql
+  purpose: Analytics owner lookup table consumed by email owner and create ticket
+    action button option sources.
+  layer: analytics
+  input_tables:
+  - staging.stg_jazan_municipality_owners
+  output_table: analytics.dim_jazan_municipality_owners
+  output_grain: one row per active municipality owner role assignment
+  key_fields_used_by_dashboards:
+  - municipality_owner_id
+  - municipality_id
+  - owner_role
+  - owner_display_label
+  - notification_channel
+  kpis_supported: []
+  screens_components_dependent_on_it:
+  - decision_command_centre
+  - decision_action_audit
+  tests_required:
+  - not_null
+  - unique
+  - accepted_values
+  - relationship
+  governance_classification: internal
+  freshness_expectations: weekly_or_on_owner_change
+  materialization_dependency_for_actions:
+  - btn.create_ticket
+  - btn.email_owner
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

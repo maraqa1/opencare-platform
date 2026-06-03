@@ -1,0 +1,550 @@
+kind: DashboardBilingualContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+default_locale: en
+supported_locales:
+- en
+- ar
+direction:
+  en: ltr
+  ar: rtl
+rule: Arabic labels are part of dashboard composition where declared, not optional hidden translations.
+component_rules:
+- component: page_title
+  arabic_label_required: true
+  placement: subtitle_or_adjacent_title
+- component: kpi_threshold_card
+  arabic_label_required: true
+  placement: below_english_kpi_name
+- component: active_case_banner
+  arabic_label_required: true
+  placement: secondary_microcopy
+- component: decision_table_action_buttons
+  arabic_label_required: false
+  placement: tooltip_or_i18n_key_allowed
+- component: governance_evidence_panel
+  arabic_label_required: false
+  placement: i18n_key_allowed
+- component: kpi_state_summary_strip
+  arabic_label_required: true
+  placement: counter labels include Arabic secondary labels where dashboard declares bilingual composition
+  source: v1.8.10 design notes
+- component: kpi_connector_rail
+  arabic_label_required: false
+  placement: i18n_key_allowed_for_marker_labels
+- component: golden_thread_label
+  arabic_label_required: true
+  placement: below_english_stage_label
+- component: runtime_card
+  arabic_label_required: true
+  placement: runtime_title_localisable_but technical identifiers untranslated
+  source: v1.8.10 design notes
+- component: action_audit_timeline
+  arabic_label_required: true
+  placement: event_type_and_result_secondary_arabic_label
+- component: status_badge
+  arabic_label_required: true
+  placement: status label visible in selected locale
+  source: v1.8.10 design notes
+- component: threshold_rail_label
+  arabic_label_required: true
+  placement: threshold_label_and_trigger_microcopy
+- component: decision_summary_strip
+  arabic_label_required: true
+  placement: counter_label_secondary_arabic_microcopy
+- component: confirmation_drawer
+  arabic_label_required: true
+  placement: payload preview title/body/buttons bilingual
+  source: v1.8.10 design notes
+- component: email_delivery_log_panel
+  arabic_label_required: true
+  placement: panel_title_and_delivery_status_label
+- component: ticket_request_log_panel
+  arabic_label_required: true
+  placement: panel_title_and_ticket_status_label
+- component: recommendation_ranked_cards
+  arabic_label_required: true
+  placement: intervention_title_and_reason_microcopy
+- component: rnn_forecast_chart
+  arabic_label_required: true
+  placement: chart_title_axis_and_breach_label
+- component: anomaly_detection_card
+  arabic_label_required: true
+  placement: card_title_and_severity_label
+- component: municipality_ranking_table
+  arabic_label_required: true
+  placement: table_title_and_column_headers
+- component: page_header_bar
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: demo_status_chip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: route_status_chip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: strategic_objective_header
+  arabic_label_required: true
+  placement: english_title_with_arabic_subtitle_visible
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+  source: v1.8.10 design notes
+- component: objective_metadata_chips
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: municipality_coverage_chip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: meeting_target_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: approaching_trigger_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: in_breach_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: decision_candidate_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: kpi_marker_sequence
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: kpi_to_card_connectors
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: kpi_threshold_card_grid
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: highest_priority_case_alert
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: review_case_action
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: active_kpi_context_header
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: kpi_summary_strip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: kpi_target_status_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: kpi_risk_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: municipality_risk_rows
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: trend_forecast_chart
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: threshold_reference_line
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: classification_badge
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: ownership_badge
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: lineage_link
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: freshness_badge
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: open_cases_list
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: open_case_row
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: open_case_action
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: case_identity_header
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: case_status_chips
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: composite_risk_score_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: feature_contribution_bar
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: model_driver_list
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: forecast_breach_marker
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: forecast_confidence_band
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: z_score_indicator
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: intervention_effectiveness_badge
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: generated_decision_evidence_panel
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: human_approval_notice
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: recovery_trajectory_chart
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: target_recovery_marker
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: new_decisions_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: under_review_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: approved_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: escalated_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: tickets_created_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: emails_sent_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: decision_table
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: decision_queue_row
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: visible_action_buttons
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: selected_decision_detail_panel
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: decision_rationale_panel
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: recommended_actions_panel
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: recommended_action_ranked_list
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: action_button_bar
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: approve_button
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: request_revision_button
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: escalate_button
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: create_ticket_button
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: email_owner_button
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: view_details_button
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: external_side_effect_summary
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: confirmation_required_notice
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: corrective_action_lifecycle
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: action_stage_tracker
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: runtime_status_summary
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: online_runtime_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: seeded_demo_status_chip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: rnn_runtime_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: anomaly_runtime_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: decision_candidate_runtime_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: runtime_execution_history
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: last_seven_runs_indicator
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: runtime_lineage_panel
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: input_marts_list
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: output_tables_list
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: raw_layer_forbidden_notice
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: runtime_schedule_panel
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: next_run_label
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: audit_summary_strip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: email_sent_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: ticket_created_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: actions_in_progress_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: actions_closed_counter
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: action_status_badges
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: audit_event_row
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: notification_outbox_row
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: ticket_request_row
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: corrective_action_tracker
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: corrective_action_row
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.4 auto-added from layout_zones.required_components
+- component: case_context_header
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: case_workspace_tab_strip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: evidence_pack_strip
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: bilingual_narrative_panel
+  arabic_label_required: true
+  placement: side_by_side_english_left_arabic_right_equal_weight
+  coverage_source: v1.8.8 case decision surface
+  source: v1.8.10 design notes
+- component: narrative_version_history_action
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: recommendation_summary_panel
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: case_action_button_row
+  arabic_label_required: true
+  placement: button_labels_and_side_effect_hints_localised
+  coverage_source: v1.8.8 case decision surface
+  source: v1.8.10 design notes
+- component: action_consequence_preview
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: confirmation_modal_contract
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: audit_footnote_panel
+  arabic_label_required: true
+  placement: three_assertions_visible_in_selected_locale
+  coverage_source: v1.8.8 case decision surface
+  source: v1.8.10 design notes
+- component: recovery_tab_locked_state
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  coverage_source: v1.8.8 case decision surface
+- component: action_approved_marker
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  source: v1.8.10 outcome dashboard coverage
+- component: before_target_after_recovery_cards
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  source: v1.8.10 outcome dashboard coverage
+- component: case_recovery_header
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  source: v1.8.10 outcome dashboard coverage
+- component: evidence_pack_link
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  source: v1.8.10 outcome dashboard coverage
+- component: forecast_accuracy_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  source: v1.8.10 outcome dashboard coverage
+- component: pillar_credit_grid
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  source: v1.8.10 outcome dashboard coverage
+- component: recommendation_effectiveness_card
+  arabic_label_required: where_user_visible
+  placement: visible_label_or_i18n_key_required
+  source: v1.8.10 outcome dashboard coverage
+coverage_rule: Every structurally visible component named in layout_zones.required_components must be covered here directly or by wildcard component_family
+  coverage.
+component_family_rules:
+- family: kpi_monitoring_components
+  covers:
+  - kpi_threshold_card
+  - kpi_state_summary_strip
+  - kpi_connector_rail
+  - threshold_rail_label
+  arabic_required: true
+- family: decision_workflow_components
+  covers:
+  - decision_table
+  - decision_summary_strip
+  - confirmation_drawer
+  - action_audit_timeline
+  - email_delivery_log_panel
+  - ticket_request_log_panel
+  arabic_required: true
+- family: runtime_components
+  covers:
+  - runtime_card
+  - runtime_status_summary
+  - runtime_execution_history
+  arabic_required: true
+- family: governance_components
+  covers:
+  - governance_evidence_panel
+  - classification_badge
+  - ownership_badge
+  - freshness_badge
+  arabic_required: where_user_visible
+design_notes_contract_truth: true
+structural_bilingual_rule: Bilingual composition is part of dashboard layout; declared side-by-side areas may not be reduced to a translation
+  toggle.

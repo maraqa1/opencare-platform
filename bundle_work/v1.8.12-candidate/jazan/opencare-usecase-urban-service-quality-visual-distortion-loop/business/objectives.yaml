@@ -1,0 +1,26 @@
+kind: BusinessObjectives
+use_case_slug: urban-service-quality-visual-distortion-loop
+objectives:
+- objective_id: OBJ-SVC-QUALITY-01
+  name_key: objective.name
+  description_key: objective.description
+  aliases:
+  - vision_2030_quality_of_life
+  - momrah_municipal_index
+  - jazan_25_municipalities
+  business_purpose: Sustain municipal service quality across Jazan municipalities
+    through KPI monitoring, predictive risk detection, human decisioning, and auditable
+    recovery actions.
+  primary_decisions:
+  - decision.review_kpi_breach
+  - decision.approve_corrective_action
+  - decision.escalate_service_quality_case
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

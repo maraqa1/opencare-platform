@@ -1,0 +1,179 @@
+contract_version: '1.7.1'
+locale: en-US
+direction: ltr
+
+# === Strategic objective ===
+objective.name: 'Sustain and improve municipal service quality and visual distortion response'
+objective.description: 'Strategic outcome under Vision 2030 Quality of Life Program and MOMRAH Municipal Performance Index covering 25 municipalities in Jazan region.'
+
+# === KPIs ===
+kpi.1.name: 'Visual distortion closure quality'
+kpi.1.short_name: 'Visual distortion'
+kpi.1.description: 'Quality of execution when closing visual-distortion cases — evidence verification, SLA compliance, and durability.'
+kpi.1.formula: '(Cases closed with verified evidence within SLA) ÷ (Total cases closed in month)'
+kpi.1.trigger_rule: 'KPI < 0.75 for 2 weeks OR forecast breach probability > 0.70'
+
+kpi.2.name: 'Service request closure rate'
+kpi.2.short_name: 'Service requests'
+kpi.2.description: 'Percentage of citizen service requests completed within SLA, excluding rejected requests.'
+kpi.2.formula: '(Service requests closed within SLA) ÷ (Total service requests received minus rejected)'
+kpi.2.trigger_rule: 'KPI < 0.85 for 2 consecutive weeks'
+
+kpi.3.name: 'Average permit issuance time'
+kpi.3.short_name: 'Permit time'
+kpi.3.description: 'Mean working days from permit submission to approval, per permit category.'
+kpi.3.formula: 'mean(approval_date − submission_date) in working days'
+kpi.3.trigger_rule: '> 5 days commercial OR > 14 days building, 3 consecutive months'
+
+kpi.4.name: 'Urban service coverage'
+kpi.4.short_name: 'Service coverage'
+kpi.4.description: 'Population living in districts with full service coverage as a fraction of total municipal population.'
+kpi.4.formula: '(Population in districts with full coverage) ÷ (Total municipal population)'
+kpi.4.trigger_rule: 'KPI < 0.93 in any month'
+
+kpi.5.name: 'Emergency and resilience readiness'
+kpi.5.short_name: 'Emergency readiness'
+kpi.5.description: 'Composite of inspection completion, drill participation, and emergency recovery time.'
+kpi.5.formula: 'Weighted composite of inspection rate, drill participation, recovery time'
+kpi.5.trigger_rule: 'KPI < 0.75 OR drill failure event'
+
+kpi.6.name: 'Citizen satisfaction'
+kpi.6.short_name: 'Satisfaction'
+kpi.6.description: 'Population-weighted satisfaction index from quarterly municipal services survey.'
+kpi.6.formula: 'Quarterly NPS-style score, weighted by municipality population'
+kpi.6.trigger_rule: 'KPI < 0.70 quarterly OR drop > 0.05'
+
+# === Roles ===
+role.field_compliance: 'Field Compliance'
+role.operations: 'Operations'
+role.permit_office: 'Permit Office'
+role.planning_office: 'Planning Office'
+role.civil_defense_liaison: 'Civil Defense Liaison'
+role.performance_office: 'Performance Office'
+role.data_analytics: 'Data & Analytics Office'
+role.mayor_office: 'Mayor''s Office'
+role.momrah_liaison: 'MOMRAH Liaison'
+role.emarah_diwan: 'Emarah Diwan'
+
+# === Navigation ===
+nav.level.strategic: 'Strategic'
+nav.level.tactical: 'Tactical'
+nav.level.operational: 'Operational'
+nav.tab.overview: 'Overview'
+nav.tab.intelligence: 'Model intelligence'
+nav.tab.decisions: 'Decision command'
+nav.tab.recovery: 'Outcome recovery'
+nav.crosscut.decisions: 'Decisions'
+nav.crosscut.runtimes: 'Runtimes'
+nav.crosscut.audit: 'Audit'
+nav.sidebar.home: 'Home'
+nav.sidebar.decisions: 'Decisions'
+nav.sidebar.runtimes: 'Runtimes'
+nav.sidebar.audit: 'Audit'
+
+# === Screen 01 ===
+screen.l1.title: 'Strategic objective cascade · monitoring & thresholds'
+screen.l1.subtitle: 'One objective · six governed KPIs · live threshold state'
+screen.l1.rollup.meeting: 'Meeting target'
+screen.l1.rollup.approaching: 'Approaching trigger'
+screen.l1.rollup.breach: 'In breach'
+screen.l1.rollup.candidates: 'Decision candidates'
+
+# === Screen 02 ===
+screen.l2.breadcrumb.l1: 'Strategic landing'
+screen.l2.summary.average: 'Portfolio average'
+screen.l2.summary.trend: 'Trend vs prior month'
+screen.l2.summary.in_breach: 'Municipalities in breach'
+screen.l2.summary.open_cases: 'Open cases'
+table.col.municipality: 'Municipality'
+table.col.archetype: 'Archetype'
+table.col.population: 'Population'
+table.col.current: 'Current'
+table.col.target_compliance: 'Target compliance'
+table.col.trend: 'Trend'
+table.col.risk_score: 'Risk score'
+table.col.risk_tier: 'Risk tier'
+table.col.case_status: 'Case'
+governance.owner: 'Owner'
+governance.steward: 'Steward'
+governance.cadence: 'Refresh cadence'
+governance.source: 'Source mart'
+governance.dictionary: 'Dictionary term'
+governance.last_review: 'Last governance review'
+l2.open_cases.title: 'Open cases on this KPI'
+l2.open_cases.empty: 'No open cases on this KPI'
+
+# === Screen 03 — case workspace ===
+l3.case.label: 'Case'
+l3.intelligence.no_recommendations: 'No comparable historical interventions found for this case profile'
+l3.recovery.tab_locked: 'Recovery data will appear after the corrective action closes'
+
+# === Screen 04 — decision command ===
+screen.decision_title: 'Decision command centre'
+screen.decision_subtitle: 'Awaiting review'
+screen.decision_audit_footnote: 'Every action is human-authorised, audit-logged, and bilingual. Platform never escalates externally without approval.'
+
+# === Screen 05 — runtime evidence ===
+screen.runtime_title: 'Runtime evidence'
+screen.runtime_subtitle: '3 platform runtimes · last 7-day execution history'
+runtime.forecast.name: 'Jazan Service Quality RNN Forecast'
+runtime.forecast.description: 'Forecasts municipal service quality and visual distortion KPI breaches 4 to 8 weeks ahead.'
+runtime.anomaly.name: 'Jazan Service Quality Anomaly Detector'
+runtime.anomaly.description: 'Detects abnormal deterioration in service quality and visual distortion KPIs against a 24-month baseline.'
+runtime.decision.name: 'Jazan Decision Candidate Generator'
+runtime.decision.description: 'Converts forecast, anomaly, risk and recommendation outputs into decision candidates. Never autonomous — every output requires human approval.'
+
+# === Screen 06 — audit ===
+screen.audit_title: 'Decision queue & action audit'
+screen.audit_subtitle: 'See decisions, actions taken, emails, tickets and audit trail'
+screen.audit_footnote: 'All actions are audit-logged and traceable end-to-end. No automated external escalation without human approval.'
+
+# === Status pills ===
+status.in_breach: 'In breach'
+status.approaching: 'Approaching trigger'
+status.meeting: 'Meeting target'
+status.awaiting_review: 'Awaiting review'
+status.under_revision: 'Under revision'
+status.assigned: 'Assigned'
+status.in_progress: 'In progress'
+status.evidence_submitted: 'Evidence submitted'
+status.verified: 'Verified'
+status.closed: 'Closed'
+status.recovered: 'Recovered'
+
+# === Mode chip ===
+chip.demo_data: 'Demo data · seeded'
+chip.live: 'Live'
+chip.not_materialised: 'Not yet materialised'
+chip.partial: 'Partial population'
+
+# === Threshold bar ===
+bar.label.trigger: 'trigger'
+bar.label.target: 'target'
+
+# === Action buttons ===
+action.approve.label: 'Approve'
+action.approve.description: 'Authorise the recommended actions and create a corrective action assigned to the named owner.'
+action.request_revision.label: 'Request revision'
+action.request_revision.description: 'Return to runtime with a revision reason. Candidate state changes to under revision.'
+action.request_revision.reason_input.label: 'Revision reason (bilingual)'
+action.escalate.label: 'Escalate'
+action.escalate.description: 'Escalate the case to a higher authority with the full evidence pack attached.'
+action.escalate.target_input.label: 'Escalation target'
+action.escalate.note_input.label: 'Escalation note (bilingual)'
+action.create_ticket.label: 'Create ticket'
+action.create_ticket.description: 'Create an external ticket in the municipal ticketing system linked to this decision.'
+action.create_ticket.owner_input.label: 'Ticket owner'
+action.create_ticket.priority_input.label: 'Priority'
+action.create_ticket.due_input.label: 'Due in (days)'
+action.email_owner.label: 'Notify owner'
+action.email_owner.description: 'Send a bilingual notification email to the case owner with action package and SLA.'
+action.email_owner.target_input.label: 'Notify'
+action.email_owner.message_input.label: 'Message (bilingual)'
+action.view_detail.label: 'View detail'
+action.view_full_audit.label: 'View full audit'
+
+# === Active case banner ===
+active_case.tag: 'Active risk case · highest priority'
+active_case.action_button: 'Review case'
+active_case.all_within_bands: 'All KPIs within governance bands'

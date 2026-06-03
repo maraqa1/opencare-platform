@@ -1,0 +1,24 @@
+kind: LineageContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+expected_path:
+- source
+- raw
+- staging
+- analytics
+- output
+- decision
+- dashboard
+lineage_sources:
+- dbt manifest
+- runtime/evidence.yaml
+- bindings/data_bindings.yaml
+- screens/business_alignment_matrix.yaml
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

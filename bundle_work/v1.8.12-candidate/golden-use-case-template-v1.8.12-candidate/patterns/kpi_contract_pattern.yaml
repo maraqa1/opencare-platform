@@ -1,0 +1,12 @@
+kind: ReusableKPIContractPattern
+required_fields:
+- formula_plain_language
+- formula_sql_expression_or_dbt_expression_reference
+- calculation_fields
+- analytics_mart
+- target
+- threshold
+- owner
+- data_owner
+- frequency
+- reconciliation_status

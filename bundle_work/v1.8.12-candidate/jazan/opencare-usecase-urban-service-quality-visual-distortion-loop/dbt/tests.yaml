@@ -1,0 +1,31 @@
+kind: DbtTestsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+test_classes:
+- not_null
+- unique
+- accepted_values
+- relationships
+- range
+- reconciliation
+- kpi_sanity
+required_tests:
+- model: analytics facts
+  tests:
+  - not_null municipality_id
+  - not_null period_date
+  - range KPI values within plausible bounds
+  - relationship municipality_id to dim_jazan_municipality
+- model: decision.jazan_generated_service_decisions
+  tests:
+  - not_null decision_candidate_id
+  - accepted_values status
+  - not_null generated_at
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

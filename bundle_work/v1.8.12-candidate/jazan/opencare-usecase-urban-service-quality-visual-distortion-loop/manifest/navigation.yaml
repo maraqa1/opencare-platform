@@ -1,0 +1,140 @@
+kind: NavigationManifest
+use_case_slug: urban-service-quality-visual-distortion-loop
+navigation_model: three_level_hierarchy_with_crosscut
+default_route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+levels:
+- level: 1
+  name: strategic
+  name_key: nav.level.strategic
+  instances: 1
+  path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  spec_id: SCREEN-L1-STRATEGIC
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  layout_ref: screens/layout_zones.yaml#01_strategic_objective_monitoring
+  source_of_truth: canonical_contract
+- level: 2
+  name: tactical_per_kpi
+  name_key: nav.level.tactical
+  instances: 6
+  path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  kpi_slug_source: business/kpis.yaml#kpis[].short_slug
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  spec_id: SCREEN-L2-KPI
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  layout_ref: screens/layout_zones.yaml#02_kpi_municipality_workspace
+  source_of_truth: canonical_contract
+- level: 3
+  name: operational_per_case
+  name_key: nav.level.operational
+  instances: dynamic
+  path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/{tab}
+  case_id_source: decision.jazan_generated_service_decisions.decision_candidate_id
+  tabs:
+  - id: overview
+    default: false
+    name_key: nav.tab.overview
+    deprecated: true
+    reason: No canonical overview tab exists for the Level 3 case workspace; intelligence is the default canonical tab.
+    canonical_screen_ref: null
+    real_route: false
+  - id: intelligence
+    name_key: nav.tab.intelligence
+    screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+    layout_ref: screens/layout_zones.yaml#03_case_model_intelligence
+    default: true
+  - id: decisions
+    name_key: nav.tab.decisions
+    screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+    layout_ref: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+    scope: single_case
+    canonical_route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+    queue_forbidden: true
+  - id: recovery
+    name_key: nav.tab.recovery
+    visible_when: case.status in ['closed', 'recovered']
+    screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-RECOVERY
+    layout_ref: screens/layout_zones.yaml#04_outcome_recovery_feedback
+    canonical_route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+    locked_when: case.status not in ['closed', 'recovered']
+    locked_tooltip: Recovery data appears after corrective action closes.
+    hide_when_unavailable: false
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  spec_id: SCREEN-L3-CASE
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  layout_ref: screens/layout_zones.yaml#03_case_model_intelligence
+  source_of_truth: canonical_contract
+  case_decision_tab_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+  case_decision_layout_ref: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+  case_decision_tab_rule: Decisions tab renders one case only; queues are forbidden in this tab.
+  canonical_tab_route_shape: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/{tab}
+  legacy_kpi_case_route_forbidden: true
+  route_shape_note: Case workspace tabs are case-scoped. KPI context is carried by case payload, not by route shape.
+crosscut_views:
+- id: CROSSCUT-DECISIONS
+  name_key: nav.crosscut.decisions
+  path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  spec_id: SCREEN-CC-DECISIONS
+  primary_persona: performance_office_reviewer
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  layout_ref: screens/layout_zones.yaml#04_decision_command_centre
+  source_of_truth: canonical_contract
+- id: CROSSCUT-RUNTIMES
+  name_key: nav.crosscut.runtimes
+  path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  spec_id: SCREEN-CC-RUNTIMES
+  primary_persona: it_lead_or_audit_liaison
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  layout_ref: screens/layout_zones.yaml#05_runtime_evidence_execution_history
+  source_of_truth: canonical_contract
+- id: CROSSCUT-AUDIT
+  name_key: nav.crosscut.audit
+  path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  spec_id: SCREEN-CC-AUDIT
+  primary_persona: emarah_diwan_auditor
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  layout_ref: screens/layout_zones.yaml#06_decision_action_audit
+  source_of_truth: canonical_contract
+persistent_navigation_sidebar:
+  always_visible: true
+  contains:
+  - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+    label_key: nav.sidebar.home
+  - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+    label_key: nav.sidebar.decisions
+  - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+    label_key: nav.sidebar.runtimes
+  - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+    label_key: nav.sidebar.audit
+breadcrumb_policy:
+  show_on_levels:
+  - 2
+  - 3
+  show_on_crosscut: false
+  format_l2: '{L1.short_label} -> {kpi.short_name}'
+  format_l3: '{L1.short_label} -> {kpi.short_name} -> {municipality.short_name}'
+bookmarking:
+  required: every path including {kpi_slug}, {case_id}, {tab}, and ?selected={decision_id} must be bookmarkable and restore the exact UI state
+  reason: Saudi government audit and reference workflows depend on shareable URLs
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

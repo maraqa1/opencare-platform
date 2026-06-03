@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "data",
+    "meta"
+  ],
+  "properties": {
+    "data": {},
+    "meta": {
+      "type": "object",
+      "required": [
+        "as_of",
+        "empty"
+      ],
+      "properties": {
+        "as_of": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "data_freshness": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$id": "case_detail.response.schema.json"
+}

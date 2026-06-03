@@ -1,0 +1,119 @@
+api_version: opencare.io/v1
+kind: UseCaseGoldenBundle
+package_standard_version: golden-bundle-1.8.12-candidate
+metadata:
+  slug: urban-service-quality-visual-distortion-loop
+  name: Urban Service Quality & Visual Distortion Loop
+  package_id: opencare.usecase.urban-service-quality-visual-distortion-loop
+  business_domain: Municipal Performance and Urban Service Quality
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  language_support:
+  - en
+  - ar
+  country_context: Saudi Arabia
+  client_context: Jazan Amanah and municipalities
+standard_intent:
+  bundle_type: canonical_golden_bundle
+  purpose: Repeatable OpenCare use-case bundle with business, data, runtime, decision, screen, binding, governance, and acceptance contracts.
+  dashboard_source_of_truth: screens/dashboard_implementation_matrix.yaml, screens/story_flow.yaml, and acceptance/dashboard_fidelity_contract.yaml; all are validator- and schema-enforced.
+  runtime_images_declared: true
+  platform_capability_bindings_required: true
+  native_bi_materialization_target: true
+  dashboard_fidelity_required: true
+  decision_surface_scope_enforced: true
+  case_decision_tab_required: true
+  decision_surface_route_canonicalized: true
+  email_owner_action_name_canonicalized: true
+  case_model_intelligence_authorisation_forbidden: true
+entrypoints:
+  manifest: manifest/usecase.yaml
+  personas: manifest/personas.yaml
+  navigation: manifest/navigation.yaml
+  business_objectives: business/objectives.yaml
+  business_kpis: business/kpis.yaml
+  business_decisions: business/decisions.yaml
+  business_workflows: business/workflows.yaml
+  data_pipeline: data/pipeline.yaml
+  dbt_model_index: dbt/model_index.yaml
+  runtime_images: runtime/images.yaml
+  screen_catalog: screens/screen_catalog.yaml
+  screen_components: screens/components.yaml
+  layout_zones: screens/layout_zones.yaml
+  visual_grammar: screens/visual_grammar.yaml
+  component_anatomy: screens/component_anatomy.yaml
+  business_alignment_matrix: screens/business_alignment_matrix.yaml
+  platform_capabilities: bindings/platform_capabilities.yaml
+  data_bindings: bindings/data_bindings.yaml
+  dashboard_acceptance: acceptance/dashboard_acceptance.yaml
+  principles: manifest/principles.yaml
+  dashboard_implementation_matrix: screens/dashboard_implementation_matrix.yaml
+  story_flow: screens/story_flow.yaml
+  dashboard_fidelity_contract: acceptance/dashboard_fidelity_contract.yaml
+  action_lifecycle: decision-workflows/action_lifecycle.yaml
+  dashboard_rigidity_checks: validation/dashboard_rigidity_checks.yaml
+  dashboard_fidelity_validation: validation/validate_golden_bundle.py
+  schema_validation: validation/validate_golden_bundle.py
+  case_decision_command_tab: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+modes:
+  demo:
+    supported: true
+    notes: Bundle contains design, dbt, contracts, seeded demo generator, and deterministic CSV seed outputs for non-live showcase mode.
+  production:
+    supported: true
+    requires_source_mapping: true
+    requires_platform_capability_review: true
+lifecycle:
+  installable: true
+  compilable: true
+  materializable: true
+  activation_requires_acceptance: true
+principles:
+  locale_and_direction_required: true
+  human_authorisation_required_for_external_actions: true
+  business_contract_is_source_of_truth: true
+  mockups_are_reference_only: true
+  legacy_folder_reference_only: true
+  contract_directories_are_source_of_truth: true
+  no_autonomous_external_action: true
+  no_fake_governance_pass_values: true
+  dashboard_components_must_bind_to_business_alignment_matrix: true
+  dashboard_fidelity_required: true
+  screen_substitution_forbidden: true
+  dashboard_collapse_forbidden: true
+  declared_dashboards_are_canonical: true
+  schemas_are_validator_enforced: true
+  owner_lookup_must_be_source_and_dbt_materialized: true
+  action_lifecycle_snapshot_and_append_only_event_stream_required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true
+package_version: 1.8.12-candidate
+opencare_golden_template_version: 1.8.12
+dashboard_fidelity_level: dashboard_rigid_visual_non_negotiables_enforced
+dashboard_rigidity_level: zone_component_rendered_conformance_enforced
+description: Dashboard-rigid bundle with recovery catalog cleanup, decision-surface authority, lifecycle-traceable outbound actions, KPI reconciliation, seeded demo data generation, and reusable template extraction.
+name: urban-service-quality-visual-distortion-loop-golden-bundle-v1.8.12-candidate
+compatibility:
+  opencare_golden_template: 1.8.12
+  dashboard_rigid_contract: true
+  decision_surface_enforced: true
+  governance_registry_supported: true
+  dashboard_design_notes: contract_truth
+  decision_surface_scope: case_decision_tab_and_cross_case_queue_separate

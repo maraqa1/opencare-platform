@@ -1,0 +1,6 @@
+kind: GoldenTemplateManifest
+template_name: OpenCare Golden Use Case Template
+template_version: 1.8.12
+status: candidate
+purpose: Reusable contract template for dashboard-rigid OpenCare use-case bundles with lifecycle-traceable actions, bilingual composition, and governed validation.
+worked_example_reference: examples/urban-service-quality-visual-distortion-loop/

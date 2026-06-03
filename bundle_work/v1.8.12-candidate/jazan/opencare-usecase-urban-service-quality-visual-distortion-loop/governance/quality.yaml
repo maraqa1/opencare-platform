@@ -1,0 +1,19 @@
+kind: QualityContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+quality_rules:
+- not_null municipality_id
+- not_null period
+- accepted_values status
+- range KPI values
+- relationship municipality
+- reconciliation source_to_analytics_count
+failed_quality_behavior: needs_review_or_block_activation_if_core_kpi
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

@@ -1,0 +1,108 @@
+kind: VisualTraceabilityContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+rule: Mockups and markdown screen files are visual references only. Business alignment, component, binding, and acceptance
+  files are source of truth.
+references:
+- screen_id: SCREEN-L1-STRATEGIC
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  source_of_truth_files:
+  - screens/components.yaml
+  - screens/layout_zones.yaml
+  - screens/visual_grammar.yaml
+  - screens/component_anatomy.yaml
+  - screens/business_alignment_matrix.yaml
+  - acceptance/dashboard_acceptance.yaml
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  layout_ref: screens/layout_zones.yaml#01_strategic_objective_monitoring
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-L2-KPI
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  source_of_truth_files:
+  - screens/components.yaml
+  - screens/layout_zones.yaml
+  - screens/visual_grammar.yaml
+  - screens/component_anatomy.yaml
+  - screens/business_alignment_matrix.yaml
+  - acceptance/dashboard_acceptance.yaml
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  layout_ref: screens/layout_zones.yaml#02_kpi_municipality_workspace
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-L3-CASE
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  source_of_truth_files:
+  - screens/components.yaml
+  - screens/layout_zones.yaml
+  - screens/visual_grammar.yaml
+  - screens/component_anatomy.yaml
+  - screens/business_alignment_matrix.yaml
+  - acceptance/dashboard_acceptance.yaml
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  layout_ref: screens/layout_zones.yaml#03_case_model_intelligence
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-L3-CASE-DECISIONS
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+  source_of_truth_files:
+  - screens/components.yaml
+  - screens/layout_zones.yaml
+  - screens/visual_grammar.yaml
+  - screens/component_anatomy.yaml
+  - acceptance/dashboard_fidelity_contract.yaml
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+  layout_ref: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+  source_of_truth: canonical_contract
+  scope: single_case_decision_tab
+- screen_id: SCREEN-CC-DECISIONS
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  source_of_truth_files:
+  - screens/components.yaml
+  - screens/layout_zones.yaml
+  - screens/visual_grammar.yaml
+  - screens/component_anatomy.yaml
+  - screens/business_alignment_matrix.yaml
+  - acceptance/dashboard_acceptance.yaml
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  layout_ref: screens/layout_zones.yaml#04_decision_command_centre
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-CC-RUNTIMES
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  source_of_truth_files:
+  - screens/components.yaml
+  - screens/layout_zones.yaml
+  - screens/visual_grammar.yaml
+  - screens/component_anatomy.yaml
+  - screens/business_alignment_matrix.yaml
+  - acceptance/dashboard_acceptance.yaml
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  layout_ref: screens/layout_zones.yaml#05_runtime_evidence_execution_history
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-CC-AUDIT
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  source_of_truth_files:
+  - screens/components.yaml
+  - screens/layout_zones.yaml
+  - screens/visual_grammar.yaml
+  - screens/component_anatomy.yaml
+  - screens/business_alignment_matrix.yaml
+  - acceptance/dashboard_acceptance.yaml
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  layout_ref: screens/layout_zones.yaml#06_decision_action_audit
+  source_of_truth: canonical_contract
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

@@ -1,0 +1,38 @@
+kind: LifecycleAction
+use_case_slug: urban-service-quality-visual-distortion-loop
+action: materialize
+steps:
+- id: create_ workspace_ shell
+  label: create workspace shell
+  required: true
+- id: materialize_ screens_ components
+  label: materialize screens/components
+  required: true
+- id: bind_ endpoints
+  label: bind endpoints
+  required: true
+- id: bind_ runtimes
+  label: bind runtimes
+  required: true
+- id: bind_ governance_ evidence
+  label: bind governance evidence
+  required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

@@ -1,0 +1,184 @@
+contract_version: '1.7.1'
+locale: ar-SA
+direction: rtl
+
+# NOTE: this is an initial draft requiring review by a native Arabic speaker
+# familiar with MOMRAH and Emarah Diwan vocabulary before any customer-facing use.
+# Government and municipal terminology in Saudi Arabia has specific institutional
+# conventions; an automated translation is not acceptable for the final delivery.
+
+# === Strategic objective ===
+objective.name: 'استدامة وتحسين جودة الخدمات البلدية ومعالجة التشوه البصري'
+objective.description: 'مخرج استراتيجي ضمن برنامج جودة الحياة لرؤية 2030 ومؤشر الأداء البلدي لوزارة الشؤون البلدية والقروية والإسكان، يغطي 25 بلدية في منطقة جازان.'
+
+# === KPIs ===
+kpi.1.name: 'جودة تنفيذ إغلاق بلاغات التشوه البصري'
+kpi.1.short_name: 'التشوه البصري'
+kpi.1.description: 'جودة التنفيذ عند إغلاق بلاغات التشوه البصري — توثيق الأدلة، الالتزام بمستوى الخدمة، واستدامة المعالجة.'
+kpi.1.formula: '(البلاغات المغلقة بأدلة موثقة ضمن مستوى الخدمة) ÷ (إجمالي البلاغات المغلقة في الشهر)'
+kpi.1.trigger_rule: 'المؤشر أقل من 0.75 لمدة أسبوعين أو احتمالية الإخلال المتوقعة أكبر من 0.70'
+
+kpi.2.name: 'نسبة إغلاق طلبات الخدمات'
+kpi.2.short_name: 'طلبات الخدمات'
+kpi.2.description: 'النسبة المئوية لطلبات الخدمات المغلقة ضمن مستوى الخدمة، باستثناء الطلبات المرفوضة.'
+kpi.2.formula: '(الطلبات المغلقة ضمن مستوى الخدمة) ÷ (إجمالي الطلبات المستلمة ناقص المرفوضة)'
+kpi.2.trigger_rule: 'المؤشر أقل من 0.85 لمدة أسبوعين متتاليين'
+
+kpi.3.name: 'متوسط زمن إصدار الرخص'
+kpi.3.short_name: 'زمن الرخص'
+kpi.3.description: 'متوسط أيام العمل من تقديم الرخصة إلى الموافقة، حسب فئة الرخصة.'
+kpi.3.formula: 'متوسط(تاريخ الموافقة − تاريخ التقديم) بأيام العمل'
+kpi.3.trigger_rule: 'أكثر من 5 أيام للتجاري أو 14 يوماً للبناء، 3 أشهر متتالية'
+
+kpi.4.name: 'نسبة تغطية الخدمات الحضرية'
+kpi.4.short_name: 'تغطية الخدمات'
+kpi.4.description: 'السكان القاطنون في أحياء بتغطية خدمية كاملة كنسبة من إجمالي السكان البلديين.'
+kpi.4.formula: '(السكان في الأحياء المغطاة) ÷ (إجمالي سكان البلدية)'
+kpi.4.trigger_rule: 'المؤشر أقل من 0.93 في أي شهر'
+
+kpi.5.name: 'مؤشر صمود الأزمات والطوارئ'
+kpi.5.short_name: 'صمود الطوارئ'
+kpi.5.description: 'مؤشر مركّب لاكتمال التفتيش، مشاركة التدريبات، وزمن التعافي من الطوارئ.'
+kpi.5.formula: 'مزيج موزون لمعدل التفتيش، مشاركة التدريب، وزمن التعافي'
+kpi.5.trigger_rule: 'المؤشر أقل من 0.75 أو فشل تدريب رسمي'
+
+kpi.6.name: 'رضا المستفيدين'
+kpi.6.short_name: 'الرضا'
+kpi.6.description: 'مؤشر رضا موزون حسب عدد السكان من المسح الفصلي للخدمات البلدية.'
+kpi.6.formula: 'درجة فصلية بنمط NPS، موزونة بعدد سكان البلدية'
+kpi.6.trigger_rule: 'المؤشر أقل من 0.70 فصلياً أو انخفاض أكبر من 0.05'
+
+# === Roles ===
+role.field_compliance: 'الالتزام الميداني'
+role.operations: 'العمليات'
+role.permit_office: 'مكتب الرخص'
+role.planning_office: 'مكتب التخطيط'
+role.civil_defense_liaison: 'مكتب ارتباط الدفاع المدني'
+role.performance_office: 'مكتب إدارة الأداء'
+role.data_analytics: 'مكتب البيانات والتحليلات'
+role.mayor_office: 'مكتب رئيس البلدية'
+role.momrah_liaison: 'ارتباط وزارة الشؤون البلدية'
+role.emarah_diwan: 'ديوان الإمارة'
+
+# === Navigation ===
+nav.level.strategic: 'استراتيجي'
+nav.level.tactical: 'تكتيكي'
+nav.level.operational: 'تشغيلي'
+nav.tab.overview: 'النظرة العامة'
+nav.tab.intelligence: 'ذكاء النموذج'
+nav.tab.decisions: 'مركز القرار'
+nav.tab.recovery: 'التعافي'
+nav.crosscut.decisions: 'القرارات'
+nav.crosscut.runtimes: 'النماذج'
+nav.crosscut.audit: 'التدقيق'
+nav.sidebar.home: 'الرئيسية'
+nav.sidebar.decisions: 'القرارات'
+nav.sidebar.runtimes: 'النماذج'
+nav.sidebar.audit: 'التدقيق'
+
+# === Screen 01 ===
+screen.l1.title: 'تسلسل الهدف الاستراتيجي · المراقبة والعتبات'
+screen.l1.subtitle: 'هدف واحد · ستة مؤشرات مُحوكَمة · حالة العتبات المباشرة'
+screen.l1.rollup.meeting: 'محقق الهدف'
+screen.l1.rollup.approaching: 'يقترب من العتبة'
+screen.l1.rollup.breach: 'مُخل بالحد'
+screen.l1.rollup.candidates: 'قرارات مقترحة'
+
+# === Screen 02 ===
+screen.l2.breadcrumb.l1: 'الصفحة الاستراتيجية'
+screen.l2.summary.average: 'متوسط المحفظة'
+screen.l2.summary.trend: 'الاتجاه مقابل الشهر السابق'
+screen.l2.summary.in_breach: 'البلديات المُخلة'
+screen.l2.summary.open_cases: 'الحالات المفتوحة'
+table.col.municipality: 'البلدية'
+table.col.archetype: 'النمط'
+table.col.population: 'السكان'
+table.col.current: 'القيمة الحالية'
+table.col.target_compliance: 'الالتزام بالهدف'
+table.col.trend: 'الاتجاه'
+table.col.risk_score: 'درجة المخاطر'
+table.col.risk_tier: 'مستوى المخاطر'
+table.col.case_status: 'الحالة'
+governance.owner: 'المالك'
+governance.steward: 'القيّم'
+governance.cadence: 'وتيرة التحديث'
+governance.source: 'المصدر'
+governance.dictionary: 'مصطلح المعجم'
+governance.last_review: 'آخر مراجعة حوكمة'
+l2.open_cases.title: 'الحالات المفتوحة على هذا المؤشر'
+l2.open_cases.empty: 'لا توجد حالات مفتوحة على هذا المؤشر'
+
+# === Screen 03 ===
+l3.case.label: 'الحالة'
+l3.intelligence.no_recommendations: 'لم يُعثر على تدخلات تاريخية مماثلة لملف هذه الحالة'
+l3.recovery.tab_locked: 'بيانات التعافي ستظهر بعد إغلاق الإجراء التصحيحي'
+
+# === Screen 04 — decision command ===
+screen.decision_title: 'مركز قيادة القرار'
+screen.decision_subtitle: 'بانتظار المراجعة'
+screen.decision_audit_footnote: 'كل إجراء يتطلب اعتماداً بشرياً، ويُسجَّل في سجل التدقيق، وثنائي اللغة. المنصة لا تُصعِّد خارجياً دون موافقة.'
+
+# === Screen 05 — runtime evidence ===
+screen.runtime_title: 'سجل تشغيل النماذج'
+screen.runtime_subtitle: '3 نماذج تشغيلية · سجل التنفيذ خلال 7 أيام'
+runtime.forecast.name: 'نموذج التنبؤ بجودة الخدمات في جازان'
+runtime.forecast.description: 'يتنبأ بإخلال مؤشرات جودة الخدمات والتشوه البصري قبل 4 إلى 8 أسابيع.'
+runtime.anomaly.name: 'كاشف الشذوذ في جودة خدمات جازان'
+runtime.anomaly.description: 'يكشف التدهور غير الطبيعي في مؤشرات الخدمات والتشوه البصري مقابل خط أساس 24 شهراً.'
+runtime.decision.name: 'مُولِّد القرارات المقترحة لجازان'
+runtime.decision.description: 'يحوّل مخرجات التنبؤ والشذوذ والمخاطر والتوصيات إلى قرارات مقترحة. ليست تلقائية أبداً — كل مخرج يتطلب اعتماداً بشرياً.'
+
+# === Screen 06 — audit ===
+screen.audit_title: 'قائمة القرارات وسجل الإجراءات'
+screen.audit_subtitle: 'القرارات والإجراءات المتخذة والبريد والتذاكر وسجل التدقيق'
+screen.audit_footnote: 'جميع الإجراءات مسجلة وقابلة للتتبع من البداية إلى النهاية. لا تصعيد خارجي تلقائي دون موافقة بشرية.'
+
+# === Status pills ===
+status.in_breach: 'مُخل بالحد'
+status.approaching: 'يقترب من العتبة'
+status.meeting: 'محقق الهدف'
+status.awaiting_review: 'بانتظار المراجعة'
+status.under_revision: 'قيد المراجعة'
+status.assigned: 'مُكلَّف'
+status.in_progress: 'قيد التنفيذ'
+status.evidence_submitted: 'الأدلة مُقدَّمة'
+status.verified: 'موثَّق'
+status.closed: 'مغلق'
+status.recovered: 'متعافٍ'
+
+# === Mode chip ===
+chip.demo_data: 'بيانات تجريبية · معدّة للاستعراض'
+chip.live: 'مباشر'
+chip.not_materialised: 'لم يُفعّل بعد'
+chip.partial: 'تعبئة جزئية'
+
+# === Threshold bar ===
+bar.label.trigger: 'العتبة'
+bar.label.target: 'الهدف'
+
+# === Action buttons ===
+action.approve.label: 'اعتماد'
+action.approve.description: 'اعتماد الإجراءات الموصى بها وإنشاء إجراء تصحيحي مُكلَّف للمالك المُحدَّد.'
+action.request_revision.label: 'طلب تعديل'
+action.request_revision.description: 'إعادة إلى النموذج مع سبب التعديل. تتغير حالة المرشح إلى قيد المراجعة.'
+action.request_revision.reason_input.label: 'سبب التعديل (ثنائي اللغة)'
+action.escalate.label: 'تصعيد'
+action.escalate.description: 'تصعيد الحالة إلى سلطة أعلى مع إرفاق ملف الأدلة الكامل.'
+action.escalate.target_input.label: 'جهة التصعيد'
+action.escalate.note_input.label: 'مذكرة التصعيد (ثنائي اللغة)'
+action.create_ticket.label: 'إنشاء تذكرة'
+action.create_ticket.description: 'إنشاء تذكرة خارجية في نظام البلدية مرتبطة بهذا القرار.'
+action.create_ticket.owner_input.label: 'مالك التذكرة'
+action.create_ticket.priority_input.label: 'الأولوية'
+action.create_ticket.due_input.label: 'مدة الإنجاز (أيام)'
+action.email_owner.label: 'إشعار المالك'
+action.email_owner.description: 'إرسال إشعار بريدي ثنائي اللغة لمالك الحالة مع حزمة الإجراء ومستوى الخدمة.'
+action.email_owner.target_input.label: 'إشعار إلى'
+action.email_owner.message_input.label: 'الرسالة (ثنائي اللغة)'
+action.view_detail.label: 'عرض التفاصيل'
+action.view_full_audit.label: 'عرض التدقيق الكامل'
+
+# === Active case banner ===
+active_case.tag: 'حالة مخاطر نشطة · أعلى أولوية'
+active_case.action_button: 'مراجعة الحالة'
+active_case.all_within_bands: 'جميع المؤشرات ضمن نطاقات الحوكمة'

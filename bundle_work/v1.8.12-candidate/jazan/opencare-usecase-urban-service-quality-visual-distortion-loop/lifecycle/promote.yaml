@@ -1,0 +1,35 @@
+kind: LifecycleAction
+use_case_slug: urban-service-quality-visual-distortion-loop
+action: promote
+steps:
+- id: verify_ populated_ state_ proof
+  label: verify populated state proof
+  required: true
+- id: verify_ production_ source_ mapping
+  label: verify production source mapping
+  required: true
+- id: verify_ runtime_ evidence
+  label: verify runtime evidence
+  required: true
+- id: mark_ live_ verified
+  label: mark live verified
+  required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

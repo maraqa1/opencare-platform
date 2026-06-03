@@ -1,0 +1,26 @@
+kind: BilingualAuditChecks
+use_case_slug: urban-service-quality-visual-distortion-loop
+required_components:
+- page_header_bar
+- strategic_objective_header
+- kpi_state_summary_strip
+- kpi_threshold_card
+- highest_priority_case_alert
+- municipality_ranking_table
+- trend_forecast_chart
+- governance_evidence_panel
+- bilingual_narrative_panel
+- case_action_button_row
+- confirmation_drawer
+- audit_footnote_panel
+- runtime_card
+- runtime_execution_history
+- action_audit_timeline
+- email_delivery_log_panel
+- ticket_request_log_panel
+- status_badge
+rules:
+  en_ar_key_parity_required: true
+  visible_dashboard_components_must_have_bilingual_declaration: true
+  rtl_notes_required_for_side_by_side_panels: true
+  arabic_placeholder_review_required: true

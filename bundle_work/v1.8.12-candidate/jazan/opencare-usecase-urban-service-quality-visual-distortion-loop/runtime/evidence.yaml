@@ -1,0 +1,46 @@
+kind: RuntimeEvidenceContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+evidence_requirements:
+- runtime_id: rt_jazan_service_rnn_forecast
+  prove_image_exists: true
+  prove_execution: true
+  prove_outputs_written:
+  - output.jazan_service_rnn_forecast
+  freshness_sla: daily
+  evidence_table: output.jazan_runtime_executions
+  consumed_by:
+  - rnn_forecast_chart
+  - composite_risk_score_card
+  - runtime_execution_history
+- runtime_id: rt_jazan_service_anomaly
+  prove_image_exists: true
+  prove_execution: true
+  prove_outputs_written:
+  - output.jazan_service_quality_anomaly
+  freshness_sla: daily
+  evidence_table: output.jazan_runtime_executions
+  consumed_by:
+  - rnn_forecast_chart
+  - composite_risk_score_card
+  - runtime_execution_history
+- runtime_id: rt_jazan_decision_candidate
+  prove_image_exists: true
+  prove_execution: true
+  prove_outputs_written:
+  - decision.jazan_generated_service_decisions
+  - decision.jazan_service_quality_action_queue
+  freshness_sla: daily
+  evidence_table: output.jazan_runtime_executions
+  consumed_by:
+  - rnn_forecast_chart
+  - composite_risk_score_card
+  - runtime_execution_history
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

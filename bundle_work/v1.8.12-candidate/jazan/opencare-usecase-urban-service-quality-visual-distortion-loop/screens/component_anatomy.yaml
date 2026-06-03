@@ -1,0 +1,402 @@
+kind: DashboardComponentAnatomy
+use_case_slug: urban-service-quality-visual-distortion-loop
+components:
+  kpi_threshold_card:
+    required_anatomy:
+    - top_kpi_id
+    - english_kpi_name
+    - arabic_kpi_sublabel
+    - status_badge
+    - primary_current_value
+    - target_value
+    - variance_text
+    - threshold_rail
+    - trigger_rule
+    - owner
+    - frequency
+    - optional_link_or_action
+    - direction_aware_threshold_rail
+    - current_value_rounded_at_render_boundary
+    - target_value_rounded_at_render_boundary
+    - lower_is_better_zone_flip_support
+    forbidden_simplifications:
+    - replace_threshold_rail_with_number_only
+    - omit_arabic_sublabel_when_required
+    - omit_owner_frequency_metadata
+    - omit_trigger_rule
+    - draw_threshold_direction_cosmetically
+    - leak_unrounded_float_value
+    rounding:
+      kpi_values_decimals: 2
+      days_decimals: 1
+      counts: integer
+    threshold_direction_source: business/kpis.yaml#kpis[].direction
+  active_case_banner:
+    required_anatomy:
+    - severity_icon
+    - case_title
+    - municipality
+    - kpi
+    - risk_score
+    - forecast_breach_probability
+    - decision_status
+    - primary_CTA
+    forbidden_simplifications:
+    - collapse_into_generic_summary_card
+    - omit_review_case_action
+  decision_table:
+    required_anatomy:
+    - decision_id
+    - municipality
+    - kpi
+    - risk_score
+    - breach_probability
+    - recommended_action
+    - owner
+    - due_date
+    - visible_action_buttons
+    - selected_row_state
+    required_actions:
+    - approve_decision
+    - request_revision
+    - escalate_decision
+    - create_ticket
+    - email_owner
+    - view_details
+    forbidden_simplifications:
+    - hide_actions_in_icon_only_menu
+    - remove_human_approval_notice
+  runtime_card:
+    required_anatomy:
+    - runtime_id
+    - runtime_image_or_job
+    - model_family
+    - status
+    - last_run
+    - duration
+    - rows_out
+    - next_schedule
+    - input_tables
+    - output_tables
+    - last_seven_runs
+    - seven_day_history_with_degraded_days
+    - hitl_pill_when_decision_runtime
+    - monospace_input_identifiers
+    - monospace_output_identifiers
+    forbidden_simplifications:
+    - mention_runtime_without_execution_evidence
+    - omit_input_output_tables
+    honest_degradation_rule: retry-succeeded or degraded days remain visible and must not be painted over
+  action_audit_timeline:
+    required_anatomy:
+    - timestamp
+    - actor
+    - action
+    - channel
+    - result
+    - created_record
+    - audit_marker
+    - clickable_created_record_link
+    - artifact_link_click_audit_event
+    forbidden_simplifications:
+    - summarize_actions_without_event_history
+    - omit_email_or_ticket_evidence_when action occurred
+    - edit_icon
+    - delete_button
+    - row_reorder
+    append_only: true
+  governance_evidence_panel:
+    required_anatomy:
+    - classification
+    - owner
+    - steward
+    - freshness
+    - data_quality
+    - lineage
+    - evidence_pack_status
+    forbidden_simplifications:
+    - show_trusted_without_evidence
+    - hide_classification_or_owner
+  kpi_state_summary_strip:
+    required_anatomy:
+    - meeting_target_counter
+    - approaching_trigger_counter
+    - in_breach_counter
+    - decision_candidate_counter
+    - label_text
+    - status_count
+    - semantic_status_role
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+  kpi_connector_rail:
+    required_anatomy:
+    - six_kpi_markers
+    - status_coloured_markers
+    - connector_line
+    - kpi_id_labels
+    - connection_to_kpi_cards
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+  highest_priority_case_alert:
+    required_anatomy:
+    - alert_icon
+    - municipality
+    - kpi
+    - risk_score
+    - forecast_breach_probability
+    - decision_candidate_status
+    - review_case_CTA
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+  decision_summary_strip:
+    required_anatomy:
+    - new_decisions
+    - under_review
+    - approved
+    - escalated
+    - tickets_created
+    - emails_sent
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+  confirmation_drawer:
+    required_anatomy:
+    - action_title
+    - decision_id
+    - external_side_effect_summary
+    - recipient_or_ticket_summary
+    - confirm_button
+    - cancel_button
+    - payload_preview
+    - who_will_be_notified
+    - external_systems_invoked
+    - records_created
+    - confirm_cancel_pair
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+    generic_are_you_sure_forbidden: true
+  email_delivery_log_panel:
+    required_anatomy:
+    - notification_id
+    - recipient_role
+    - subject
+    - delivery_status
+    - sent_at
+    - linked_decision_id
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+  ticket_request_log_panel:
+    required_anatomy:
+    - ticket_id
+    - ticket_system
+    - priority
+    - status
+    - external_ticket_ref
+    - linked_action_id
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+  rnn_forecast_chart:
+    required_anatomy:
+    - observed_line
+    - forecast_line
+    - target_line
+    - breach_probability_marker
+    - forecast_horizon_label
+    - standard_error_confidence_band
+    - breach_probability_band
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+    confidence_band_source: output.jazan_service_rnn_forecast.standard_error
+  recommendation_ranked_cards:
+    required_anatomy:
+    - rank
+    - intervention_name
+    - similar_cases
+    - expected_lift
+    - expected_recovery_days
+    - confidence
+    - comparable_case_decision_id
+    - queryable_historical_case_link
+    forbidden_simplifications:
+    - omit_required_anatomy
+    - replace_with_generic_card
+    - hide_user_visible_labels
+    grounding_rule: comparable historical cases must be queryable by decision_id and must not be invented
+  case_workspace_tab_strip:
+    required_anatomy:
+    - Intelligence_tab
+    - Decisions_tab_active
+    - Actions_tab
+    - Recovery_tab_visible
+    - locked_recovery_tooltip_when_unavailable
+    - recovery_tab_visible_when_locked
+    - lock_icon_when_disabled
+    - locked_tooltip
+    conditional_tabs:
+      recovery:
+        visible: true
+        enabled_when: case.status in ['closed','recovered']
+        disabled_tooltip: Recovery data appears after corrective action closes
+    forbidden_simplifications:
+    - hiding_recovery_tab_when_unavailable
+    - replacing_case_tabs_with_dashboard_cards
+  bilingual_narrative_panel:
+    required_anatomy:
+    - english_left_ltr
+    - arabic_right_rtl
+    - equal_visual_weight
+    - editable_text
+    - edit_action
+    - version_history_action
+    - english_ltr_editor
+    - arabic_rtl_editor
+    - edit_button
+    - version_history_button
+    forbidden_simplifications:
+    - translation_toggle_only
+    - single_language_only
+    - hidden_arabic_version
+    required_layout: side_by_side_equal_weight
+    english_position: left_ltr
+    arabic_position: right_rtl
+    translation_toggle_only_forbidden: true
+  case_action_button_row:
+    required_order:
+    - approve_decision
+    - request_revision
+    - escalate_decision
+    - create_ticket
+    - email_owner
+    styling:
+      approve_decision: primary
+      request_revision: secondary
+      escalate_decision: secondary
+      create_ticket: secondary
+      email_owner: secondary
+    required_anatomy:
+    - visible_label
+    - side_effect_hint
+    - confirmation_modal_contract
+    - no_overflow_menu
+    - confirmation_modal_with_payload_preview
+    forbidden_simplifications:
+    - overflow_menu
+    - hidden_more_dropdown
+    - silent_dispatch
+    - icon_only_actions
+    all_buttons_visible_at_once: true
+    overflow_menu_forbidden: true
+    button_side_effect_hints:
+      approve_decision: Authorises top recommendation
+      request_revision: Return to runtime/reviewer
+      escalate_decision: Emarah / MOMRAH escalation
+      create_ticket: MAKEEN / Service Desk
+      email_owner: Bilingual notification
+  audit_footnote_panel:
+    required_assertions:
+    - Human-authorised and audit-logged.
+    - No autonomous external escalation.
+    - Action history is append-only.
+    required_visibility: action_bearing_screens
+    forbidden_simplifications:
+    - hiding_footnote_on_decision_screens
+    - replacing_with_generic_compliance_text
+  confirmation_modal_contract:
+    required_anatomy:
+    - action_title
+    - decision_id
+    - recipient_or_ticket_summary
+    - external_side_effect_summary
+    - records_created
+    - audit_event
+    - confirm_button
+    - cancel_button
+    forbidden_simplifications:
+    - generic_are_you_sure_dialog
+    - silent_dispatch
+  case_context_header:
+    required_anatomy:
+    - case_id
+    - municipality
+    - kpi
+    - risk_score
+    - breach_probability
+    - decision_status
+    forbidden_simplifications:
+    - replace_with_generic_page_title
+  evidence_pack_strip:
+    required_anatomy:
+    - evidence_pack_id
+    - linked_runtime_outputs
+    - linked_governance_evidence
+    - MOMRAH_report_link_if_available
+    forbidden_simplifications:
+    - hide_evidence_pack
+  recommendation_summary_panel:
+    required_anatomy:
+    - recommended_action
+    - reason
+    - similar_cases
+    - confidence
+    - expected_recovery_days
+    forbidden_simplifications:
+    - show_recommendation_without_evidence
+  action_consequence_preview:
+    required_anatomy:
+    - side_effect_hint_per_action
+    - who_will_be_notified
+    - external_systems_affected
+    forbidden_simplifications:
+    - labels_without_side_effect_preview
+  narrative_version_history_action:
+    required_anatomy:
+    - version_history_button
+    - previous_versions_archive_ref
+    forbidden_simplifications:
+    - editable_narrative_without_version_history
+  recovery_tab_locked_state:
+    required_anatomy:
+    - visible_recovery_tab
+    - lock_icon
+    - disabled_tooltip
+    forbidden_simplifications:
+    - hide_recovery_tab_when_unavailable
+  feature_contribution_bar:
+    required_anatomy:
+    - forecast_breach_contribution
+    - anomaly_z_score_contribution
+    - historical_recurrence_contribution
+    - complaint_pressure_contribution
+    - sum_to_composite_score_assertion
+    forbidden_simplifications: []
+    validation_rule: contributions must sum to composite_risk_score; fail validation instead of re-normalising
+  audit_export_button:
+    required_anatomy:
+    - export_format_selector
+    - signed_pdf_option
+    - signed_jsonl_option
+    - audit_handoff_notice
+    forbidden_simplifications: []
+    signing_required_before_external_handoff: true
+  evidence_pack_link:
+    required_anatomy:
+    - evidence_pack_id
+    - external_link_icon
+    - audit_logged_click
+    - report_viewer_target
+    forbidden_simplifications: []

@@ -1,0 +1,188 @@
+kind: PlatformCapabilityBindings
+use_case_slug: urban-service-quality-visual-distortion-loop
+capability_status_values:
+- reuse_existing
+- partially_supported
+- requires_extension
+- unsupported
+capabilities:
+  native_bi_kpi_cards:
+    status: reuse_existing
+    platform_binding: native_bi.card_renderer
+    required_by:
+    - screens.components.kpi_card
+    - screens.components.kpi_card_group
+    fallback_behavior: block_materialization
+    blocks_compile: false
+    blocks_materialization: true
+    blocks_activation: true
+  native_bi_charts:
+    status: reuse_existing
+    platform_binding: native_bi.chart_renderer
+    required_by:
+    - screens.components.line_chart
+    - screens.components.bar_chart
+    fallback_behavior: render_empty_state
+    blocks_materialization: true
+    blocks_activation: true
+  decision_workflow:
+    status: partially_supported
+    platform_binding: shared_decisions_api_partial
+    required_by:
+    - decisions.action_buttons
+    - decisions.decision_states
+    fallback_behavior: decision_log_only_until_workflow_actions_are_proven
+    blocks_materialization: false
+    blocks_activation: false
+    blocks_live_verified: true
+    evidence_basis: Decision lifecycle concepts exist, but full action execution/ticket/notification
+      workflow is not proven end-to-end.
+    confidence: medium
+    review_required: true
+  email_notification:
+    status: partially_supported
+    platform_binding: decision_email_workflow
+    required_by:
+    - decisions.notifications
+    - btn.email_owner
+    fallback_behavior: audit_log_only_until_human_authorised_email_adapter_is_enabled
+    blocks_materialization: false
+    blocks_activation: false
+    blocks_live_verified: false
+    evidence_basis: Email notification should remain human-authorised and may degrade
+      to audit log only.
+    confidence: medium
+    review_required: true
+  ticket_creation:
+    status: requires_extension
+    platform_binding: future_ticket_adapter_or_makeen_adapter
+    required_by:
+    - btn.create_ticket
+    fallback_behavior: decision_log_only
+    blocks_materialization: false
+    blocks_activation: false
+  runtime_evidence:
+    status: partially_supported
+    platform_binding: admin_runtime_status_partial
+    required_by:
+    - runtime.evidence
+    - SCREEN-CC-RUNTIMES
+    fallback_behavior: show_runtime_pending_or_no_evidence_loaded
+    blocks_materialization: false
+    blocks_activation: false
+    blocks_live_verified: true
+    evidence_basis: Runtime metadata/status concepts exist, but runtime execution
+      evidence from declared images is not fully proven in this bundle.
+    confidence: medium
+    review_required: true
+  lineage:
+    status: reuse_existing
+    platform_binding: lineage_api
+    required_by:
+    - governance.lineage
+    - acceptance.dashboard_acceptance
+    fallback_behavior: show_no_evidence_loaded
+    blocks_materialization: false
+    blocks_activation: false
+    confidence: high
+    review_required: false
+    evidence_basis: Lineage is an established OpenCare capability and can be surfaced
+      as governance evidence.
+  record_spec:
+    status: reuse_existing
+    platform_binding: record_spec_api
+    required_by:
+    - screens.governance_panel
+    - governance.columns
+    fallback_behavior: show_no_evidence_loaded
+    blocks_materialization: false
+    blocks_activation: false
+    confidence: high
+    review_required: false
+    evidence_basis: Record specification/catalog display is an established OpenCare
+      capability.
+  role_based_access:
+    status: requires_extension
+    platform_binding: future_rbac
+    required_by:
+    - action_buttons.requires_role
+    - navigation.visibility_rules
+    fallback_behavior: admin_only_preview
+    blocks_compile: false
+    blocks_materialization: false
+    blocks_activation: true
+    evidence_basis: Granular role-based access is not assumed as fully implemented
+      for this use case.
+    confidence: medium
+    review_required: true
+  arabic_english_i18n:
+    status: reuse_existing
+    platform_binding: i18n_loader
+    required_by:
+    - i18n/ar.yaml
+    - i18n/en.yaml
+    fallback_behavior: show_translation_key
+    blocks_activation: false
+  governance_registry:
+    status: partially_supported
+    platform_binding: governance_use_case_registry
+    required_by:
+    - governance.assets
+    - governance.columns
+    - governance.classification
+    - governance.ownership
+    - governance.freshness
+    - governance.quality
+    - governance.lineage
+    fallback_behavior: show_governance_no_evidence_loaded_until_registry_materialized
+    blocks_compile: false
+    blocks_materialization: false
+    blocks_activation: true
+    blocks_live_verified: true
+    evidence_basis: Governance files exist in the bundle, but registry materialization
+      must be proven by OpenCare.
+    confidence: medium
+    review_required: true
+  human_authorised_external_actions:
+    status: partially_supported
+    platform_binding: confirmation_modal_plus_audit_log
+    required_by:
+    - decisions.action_buttons
+    - decisions.notifications
+    - decisions.tickets
+    - decisions.escalations
+    fallback_behavior: block_external_side_effect
+    blocks_compile: false
+    blocks_materialization: true
+    blocks_activation: true
+    evidence_basis: Bundle declares confirmation, audit, notification, ticket, and
+      escalation contracts; platform enforcement must be proven before materialization/activation.
+    confidence: medium
+    review_required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true
+capability_policy:
+  status_truthfulness: Statuses must be set from platform evidence; use partially_supported
+    when runtime proof is incomplete.
+  external_action_rule: Any capability that sends email, creates tickets, escalates
+    outside OpenCare, or writes to an external system requires human authorisation
+    and audit.
+  legacy_rule: Capabilities declared only in legacy/ do not count as supported unless
+    also present in bindings/platform_capabilities.yaml.

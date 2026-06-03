@@ -1,0 +1,68 @@
+kind: DecisionStatesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+states:
+- state_id: awaiting_review
+  label: Awaiting Review
+  meaning: Generated decision candidate is waiting for human review
+  allowed_transitions:
+  - approved
+  - under_revision
+  - escalated
+  - ignored
+  transition_owner: performance_office
+  audit_event: decision.state_changed
+  evidence_required:
+  - risk_score
+  - kpi_context
+  - recommendation
+- state_id: approved
+  label: Approved
+  meaning: Decision accepted and corrective action can proceed
+  allowed_transitions:
+  - assigned
+  - in_progress
+  - closed
+  transition_owner: performance_office
+  audit_event: decision.approved
+  evidence_required:
+  - human_authorisation
+- state_id: under_revision
+  label: Under Revision
+  meaning: Decision returned for clarification or improvement
+  allowed_transitions:
+  - awaiting_review
+  - ignored
+  transition_owner: performance_office
+  audit_event: decision.revision_requested
+  evidence_required:
+  - revision_reason
+- state_id: escalated
+  label: Escalated
+  meaning: Case escalated to higher authority
+  allowed_transitions:
+  - approved
+  - closed
+  transition_owner: performance_office_or_higher
+  audit_event: decision.escalated
+  evidence_required:
+  - escalation_target
+  - escalation_note
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

@@ -1,0 +1,32 @@
+kind: ScreenEmptyStatesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+global_rules:
+  no_placeholder_charts: true
+  no_sample_payload_in_populated_state: true
+  unbound_routes_return: typed_not_yet_materialised
+empty_states:
+- component: open_cases_list
+  allowed: true
+  message_key: zone_rigid_component
+- component: highest_priority_case_alert
+  allowed: true
+  replacement: all_kpis_within_bands_affirmation
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

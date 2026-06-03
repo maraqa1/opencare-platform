@@ -1,0 +1,143 @@
+contract_version: '1.7.1'
+kind: ActionButtonsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+
+global_policy:
+  every_action_requires_human_authorisation: true
+  every_action_audit_logged: true
+  every_action_bilingual: true
+  no_autonomous_external_notification: true
+
+confirmation_modal:
+  required_for_all: true
+  show_action_summary: true
+  show_who_will_be_notified: true
+  show_external_systems_affected: true
+  bilingual: true
+
+action_buttons:
+
+  - id: btn.approve
+    label_key: action.approve.label
+    description_key: action.approve.description
+    style: primary_green
+    icon: ti-check
+    backend_route_id: route.action.approve
+    requires_role: performance_office
+    side_effects:
+      - audit_log
+      - create_corrective_action
+      - update_decision_status
+    audit_event_type: decision.approved
+
+  - id: btn.request_revision
+    label_key: action.request_revision.label
+    description_key: action.request_revision.description
+    style: secondary
+    icon: ti-edit
+    backend_route_id: route.action.request_revision
+    requires_role: performance_office
+    requires_input:
+      - id: revision_reason
+        label_key: action.request_revision.reason_input.label
+        type: text_bilingual
+        required: true
+        max_length: 500
+    side_effects:
+      - audit_log
+      - update_decision_status_to_under_revision
+    audit_event_type: decision.revision_requested
+
+  - id: btn.escalate
+    label_key: action.escalate.label
+    description_key: action.escalate.description
+    style: secondary
+    icon: ti-arrow-up-right
+    backend_route_id: route.action.escalate
+    requires_role: performance_office_or_higher
+    requires_input:
+      - id: escalation_target
+        label_key: action.escalate.target_input.label
+        type: select
+        options: [emarah_diwan, momrah_liaison, regional_governor_office]
+        required: true
+      - id: escalation_note
+        label_key: action.escalate.note_input.label
+        type: text_bilingual
+        required: true
+    side_effects:
+      - audit_log
+      - send_escalation_email
+      - update_decision_status_to_escalated
+    audit_event_type: decision.escalated
+
+  - id: btn.create_ticket
+    label_key: action.create_ticket.label
+    description_key: action.create_ticket.description
+    style: secondary
+    icon: ti-ticket
+    backend_route_id: route.action.create_ticket
+    requires_role: mayor_office_or_delegated
+    requires_input:
+      - id: ticket_owner
+        label_key: action.create_ticket.owner_input.label
+        type: select
+        options_source: dim_jazan_municipality_owners
+        required: true
+      - id: ticket_priority
+        label_key: action.create_ticket.priority_input.label
+        type: select
+        options: [low, normal, high, urgent]
+        required: true
+      - id: ticket_due_days
+        label_key: action.create_ticket.due_input.label
+        type: number
+        required: true
+        min: 1
+        max: 60
+    side_effects:
+      - audit_log
+      - create_external_ticket_in_makeen_or_service_desk
+      - link_ticket_to_decision
+      - send_owner_notification
+    audit_event_type: decision.ticket_created
+    external_system_call: MAKEEN_or_Service_Desk_API
+
+  - id: btn.email_owner
+    label_key: action.email_owner.label
+    description_key: action.email_owner.description
+    style: secondary
+    icon: ti-mail
+    backend_route_id: route.action.email_owner
+    requires_role: performance_office
+    requires_input:
+      - id: email_owner_target
+        label_key: action.email_owner.target_input.label
+        type: select
+        options_source: dim_jazan_municipality_owners
+        required: true
+      - id: notify_message
+        label_key: action.email_owner.message_input.label
+        type: text_bilingual
+        required: true
+    side_effects:
+      - audit_log
+      - send_email_notification
+      - update_decision_owner_emailed_timestamp
+    audit_event_type: decision.owner_emailed
+    notification_channel: email
+
+# Read-only viewer actions (no side effects beyond audit log)
+
+  - id: btn.view_detail
+    label_key: action.view_detail.label
+    style: tertiary_icon_only
+    icon: ti-eye
+    target: navigate_to_l3_case_overview
+    audit_event_type: case.viewed
+
+  - id: btn.view_full_audit
+    label_key: action.view_full_audit.label
+    style: tertiary_link
+    target: navigate_to_crosscut_audit_with_case_preselected
+    audit_event_type: audit.viewed

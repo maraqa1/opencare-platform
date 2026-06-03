@@ -1,0 +1,80 @@
+kind: PersonasManifest
+use_case_slug: urban-service-quality-visual-distortion-loop
+personas:
+- persona_id: performance_office_reviewer
+  persona_name: Performance Office Reviewer
+  role: performance office
+  business_goal: Review KPI breaches, approve actions, request revision, and monitor
+    recovery.
+  decisions_supported:
+  - approve_corrective_action
+  - request_revision
+  - escalate_case
+  - email_owner
+  screens_used:
+  - SCREEN-L1-STRATEGIC
+  - SCREEN-L2-KPI
+  - SCREEN-L3-CASE
+  - SCREEN-CC-DECISIONS
+  data_visibility: municipality_kpi_decision_aggregate_and_case_level
+  phi_access_level: not_applicable
+- persona_id: mayor_office_or_delegated
+  persona_name: Municipality Mayor Office / Delegated Owner
+  role: municipal owner
+  business_goal: Respond to assigned service quality cases and execute corrective
+    actions.
+  decisions_supported:
+  - create_ticket
+  - update_corrective_action
+  - mark_recovery_progress
+  screens_used:
+  - SCREEN-L3-CASE
+  - SCREEN-CC-DECISIONS
+  data_visibility: assigned_municipality_cases
+  phi_access_level: not_applicable
+- persona_id: momrah_liaison
+  persona_name: MOMRAH Liaison
+  role: regional oversight
+  business_goal: Monitor cross-municipality service quality, escalation patterns,
+    and runtime evidence.
+  decisions_supported:
+  - escalation_review
+  - regional_performance_follow_up
+  screens_used:
+  - SCREEN-L1-STRATEGIC
+  - SCREEN-CC-RUNTIMES
+  - SCREEN-CC-AUDIT
+  data_visibility: regional_aggregate_and_audit
+  phi_access_level: not_applicable
+- persona_id: emarah_diwan_auditor
+  persona_name: Emarah / Diwan Auditor
+  role: audit and governance
+  business_goal: Review decision evidence, action trails, runtime outputs, and notification
+    history.
+  decisions_supported:
+  - audit_review
+  - evidence_request
+  screens_used:
+  - SCREEN-CC-AUDIT
+  - SCREEN-CC-RUNTIMES
+  data_visibility: audit_evidence_and_runtime_evidence
+  phi_access_level: not_applicable
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

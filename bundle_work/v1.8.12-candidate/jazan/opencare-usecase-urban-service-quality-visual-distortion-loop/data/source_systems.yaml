@@ -1,0 +1,53 @@
+kind: SourceSystemsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+source_systems:
+- system_id: jazan_municipal_service_platform
+  name: Municipal Service Request Platform
+  type: operational_system
+  expected_entities:
+  - service_requests
+  refresh_sla: daily
+  owner: municipal_operations
+- system_id: jazan_visual_distortion_platform
+  name: Visual Distortion Case Platform
+  type: inspection_case_system
+  expected_entities:
+  - visual_distortion_cases
+  refresh_sla: daily
+  owner: field_compliance
+- system_id: jazan_permit_platform
+  name: Municipal Permit Platform
+  type: permit_system
+  expected_entities:
+  - permit_cases
+  refresh_sla: daily
+  owner: permit_office
+- system_id: citizen_satisfaction_survey
+  name: Citizen Satisfaction Survey
+  type: survey_system
+  expected_entities:
+  - citizen_satisfaction_observations
+  refresh_sla: quarterly
+  owner: performance_office
+- system_id: jazan_municipality_owner_directory
+  name: Municipality Owner and Notification Directory
+  type: controlled_reference_directory
+  expected_entities:
+  - municipality_owners
+  refresh_sla: weekly_or_on_owner_change
+  owner: performance_office
+  steward: data_analytics_office
+  purpose: Provides the municipality owner lookup used by ticket and email action
+    buttons. Contains role labels and notification routing metadata without exposing
+    personal identifiers in executive dashboards.
+  classification: internal
+  source_to_raw_table: raw.jazan_municipality_owners
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

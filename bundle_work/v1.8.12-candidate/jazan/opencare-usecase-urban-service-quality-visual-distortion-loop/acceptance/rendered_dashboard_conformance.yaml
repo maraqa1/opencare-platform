@@ -1,0 +1,386 @@
+kind: RenderedDashboardConformance
+use_case_slug: urban-service-quality-visual-distortion-loop
+required: true
+rule: A bundle is not accepted as implemented until rendered OpenCare routes conform to canonical dashboard contracts.
+required_evidence:
+- route_screenshot
+- route_component_inventory
+- action_button_inventory
+- data_binding_inventory
+- governance_panel_inventory
+- runtime_evidence_inventory
+- rendered_gap_register
+conformance_levels:
+  pass: All required dashboards, zones, components, bindings, actions, governance, and runtime evidence render.
+  partial: Dashboard route renders but one or more required contract elements are missing.
+  fail: Dashboard missing, collapsed, substituted, unbound, or non-interactive.
+fail_conditions:
+- dashboard_replaced_by_overview
+- canonical_dashboard_route_missing
+- required_component_absent
+- action_button_absent_or_decorative
+- runtime_evidence_not_rendered
+- governance_evidence_not_rendered
+- mockup_traceability_ignored
+- case_decision_tab_replaced_by_queue
+- case_decision_tab_external_action_without_confirmation
+per_dashboard_evidence_required: true
+dashboards:
+- dashboard_id: 01_strategic_objective_monitoring
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  required_evidence:
+    route_screenshot: evidence/rendered/01_strategic_objective_monitoring/route_screenshot.png
+    route_component_inventory: evidence/rendered/01_strategic_objective_monitoring/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/01_strategic_objective_monitoring/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/01_strategic_objective_monitoring/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/01_strategic_objective_monitoring/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/01_strategic_objective_monitoring/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/01_strategic_objective_monitoring/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/01_strategic_objective_monitoring/dashboard_gap_register.yaml
+  required_zone_components:
+    page_header:
+    - page_header_bar
+    - demo_status_chip
+    - route_status_chip
+    strategic_objective_band:
+    - strategic_objective_header
+    - objective_metadata_chips
+    - municipality_coverage_chip
+    kpi_state_summary_strip:
+    - kpi_state_summary_strip
+    - meeting_target_counter
+    - approaching_trigger_counter
+    - in_breach_counter
+    - decision_candidate_counter
+    kpi_connector_rail:
+    - kpi_connector_rail
+    - kpi_marker_sequence
+    - kpi_to_card_connectors
+    kpi_threshold_card_grid:
+    - kpi_threshold_card_grid
+    - kpi_threshold_card
+    highest_priority_case_alert:
+    - highest_priority_case_alert
+    - review_case_action
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+- dashboard_id: 02_kpi_municipality_workspace
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  required_evidence:
+    route_screenshot: evidence/rendered/02_kpi_municipality_workspace/route_screenshot.png
+    route_component_inventory: evidence/rendered/02_kpi_municipality_workspace/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/02_kpi_municipality_workspace/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/02_kpi_municipality_workspace/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/02_kpi_municipality_workspace/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/02_kpi_municipality_workspace/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/02_kpi_municipality_workspace/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/02_kpi_municipality_workspace/dashboard_gap_register.yaml
+  required_zone_components:
+    page_header:
+    - page_header_bar
+    - active_kpi_context_header
+    kpi_summary_strip:
+    - kpi_summary_strip
+    - kpi_target_status_card
+    - kpi_risk_card
+    municipality_ranking:
+    - municipality_ranking_table
+    - municipality_risk_rows
+    trend_forecast_view:
+    - trend_forecast_chart
+    - threshold_reference_line
+    governance_evidence_panel:
+    - governance_evidence_panel
+    - classification_badge
+    - ownership_badge
+    - lineage_link
+    - freshness_badge
+    open_cases_list:
+    - open_cases_list
+    - open_case_row
+    - open_case_action
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+- dashboard_id: 03_case_model_intelligence
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+  required_evidence:
+    route_screenshot: evidence/rendered/03_case_model_intelligence/route_screenshot.png
+    route_component_inventory: evidence/rendered/03_case_model_intelligence/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/03_case_model_intelligence/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/03_case_model_intelligence/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/03_case_model_intelligence/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/03_case_model_intelligence/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/03_case_model_intelligence/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/03_case_model_intelligence/dashboard_gap_register.yaml
+  required_zone_components:
+    case_header:
+    - active_case_banner
+    - case_identity_header
+    - case_status_chips
+    model_risk_explanation:
+    - composite_risk_score_card
+    - feature_contribution_bar
+    - model_driver_list
+    forecast_path:
+    - rnn_forecast_chart
+    - forecast_breach_marker
+    - forecast_confidence_band
+    anomaly_signal:
+    - anomaly_detection_card
+    - z_score_indicator
+    recommendation_rankings:
+    - recommendation_ranked_cards
+    - intervention_effectiveness_badge
+    decision_evidence_panel:
+    - generated_decision_evidence_panel
+    - human_approval_notice
+    recovery_path:
+    - recovery_trajectory_chart
+    - target_recovery_marker
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+- dashboard_id: 03_primary_case_decision_command_tab
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+  required_evidence:
+    route_screenshot: evidence/rendered/03_primary_case_decision_command_tab/route_screenshot.png
+    route_component_inventory: evidence/rendered/03_primary_case_decision_command_tab/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/03_primary_case_decision_command_tab/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/03_primary_case_decision_command_tab/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/03_primary_case_decision_command_tab/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/03_primary_case_decision_command_tab/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/03_primary_case_decision_command_tab/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/03_primary_case_decision_command_tab/dashboard_gap_register.yaml
+  required_zone_components:
+    case_context_header:
+    - case_context_header
+    case_tab_strip:
+    - case_workspace_tab_strip
+    - recovery_tab_locked_state
+    evidence_pack_strip:
+    - evidence_pack_strip
+    bilingual_narrative:
+    - bilingual_narrative_panel
+    - narrative_version_history_action
+    recommendation_summary:
+    - recommendation_summary_panel
+    action_authorisation:
+    - case_action_button_row
+    - action_consequence_preview
+    - confirmation_modal_contract
+    audit_assurance:
+    - audit_footnote_panel
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+  must_not_render:
+  - decision_queue_table
+  - multi_case_list
+- dashboard_id: 04_outcome_recovery_feedback
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+  required_evidence:
+    route_screenshot: evidence/rendered/04_outcome_recovery_feedback/route_screenshot.png
+    route_component_inventory: evidence/rendered/04_outcome_recovery_feedback/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/04_outcome_recovery_feedback/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/04_outcome_recovery_feedback/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/04_outcome_recovery_feedback/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/04_outcome_recovery_feedback/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/04_outcome_recovery_feedback/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/04_outcome_recovery_feedback/dashboard_gap_register.yaml
+  required_zone_components:
+    case_recovery_header:
+    - case_recovery_header
+    before_target_after_recovery:
+    - before_target_after_recovery_cards
+    recovery_trajectory:
+    - recovery_trajectory_chart
+    - action_approved_marker
+    model_learning_feedback:
+    - forecast_accuracy_card
+    - recommendation_effectiveness_card
+    - pillar_credit_grid
+    evidence_pack_footer:
+    - evidence_pack_link
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+- dashboard_id: 04_decision_command_centre
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  required_evidence:
+    route_screenshot: evidence/rendered/04_decision_command_centre/route_screenshot.png
+    route_component_inventory: evidence/rendered/04_decision_command_centre/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/04_decision_command_centre/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/04_decision_command_centre/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/04_decision_command_centre/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/04_decision_command_centre/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/04_decision_command_centre/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/04_decision_command_centre/dashboard_gap_register.yaml
+  required_zone_components:
+    decision_summary_strip:
+    - decision_summary_strip
+    - new_decisions_counter
+    - under_review_counter
+    - approved_counter
+    - escalated_counter
+    - tickets_created_counter
+    - emails_sent_counter
+    decision_candidate_queue:
+    - decision_table
+    - decision_queue_row
+    - visible_action_buttons
+    selected_decision_detail:
+    - selected_decision_detail_panel
+    - decision_rationale_panel
+    recommended_actions_panel:
+    - recommended_actions_panel
+    - recommended_action_ranked_list
+    human_authorised_action_area:
+    - action_button_bar
+    - approve_button
+    - request_revision_button
+    - escalate_button
+    - create_ticket_button
+    - email_owner_button
+    - view_details_button
+    - human_approval_notice
+    confirmation_drawer_region:
+    - confirmation_drawer
+    - external_side_effect_summary
+    - confirmation_required_notice
+    corrective_action_lifecycle:
+    - corrective_action_lifecycle
+    - action_stage_tracker
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+- dashboard_id: 05_runtime_evidence_execution_history
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  required_evidence:
+    route_screenshot: evidence/rendered/05_runtime_evidence_execution_history/route_screenshot.png
+    route_component_inventory: evidence/rendered/05_runtime_evidence_execution_history/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/05_runtime_evidence_execution_history/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/05_runtime_evidence_execution_history/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/05_runtime_evidence_execution_history/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/05_runtime_evidence_execution_history/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/05_runtime_evidence_execution_history/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/05_runtime_evidence_execution_history/dashboard_gap_register.yaml
+  required_zone_components:
+    runtime_status_summary:
+    - runtime_status_summary
+    - online_runtime_counter
+    - seeded_demo_status_chip
+    runtime_card_grid:
+    - runtime_card
+    - rnn_runtime_card
+    - anomaly_runtime_card
+    - decision_candidate_runtime_card
+    execution_history_panel:
+    - runtime_execution_history
+    - last_seven_runs_indicator
+    input_output_lineage_panel:
+    - runtime_lineage_panel
+    - input_marts_list
+    - output_tables_list
+    - raw_layer_forbidden_notice
+    schedule_and_next_run_panel:
+    - runtime_schedule_panel
+    - next_run_label
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+- dashboard_id: 06_decision_action_audit
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  required_evidence:
+    route_screenshot: evidence/rendered/06_decision_action_audit/route_screenshot.png
+    route_component_inventory: evidence/rendered/06_decision_action_audit/component_inventory.yaml
+    zone_component_inventory: evidence/rendered/06_decision_action_audit/zone_component_inventory.yaml
+    action_button_inventory: evidence/rendered/06_decision_action_audit/action_button_inventory.yaml
+    data_binding_inventory: evidence/rendered/06_decision_action_audit/data_binding_inventory.yaml
+    governance_panel_inventory: evidence/rendered/06_decision_action_audit/governance_panel_inventory.yaml
+    runtime_evidence_inventory: evidence/rendered/06_decision_action_audit/runtime_evidence_inventory.yaml
+    rendered_gap_register: evidence/rendered/06_decision_action_audit/dashboard_gap_register.yaml
+  required_zone_components:
+    audit_summary_strip:
+    - audit_summary_strip
+    - email_sent_counter
+    - ticket_created_counter
+    - actions_in_progress_counter
+    - actions_closed_counter
+    decision_queue:
+    - decision_table
+    - decision_queue_row
+    - action_status_badges
+    action_event_timeline:
+    - action_audit_timeline
+    - audit_event_row
+    email_delivery_log:
+    - email_delivery_log_panel
+    - notification_outbox_row
+    ticket_request_log:
+    - ticket_request_log_panel
+    - ticket_request_row
+    corrective_action_tracker:
+    - corrective_action_tracker
+    - corrective_action_row
+  conformance_status_allowed:
+  - pass
+  - partial
+  - fail
+  pass_requires:
+  - all_declared_zones_rendered
+  - all_zone_components_present
+  - all_required_bindings_present
+  - all_required_actions_present_or_marked_not_applicable
+  - no_critical_or_high_gaps
+design_notes_contract_truth: true

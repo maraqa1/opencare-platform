@@ -1,0 +1,9 @@
+kind: PackageReadinessChecklist
+checks:
+- explicit_kpi_formulas_present
+- screen_catalog_specific_and_aligned
+- action_lifecycle_declared_and_event_linked
+- bilingual_audit_completed
+- demo_data_generator_and_outputs_present
+- validator_cross_file_consistency_enabled
+- reusable_template_artifacts_separated_from_worked_example

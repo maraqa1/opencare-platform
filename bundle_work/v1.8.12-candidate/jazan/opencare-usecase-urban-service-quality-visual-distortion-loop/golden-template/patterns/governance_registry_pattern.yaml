@@ -1,0 +1,8 @@
+kind: ReusableGovernanceRegistryPattern
+required_sections:
+- governance/assets.yaml
+- governance/classification.yaml
+- governance/ownership.yaml
+- governance/freshness.yaml
+- governance/quality.yaml
+- governance/lineage.yaml

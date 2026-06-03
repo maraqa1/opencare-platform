@@ -1,0 +1,7 @@
+kind: ReusableDashboardRigidContractPattern
+purpose: Pattern for declaring dashboards as canonical implementation units
+requires:
+- dashboard_implementation_matrix
+- story_flow
+- dashboard_fidelity_contract
+- rendered_conformance

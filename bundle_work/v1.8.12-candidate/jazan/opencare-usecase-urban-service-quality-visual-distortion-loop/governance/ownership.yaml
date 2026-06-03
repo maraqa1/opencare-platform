@@ -1,0 +1,18 @@
+kind: OwnershipContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+owner: Jazan Amanah Performance Office
+steward: Jazan Data Analytics Team
+review_cadence: monthly
+asset_owner_defaults:
+  analytics: Data Analytics Team
+  decision: Performance Office
+  output: Platform ML
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

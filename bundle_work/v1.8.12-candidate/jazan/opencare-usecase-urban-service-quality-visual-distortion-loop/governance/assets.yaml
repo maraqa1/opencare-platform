@@ -1,0 +1,92 @@
+kind: GovernedAssets
+use_case_slug: urban-service-quality-visual-distortion-loop
+assets:
+- asset_id: analytics.fct_jazan_citizen_satisfaction
+  asset_type: table
+  layer: analytics
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: analytics.fct_jazan_emergency_readiness
+  asset_type: table
+  layer: analytics
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: analytics.fct_jazan_permit_performance
+  asset_type: table
+  layer: analytics
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: analytics.fct_jazan_service_coverage
+  asset_type: table
+  layer: analytics
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: analytics.fct_jazan_service_quality
+  asset_type: table
+  layer: analytics
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: analytics.fct_jazan_visual_distortion_performance
+  asset_type: table
+  layer: analytics
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: decision.jazan_generated_service_decisions
+  asset_type: table
+  layer: decision
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: decision.jazan_service_quality_action_queue
+  asset_type: table
+  layer: decision
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: output.jazan_service_quality_anomaly
+  asset_type: table
+  layer: output
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+- asset_id: output.jazan_service_rnn_forecast
+  asset_type: table
+  layer: output
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness_sla: daily
+  lineage_entry_point: dbt manifest or runtime evidence
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

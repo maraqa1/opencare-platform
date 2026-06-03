@@ -1,0 +1,21 @@
+kind: DeprecatedScreenLayoutsContract
+canonical: false
+deprecated: true
+superseded_by: screens/layout_zones.yaml
+rule: This file is retained only for backward compatibility. It must not be used as a canonical layout contract. Canonical
+  dashboard layout is defined exclusively in screens/layout_zones.yaml.
+validation_rule: Any canonical dashboard implementation matrix entry referencing screens/layouts.yaml must fail validation.
+legacy_screen_ids:
+- SCREEN-L1-STRATEGIC
+- SCREEN-L2-KPI
+- SCREEN-L3-CASE
+- SCREEN-CC-DECISIONS
+- SCREEN-CC-RUNTIMES
+- SCREEN-CC-AUDIT
+canonical_dashboard_ids:
+- 01_strategic_objective_monitoring
+- 02_kpi_municipality_workspace
+- 03_case_model_intelligence
+- 04_decision_command_centre
+- 05_runtime_evidence_execution_history
+- 06_decision_action_audit

@@ -1,0 +1,135 @@
+kind: ActionLifecycleWorkflowContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+snapshot_table: decision.jazan_action_lifecycle
+event_stream_table: decision.jazan_decision_action_events
+purpose: Track every outbound action from decision generation through human authorization, fired action, acknowledgement, execution, evidence submission, verification, resolution, and audit.
+important_distinction:
+  action_lifecycle: current-state lifecycle snapshot table
+  decision_action_events: append-only event stream
+fields:
+- action_lifecycle_id
+- decision_id
+- action_id
+- action_type
+- action_channel
+- triggered_by
+- authorized_by
+- owner_role
+- owner_lookup_ref
+- current_state
+- previous_state
+- fired_at
+- acknowledged_at
+- due_at
+- resolved_at
+- sla_status
+- escalation_level
+- external_reference_id
+- notification_id
+- ticket_id
+- audit_event_id
+- evidence_pack_id
+- recovery_outcome_id
+- created_at
+- updated_at
+allowed_states:
+- generated
+- authorised
+- fired
+- acknowledged
+- in_progress
+- evidence_submitted
+- verified
+- resolved
+- closed
+- escalated
+- failed
+- cancelled
+allowed_channels:
+- portal
+- email
+- ticket
+- in_app
+- external_system
+required_event_linkage:
+  decision_id: decision.jazan_generated_service_decisions.decision_candidate_id
+  action_id: decision.jazan_service_quality_action_queue.corrective_action_id
+  audit_event_id: decision.jazan_decision_action_events.decision_event_id
+  notification_id:
+  - decision.jazan_notification_outbox.notification_id
+  - decision.jazan_email_delivery_log.notification_id
+  ticket_id: decision.jazan_ticket_requests.ticket_request_id
+  recovery_outcome_id: decision.jazan_visual_distortion_recovery_outcome.recovery_outcome_id
+action_types:
+  approve_decision:
+    channel: portal
+    human_authorisation_required: true
+    lifecycle_path:
+    - generated
+    - authorised
+    - fired
+    - in_progress
+    - verified
+    - resolved
+    - closed
+  request_revision:
+    channel: in_app
+    human_authorisation_required: true
+    lifecycle_path:
+    - generated
+    - authorised
+    - fired
+    - in_progress
+    - resolved
+    - closed
+  escalate_decision:
+    channel: email
+    human_authorisation_required: true
+    lifecycle_path:
+    - generated
+    - authorised
+    - escalated
+    - fired
+    - acknowledged
+    - resolved
+    - closed
+  create_ticket:
+    channel: ticket
+    human_authorisation_required: true
+    lifecycle_path:
+    - generated
+    - authorised
+    - fired
+    - acknowledged
+    - in_progress
+    - evidence_submitted
+    - verified
+    - resolved
+    - closed
+  email_owner:
+    channel: email
+    human_authorisation_required: true
+    lifecycle_path:
+    - generated
+    - authorised
+    - fired
+    - acknowledged
+    - resolved
+    - closed
+rules:
+  external_actions_require_human_authorisation: true
+  every_state_transition_writes_an_audit_event: true
+  email_actions_must_link_notification_and_delivery_log: true
+  ticket_actions_must_link_ticket_requests: true
+  lifecycle_history_edit_forbidden: true
+  null_means_unknown: true
+  zero_means_actual_zero: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

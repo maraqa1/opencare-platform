@@ -1,0 +1,8 @@
+kind: ReusableLayoutZonesPattern
+required_fields:
+- dashboard_id
+- route
+- zone_order
+- zones
+- collapse_forbidden
+- substitution_forbidden

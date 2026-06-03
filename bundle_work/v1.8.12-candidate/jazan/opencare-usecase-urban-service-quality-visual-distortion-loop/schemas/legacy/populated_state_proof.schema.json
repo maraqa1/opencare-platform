@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Populated state proof",
+  "description": "Evidence artefact produced by validation/validate_populated_state.py and consumed by the OpenCare platform promoter before granting first-class status. The package must produce this file; the platform must verify it.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "use_case_slug",
+    "package_version",
+    "package_content_hash",
+    "generated_at",
+    "validator_version",
+    "endpoint_evidence",
+    "phi_masking_evidence",
+    "governance_policy_evidence",
+    "overall_status"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "kind": { "type": "string", "const": "PopulatedStateProof" },
+    "use_case_slug": { "type": "string", "const": "urban-service-quality-visual-distortion-loop" },
+    "package_version": {
+      "type": "string",
+      "description": "Must match package.yaml#metadata.version exactly. Validator fails if mismatch.",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "package_content_hash": {
+      "type": "string",
+      "description": "SHA-256 of the canonical package artefact. Used to detect tampering between proof generation and promotion.",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "generated_by": { "type": "string" },
+    "validator_version": { "type": "string" },
+    "endpoint_evidence": {
+      "type": "array",
+      "description": "One entry per backend route declared in contracts/routes.yaml with populated_assertion_required: true",
+      "items": {
+        "type": "object",
+        "required": [
+          "route_id",
+          "path",
+          "method",
+          "shape_hash",
+          "row_count",
+          "latency_ms",
+          "policy_decisions",
+          "status"
+        ],
+        "properties": {
+          "route_id": { "type": "string" },
+          "path": { "type": "string" },
+          "method": { "type": "string", "enum": ["GET", "POST"] },
+          "shape_hash": {
+            "type": "string",
+            "description": "SHA-256 of the response JSON schema. Used to detect contract drift.",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "row_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows returned from the response. Zero may be valid for routes marked empty_response_valid: true."
+          },
+          "row_count_meets_minimum": {
+            "type": "boolean",
+            "description": "True if row_count >= the route's minimum_rows_for_populated assertion. False blocks promotion unless empty_response_valid is true."
+          },
+          "latency_ms": { "type": "number", "minimum": 0 },
+          "latency_within_sla": { "type": "boolean" },
+          "policy_decisions": {
+            "type": "array",
+            "description": "Governance policy enforcement decisions logged during the call.",
+            "items": {
+              "type": "object",
+              "required": ["policy_id", "decision", "role_context"],
+              "properties": {
+                "policy_id": { "type": "string" },
+                "decision": { "type": "string", "enum": ["allow", "deny", "mask", "redact"] },
+                "role_context": { "type": "string" }
+              }
+            }
+          },
+          "status": { "type": "string", "enum": ["pass", "fail", "warn"] },
+          "failure_reason": { "type": "string" }
+        }
+      }
+    },
+    "phi_masking_evidence": {
+      "type": "array",
+      "description": "Evidence that PHI/citizen identifiers are correctly masked under non-admin roles.",
+      "items": {
+        "type": "object",
+        "required": ["route_id", "role_tested", "phi_field", "masked", "expected_masking"],
+        "properties": {
+          "route_id": { "type": "string" },
+          "role_tested": { "type": "string" },
+          "phi_field": { "type": "string" },
+          "masked": { "type": "boolean" },
+          "expected_masking": { "type": "boolean" },
+          "status": { "type": "string", "enum": ["pass", "fail"] }
+        }
+      }
+    },
+    "governance_policy_evidence": {
+      "type": "object",
+      "required": ["data_classification_enforced", "audit_log_writable", "human_in_the_loop_enforced", "no_autonomous_external_action"],
+      "properties": {
+        "data_classification_enforced": { "type": "boolean" },
+        "audit_log_writable": { "type": "boolean" },
+        "human_in_the_loop_enforced": { "type": "boolean" },
+        "no_autonomous_external_action": { "type": "boolean" },
+        "ndmo_classification_alignment": {
+          "type": "string",
+          "description": "Statement that the data classification map (Restricted / Confidential / Internal / Public) is aligned with NDMO classification rules."
+        }
+      }
+    },
+    "bilingual_coverage_evidence": {
+      "type": "object",
+      "description": "Validation that every i18n key in en.yaml has a corresponding entry in ar.yaml and vice versa.",
+      "properties": {
+        "en_key_count": { "type": "integer" },
+        "ar_key_count": { "type": "integer" },
+        "keys_only_in_en": { "type": "array", "items": { "type": "string" } },
+        "keys_only_in_ar": { "type": "array", "items": { "type": "string" } },
+        "coverage_complete": { "type": "boolean" },
+        "native_speaker_review_complete": {
+          "type": "boolean",
+          "description": "Must be true before customer-facing rendering. False during initial pilot is acceptable; this flag must be set true after native review."
+        }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "required": ["proof_age_hours", "freshness_sla_hours", "fresh"],
+      "properties": {
+        "proof_age_hours": { "type": "number" },
+        "freshness_sla_hours": { "type": "number", "const": 24 },
+        "fresh": { "type": "boolean" }
+      }
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["pass", "fail", "warn"],
+      "description": "Pass requires all required components to be pass. Warn allows soft conditions (e.g., bilingual native review pending). Fail blocks promotion."
+    },
+    "overall_failure_reasons": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

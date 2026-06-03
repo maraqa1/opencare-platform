@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "action_result.response.schema.json",
+  "type": "object",
+  "required": [
+    "success",
+    "event_id",
+    "meta"
+  ],
+  "properties": {
+    "success": {
+      "type": "boolean"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_records": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": [
+        "as_of",
+        "empty"
+      ],
+      "properties": {
+        "as_of": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "empty": {
+          "type": "boolean"
+        },
+        "data_freshness": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

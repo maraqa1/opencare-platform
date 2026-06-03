@@ -1,0 +1,7 @@
+kind: ReusableVisualGrammarPattern
+required_fields:
+- density
+- threshold_rail_required
+- connector_line_required
+- bilingual_label_placement
+- visual_non_negotiables

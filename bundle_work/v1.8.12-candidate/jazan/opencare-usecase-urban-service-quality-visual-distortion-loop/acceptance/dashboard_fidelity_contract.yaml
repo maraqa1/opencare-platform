@@ -1,0 +1,565 @@
+kind: DashboardFidelityContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+required_dashboard_count: 8
+required_dashboard_ids:
+- 01_strategic_objective_monitoring
+- 02_kpi_municipality_workspace
+- 03_case_model_intelligence
+- 03_primary_case_decision_command_tab
+- 04_outcome_recovery_feedback
+- 04_decision_command_centre
+- 05_runtime_evidence_execution_history
+- 06_decision_action_audit
+required_screen_ids:
+- SCREEN-L1-STRATEGIC
+- SCREEN-L2-KPI
+- SCREEN-L3-CASE
+- SCREEN-L3-CASE-DECISIONS
+- SCREEN-L3-CASE-RECOVERY
+- SCREEN-CC-DECISIONS
+- SCREEN-CC-RUNTIMES
+- SCREEN-CC-AUDIT
+dashboard_fidelity_required: true
+screen_substitution_forbidden: true
+dashboard_collapse_forbidden: true
+mockup_traceability_required: true
+component_contract_required: true
+data_binding_required: true
+action_contract_required_for_decision_dashboards: true
+governance_evidence_required: true
+runtime_evidence_required_when_runtime_dependencies_declared: true
+human_in_the_loop_required_for_external_actions: true
+failure_conditions:
+- declared_dashboard_missing
+- dashboard_route_missing
+- dashboard_collapsed_into_generic_shell
+- dashboard_id_substituted
+- required_component_missing
+- required_action_button_missing
+- governance_evidence_missing
+- runtime_evidence_missing
+- mockup_traceability_missing
+- screen_uses_unbound_static_values
+- portal_component_queries_raw_or_source_table_directly
+- external_action_without_human_approval
+- decision_dashboard_without_audit_event_contract
+- KPI_connector_rail_missing
+- threshold_rail_missing
+- active_case_banner_missing
+- Arabic_sublabels_missing_where_required
+- component_anatomy_not_followed
+- layout_zone_contract_ignored
+- visual_grammar_contract_ignored
+- case_decision_tab_contains_queue
+- case_decision_tab_missing_bilingual_narrative
+- case_decision_tab_missing_confirmation_modal
+- case_decision_tab_hides_recovery_tab
+- case_decision_tab_missing_audit_footnote
+- case_model_intelligence_contains_authorisation_actions
+- decision_action_name_alias_conflict
+- legacy_kpi_case_route_shape_present
+- case_decision_route_conflict
+- typography_heavy_marketing_weights
+- decorative_colour_usage
+- unrounded_numeric_value
+- fake_zero_for_missing_data
+- generic_confirmation_without_payload_preview
+- case_primary_decision_tab_replaced_by_queue
+- feature_contributions_do_not_sum_to_composite_score
+- runtime_degraded_day_hidden
+- recovery_tab_hidden_when_locked
+- bilingual_narrative_toggle_only
+- action_button_overflow_menu
+- level3_overview_default_without_screen
+- case_intelligence_owns_authorisation_actions
+- recovery_screen_missing_from_catalog
+- action_lifecycle_missing
+- action_lifecycle_event_link_missing
+- external_action_without_lifecycle_linkage
+- dashboard_visible_kpi_without_explicit_formula
+- contradictory_package_version_fields
+acceptance_checks:
+- dashboard_id: 01_strategic_objective_monitoring
+  screen_id: SCREEN-L1-STRATEGIC
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  must_render: true
+  must_include_components:
+  - page_header_bar
+  - demo_status_chip
+  - route_status_chip
+  - strategic_objective_header
+  - objective_metadata_chips
+  - municipality_coverage_chip
+  - kpi_state_summary_strip
+  - meeting_target_counter
+  - approaching_trigger_counter
+  - in_breach_counter
+  - decision_candidate_counter
+  - kpi_connector_rail
+  - kpi_marker_sequence
+  - kpi_to_card_connectors
+  - kpi_threshold_card_grid
+  - kpi_threshold_card
+  - highest_priority_case_alert
+  - review_case_action
+  must_not_omit:
+  - strategic_objective_header
+  - kpi_threshold_cards
+  - in_breach_kpi_state
+  - decision_candidate_summary
+  - active_case_banner
+  - page_header_bar
+  - demo_status_chip
+  - route_status_chip
+  - strategic_objective_header
+  - objective_metadata_chips
+  - municipality_coverage_chip
+  - kpi_state_summary_strip
+  - meeting_target_counter
+  - approaching_trigger_counter
+  - in_breach_counter
+  - decision_candidate_counter
+  - kpi_connector_rail
+  - kpi_marker_sequence
+  - kpi_to_card_connectors
+  - kpi_threshold_card_grid
+  - kpi_threshold_card
+  - highest_priority_case_alert
+  - review_case_action
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: false
+  must_show_actions: true
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - empty_state_check
+  - demo_state_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+- dashboard_id: 02_kpi_municipality_workspace
+  screen_id: SCREEN-L2-KPI
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  must_render: true
+  must_include_components:
+  - page_header_bar
+  - active_kpi_context_header
+  - kpi_summary_strip
+  - kpi_target_status_card
+  - kpi_risk_card
+  - municipality_ranking_table
+  - municipality_risk_rows
+  - trend_forecast_chart
+  - threshold_reference_line
+  - governance_evidence_panel
+  - classification_badge
+  - ownership_badge
+  - lineage_link
+  - freshness_badge
+  - open_cases_list
+  - open_case_row
+  - open_case_action
+  must_not_omit:
+  - municipality_ranking
+  - governance_panel
+  - open_cases_list
+  - risk_score_binding
+  - page_header_bar
+  - active_kpi_context_header
+  - kpi_summary_strip
+  - kpi_target_status_card
+  - kpi_risk_card
+  - municipality_ranking_table
+  - municipality_risk_rows
+  - trend_forecast_chart
+  - threshold_reference_line
+  - governance_evidence_panel
+  - classification_badge
+  - ownership_badge
+  - lineage_link
+  - freshness_badge
+  - open_cases_list
+  - open_case_row
+  - open_case_action
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: true
+  must_show_actions: true
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - runtime_binding_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+- dashboard_id: 03_case_model_intelligence
+  screen_id: SCREEN-L3-CASE
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+  must_render: true
+  must_include_components:
+  - active_case_banner
+  - case_identity_header
+  - case_status_chips
+  - composite_risk_score_card
+  - feature_contribution_bar
+  - model_driver_list
+  - rnn_forecast_chart
+  - forecast_breach_marker
+  - forecast_confidence_band
+  - anomaly_detection_card
+  - z_score_indicator
+  - recommendation_ranked_cards
+  - intervention_effectiveness_badge
+  - generated_decision_evidence_panel
+  - human_approval_notice
+  - recovery_trajectory_chart
+  - target_recovery_marker
+  must_not_omit:
+  - forecast_chart
+  - anomaly_card
+  - recommendations
+  - recovery_trajectory
+  - human_approval_notice
+  - active_case_banner
+  - case_identity_header
+  - case_status_chips
+  - composite_risk_score_card
+  - feature_contribution_bar
+  - model_driver_list
+  - rnn_forecast_chart
+  - forecast_breach_marker
+  - forecast_confidence_band
+  - anomaly_detection_card
+  - z_score_indicator
+  - recommendation_ranked_cards
+  - intervention_effectiveness_badge
+  - generated_decision_evidence_panel
+  - human_approval_notice
+  - recovery_trajectory_chart
+  - target_recovery_marker
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: true
+  must_show_actions: true
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - interaction_contract_check
+  - runtime_evidence_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+  allowed_actions:
+  - open_case_decision_tab
+  forbidden_actions:
+  - approve_decision
+  - request_revision
+  - escalate_decision
+  - create_ticket
+  - email_owner
+  authorisation_surface_forbidden: true
+- dashboard_id: 03_primary_case_decision_command_tab
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+  must_render: true
+  must_include_components:
+  - case_context_header
+  - case_workspace_tab_strip
+  - evidence_pack_strip
+  - bilingual_narrative_panel
+  - narrative_version_history_action
+  - recommendation_summary_panel
+  - case_action_button_row
+  - action_consequence_preview
+  - confirmation_modal_contract
+  - audit_footnote_panel
+  - recovery_tab_locked_state
+  must_not_omit:
+  - side_by_side_bilingual_narrative
+  - action_button_side_effect_hints
+  - confirmation_modal_requirement
+  - no_autonomous_escalation_notice
+  - audit_logged_notice
+  - recovery_tab_locked_state
+  - case_context_header
+  - case_workspace_tab_strip
+  - evidence_pack_strip
+  - bilingual_narrative_panel
+  - narrative_version_history_action
+  - recommendation_summary_panel
+  - case_action_button_row
+  - action_consequence_preview
+  - confirmation_modal_contract
+  - audit_footnote_panel
+  - recovery_tab_locked_state
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: false
+  must_show_actions: true
+  acceptance_evidence:
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - action_button_inventory
+  - confirmation_modal_check
+  - bilingual_panel_check
+  - empty_state_check
+  - demo_state_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+  queue_forbidden: true
+  required_actions:
+  - approve_decision
+  - request_revision
+  - escalate_decision
+  - create_ticket
+  - email_owner
+- dashboard_id: 04_outcome_recovery_feedback
+  screen_id: SCREEN-L3-CASE-RECOVERY
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+  must_render: true
+  must_include_components:
+  - case_recovery_header
+  - before_target_after_recovery_cards
+  - recovery_trajectory_chart
+  - action_approved_marker
+  - forecast_accuracy_card
+  - recommendation_effectiveness_card
+  - pillar_credit_grid
+  - evidence_pack_link
+  must_not_omit:
+  - before_target_after_recovery_cards
+  - binary_pillar_credit_grid
+  - evidence_pack_link
+  - action_approved_marker_from_audit_event
+  - case_recovery_header
+  - before_target_after_recovery_cards
+  - recovery_trajectory_chart
+  - action_approved_marker
+  - forecast_accuracy_card
+  - recommendation_effectiveness_card
+  - pillar_credit_grid
+  - evidence_pack_link
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: false
+  must_show_actions: true
+  acceptance_evidence:
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - audit_event_marker_check
+  - evidence_pack_link_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+- dashboard_id: 04_decision_command_centre
+  screen_id: SCREEN-CC-DECISIONS
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  must_render: true
+  must_include_components:
+  - decision_summary_strip
+  - new_decisions_counter
+  - under_review_counter
+  - approved_counter
+  - escalated_counter
+  - tickets_created_counter
+  - emails_sent_counter
+  - decision_table
+  - decision_queue_row
+  - visible_action_buttons
+  - selected_decision_detail_panel
+  - decision_rationale_panel
+  - recommended_actions_panel
+  - recommended_action_ranked_list
+  - action_button_bar
+  - approve_button
+  - request_revision_button
+  - escalate_button
+  - create_ticket_button
+  - email_owner_button
+  - view_details_button
+  - human_approval_notice
+  - confirmation_drawer
+  - external_side_effect_summary
+  - confirmation_required_notice
+  - corrective_action_lifecycle
+  - action_stage_tracker
+  must_not_omit:
+  - generated_decision_queue
+  - visible_action_buttons
+  - human_approval_rule
+  - decision_detail_drawer
+  - decision_summary_strip
+  - new_decisions_counter
+  - under_review_counter
+  - approved_counter
+  - escalated_counter
+  - tickets_created_counter
+  - emails_sent_counter
+  - decision_table
+  - decision_queue_row
+  - visible_action_buttons
+  - selected_decision_detail_panel
+  - decision_rationale_panel
+  - recommended_actions_panel
+  - recommended_action_ranked_list
+  - action_button_bar
+  - approve_button
+  - request_revision_button
+  - escalate_button
+  - create_ticket_button
+  - email_owner_button
+  - view_details_button
+  - human_approval_notice
+  - confirmation_drawer
+  - external_side_effect_summary
+  - confirmation_required_notice
+  - corrective_action_lifecycle
+  - action_stage_tracker
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: true
+  must_show_actions: true
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - interaction_contract_check
+  - audit_event_check
+  - notification_ticket_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+- dashboard_id: 05_runtime_evidence_execution_history
+  screen_id: SCREEN-CC-RUNTIMES
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  must_render: true
+  must_include_components:
+  - runtime_status_summary
+  - online_runtime_counter
+  - seeded_demo_status_chip
+  - runtime_card
+  - rnn_runtime_card
+  - anomaly_runtime_card
+  - decision_candidate_runtime_card
+  - runtime_execution_history
+  - last_seven_runs_indicator
+  - runtime_lineage_panel
+  - input_marts_list
+  - output_tables_list
+  - raw_layer_forbidden_notice
+  - runtime_schedule_panel
+  - next_run_label
+  must_not_omit:
+  - runtime_cards
+  - last_run_status
+  - input_tables
+  - output_tables
+  - schedule
+  - raw_layer_forbidden_notice
+  - runtime_status_summary
+  - online_runtime_counter
+  - seeded_demo_status_chip
+  - runtime_card
+  - rnn_runtime_card
+  - anomaly_runtime_card
+  - decision_candidate_runtime_card
+  - runtime_execution_history
+  - last_seven_runs_indicator
+  - runtime_lineage_panel
+  - input_marts_list
+  - output_tables_list
+  - raw_layer_forbidden_notice
+  - runtime_schedule_panel
+  - next_run_label
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: true
+  must_show_actions: true
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - runtime_contract_check
+  - execution_log_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+- dashboard_id: 06_decision_action_audit
+  screen_id: SCREEN-CC-AUDIT
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  must_render: true
+  must_include_components:
+  - audit_summary_strip
+  - email_sent_counter
+  - ticket_created_counter
+  - actions_in_progress_counter
+  - actions_closed_counter
+  - decision_table
+  - decision_queue_row
+  - action_status_badges
+  - action_audit_timeline
+  - audit_event_row
+  - email_delivery_log_panel
+  - notification_outbox_row
+  - ticket_request_log_panel
+  - ticket_request_row
+  - corrective_action_tracker
+  - corrective_action_row
+  must_not_omit:
+  - action_history
+  - email_log
+  - ticket_log
+  - corrective_action_tracker
+  - audit_summary_strip
+  - email_sent_counter
+  - ticket_created_counter
+  - actions_in_progress_counter
+  - actions_closed_counter
+  - decision_table
+  - decision_queue_row
+  - action_status_badges
+  - action_audit_timeline
+  - audit_event_row
+  - email_delivery_log_panel
+  - notification_outbox_row
+  - ticket_request_log_panel
+  - ticket_request_row
+  - corrective_action_tracker
+  - corrective_action_row
+  must_bind_to_declared_data: true
+  must_show_governance_evidence: true
+  must_show_runtime_evidence: false
+  must_show_actions: true
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - audit_event_check
+  - email_ticket_trace_check
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  must_include_components_source: screens/layout_zones.yaml.zones[].required_components
+  zone_component_assignment_required: true
+visual_non_negotiables_required: true
+layout_zone_validation_required: true
+component_anatomy_validation_required: true
+visual_grammar_validation_required: true
+rendered_dashboard_conformance_required: true
+design_notes_contract_truth: true

@@ -1,0 +1,9 @@
+kind: ReusableActionLifecyclePattern
+required_sections:
+- decision-workflows/action_lifecycle.yaml
+- dbt/models/decision/jazan_action_lifecycle.sql
+- dbt/models/decision/jazan_decision_action_events.sql
+required_rules:
+- snapshot_table_and_event_stream_required
+- external_actions_must_link_notifications_or_tickets
+- every_state_transition_writes_audit_event

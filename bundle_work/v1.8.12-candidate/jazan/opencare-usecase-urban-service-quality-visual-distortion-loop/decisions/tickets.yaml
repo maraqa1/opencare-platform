@@ -1,0 +1,27 @@
+kind: TicketsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+ticketing:
+- ticket_id: corrective_action_ticket
+  trigger: btn.create_ticket
+  external_system: MAKEEN_or_Service_Desk
+  fallback_behavior: decision_log_only
+  audit_event: decision.ticket_created
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

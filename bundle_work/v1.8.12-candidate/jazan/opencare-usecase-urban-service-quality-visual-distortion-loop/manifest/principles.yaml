@@ -1,0 +1,80 @@
+kind: GoldenBundlePrinciples
+use_case_slug: urban-service-quality-visual-distortion-loop
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true
+principles:
+  business_first: Business objectives, KPIs, decisions, and workflows define the screen
+    design. Mockups are references only.
+  locale_direction_required: Every materialized artefact must declare or inherit locale
+    and text direction.
+  human_authorisation_required: Every external action requires explicit human authorisation
+    before execution.
+  capability_truthfulness: Platform capability bindings must be conservative, evidence-based,
+    and reviewed when status is uncertain.
+  legacy_reference_only: legacy/ is retained for provenance only. manifest/, business/,
+    data/, runtime/, decisions/, screens/, bindings/, governance/, acceptance/, lifecycle/
+    are the source of truth.
+  no_fake_success: No component, dashboard, runtime, or governance fact may claim
+    success without a declared binding and acceptance proof.
+  dashboard_fidelity_required: Declared dashboards are canonical implementation units
+    and must be rendered directly from their dashboard contracts.
+  screen_substitution_forbidden: OpenCare may adapt architecture internals, but may
+    not collapse, substitute, merge, omit, or reinterpret declared dashboard surfaces.
+external_actions_requiring_confirmation:
+- send_email
+- create_ticket
+- escalate_to_external_authority
+- update_external_system
+- trigger_runtime_with_external_side_effect
+- email_owner
+- publish_report
+artefact_locale_inheritance:
+  default_locale: en
+  default_direction: ltr
+  rtl_locale: ar
+  materializer_rule: Artefacts without an explicit locale block inherit this file,
+    but new v1.1+ bundles should declare locale at artefact level.
+dashboard_source_of_truth:
+  rule: declared_dashboards_are_canonical
+  statement: If a dashboard contract exists, the implementation must render that dashboard
+    contract directly. Mockups paired with structured dashboard YAML are not optional
+    references.
+  architecture_flexibility_allowed:
+  - backend_service_structure
+  - dbt_execution_order
+  - runtime_extension_path
+  - internal_component_implementation
+  - deployment_topology
+  ui_fidelity_required:
+  - declared_dashboard_count
+  - declared_dashboard_ids
+  - dashboard_routes
+  - dashboard_narrative_flow
+  - required_components
+  - required_actions
+  - governance_evidence_panels
+  - runtime_evidence_panels
+  contract_files:
+  - screens/dashboard_implementation_matrix.yaml
+  - screens/story_flow.yaml
+  - acceptance/dashboard_fidelity_contract.yaml
+  dashboard_collapse_forbidden: true
+  screen_substitution_forbidden: true
+  dashboard_fidelity_required: true

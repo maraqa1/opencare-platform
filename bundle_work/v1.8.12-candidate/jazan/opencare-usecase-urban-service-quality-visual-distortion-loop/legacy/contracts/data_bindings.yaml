@@ -1,0 +1,248 @@
+contract_version: '1.7.1'
+kind: ComponentDataBindings
+use_case_slug: urban-service-quality-visual-distortion-loop
+
+# Each binding declares what a workspace component renders against.
+# No silent fallback to demo data. Components handle empty state explicitly
+# via the empty_state_policy field.
+
+global_policy:
+  fallback_behavior_values_permitted:
+    - block_materialization
+    - render_empty_state
+    - hide_component
+  fallback_behavior_values_forbidden:
+    - render_placeholder
+    - preview_only
+    - silently_substitute_demo_data
+  empty_state_policy_default: forbid_when_demo_data_loaded
+
+bindings:
+
+  # Level 1 strategic landing
+  - component_id: strategic_objective_header
+    renders_on: SCREEN-L1-STRATEGIC
+    source_type: yaml_reference
+    source: contracts/kpi.yaml#strategic_objective
+    empty_state_policy: not_applicable_static_content
+
+  - component_id: kpi_state_summary_strip
+    renders_on: SCREEN-L1-STRATEGIC
+    source_type: query
+    source: analytics.fct_jazan_kpi_portfolio_summary
+    aggregation: latest_value_per_kpi_then_count_by_state
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-L1-ROLLUP
+
+  - component_id: kpi_connector_rail
+    renders_on: SCREEN-L1-STRATEGIC
+    source_type: derived_from_state
+    source: kpi_state_summary_strip
+    empty_state_policy: not_applicable_static_structure
+
+  - component_id: kpi_threshold_card_grid
+    renders_on: SCREEN-L1-STRATEGIC
+    source_type: query
+    source_template: analytics.fct_jazan_{kpi.source_field}
+    cardinality: 6
+    one_per: contracts/kpi.yaml#kpis[]
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-L1-KPI-CARDS
+
+  - component_id: highest_priority_case_alert
+    renders_on: SCREEN-L1-STRATEGIC
+    source_type: query
+    source: decision.jazan_generated_service_decisions
+    filter: status in (awaiting_review, under_revision) order by composite_risk_score desc limit 1
+    empty_state_policy: hide_component
+    empty_state_replacement: all_kpis_within_bands_affirmation
+
+  # Level 2 KPI workspace
+  - component_id: kpi_summary_strip
+    renders_on: SCREEN-L2-KPI
+    source_type: query
+    source_template: analytics.fct_jazan_{kpi.source_field}
+    aggregation: latest_month_population_weighted
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-L2-SUMMARY
+
+  - component_id: municipality_ranking_table
+    renders_on: SCREEN-L2-KPI
+    source_type: query
+    source: analytics.fct_jazan_{kpi.source_field} JOIN dim_jazan_municipality JOIN output.jazan_municipality_service_risk_score
+    sort: composite_risk_score DESC
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-L2-RANKING
+
+  - component_id: trend_forecast_chart
+    renders_on: SCREEN-L2-KPI
+    source_type: query
+    source_template: analytics.fct_jazan_{kpi.source_field}
+    aggregation: monthly_population_weighted_24_months
+    forecast_extension_from: output.jazan_service_rnn_forecast
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: governance_evidence_panel
+    renders_on: SCREEN-L2-KPI
+    source_type: yaml_reference
+    source: contracts/kpi.yaml#kpis[matching_kpi]
+    cross_reference: governance/governed_datasets.yaml
+    empty_state_policy: not_applicable_static_content
+
+  - component_id: open_cases_list
+    renders_on: SCREEN-L2-KPI
+    source_type: query
+    source: decision.jazan_generated_service_decisions
+    filter: kpi_id == {current_kpi} AND status IN (awaiting_review, under_revision, assigned, in_progress)
+    empty_state_policy: allow_when_genuinely_empty
+    empty_state_text_key: l2.open_cases.empty
+
+  # Level 3 case workspace
+  - component_id: active_case_banner
+    renders_on: SCREEN-L3-CASE
+    source_type: query
+    source: decision.jazan_generated_service_decisions
+    filter: case_id == {current_case_id}
+    empty_state_policy: redirect_to_l2_if_case_missing
+
+  - component_id: trend_forecast_chart
+    renders_on: SCREEN-L3-CASE
+    tab: overview
+    source_type: query
+    source_template: analytics.fct_jazan_{kpi.source_field}
+    filter: municipality_id == {current_municipality} AND month_start_date >= 12_months_ago
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: composite_risk_score_card
+    renders_on: SCREEN-L3-CASE
+    tab: intelligence
+    source_type: query
+    source: output.jazan_municipality_service_risk_score
+    filter: municipality_id == {current_municipality} AND kpi_id == {current_kpi}
+    show_feature_contributions: true
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-L3-RISK-SCORE
+
+  - component_id: rnn_forecast_chart
+    renders_on: SCREEN-L3-CASE
+    tab: intelligence
+    source_type: query
+    source: output.jazan_service_rnn_forecast
+    overlay: analytics.fct_jazan_{kpi.source_field} (historical 6 months)
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: anomaly_detection_card
+    renders_on: SCREEN-L3-CASE
+    tab: intelligence
+    source_type: query
+    source: output.jazan_service_quality_anomaly
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: recommendation_ranked_cards
+    renders_on: SCREEN-L3-CASE
+    tab: intelligence
+    source_type: query
+    source: output.jazan_recommended_intervention
+    filter: municipality_id == {current_municipality} AND kpi_id == {current_kpi}
+    limit: 3
+    empty_state_policy: forbid_when_demo_data_loaded
+    empty_state_text_key: l3.intelligence.no_recommendations
+
+  - component_id: action_button_bar
+    renders_on: SCREEN-L3-CASE
+    tab: decisions
+    source_type: contract_reference
+    source: contracts/action_buttons.yaml
+    requires_human_authorisation: true
+
+  - component_id: generated_decision_evidence_panel
+    renders_on: SCREEN-L3-CASE
+    tab: decisions
+    source_type: query
+    source: decision.jazan_generated_service_decisions.draft_narrative_bilingual
+    bilingual_display: side_by_side
+    editable: true
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: recovery_trajectory_chart
+    renders_on: SCREEN-L3-CASE
+    tab: recovery
+    source_type: query
+    source: decision.jazan_visual_distortion_recovery_outcome
+    visible_when: case.status in [closed, recovered]
+    empty_state_policy: hide_tab_if_not_applicable
+
+  # Cross-cut: decision command
+  - component_id: decision_summary_strip
+    renders_on: SCREEN-CC-DECISIONS
+    source_type: query
+    source: decision.jazan_decision_action_events
+    aggregation: count grouped by current_status
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: decision_table
+    renders_on: SCREEN-CC-DECISIONS
+    source_type: query
+    source: decision.jazan_generated_service_decisions
+    join: dim_jazan_municipality, contracts/kpi.yaml, output.jazan_recommended_intervention (top 1)
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-CC-QUEUE
+
+  - component_id: selected_decision_detail_panel
+    renders_on: SCREEN-CC-DECISIONS
+    source_type: query
+    source: decision.jazan_generated_service_decisions
+    filter: case_id == {selected_decision_id}
+    empty_state_policy: not_applicable_user_selection_required
+
+  # Cross-cut: runtime evidence
+  - component_id: runtime_card_grid
+    renders_on: SCREEN-CC-RUNTIMES
+    source_type: platform_api
+    source: opencare.runtime_registry.list(use_case_slug)
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-CC-RUNTIMES
+
+  - component_id: runtime_execution_history
+    renders_on: SCREEN-CC-RUNTIMES
+    source_type: platform_api
+    source: opencare.runtime_execution_log.last_n(runtime_id, n=7)
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  # Cross-cut: audit
+  - component_id: audit_summary_strip
+    renders_on: SCREEN-CC-AUDIT
+    source_type: query
+    source: decision.jazan_decision_action_events
+    aggregation: count grouped by lifecycle_status
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: action_audit_timeline
+    renders_on: SCREEN-CC-AUDIT
+    source_type: query
+    source: decision.jazan_decision_action_events
+    filter: decision_id == {selected_decision_id}
+    order_by: event_ts ASC
+    empty_state_policy: forbid_when_demo_data_loaded
+
+  - component_id: email_delivery_log_panel
+    renders_on: SCREEN-CC-AUDIT
+    source_type: query
+    source: decision.jazan_notification_log
+    filter: decision_id == {selected_decision_id}
+    empty_state_policy: allow_when_genuinely_empty
+
+  - component_id: ticket_request_log_panel
+    renders_on: SCREEN-CC-AUDIT
+    source_type: query
+    source: decision.jazan_ticket_log
+    filter: decision_id == {selected_decision_id}
+    empty_state_policy: allow_when_genuinely_empty
+
+  - component_id: corrective_action_tracker
+    renders_on: SCREEN-CC-AUDIT
+    source_type: query
+    source: decision.jazan_corrective_actions
+    join: dim_jazan_municipality
+    empty_state_policy: forbid_when_demo_data_loaded
+    populated_assertion_id: ASRT-CC-CORRECTIVE-ACTIONS

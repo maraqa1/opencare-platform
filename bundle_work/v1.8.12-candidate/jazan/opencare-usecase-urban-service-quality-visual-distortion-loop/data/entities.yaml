@@ -1,0 +1,265 @@
+kind: DataEntitiesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+entities:
+- entity_id: municipality
+  table_name: analytics.dim_jazan_municipality
+  layer: analytics
+  grain: one_row_per_municipality
+  primary_key: municipality_id
+  classification: internal
+  downstream_consumers:
+  - all_screens
+- entity_id: service_request
+  table_name: staging.stg_jazan_service_requests
+  layer: staging
+  grain: one_row_per_service_request
+  primary_key: service_request_id
+  time_field: request_created_at
+  classification: internal
+  downstream_consumers:
+  - analytics.fct_jazan_service_quality
+- entity_id: visual_distortion_case
+  table_name: staging.stg_jazan_visual_distortion_cases
+  layer: staging
+  grain: one_row_per_visual_distortion_case
+  primary_key: case_id
+  time_field: case_opened_at
+  classification: internal
+  downstream_consumers:
+  - analytics.fct_jazan_visual_distortion_performance
+- entity_id: decision_candidate
+  table_name: decision.jazan_generated_service_decisions
+  layer: decision
+  grain: one_row_per_generated_decision_candidate
+  primary_key: decision_candidate_id
+  time_field: generated_at
+  classification: internal
+  downstream_consumers:
+  - case_workspace
+  - decision_command
+  - audit
+- entity_id: permit_performance
+  table_name: analytics.fct_jazan_permit_performance
+  layer: analytics
+  grain: one_row_per_municipality_per_month
+  primary_key: municipality_id_month_start_date
+  time_field: month_start_date
+  classification: internal
+  downstream_consumers:
+  - SCREEN-L1-STRATEGIC
+  - SCREEN-L2-KPI
+  - SCREEN-L3-CASE
+- entity_id: service_coverage
+  table_name: analytics.fct_jazan_service_coverage
+  layer: analytics
+  grain: one_row_per_municipality_per_month
+  primary_key: municipality_id_month_start_date
+  time_field: month_start_date
+  classification: internal
+  downstream_consumers:
+  - SCREEN-L1-STRATEGIC
+  - SCREEN-L2-KPI
+  - SCREEN-L3-CASE
+- entity_id: emergency_readiness
+  table_name: analytics.fct_jazan_emergency_readiness
+  layer: analytics
+  grain: one_row_per_municipality_per_month
+  primary_key: municipality_id_month_start_date
+  time_field: month_start_date
+  classification: internal
+  downstream_consumers:
+  - SCREEN-L1-STRATEGIC
+  - SCREEN-L2-KPI
+  - SCREEN-L3-CASE
+- entity_id: citizen_satisfaction
+  table_name: analytics.fct_jazan_citizen_satisfaction
+  layer: analytics
+  grain: one_row_per_municipality_per_month
+  primary_key: municipality_id_month_start_date
+  time_field: month_start_date
+  classification: internal
+  downstream_consumers:
+  - SCREEN-L1-STRATEGIC
+  - SCREEN-L2-KPI
+  - SCREEN-L3-CASE
+- entity_id: municipality_owner
+  table_name: dim_jazan_municipality_owners
+  layer: analytics
+  grain: one_row_per_municipality_owner_role_assignment
+  primary_key: municipality_owner_id
+  classification: internal
+  description: Owner lookup used by external-action confirmation modals for ticket creation and email notification. Resolves municipality, owner role, notification channel, and authorized recipient label without exposing personal data in dashboards.
+  fields:
+  - municipality_owner_id
+  - municipality_id
+  - owner_role
+  - owner_display_label
+  - notification_channel
+  - active_flag
+  downstream_consumers:
+  - decisions.action_buttons.btn.create_ticket
+  - decisions.action_buttons.btn.email_owner
+  - decision_command_centre
+  - decision_action_audit
+  fully_qualified_table: analytics.dim_jazan_municipality_owners
+  source_system: jazan_municipality_owner_directory
+  source_entity: municipality_owners
+  raw_landing_table: raw.jazan_municipality_owners
+  staging_model: stg_jazan_municipality_owners
+  analytics_model: dim_jazan_municipality_owners
+  materialization_status: declared_buildable
+  activation_dependency: required_before_email_or_ticket_actions
+- entity_id: action_lifecycle
+  table_name: decision.jazan_action_lifecycle
+  layer: decision
+  grain: one_row_per_decision_action_current_state
+  primary_key: action_lifecycle_id
+  time_field: updated_at
+  classification: internal
+  description: Current-state lifecycle snapshot for every outbound action from generated recommendation through human authorisation, dispatch, acknowledgement, execution, evidence submission, verification, resolution, and audit.
+  fields:
+  - action_lifecycle_id
+  - decision_id
+  - action_id
+  - action_type
+  - action_channel
+  - triggered_by
+  - authorized_by
+  - owner_role
+  - owner_lookup_ref
+  - current_state
+  - previous_state
+  - fired_at
+  - acknowledged_at
+  - due_at
+  - resolved_at
+  - sla_status
+  - escalation_level
+  - external_reference_id
+  - notification_id
+  - ticket_id
+  - audit_event_id
+  - evidence_pack_id
+  - recovery_outcome_id
+  - created_at
+  - updated_at
+  allowed_states:
+  - generated
+  - authorised
+  - fired
+  - acknowledged
+  - in_progress
+  - evidence_submitted
+  - verified
+  - resolved
+  - closed
+  - escalated
+  - failed
+  - cancelled
+  allowed_channels:
+  - portal
+  - email
+  - ticket
+  - in_app
+  - external_system
+  linkages:
+    decision_id: decision.jazan_generated_service_decisions.decision_candidate_id
+    action_id: decision.jazan_service_quality_action_queue.corrective_action_id
+    audit_event_id: decision.jazan_decision_action_events.decision_event_id
+    notification_id: decision.jazan_notification_outbox.notification_id
+    ticket_id: decision.jazan_ticket_requests.ticket_request_id
+    recovery_outcome_id: decision.jazan_visual_distortion_recovery_outcome.recovery_outcome_id
+  downstream_consumers:
+  - SCREEN-CC-DECISIONS
+  - SCREEN-CC-AUDIT
+  - SCREEN-L3-CASE-DECISIONS
+  event_stream_required: true
+  current_state_snapshot_only: true
+- entity_id: decision_action_event
+  table_name: decision.jazan_decision_action_events
+  layer: decision
+  grain: one_row_per_action_state_transition_event
+  primary_key: decision_event_id
+  time_field: event_ts
+  classification: internal
+  description: Append-only audit event stream for action lifecycle transitions and user-visible decision actions.
+  fields:
+  - decision_event_id
+  - action_lifecycle_id
+  - decision_id
+  - action_id
+  - action_type
+  - action_channel
+  - previous_state
+  - current_state
+  - actor_id
+  - actor_role
+  - human_authorised
+  - external_reference_id
+  - notification_id
+  - ticket_id
+  - evidence_pack_id
+  - recovery_outcome_id
+  - event_ts
+  - audit_event
+  downstream_consumers:
+  - SCREEN-L3-CASE-DECISIONS
+  - SCREEN-CC-AUDIT
+  append_only: true
+- entity_id: notification_outbox
+  table_name: decision.jazan_notification_outbox
+  layer: decision
+  grain: one_row_per_notification_dispatch_request
+  primary_key: notification_id
+  time_field: created_at
+  classification: internal
+  downstream_consumers:
+  - SCREEN-CC-AUDIT
+  - SCREEN-L3-CASE-DECISIONS
+- entity_id: email_delivery_log
+  table_name: decision.jazan_email_delivery_log
+  layer: decision
+  grain: one_row_per_email_delivery_attempt
+  primary_key: email_delivery_id
+  time_field: attempted_at
+  classification: internal
+  downstream_consumers:
+  - SCREEN-CC-AUDIT
+  - SCREEN-L3-CASE-DECISIONS
+- entity_id: ticket_request
+  table_name: decision.jazan_ticket_requests
+  layer: decision
+  grain: one_row_per_ticket_request
+  primary_key: ticket_request_id
+  time_field: created_at
+  classification: internal
+  downstream_consumers:
+  - SCREEN-CC-AUDIT
+  - SCREEN-L3-CASE-DECISIONS
+- entity_id: recovery_outcome
+  table_name: decision.jazan_visual_distortion_recovery_outcome
+  layer: decision
+  grain: one_row_per_recovered_or_closed_case_outcome
+  primary_key: recovery_outcome_id
+  time_field: resolved_at
+  classification: internal
+  downstream_consumers:
+  - SCREEN-L3-CASE-RECOVERY
+- entity_id: runtime_execution
+  table_name: output.jazan_runtime_executions
+  layer: output
+  grain: one_row_per_runtime_execution
+  primary_key: runtime_execution_id
+  time_field: started_at
+  classification: internal
+  downstream_consumers:
+  - SCREEN-CC-RUNTIMES
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

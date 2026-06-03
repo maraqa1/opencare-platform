@@ -1,0 +1,36 @@
+kind: EscalationsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+escalation_routes:
+- route_id: emarah_diwan
+  label: Emarah / Diwan
+  trigger: critical service risk or unresolved high-priority case
+  requires_evidence:
+  - audit_history
+  - kpi_trend
+  - runtime_evidence
+- route_id: momrah_liaison
+  label: MOMRAH Liaison
+  trigger: regional policy or performance oversight required
+  requires_evidence:
+  - portfolio_comparison
+  - risk_score
+  - recommendation
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

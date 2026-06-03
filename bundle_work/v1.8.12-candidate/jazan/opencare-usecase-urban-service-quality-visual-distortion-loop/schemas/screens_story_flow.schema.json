@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "screens_story_flow.schema.json",
+  "type": "object",
+  "required": [
+    "kind",
+    "use_case_slug",
+    "dashboard_order"
+  ],
+  "properties": {
+    "kind": {
+      "const": "DashboardStoryFlow"
+    },
+    "dashboard_order": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "order",
+          "dashboard_id",
+          "screen_id",
+          "route",
+          "decision_question",
+          "must_be_learned_before_next"
+        ],
+        "properties": {
+          "order": {
+            "type": "integer"
+          },
+          "dashboard_id": {
+            "type": "string"
+          },
+          "screen_id": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

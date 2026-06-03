@@ -1,0 +1,32 @@
+kind: BusinessWorkflowContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+workflows:
+- workflow_id: workflow.visual_distortion_service_quality_loop
+  name: Urban Service Quality and Visual Distortion Loop
+  stages:
+  - monitor_kpi
+  - detect_risk
+  - generate_decision_candidate
+  - human_review
+  - approve_or_escalate
+  - create_corrective_action
+  - track_recovery
+  - audit_outcome
+  entry_screens:
+  - SCREEN-L1-STRATEGIC
+  - SCREEN-L2-KPI
+  decision_screens:
+  - SCREEN-L3-CASE
+  - SCREEN-CC-DECISIONS
+  audit_screens:
+  - SCREEN-CC-AUDIT
+  - SCREEN-CC-RUNTIMES
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

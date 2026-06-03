@@ -1,0 +1,117 @@
+kind: InformationArchitecture
+use_case_slug: urban-service-quality-visual-distortion-loop
+navigation_model: three_level_hierarchy_with_crosscut
+levels:
+- level: 1
+  name: strategic
+  name_key: nav.level.strategic
+  instances: 1
+  path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  spec_id: SCREEN-L1-STRATEGIC
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  layout_ref: screens/layout_zones.yaml#01_strategic_objective_monitoring
+  source_of_truth: canonical_contract
+- level: 2
+  name: tactical_per_kpi
+  name_key: nav.level.tactical
+  instances: 6
+  path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  kpi_slug_source: business/kpis.yaml#kpis[].short_slug
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  spec_id: SCREEN-L2-KPI
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  layout_ref: screens/layout_zones.yaml#02_kpi_municipality_workspace
+  source_of_truth: canonical_contract
+- level: 3
+  name: operational_per_case
+  name_key: nav.level.operational
+  instances: dynamic
+  path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/{tab}
+  case_id_source: decision.jazan_generated_service_decisions.decision_candidate_id
+  tabs:
+  - id: overview
+    default: false
+    name_key: nav.tab.overview
+    deprecated: true
+    reason: No canonical overview tab exists for the Level 3 case workspace; intelligence is the default canonical tab.
+    canonical_screen_ref: null
+    real_route: false
+  - id: intelligence
+    name_key: nav.tab.intelligence
+    default: true
+    screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+    layout_ref: screens/layout_zones.yaml#03_case_model_intelligence
+  - id: decisions
+    name_key: nav.tab.decisions
+    screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+    layout_ref: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+    scope: single_case
+  - id: recovery
+    name_key: nav.tab.recovery
+    visible_when: case.status in ['closed', 'recovered']
+    screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-RECOVERY
+    layout_ref: screens/layout_zones.yaml#04_outcome_recovery_feedback
+    canonical_route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+    locked_when: case.status not in ['closed', 'recovered']
+    locked_tooltip: Recovery data appears after corrective action closes.
+    hide_when_unavailable: false
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  spec_id: SCREEN-L3-CASE
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  layout_ref: screens/layout_zones.yaml#03_case_model_intelligence
+  source_of_truth: canonical_contract
+  case_decision_tab_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+  case_decision_layout_ref: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+  case_decision_tab_rule: Decisions tab renders one case only; queues are forbidden in this tab.
+crosscut_views:
+- id: CROSSCUT-DECISIONS
+  name_key: nav.crosscut.decisions
+  path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  spec_id: SCREEN-CC-DECISIONS
+  primary_persona: performance_office_reviewer
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  layout_ref: screens/layout_zones.yaml#04_decision_command_centre
+  source_of_truth: canonical_contract
+- id: CROSSCUT-RUNTIMES
+  name_key: nav.crosscut.runtimes
+  path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  spec_id: SCREEN-CC-RUNTIMES
+  primary_persona: it_lead_or_audit_liaison
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  layout_ref: screens/layout_zones.yaml#05_runtime_evidence_execution_history
+  source_of_truth: canonical_contract
+- id: CROSSCUT-AUDIT
+  name_key: nav.crosscut.audit
+  path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  spec_id: SCREEN-CC-AUDIT
+  primary_persona: emarah_diwan_auditor
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  layout_ref: screens/layout_zones.yaml#06_decision_action_audit
+  source_of_truth: canonical_contract
+forbidden_patterns:
+- parallel_top_level_screens: Do not implement six flat screens. The IA is hierarchical.
+- generic_workspace_fallback: No generic placeholder dashboard ever renders. If a level cannot resolve, return typed not_yet_materialised response, not a fallback workspace.
+- hidden_state_during_navigation: Navigation must not lose case scope. Returning to a case re-loads the same case state.
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

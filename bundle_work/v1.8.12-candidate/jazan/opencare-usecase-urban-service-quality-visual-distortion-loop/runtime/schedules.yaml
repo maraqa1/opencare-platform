@@ -1,0 +1,24 @@
+kind: RuntimeSchedulesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+schedules:
+- runtime_id: rt_jazan_service_rnn_forecast
+  schedule: daily_06_00
+  timezone: Asia/Riyadh
+  enabled_by_default: true
+- runtime_id: rt_jazan_service_anomaly
+  schedule: daily_06_10
+  timezone: Asia/Riyadh
+  enabled_by_default: true
+- runtime_id: rt_jazan_decision_candidate
+  schedule: daily_06_20
+  timezone: Asia/Riyadh
+  enabled_by_default: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

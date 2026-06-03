@@ -1,0 +1,38 @@
+kind: DashboardRigidityChecks
+use_case_slug: urban-service-quality-visual-distortion-loop
+checks:
+- id: dashboard_matrix_exists
+  description: screens/dashboard_implementation_matrix.yaml exists
+  severity: error
+- id: story_flow_exists
+  description: screens/story_flow.yaml exists and declares dashboard order
+  severity: error
+- id: dashboard_fidelity_contract_exists
+  description: acceptance/dashboard_fidelity_contract.yaml exists
+  severity: error
+- id: required_dashboard_count
+  description: Dashboard count equals acceptance/dashboard_fidelity_contract.yaml
+    required_dashboard_count
+  severity: error
+- id: dashboard_ids_match
+  description: All required dashboard IDs exist in dashboard implementation matrix
+  severity: error
+- id: no_dashboard_collapse
+  description: Each dashboard has must_not_collapse_into_other_screen=true
+  severity: error
+- id: required_components_present
+  description: Each dashboard lists required components and they resolve to screens/components.yaml
+    where applicable
+  severity: error
+- id: required_actions_mapped
+  description: Decision dashboard actions map to screens/interactions.yaml or decisions/action_buttons.yaml
+  severity: error
+- id: governance_evidence_declared
+  description: Each dashboard declares governance_evidence
+  severity: error
+- id: runtime_dependencies_declared
+  description: Runtime dashboards and runtime-aware dashboards declare runtime dependencies
+  severity: error
+- id: human_in_the_loop_for_external_actions
+  description: Email/ticket/escalation actions require human authorisation and audit
+  severity: error

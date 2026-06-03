@@ -1,0 +1,21 @@
+kind: GovernedColumns
+use_case_slug: urban-service-quality-visual-distortion-loop
+columns_policy: Column-level definitions must be generated from dbt catalog and record
+  spec during implementation. No fabricated column inventory in bundle.
+required_columns:
+- municipality_id
+- period_date
+- kpi_id
+- current_value
+- target_value
+- status
+- risk_score
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

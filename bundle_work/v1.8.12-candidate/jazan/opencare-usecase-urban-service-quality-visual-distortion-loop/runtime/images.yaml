@@ -1,0 +1,137 @@
+kind: RuntimeImagesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+runtime_images:
+- runtime_id: rt_jazan_service_rnn_forecast
+  purpose: runtime.forecast.description
+  runtime_type: forecast
+  image: ghcr.io/opencare/runtimes/urban-service-quality-visual-distortion-loop/rt_jazan_service_rnn_forecast:1.0.0
+  image_tag: 1.0.0
+  image_pull_policy: IfNotPresent
+  entrypoint: python -m app.run
+  command:
+  - --runtime-id
+  - rt_jazan_service_rnn_forecast
+  owner: platform-ml
+  environment:
+    USE_CASE_SLUG: urban-service-quality-visual-distortion-loop
+    RUNTIME_ID: rt_jazan_service_rnn_forecast
+  secrets_required: []
+  inputs:
+  - analytics.fct_jazan_visual_distortion_performance
+  - analytics.fct_jazan_service_quality
+  - analytics.fct_jazan_permit_performance
+  - analytics.fct_jazan_citizen_satisfaction
+  outputs:
+  - output.jazan_service_rnn_forecast
+  schedule: daily_06_00
+  resource_requirements:
+    cpu: 500m
+    memory: 1Gi
+  healthcheck:
+    type: execution_log
+    source: output.jazan_runtime_executions
+    success_condition: last_status = success
+  evidence_source: runtime/evidence.yaml
+  failure_behavior:
+    blocks_activation: false
+    blocks_live_verified: true
+  retry_policy:
+    max_retries: 2
+    backoff: exponential
+  audit_event: runtime.rt_jazan_service_rnn_forecast.executed
+  downstream_components:
+  - rnn_forecast_chart
+  - composite_risk_score_card
+  - runtime_execution_history
+- runtime_id: rt_jazan_service_anomaly
+  purpose: runtime.anomaly.description
+  runtime_type: anomaly_detection
+  image: ghcr.io/opencare/runtimes/urban-service-quality-visual-distortion-loop/rt_jazan_service_anomaly:1.0.0
+  image_tag: 1.0.0
+  image_pull_policy: IfNotPresent
+  entrypoint: python -m app.run
+  command:
+  - --runtime-id
+  - rt_jazan_service_anomaly
+  owner: platform-ml
+  environment:
+    USE_CASE_SLUG: urban-service-quality-visual-distortion-loop
+    RUNTIME_ID: rt_jazan_service_anomaly
+  secrets_required: []
+  inputs:
+  - analytics.fct_jazan_visual_distortion_performance
+  - analytics.fct_jazan_service_quality
+  outputs:
+  - output.jazan_service_quality_anomaly
+  schedule: daily_06_10
+  resource_requirements:
+    cpu: 500m
+    memory: 1Gi
+  healthcheck:
+    type: execution_log
+    source: output.jazan_runtime_executions
+    success_condition: last_status = success
+  evidence_source: runtime/evidence.yaml
+  failure_behavior:
+    blocks_activation: false
+    blocks_live_verified: true
+  retry_policy:
+    max_retries: 2
+    backoff: exponential
+  audit_event: runtime.rt_jazan_service_anomaly.executed
+  downstream_components:
+  - rnn_forecast_chart
+  - composite_risk_score_card
+  - runtime_execution_history
+- runtime_id: rt_jazan_decision_candidate
+  purpose: runtime.decision.description
+  runtime_type: decision_candidate_generation
+  image: ghcr.io/opencare/runtimes/urban-service-quality-visual-distortion-loop/rt_jazan_decision_candidate:1.0.0
+  image_tag: 1.0.0
+  image_pull_policy: IfNotPresent
+  entrypoint: python -m app.run
+  command:
+  - --runtime-id
+  - rt_jazan_decision_candidate
+  owner: platform-ml
+  environment:
+    USE_CASE_SLUG: urban-service-quality-visual-distortion-loop
+    RUNTIME_ID: rt_jazan_decision_candidate
+  secrets_required: []
+  inputs:
+  - output.jazan_service_rnn_forecast
+  - output.jazan_service_quality_anomaly
+  - output.jazan_municipality_service_risk_score
+  - output.jazan_recommended_intervention
+  outputs:
+  - decision.jazan_generated_service_decisions
+  - decision.jazan_service_quality_action_queue
+  schedule: daily_06_20
+  resource_requirements:
+    cpu: 500m
+    memory: 1Gi
+  healthcheck:
+    type: execution_log
+    source: output.jazan_runtime_executions
+    success_condition: last_status = success
+  evidence_source: runtime/evidence.yaml
+  failure_behavior:
+    blocks_activation: false
+    blocks_live_verified: true
+  retry_policy:
+    max_retries: 2
+    backoff: exponential
+  audit_event: runtime.rt_jazan_decision_candidate.executed
+  downstream_components:
+  - rnn_forecast_chart
+  - composite_risk_score_card
+  - runtime_execution_history
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

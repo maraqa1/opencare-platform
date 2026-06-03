@@ -1,0 +1,94 @@
+contract_version: '1.7.1'
+kind: HierarchicalScreenIA
+use_case_slug: urban-service-quality-visual-distortion-loop
+
+navigation_model: three_level_hierarchy_with_crosscut
+
+levels:
+
+  - level: 1
+    name: strategic
+    name_key: nav.level.strategic
+    instances: 1
+    path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+    screen_ref: screens/01_level1_strategic_landing.md
+    spec_id: SCREEN-L1-STRATEGIC
+
+  - level: 2
+    name: tactical_per_kpi
+    name_key: nav.level.tactical
+    instances: 6
+    path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+    kpi_slug_source: contracts/kpi.yaml#kpis[].short_slug
+    screen_ref: screens/02_level2_kpi_workspace.md
+    spec_id: SCREEN-L2-KPI
+
+  - level: 3
+    name: operational_per_case
+    name_key: nav.level.operational
+    instances: dynamic
+    path_pattern: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+    case_id_source: decision.jazan_generated_service_decisions.decision_candidate_id
+    tabs:
+      - id: overview
+        default: true
+        name_key: nav.tab.overview
+      - id: intelligence
+        name_key: nav.tab.intelligence
+      - id: decisions
+        name_key: nav.tab.decisions
+      - id: recovery
+        name_key: nav.tab.recovery
+        visible_when: case.status in [closed, recovered]
+    screen_ref: screens/03_level3_case_workspace.md
+    spec_id: SCREEN-L3-CASE
+
+crosscut_views:
+
+  - id: CROSSCUT-DECISIONS
+    name_key: nav.crosscut.decisions
+    path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+    screen_ref: screens/04_crosscut_decision_command.md
+    spec_id: SCREEN-CC-DECISIONS
+    primary_persona: performance_office_reviewer
+
+  - id: CROSSCUT-RUNTIMES
+    name_key: nav.crosscut.runtimes
+    path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+    screen_ref: screens/05_crosscut_runtime_evidence.md
+    spec_id: SCREEN-CC-RUNTIMES
+    primary_persona: it_lead_or_audit_liaison
+
+  - id: CROSSCUT-AUDIT
+    name_key: nav.crosscut.audit
+    path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+    screen_ref: screens/06_crosscut_decision_audit.md
+    spec_id: SCREEN-CC-AUDIT
+    primary_persona: emarah_diwan_auditor
+
+persistent_navigation_sidebar:
+  always_visible: true
+  contains:
+    - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop  # back to L1
+      label_key: nav.sidebar.home
+    - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+      label_key: nav.sidebar.decisions
+    - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+      label_key: nav.sidebar.runtimes
+    - link: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+      label_key: nav.sidebar.audit
+
+breadcrumb_policy:
+  show_on_levels: [2, 3]
+  show_on_crosscut: false
+  format_l2: '{L1.short_label} → {kpi.short_name}'
+  format_l3: '{L1.short_label} → {kpi.short_name} → {municipality.short_name}'
+
+bookmarking:
+  required: every path including {kpi_slug}, {case_id}, {tab}, and ?selected={decision_id} must be bookmarkable and restore the exact UI state
+  reason: Saudi government audit and reference workflows depend on shareable URLs
+
+forbidden_patterns:
+  - parallel_top_level_screens: 'Do not implement six flat screens. The IA is hierarchical.'
+  - generic_workspace_fallback: 'No generic placeholder dashboard ever renders. If a level cannot resolve, return typed not_yet_materialised response, not a fallback workspace.'
+  - hidden_state_during_navigation: 'Navigation must not lose case scope. Returning to a case re-loads the same case state.'

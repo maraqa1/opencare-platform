@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "screens/business_alignment_matrix",
+  "type": "object",
+  "required": [
+    "kind",
+    "use_case_slug",
+    "alignment"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "use_case_slug": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

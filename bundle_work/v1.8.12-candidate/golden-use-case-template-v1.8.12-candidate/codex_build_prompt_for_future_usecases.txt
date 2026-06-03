@@ -1,0 +1,40 @@
+Build a new OpenCare golden use-case bundle by reusing the v1.8.12 candidate template structure exactly.
+
+Rules:
+- Do a controlled patching cycle, not a full regeneration.
+- Do not weaken dashboard-rigid contracts.
+- Do not collapse canonical dashboards into generic shells.
+- Do not reintroduce legacy l1/l2/l3/cc component vocabularies.
+- Do not allow external actions without human confirmation and lifecycle linkage.
+
+Required bundle outputs:
+- package.yaml with one coherent package version and one coherent template compatibility version
+- explicit KPI formulas with reconciliation status
+- dashboard-rigid screen contracts
+- action_lifecycle snapshot plus decision_action_events append-only stream
+- bilingual audit report
+- deterministic demo-data generator and generated CSVs
+- validator checks with cross-file consistency enforcement
+
+Required contract families:
+- business
+- data
+- dbt
+- runtime
+- decisions
+- decision-workflows
+- screens
+- bindings
+- governance
+- acceptance
+- validation
+- golden-template
+
+Non-negotiable checks:
+- screen_catalog metadata must be specific and aligned
+- level-3 overview cannot become canonical default
+- case decision tab must stay single-case only
+- email_owner is the canonical action name
+- action_lifecycle must link notifications, tickets, audit events, and recovery where applicable
+- every dashboard-visible KPI must have explicit formula_plain_language and reconciliation_status
+- bilingual contract must cover all user-visible zone-rigid components

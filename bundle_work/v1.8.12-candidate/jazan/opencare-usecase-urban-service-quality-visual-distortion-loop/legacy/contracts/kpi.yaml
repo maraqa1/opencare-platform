@@ -1,0 +1,139 @@
+contract_version: '1.7.1'
+kind: KPIContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+
+strategic_objective:
+  id: OBJ-SVC-QUALITY-01
+  name_key: objective.name
+  aliases:
+    - vision_2030_quality_of_life
+    - momrah_municipal_index
+    - jazan_25_municipalities
+  description_key: objective.description
+
+kpis:
+
+  - id: KPI-VDQ-01
+    short_slug: visual-distortion-closure-quality
+    sequence: 1
+    name_key: kpi.1.name
+    short_name_key: kpi.1.short_name
+    description_key: kpi.1.description
+    formula_key: kpi.1.formula
+    direction: higher_is_better
+    target: 0.85
+    trigger_value: 0.75
+    trigger_rule_key: kpi.1.trigger_rule
+    momrah_category: urban_environment
+    source_mart: analytics.fct_jazan_visual_distortion_performance
+    source_field: visual_distortion_closure_quality
+    owner_role_key: role.field_compliance
+    steward_role_key: role.data_analytics
+    cadence: monthly
+    dictionary_term_id: DICT-VDQ-001
+
+  - id: KPI-SRC-02
+    short_slug: service-request-closure-rate
+    sequence: 2
+    name_key: kpi.2.name
+    short_name_key: kpi.2.short_name
+    description_key: kpi.2.description
+    formula_key: kpi.2.formula
+    direction: higher_is_better
+    target: 0.90
+    trigger_value: 0.85
+    trigger_rule_key: kpi.2.trigger_rule
+    momrah_category: service_delivery
+    source_mart: analytics.fct_jazan_service_quality
+    source_field: service_request_closure_rate
+    owner_role_key: role.operations
+    steward_role_key: role.data_analytics
+    cadence: monthly
+    dictionary_term_id: DICT-SRC-001
+
+  - id: KPI-PIT-03
+    short_slug: permit-issuance-time
+    sequence: 3
+    name_key: kpi.3.name
+    short_name_key: kpi.3.short_name
+    description_key: kpi.3.description
+    formula_key: kpi.3.formula
+    direction: lower_is_better
+    target: 5.0
+    trigger_value: 7.0
+    target_unit: days
+    trigger_rule_key: kpi.3.trigger_rule
+    momrah_category: investment_enablement
+    source_mart: analytics.fct_jazan_permit_performance
+    source_field: avg_permit_issuance_days
+    owner_role_key: role.permit_office
+    steward_role_key: role.data_analytics
+    cadence: monthly
+    dictionary_term_id: DICT-PIT-001
+
+  - id: KPI-USC-04
+    short_slug: urban-service-coverage
+    sequence: 4
+    name_key: kpi.4.name
+    short_name_key: kpi.4.short_name
+    description_key: kpi.4.description
+    formula_key: kpi.4.formula
+    direction: higher_is_better
+    target: 0.95
+    trigger_value: 0.93
+    trigger_rule_key: kpi.4.trigger_rule
+    momrah_category: service_equity
+    source_mart: analytics.fct_jazan_service_coverage
+    source_field: service_coverage_rate
+    owner_role_key: role.planning_office
+    steward_role_key: role.data_analytics
+    cadence: monthly
+    dictionary_term_id: DICT-USC-001
+
+  - id: KPI-ERR-05
+    short_slug: emergency-readiness
+    sequence: 5
+    name_key: kpi.5.name
+    short_name_key: kpi.5.short_name
+    description_key: kpi.5.description
+    formula_key: kpi.5.formula
+    direction: higher_is_better
+    target: 0.80
+    trigger_value: 0.75
+    trigger_rule_key: kpi.5.trigger_rule
+    momrah_category: resilience
+    source_mart: analytics.fct_jazan_emergency_readiness
+    source_field: emergency_readiness_composite
+    owner_role_key: role.civil_defense_liaison
+    steward_role_key: role.data_analytics
+    cadence: monthly
+    dictionary_term_id: DICT-ERR-001
+
+  - id: KPI-CSI-06
+    short_slug: citizen-satisfaction
+    sequence: 6
+    name_key: kpi.6.name
+    short_name_key: kpi.6.short_name
+    description_key: kpi.6.description
+    formula_key: kpi.6.formula
+    direction: higher_is_better
+    target: 0.75
+    trigger_value: 0.70
+    trigger_rule_key: kpi.6.trigger_rule
+    momrah_category: citizen_experience
+    source_mart: analytics.fct_jazan_citizen_satisfaction
+    source_field: weighted_satisfaction_index
+    owner_role_key: role.performance_office
+    steward_role_key: role.data_analytics
+    cadence: quarterly
+    dictionary_term_id: DICT-CSI-001
+
+monitoring_rules:
+  shared:
+    breach_state_when: current_value crosses trigger_value in the wrong direction for the KPI direction
+    approaching_state_when: current_value is between target and trigger
+    meeting_state_when: current_value is at or beyond target in the right direction
+  evaluation_cadence:
+    weekly: [KPI-VDQ-01, KPI-SRC-02]
+    monthly: [KPI-PIT-03, KPI-USC-04, KPI-ERR-05]
+    quarterly: [KPI-CSI-06]

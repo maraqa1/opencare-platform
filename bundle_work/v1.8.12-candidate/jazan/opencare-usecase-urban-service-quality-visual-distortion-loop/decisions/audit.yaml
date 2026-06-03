@@ -1,0 +1,69 @@
+kind: DecisionAuditContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+snapshot_table: decision.jazan_action_lifecycle
+event_stream_table: decision.jazan_decision_action_events
+current_state_snapshot_only: true
+append_only_event_stream: true
+audit_events:
+- decision.approved
+- decision.revision_requested
+- decision.escalated
+- decision.ticket_created
+- decision.owner_emailed
+- decision.narrative_edited
+- case.viewed
+- audit.viewed
+required_fields:
+- actor_id
+- actor_role
+- action_id
+- action_lifecycle_id
+- decision_id
+- timestamp
+- previous_state
+- current_state
+- reason_if_required
+required_linkage:
+  action_lifecycle:
+    lifecycle_key: action_lifecycle_id
+    lifecycle_snapshot_ref: decision.jazan_action_lifecycle.action_lifecycle_id
+    latest_audit_pointer_field: audit_event_id
+  notification:
+    applicable_actions:
+    - email_owner
+    - escalate_decision
+    lookup_tables:
+    - decision.jazan_notification_outbox
+    - decision.jazan_email_delivery_log
+  ticket:
+    applicable_actions:
+    - create_ticket
+    lookup_table: decision.jazan_ticket_requests
+  recovery:
+    applicable_actions:
+    - approve_decision
+    lookup_table: decision.jazan_visual_distortion_recovery_outcome
+rules:
+  every_state_transition_writes_event: true
+  lifecycle_history_edit_forbidden: true
+  null_means_unknown: true
+  zero_means_actual_zero: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

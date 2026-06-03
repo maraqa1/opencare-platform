@@ -1,0 +1,967 @@
+kind: BusinessAlignmentMatrix
+use_case_slug: urban-service-quality-visual-distortion-loop
+alignment:
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-VDQ-01
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_threshold_card_grid
+  source_table: analytics.fct_jazan_visual_distortion_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_kpi_threshold_cards
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-VDQ-01
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: kpi_summary_strip
+  source_table: analytics.fct_jazan_visual_distortion_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_summary_strip
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-VDQ-01
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: municipality_ranking_table
+  source_table: analytics.fct_jazan_visual_distortion_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_municipality_ranking
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-VDQ-01
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: trend_forecast_chart
+  source_table: analytics.fct_jazan_visual_distortion_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_portfolio_trend_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-VDQ-01
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: composite_risk_score_card
+  source_table: analytics.fct_jazan_visual_distortion_performance
+  runtime_output: output.jazan_municipality_service_risk_score
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_risk_score_panel
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-VDQ-01
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: rnn_forecast_chart
+  source_table: analytics.fct_jazan_visual_distortion_performance
+  runtime_output: output.jazan_service_rnn_forecast
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_forecast_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-SRC-02
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_threshold_card_grid
+  source_table: analytics.fct_jazan_service_quality
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_kpi_threshold_cards
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-SRC-02
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: kpi_summary_strip
+  source_table: analytics.fct_jazan_service_quality
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_summary_strip
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-SRC-02
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: municipality_ranking_table
+  source_table: analytics.fct_jazan_service_quality
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_municipality_ranking
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-SRC-02
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: trend_forecast_chart
+  source_table: analytics.fct_jazan_service_quality
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_portfolio_trend_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-SRC-02
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: composite_risk_score_card
+  source_table: analytics.fct_jazan_service_quality
+  runtime_output: output.jazan_municipality_service_risk_score
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_risk_score_panel
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-SRC-02
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: rnn_forecast_chart
+  source_table: analytics.fct_jazan_service_quality
+  runtime_output: output.jazan_service_rnn_forecast
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_forecast_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-PIT-03
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_threshold_card_grid
+  source_table: analytics.fct_jazan_permit_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_kpi_threshold_cards
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-PIT-03
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: kpi_summary_strip
+  source_table: analytics.fct_jazan_permit_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_summary_strip
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-PIT-03
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: municipality_ranking_table
+  source_table: analytics.fct_jazan_permit_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_municipality_ranking
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-PIT-03
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: trend_forecast_chart
+  source_table: analytics.fct_jazan_permit_performance
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_portfolio_trend_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-PIT-03
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: composite_risk_score_card
+  source_table: analytics.fct_jazan_permit_performance
+  runtime_output: output.jazan_municipality_service_risk_score
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_risk_score_panel
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-PIT-03
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: rnn_forecast_chart
+  source_table: analytics.fct_jazan_permit_performance
+  runtime_output: output.jazan_service_rnn_forecast
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_forecast_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-USC-04
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_threshold_card_grid
+  source_table: analytics.fct_jazan_service_coverage
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_kpi_threshold_cards
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-USC-04
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: kpi_summary_strip
+  source_table: analytics.fct_jazan_service_coverage
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_summary_strip
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-USC-04
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: municipality_ranking_table
+  source_table: analytics.fct_jazan_service_coverage
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_municipality_ranking
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-USC-04
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: trend_forecast_chart
+  source_table: analytics.fct_jazan_service_coverage
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_portfolio_trend_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-USC-04
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: composite_risk_score_card
+  source_table: analytics.fct_jazan_service_coverage
+  runtime_output: output.jazan_municipality_service_risk_score
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_risk_score_panel
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-USC-04
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: rnn_forecast_chart
+  source_table: analytics.fct_jazan_service_coverage
+  runtime_output: output.jazan_service_rnn_forecast
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_forecast_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-ERR-05
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_threshold_card_grid
+  source_table: analytics.fct_jazan_emergency_readiness
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_kpi_threshold_cards
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-ERR-05
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: kpi_summary_strip
+  source_table: analytics.fct_jazan_emergency_readiness
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_summary_strip
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-ERR-05
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: municipality_ranking_table
+  source_table: analytics.fct_jazan_emergency_readiness
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_municipality_ranking
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-ERR-05
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: trend_forecast_chart
+  source_table: analytics.fct_jazan_emergency_readiness
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_portfolio_trend_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-ERR-05
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: composite_risk_score_card
+  source_table: analytics.fct_jazan_emergency_readiness
+  runtime_output: output.jazan_municipality_service_risk_score
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_risk_score_panel
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-ERR-05
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: rnn_forecast_chart
+  source_table: analytics.fct_jazan_emergency_readiness
+  runtime_output: output.jazan_service_rnn_forecast
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_forecast_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-CSI-06
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_threshold_card_grid
+  source_table: analytics.fct_jazan_citizen_satisfaction
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_kpi_threshold_cards
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-CSI-06
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: kpi_summary_strip
+  source_table: analytics.fct_jazan_citizen_satisfaction
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_summary_strip
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-CSI-06
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: municipality_ranking_table
+  source_table: analytics.fct_jazan_citizen_satisfaction
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_municipality_ranking
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-CSI-06
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: trend_forecast_chart
+  source_table: analytics.fct_jazan_citizen_satisfaction
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_portfolio_trend_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-CSI-06
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: composite_risk_score_card
+  source_table: analytics.fct_jazan_citizen_satisfaction
+  runtime_output: output.jazan_municipality_service_risk_score
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_risk_score_panel
+- objective: OBJ-SVC-QUALITY-01
+  kpi: KPI-CSI-06
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: rnn_forecast_chart
+  source_table: analytics.fct_jazan_citizen_satisfaction
+  runtime_output: output.jazan_service_rnn_forecast
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_forecast_chart
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: strategic_objective_header
+  source_table: business/kpis.yaml
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_objective_card
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_state_summary_strip
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_portfolio_rollup
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_connector_rail
+  source_table: business/kpis.yaml
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_cascade_visual
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L1-STRATEGIC
+  component: highest_priority_case_alert
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l1_active_case_banner
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: governance_evidence_panel
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_governance_panel
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L2-KPI
+  component: open_cases_list
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l2_open_cases_list
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: active_case_banner
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_case_header
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: trend_forecast_chart
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_overview_trend_snapshot
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: anomaly_detection_card
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: output.jazan_municipality_service_risk_score
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_anomaly_card
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: recommendation_ranked_cards
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_intelligence_recommendations
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: action_button_bar
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_decisions_action_buttons
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: generated_decision_evidence_panel
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_decisions_draft_narrative
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-L3-CASE
+  component: recovery_trajectory_chart
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.l3_recovery_trajectory
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-DECISIONS
+  component: decision_summary_strip
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_decisions_status_counters
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-DECISIONS
+  component: decision_table
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_decisions_queue
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-DECISIONS
+  component: selected_decision_detail_panel
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_decisions_detail_drawer
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-RUNTIMES
+  component: runtime_card_grid
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_runtimes_cards
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-RUNTIMES
+  component: runtime_execution_history
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_runtimes_execution_history
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-AUDIT
+  component: audit_summary_strip
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_audit_lifecycle_counters
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-AUDIT
+  component: action_audit_timeline
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_audit_action_history
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-AUDIT
+  component: email_delivery_log_panel
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_audit_email_log
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-AUDIT
+  component: ticket_request_log_panel
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_audit_ticket_log
+- objective: OBJ-SVC-QUALITY-01
+  kpi: dynamic_kpi_context
+  decision: decision.review_kpi_breach
+  workflow: workflow.visual_distortion_service_quality_loop
+  screen: SCREEN-CC-AUDIT
+  component: corrective_action_tracker
+  source_table: analytics.fct_jazan_kpi_portfolio_summary
+  runtime_output: null
+  governance_evidence:
+  - record_spec
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  acceptance:
+  - acceptance.dashboard_acceptance.cc_audit_corrective_action_tracker
+hard_rule: No screen component may exist without a business alignment row.
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

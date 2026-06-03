@@ -1,0 +1,10 @@
+kind: ReusableBusinessContractPattern
+required_files:
+- business/objectives.yaml
+- business/kpis.yaml
+- business/decisions.yaml
+- business/workflows.yaml
+required_rules:
+- explicit_kpi_formulas
+- owner_and_data_owner_declared
+- reconciliation_status_required

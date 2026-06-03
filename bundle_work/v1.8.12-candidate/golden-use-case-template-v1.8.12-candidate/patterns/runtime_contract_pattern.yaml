@@ -1,0 +1,9 @@
+kind: ReusableRuntimeContractPattern
+required_sections:
+- runtime/images.yaml
+- runtime/runtimes.yaml
+- runtime/evidence.yaml
+- runtime/schedules.yaml
+rules:
+- runtime_images_required
+- honest_runtime_history_required

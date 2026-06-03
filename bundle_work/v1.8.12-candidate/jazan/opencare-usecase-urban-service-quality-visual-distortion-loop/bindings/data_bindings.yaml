@@ -1,0 +1,1617 @@
+kind: DataBindings
+use_case_slug: urban-service-quality-visual-distortion-loop
+component_vocabulary: zone_rigid_components
+legacy_component_ids_allowed: false
+bindings:
+- binding_id: action_audit_timeline
+  component_id: action_audit_timeline
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_decision_action_events
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: action_button_bar
+  component_id: action_button_bar
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_quality_action_queue
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: action_stage_tracker
+  component_id: action_stage_tracker
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_action_lifecycle
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: action_status_badges
+  component_id: action_status_badges
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_action_lifecycle
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: actions_closed_counter
+  component_id: actions_closed_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: actions_in_progress_counter
+  component_id: actions_in_progress_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: active_case_banner
+  component_id: active_case_banner
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: active_kpi_context_header
+  component_id: active_kpi_context_header
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: anomaly_detection_card
+  component_id: anomaly_detection_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_quality_anomaly
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: anomaly_runtime_card
+  component_id: anomaly_runtime_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_quality_anomaly
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: approaching_trigger_counter
+  component_id: approaching_trigger_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: approve_button
+  component_id: approve_button
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: approved_counter
+  component_id: approved_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: audit_event_row
+  component_id: audit_event_row
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_decision_action_events
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: audit_summary_strip
+  component_id: audit_summary_strip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_decision_action_events
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: case_identity_header
+  component_id: case_identity_header
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: case_status_chips
+  component_id: case_status_chips
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: classification_badge
+  component_id: classification_badge
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: governance.business_trust_map and governance.governed_datasets
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: composite_risk_score_card
+  component_id: composite_risk_score_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_municipality_service_risk_score
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: confirmation_drawer
+  component_id: confirmation_drawer
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: confirmation_required_notice
+  component_id: confirmation_required_notice
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: corrective_action_lifecycle
+  component_id: corrective_action_lifecycle
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_action_lifecycle
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: corrective_action_row
+  component_id: corrective_action_row
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_action_lifecycle
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: corrective_action_tracker
+  component_id: corrective_action_tracker
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_action_lifecycle
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: create_ticket_button
+  component_id: create_ticket_button
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: decision_candidate_counter
+  component_id: decision_candidate_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: decision_candidate_runtime_card
+  component_id: decision_candidate_runtime_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: decision_queue_row
+  component_id: decision_queue_row
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: decision_rationale_panel
+  component_id: decision_rationale_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: decision_summary_strip
+  component_id: decision_summary_strip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: decision_table
+  component_id: decision_table
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: demo_status_chip
+  component_id: demo_status_chip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: email_delivery_log_panel
+  component_id: email_delivery_log_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_email_delivery_log and decision.jazan_notification_outbox
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: email_owner_button
+  component_id: email_owner_button
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: email_sent_counter
+  component_id: email_sent_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: emails_sent_counter
+  component_id: emails_sent_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: escalate_button
+  component_id: escalate_button
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: escalated_counter
+  component_id: escalated_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: external_side_effect_summary
+  component_id: external_side_effect_summary
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: feature_contribution_bar
+  component_id: feature_contribution_bar
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_municipality_service_risk_score
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: forecast_breach_marker
+  component_id: forecast_breach_marker
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_rnn_forecast
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: forecast_confidence_band
+  component_id: forecast_confidence_band
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_rnn_forecast
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: freshness_badge
+  component_id: freshness_badge
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: governance.business_trust_map and governance.governed_datasets
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: generated_decision_evidence_panel
+  component_id: generated_decision_evidence_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: governance_evidence_panel
+  component_id: governance_evidence_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: governance.business_trust_map and governance.governed_datasets
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: highest_priority_case_alert
+  component_id: highest_priority_case_alert
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: human_approval_notice
+  component_id: human_approval_notice
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: in_breach_counter
+  component_id: in_breach_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: input_marts_list
+  component_id: input_marts_list
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: intervention_effectiveness_badge
+  component_id: intervention_effectiveness_badge
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_recommended_intervention
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_connector_rail
+  component_id: kpi_connector_rail
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_marker_sequence
+  component_id: kpi_marker_sequence
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_risk_card
+  component_id: kpi_risk_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_state_summary_strip
+  component_id: kpi_state_summary_strip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_summary_strip
+  component_id: kpi_summary_strip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_target_status_card
+  component_id: kpi_target_status_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_threshold_card
+  component_id: kpi_threshold_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_threshold_card_grid
+  component_id: kpi_threshold_card_grid
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: kpi_to_card_connectors
+  component_id: kpi_to_card_connectors
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: last_seven_runs_indicator
+  component_id: last_seven_runs_indicator
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: lineage_link
+  component_id: lineage_link
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: governance.business_trust_map and governance.governed_datasets
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: meeting_target_counter
+  component_id: meeting_target_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: model_driver_list
+  component_id: model_driver_list
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_municipality_service_risk_score
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: municipality_coverage_chip
+  component_id: municipality_coverage_chip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: municipality_ranking_table
+  component_id: municipality_ranking_table
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_municipality_service_risk_score JOIN analytics.dim_jazan_municipality
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: municipality_risk_rows
+  component_id: municipality_risk_rows
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_municipality_service_risk_score JOIN analytics.dim_jazan_municipality
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: new_decisions_counter
+  component_id: new_decisions_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: next_run_label
+  component_id: next_run_label
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: notification_outbox_row
+  component_id: notification_outbox_row
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_notification_outbox and decision.jazan_action_lifecycle
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: objective_metadata_chips
+  component_id: objective_metadata_chips
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: online_runtime_counter
+  component_id: online_runtime_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: open_case_action
+  component_id: open_case_action
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_quality_action_queue
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: open_case_row
+  component_id: open_case_row
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: open_cases_list
+  component_id: open_cases_list
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: output_tables_list
+  component_id: output_tables_list
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: ownership_badge
+  component_id: ownership_badge
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: governance.business_trust_map and governance.governed_datasets
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: page_header_bar
+  component_id: page_header_bar
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: raw_layer_forbidden_notice
+  component_id: raw_layer_forbidden_notice
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: recommendation_ranked_cards
+  component_id: recommendation_ranked_cards
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_recommended_intervention
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: recommended_action_ranked_list
+  component_id: recommended_action_ranked_list
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_quality_action_queue
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: recommended_actions_panel
+  component_id: recommended_actions_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_quality_action_queue
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: recovery_trajectory_chart
+  component_id: recovery_trajectory_chart
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_visual_distortion_recovery_outcome
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: request_revision_button
+  component_id: request_revision_button
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: review_case_action
+  component_id: review_case_action
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_quality_action_queue
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: rnn_forecast_chart
+  component_id: rnn_forecast_chart
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_rnn_forecast
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: rnn_runtime_card
+  component_id: rnn_runtime_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_rnn_forecast
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: route_status_chip
+  component_id: route_status_chip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: runtime_card
+  component_id: runtime_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: runtime_execution_history
+  component_id: runtime_execution_history
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: runtime_lineage_panel
+  component_id: runtime_lineage_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: runtime_schedule_panel
+  component_id: runtime_schedule_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: runtime_status_summary
+  component_id: runtime_status_summary
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: runtime.evidence.yaml and output.jazan_runtime_executions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: seeded_demo_status_chip
+  component_id: seeded_demo_status_chip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: selected_decision_detail_panel
+  component_id: selected_decision_detail_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: strategic_objective_header
+  component_id: strategic_objective_header
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: target_recovery_marker
+  component_id: target_recovery_marker
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_visual_distortion_recovery_outcome
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: threshold_reference_line
+  component_id: threshold_reference_line
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: ticket_created_counter
+  component_id: ticket_created_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: ticket_request_log_panel
+  component_id: ticket_request_log_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_ticket_requests and decision.jazan_action_lifecycle
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: ticket_request_row
+  component_id: ticket_request_row
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_ticket_requests
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: tickets_created_counter
+  component_id: tickets_created_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: trend_forecast_chart
+  component_id: trend_forecast_chart
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_rnn_forecast
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: under_review_counter
+  component_id: under_review_counter
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: analytics.fct_jazan_service_kpi_monitoring
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: view_details_button
+  component_id: view_details_button
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: visible_action_buttons
+  component_id: visible_action_buttons
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_quality_action_queue
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: z_score_indicator
+  component_id: z_score_indicator
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_service_quality_anomaly
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: case_context_header
+  component_id: case_context_header
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: case_workspace_tab_strip
+  component_id: case_workspace_tab_strip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: evidence_pack_strip
+  component_id: evidence_pack_strip
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: bilingual_narrative_panel
+  component_id: bilingual_narrative_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: narrative_version_history_action
+  component_id: narrative_version_history_action
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_decision_action_events
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: recommendation_summary_panel
+  component_id: recommendation_summary_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: output.jazan_recommended_intervention
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: case_action_button_row
+  component_id: case_action_button_row
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_generated_service_decisions
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: action_consequence_preview
+  component_id: action_consequence_preview
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decisions/action_buttons.yaml
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: confirmation_modal_contract
+  component_id: confirmation_modal_contract
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decisions/action_buttons.yaml
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: audit_footnote_panel
+  component_id: audit_footnote_panel
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decisions/audit.yaml
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: recovery_tab_locked_state
+  component_id: recovery_tab_locked_state
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_visual_distortion_recovery_outcome
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: case_id = selected_case_id
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: action_approved_marker
+  component_id: action_approved_marker
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_decision_action_events
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: before_target_after_recovery_cards
+  component_id: before_target_after_recovery_cards
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_recovery_outcome
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: case_recovery_header
+  component_id: case_recovery_header
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_recovery_outcome
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: evidence_pack_link
+  component_id: evidence_pack_link
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_decision_action_events
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: forecast_accuracy_card
+  component_id: forecast_accuracy_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_recovery_outcome
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: pillar_credit_grid
+  component_id: pillar_credit_grid
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: declared_dashboard_context
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false
+- binding_id: recommendation_effectiveness_card
+  component_id: recommendation_effectiveness_card
+  component_vocabulary: zone_rigid_components
+  endpoint: resolve_from_bindings/routes.yaml_or_materializer
+  method: GET
+  query_or_source: decision.jazan_service_recovery_outcome
+  expected_fields: implementation_defined_by_component_anatomy_and_screen_layout
+  filters: null
+  empty_state_behavior: allow_empty_state_unless_demo_data_loaded
+  security: no_phi; role-based access per routes.yaml
+  populated_assertion_id: null
+  governance_required: true
+  raw_or_source_direct_query_allowed: false

@@ -1,0 +1,5 @@
+kind: ReusableComponentAnatomyPattern
+required_fields:
+- component_id
+- required_anatomy
+- forbidden_simplifications

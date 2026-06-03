@@ -1,0 +1,132 @@
+kind: GoldenBundleValidationChecks
+use_case_slug: urban-service-quality-visual-distortion-loop
+required_files:
+- package.yaml
+- manifest/usecase.yaml
+- manifest/navigation.yaml
+- business/kpis.yaml
+- data/entities.yaml
+- data/pipeline.yaml
+- data/source_systems.yaml
+- runtime/images.yaml
+- screens/screen_catalog.yaml
+- screens/business_alignment_matrix.yaml
+- screens/dashboard_implementation_matrix.yaml
+- screens/story_flow.yaml
+- screens/layout_zones.yaml
+- screens/visual_grammar.yaml
+- screens/component_anatomy.yaml
+- screens/bilingual_contract.yaml
+- screens/interactions.yaml
+- screens/design_notes_contract.yaml
+- bindings/platform_capabilities.yaml
+- bindings/data_bindings.yaml
+- bindings/routes.yaml
+- decisions/action_buttons.yaml
+- decisions/audit.yaml
+- decision-workflows/action_lifecycle.yaml
+- acceptance/dashboard_acceptance.yaml
+- acceptance/dashboard_fidelity_contract.yaml
+- acceptance/rendered_dashboard_conformance.yaml
+- validation/bilingual_audit_checks.yaml
+- validation/validate_golden_bundle.py
+- schemas/business_kpis.schema.json
+- schemas/data_entities.schema.json
+- schemas/data_pipeline.schema.json
+- schemas/decisions_action_buttons.schema.json
+- schemas/decisions_audit.schema.json
+- schemas/decision-workflows_action_lifecycle.schema.json
+- schemas/screens_dashboard_implementation_matrix.schema.json
+- schemas/screens_story_flow.schema.json
+- schemas/acceptance_dashboard_fidelity_contract.schema.json
+- schemas/screens_layout_zones.schema.json
+- schemas/screens_visual_grammar.schema.json
+- schemas/screens_component_anatomy.schema.json
+- schemas/screens_bilingual_contract.schema.json
+- schemas/acceptance_rendered_dashboard_conformance.schema.json
+- schemas/golden_template_patterns.schema.json
+- backend/schemas/portfolio_summary.response.schema.json
+- backend/schemas/kpi_current.response.schema.json
+- backend/schemas/active_case.response.schema.json
+- backend/schemas/case_detail.response.schema.json
+- backend/schemas/action_result.response.schema.json
+- dbt/models/staging/stg_jazan_municipality_owners.sql
+- dbt/models/analytics/dim_jazan_municipality_owners.sql
+- dbt/models/decision/jazan_action_lifecycle.sql
+- dbt/models/decision/jazan_decision_action_events.sql
+- dbt/model_index.yaml
+- demo-data/generate_demo_data.py
+- docs/changelog_v1_8_12.md
+- docs/validation_report_v1_8_12.md
+- docs/kpi_formula_reconciliation_report_v1_8_12.md
+- docs/bilingual_audit_report.md
+- golden-template/template_manifest.yaml
+- golden-template/required_file_tree.yaml
+- golden-template/naming_conventions.yaml
+- golden-template/versioning_rules.yaml
+- golden-template/package_readiness_checklist.yaml
+- golden-template/patterns/business_contract_pattern.yaml
+- golden-template/patterns/kpi_contract_pattern.yaml
+- golden-template/patterns/data_pipeline_pattern.yaml
+- golden-template/patterns/runtime_contract_pattern.yaml
+- golden-template/patterns/decision_workflow_pattern.yaml
+- golden-template/patterns/action_lifecycle_pattern.yaml
+- golden-template/patterns/dashboard_rigid_contract_pattern.yaml
+- golden-template/patterns/layout_zones_pattern.yaml
+- golden-template/patterns/visual_grammar_pattern.yaml
+- golden-template/patterns/component_anatomy_pattern.yaml
+- golden-template/patterns/governance_registry_pattern.yaml
+- golden-template/patterns/rendered_conformance_pattern.yaml
+- golden-template/patterns/screen_catalog_pattern.yaml
+- golden-template/patterns/validation_pattern.yaml
+hard_fail_rules:
+- All canonical metadata layout_ref fields must point to screens/layout_zones.yaml dashboard IDs and must not reference deprecated screens/layouts.yaml
+- No screen component without business alignment row
+- No runtime without runtime image declaration
+- No action button without audit event
+- No platform capability assumption without platform_capabilities entry
+- No dashboard component based only on mockup
+- Dashboard implementation matrix, story flow, and fidelity contract are mandatory
+- Declared dashboard IDs must match across matrix, story flow, and fidelity contract
+- Dashboard routes must match across matrix, story flow, and fidelity contract
+- No dashboard may be collapsed into another shell shape
+- All backend response_schema_ref paths must resolve
+- All action button options_source values must resolve to declared data entities
+- External action enforcement must be marked partially_supported until platform enforcement is proven
+- Action button owner lookup entities must have a source system, raw landing table, staging model, analytics model, dbt model index entry, and SQL files
+- YAML contracts with matching schemas must be validated against those schemas, not only YAML-parsed
+- Layout zones, visual grammar, component anatomy, bilingual contract, and rendered conformance are mandatory for dashboard-rigid bundles
+- Required dashboard IDs must match across layout zones, visual grammar, anatomy, fidelity, matrix, story flow, and mockup traceability
+- Every visual non-negotiable must be backed by fidelity or visual grammar contract
+- Every layout zone must declare at least one required component
+- Every required zone component must resolve to screens/components.yaml or screens/component_anatomy.yaml
+- Rendered dashboard conformance must declare per-dashboard evidence for every canonical dashboard
+- Every canonical dashboard must have a rendered gap register template
+- Every required zone component must be covered by bilingual_contract directly or by family rule
+- screens/layouts.yaml is deprecated and must not be referenced as canonical layout_contract
+- dashboard_implementation_matrix required_components must exactly equal the union of layout_zones required_components for each dashboard
+- legacy legacy level-one broad component identifiers, legacy level-two broad component identifiers, legacy level-three broad component identifiers, and legacy command-centre broad component identifiers component ids are forbidden in canonical dashboard_implementation_matrix required_components
+- Canonical acceptance checks must use zone-rigid component vocabulary only
+- Canonical data bindings must use zone-rigid component IDs only
+- screens/components.yaml must define only zone-rigid canonical components and no legacy broad component IDs
+- Every required zone component must have a matching data binding and component contract
+- No legacy l1/l2/l3/cc component prefixes may appear in canonical acceptance, bindings, or component contracts
+- Case decision command tab must not render a multi-case queue
+- Case decision command tab and cross-cutting queue must remain separate
+- SCREEN-L3-CASE-RECOVERY must exist in screen_catalog
+- Level 3 overview tab must not be canonical default
+- 03_case_model_intelligence must not own authorisation actions
+- action_lifecycle must exist as a decision snapshot table with decision_action_events as append-only event stream
+- Every external action must resolve to action_lifecycle plus audit_event linkage
+- Every dashboard-visible KPI must declare explicit formula_plain_language and reconciliation_status
+- package.yaml must expose one coherent package version and one coherent template compatibility version
+- Synthetic demo data generator plus required CSV outputs must exist and maintain referential integrity
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

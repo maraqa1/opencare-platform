@@ -1,0 +1,168 @@
+kind: DashboardStoryFlow
+use_case_slug: urban-service-quality-visual-distortion-loop
+name: Urban Service Quality & Visual Distortion Loop
+rule: Dashboards must follow the declared story order unless the user explicitly navigates elsewhere. The sequence is part
+  of the implementation contract.
+dashboard_order:
+- order: 1
+  dashboard_id: 01_strategic_objective_monitoring
+  screen_id: SCREEN-L1-STRATEGIC
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  why_it_exists: Show the strategic objective, KPI monitoring state, threshold breaches, and the active case that starts the
+    golden thread.
+  decision_question: Which KPI or municipality requires attention first?
+  must_be_learned_before_next: The user understands the strategic objective, KPI thresholds, and active case.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: previous_dashboard_has_active_case_or_unreviewed_decision
+  next_dashboard_dependency: must preserve selected objective/KPI/case context
+- order: 2
+  dashboard_id: 02_kpi_municipality_workspace
+  screen_id: SCREEN-L2-KPI
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  why_it_exists: Show KPI status by municipality, trends, governance evidence, and open cases generated from monitored KPI
+    thresholds.
+  decision_question: Which municipalities are degrading for this KPI and why?
+  must_be_learned_before_next: The user understands the KPI/municipality context and governance evidence.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: previous_dashboard_has_active_case_or_unreviewed_decision
+  next_dashboard_dependency: must preserve selected objective/KPI/case context
+- order: 3
+  dashboard_id: 03_case_model_intelligence
+  screen_id: SCREEN-L3-CASE
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+  why_it_exists: Show single-case model evidence, forecast path, anomaly signal, risk decomposition, and recommendation evidence.
+    It links to the case decision tab but does not authorise actions.
+  decision_question: Why is this case high risk, and what evidence supports sending it to the case decision tab for authorisation?
+  must_be_learned_before_next: The user understands model evidence and recommendation basis before opening the single-case
+    decision authorisation tab.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: previous_dashboard_has_active_case_or_unreviewed_decision
+  next_dashboard_dependency: must preserve selected objective/KPI/case context
+  decision_surface_role: model_evidence_only
+  authorisation_surface_forbidden: true
+  authorisation_note: This screen may navigate to the single-case decision tab but contains no approval, revision, escalation,
+    ticket, email, or external-action controls.
+- order: 4
+  dashboard_id: 03_primary_case_decision_command_tab
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+  why_it_exists: 'Provide the single-case decision authorisation tab: evidence pack, side-by-side bilingual narrative, recommendation
+    summary, visible action buttons, confirmation modals, and audit footnote.'
+  decision_question: For this specific case, should the recommendation be approved, revised, escalated, ticketed, or emailed?
+  must_be_learned_before_next: The user understands the authorised action, side effects, audit assurances, and why recovery
+    is locked until closure.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: case_has_unreviewed_decision_candidate
+  next_dashboard_dependency: must preserve selected case, decision, and action context
+  scope: single_case
+  not_a_queue: true
+- order: 5
+  dashboard_id: 04_outcome_recovery_feedback
+  screen_id: SCREEN-L3-CASE-RECOVERY
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+  why_it_exists: Prove the loop closed using day-30/day-90 measurements, forecast accuracy, intervention effectiveness, evidence
+    pack, and pillar credit.
+  decision_question: Did the action work and how did it change the next cycle?
+  must_be_learned_before_next: The user understands recovery, model feedback, and evidence handoff.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: case_closed_or_recovered
+  next_dashboard_dependency: preserve case, action, and evidence pack context
+- order: 6
+  dashboard_id: 04_decision_command_centre
+  screen_id: SCREEN-CC-DECISIONS
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  why_it_exists: Show generated decision candidates awaiting human approval, decision details, action buttons, and workflow
+    commands.
+  decision_question: Which generated decisions require approval, revision, escalation, ticket creation, or owner notification?
+  must_be_learned_before_next: The user understands the human-authorized decision actions available.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: previous_dashboard_has_active_case_or_unreviewed_decision
+  next_dashboard_dependency: must preserve selected objective/KPI/case context
+- order: 7
+  dashboard_id: 05_runtime_evidence_execution_history
+  screen_id: SCREEN-CC-RUNTIMES
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  why_it_exists: Show RNN forecast, anomaly, and decision-candidate runtimes with inputs, outputs, schedules, last runs, and
+    execution evidence.
+  decision_question: Did the predictive runtimes run, on governed inputs, and write the expected output/decision tables?
+  must_be_learned_before_next: The user trusts the runtime execution history behind the decision candidates.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: previous_dashboard_has_active_case_or_unreviewed_decision
+  next_dashboard_dependency: must preserve selected objective/KPI/case context
+- order: 8
+  dashboard_id: 06_decision_action_audit
+  screen_id: SCREEN-CC-AUDIT
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  why_it_exists: Show the queue of decisions, actions taken, emails sent, tickets created, and corrective actions tracked
+    to closure.
+  decision_question: What decisions were generated, who acted, what external workflow was triggered, and what happened next?
+  must_be_learned_before_next: The user sees the audit trail of decisions, emails, tickets, and corrective actions.
+  story_continuity_keys:
+  - objective_id
+  - kpi_id
+  - municipality_id
+  - case_id
+  - decision_id
+  - action_id
+  - evidence_pack_id
+  cannot_skip_if: previous_dashboard_has_active_case_or_unreviewed_decision
+  next_dashboard_dependency: must preserve selected objective/KPI/case context
+golden_thread:
+- strategic objective
+- KPI monitoring and thresholds
+- runtime forecast and anomaly evidence
+- generated decision candidate
+- human-authorized decision action
+- email/ticket/audit workflow
+- corrective action tracking
+- recovery evidence
+design_notes_contract_ref: screens/design_notes_contract.yaml

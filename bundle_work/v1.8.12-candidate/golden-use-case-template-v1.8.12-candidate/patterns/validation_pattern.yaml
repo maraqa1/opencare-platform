@@ -1,0 +1,8 @@
+kind: ReusableValidationPattern
+required_rules:
+- schema_validation_runs
+- cross_file_consistency_enforced
+- route_refs_resolve
+- lifecycle_linkage_enforced
+- demo_data_integrity_enforced
+- bilingual_coverage_enforced

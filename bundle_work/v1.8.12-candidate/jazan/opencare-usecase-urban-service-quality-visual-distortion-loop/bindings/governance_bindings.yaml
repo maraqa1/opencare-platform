@@ -1,0 +1,122 @@
+kind: GovernanceBindings
+use_case_slug: urban-service-quality-visual-distortion-loop
+bindings:
+- asset: analytics.fct_jazan_citizen_satisfaction
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: analytics.fct_jazan_emergency_readiness
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: analytics.fct_jazan_permit_performance
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: analytics.fct_jazan_service_coverage
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: analytics.fct_jazan_service_quality
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: analytics.fct_jazan_visual_distortion_performance
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: decision.jazan_generated_service_decisions
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: decision.jazan_service_quality_action_queue
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: output.jazan_service_quality_anomaly
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+- asset: output.jazan_service_rnn_forecast
+  classification: internal
+  owner: Jazan Amanah Performance Office
+  steward: Jazan Data Analytics Team
+  freshness: daily
+  quality_rules:
+  - not_null keys
+  - range KPI values
+  - relationship municipality
+  lineage: source_to_raw_to_staging_to_analytics_to_output_to_decision_to_dashboard
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

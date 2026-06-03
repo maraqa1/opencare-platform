@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "acceptance_dashboard_fidelity_contract.schema.json",
+  "type": "object",
+  "required": [
+    "kind",
+    "required_dashboard_count",
+    "required_dashboard_ids",
+    "required_screen_ids",
+    "dashboard_fidelity_required",
+    "screen_substitution_forbidden",
+    "dashboard_collapse_forbidden",
+    "acceptance_checks"
+  ],
+  "properties": {
+    "kind": {
+      "const": "DashboardFidelityContract"
+    },
+    "dashboard_fidelity_required": {
+      "const": true
+    },
+    "screen_substitution_forbidden": {
+      "const": true
+    },
+    "dashboard_collapse_forbidden": {
+      "const": true
+    },
+    "required_dashboard_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "required_dashboard_ids": {
+      "type": "array",
+      "minItems": 1
+    },
+    "required_screen_ids": {
+      "type": "array",
+      "minItems": 1
+    },
+    "acceptance_checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "dashboard_id",
+          "screen_id",
+          "route",
+          "must_render",
+          "must_include_components"
+        ],
+        "properties": {
+          "dashboard_id": {
+            "type": "string"
+          },
+          "screen_id": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string"
+          },
+          "must_render": {
+            "const": true
+          },
+          "must_include_components": {
+            "type": "array",
+            "minItems": 1
+          }
+        }
+      }
+    }
+  }
+}

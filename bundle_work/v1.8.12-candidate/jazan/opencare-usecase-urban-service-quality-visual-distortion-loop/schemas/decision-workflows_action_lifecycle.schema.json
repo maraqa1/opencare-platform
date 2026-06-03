@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "decision-workflows/action_lifecycle",
+  "type": "object",
+  "required": [
+    "kind",
+    "use_case_slug",
+    "snapshot_table",
+    "event_stream_table",
+    "fields",
+    "allowed_states",
+    "allowed_channels"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "use_case_slug": {
+      "type": "string"
+    },
+    "snapshot_table": {
+      "type": "string"
+    },
+    "event_stream_table": {
+      "type": "string"
+    },
+    "fields": {
+      "type": "array"
+    },
+    "allowed_states": {
+      "type": "array"
+    },
+    "allowed_channels": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": true
+}

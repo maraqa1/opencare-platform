@@ -1,0 +1,945 @@
+kind: DashboardLayoutZones
+use_case_slug: urban-service-quality-visual-distortion-loop
+rule: Each canonical dashboard must render the declared zones in order; zones may not be collapsed into generic shell sections.
+dashboards:
+- dashboard_id: 01_strategic_objective_monitoring
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  visible_title: Strategic objective cascade - monitoring & thresholds
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - page_header
+  - strategic_objective_band
+  - kpi_state_summary_strip
+  - kpi_connector_rail
+  - kpi_threshold_card_grid
+  - highest_priority_case_alert
+  zones:
+  - zone_id: page_header
+    zone_purpose: Top title and demo/status chips
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - page_header_bar
+    - demo_status_chip
+    - route_status_chip
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone page_header must render components page_header_bar, demo_status_chip, route_status_chip in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: strategic_objective_band
+    zone_purpose: Purple objective band with strategic objective, codes, alignment chips, and municipality coverage
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - strategic_objective_header
+    - objective_metadata_chips
+    - municipality_coverage_chip
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone strategic_objective_band must render components strategic_objective_header, objective_metadata_chips, municipality_coverage_chip
+      in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: kpi_state_summary_strip
+    zone_purpose: 'Four counters: meeting target, approaching trigger, in breach, decision candidates'
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - kpi_state_summary_strip
+    - meeting_target_counter
+    - approaching_trigger_counter
+    - in_breach_counter
+    - decision_candidate_counter
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone kpi_state_summary_strip must render components kpi_state_summary_strip, meeting_target_counter, approaching_trigger_counter,
+      in_breach_counter, decision_candidate_counter in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: kpi_connector_rail
+    zone_purpose: Connector rail linking KPI markers to KPI cards
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - kpi_connector_rail
+    - kpi_marker_sequence
+    - kpi_to_card_connectors
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone kpi_connector_rail must render components kpi_connector_rail, kpi_marker_sequence, kpi_to_card_connectors in this zone;
+      these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: kpi_threshold_card_grid
+    zone_purpose: Two-column six KPI card grid with threshold rails and trigger rules
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - kpi_threshold_card_grid
+    - kpi_threshold_card
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone kpi_threshold_card_grid must render components kpi_threshold_card_grid, kpi_threshold_card in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: highest_priority_case_alert
+    zone_purpose: Red alert band with highest-priority seeded case and Review case action
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - highest_priority_case_alert
+    - review_case_action
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone highest_priority_case_alert must render components highest_priority_case_alert, review_case_action in this zone; these
+      components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.01_strategic_objective_monitoring
+  dashboard_specific_rule: direction-aware threshold bars, conditional active-case banner, data-driven cascade dots, URL-persisted locale
+- dashboard_id: 02_kpi_municipality_workspace
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  visible_title: KPI workspace - municipality monitoring and governance
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - page_header
+  - kpi_summary_strip
+  - municipality_ranking
+  - trend_forecast_view
+  - governance_evidence_panel
+  - open_cases_list
+  zones:
+  - zone_id: page_header
+    zone_purpose: KPI workspace title, active KPI, filters, and demo/live state
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - page_header_bar
+    - active_kpi_context_header
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone page_header must render components page_header_bar, active_kpi_context_header in this zone; these components may not
+      be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: kpi_summary_strip
+    zone_purpose: KPI current status, target, risk, and monitored municipality counts
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - kpi_summary_strip
+    - kpi_target_status_card
+    - kpi_risk_card
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone kpi_summary_strip must render components kpi_summary_strip, kpi_target_status_card, kpi_risk_card in this zone; these
+      components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: municipality_ranking
+    zone_purpose: Ranked municipality table/card list by KPI risk and trigger state
+    width_intent: six_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - municipality_ranking_table
+    - municipality_risk_rows
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone municipality_ranking must render components municipality_ranking_table, municipality_risk_rows in this zone; these
+      components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: trend_forecast_view
+    zone_purpose: Trend and forecast panel for selected KPI
+    width_intent: six_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - trend_forecast_chart
+    - threshold_reference_line
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone trend_forecast_view must render components trend_forecast_chart, threshold_reference_line in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: governance_evidence_panel
+    zone_purpose: Classification, owner, steward, freshness, lineage, and DQ evidence
+    width_intent: four_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - governance_evidence_panel
+    - classification_badge
+    - ownership_badge
+    - lineage_link
+    - freshness_badge
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone governance_evidence_panel must render components governance_evidence_panel, classification_badge, ownership_badge,
+      lineage_link, freshness_badge in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: open_cases_list
+    zone_purpose: Open municipality cases for this KPI
+    width_intent: eight_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - open_cases_list
+    - open_case_row
+    - open_case_action
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone open_cases_list must render components open_cases_list, open_case_row, open_case_action in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.02_kpi_municipality_workspace
+- dashboard_id: 03_case_model_intelligence
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+  visible_title: Case workspace - model intelligence, recommendation, decision, and recovery
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - case_header
+  - model_risk_explanation
+  - forecast_path
+  - anomaly_signal
+  - recommendation_rankings
+  - decision_evidence_panel
+  - recovery_path
+  zones:
+  - zone_id: case_header
+    zone_purpose: Active case identity, municipality, KPI, risk, and model status
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - active_case_banner
+    - case_identity_header
+    - case_status_chips
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone case_header must render components active_case_banner, case_identity_header, case_status_chips in this zone; these
+      components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: model_risk_explanation
+    zone_purpose: Composite risk score and feature contributions
+    width_intent: four_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - composite_risk_score_card
+    - feature_contribution_bar
+    - model_driver_list
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone model_risk_explanation must render components composite_risk_score_card, feature_contribution_bar, model_driver_list
+      in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: forecast_path
+    zone_purpose: RNN forecast chart and breach probability
+    width_intent: eight_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - rnn_forecast_chart
+    - forecast_breach_marker
+    - forecast_confidence_band
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone forecast_path must render components rnn_forecast_chart, forecast_breach_marker, forecast_confidence_band in this zone;
+      these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: anomaly_signal
+    zone_purpose: Anomaly detector evidence and z-score
+    width_intent: four_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - anomaly_detection_card
+    - z_score_indicator
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone anomaly_signal must render components anomaly_detection_card, z_score_indicator in this zone; these components may
+      not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: recommendation_rankings
+    zone_purpose: Ranked interventions from comparable municipalities
+    width_intent: eight_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - recommendation_ranked_cards
+    - intervention_effectiveness_badge
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone recommendation_rankings must render components recommendation_ranked_cards, intervention_effectiveness_badge in this
+      zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: decision_evidence_panel
+    zone_purpose: Decision candidate and human approval context
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - generated_decision_evidence_panel
+    - human_approval_notice
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone decision_evidence_panel must render components generated_decision_evidence_panel, human_approval_notice in this zone;
+      these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: recovery_path
+    zone_purpose: Expected recovery trajectory when action is approved
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - recovery_trajectory_chart
+    - target_recovery_marker
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone recovery_path must render components recovery_trajectory_chart, target_recovery_marker in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  decision_surface_role: model_evidence_only
+  authorisation_surface_forbidden: true
+  forbidden_components:
+  - case_action_button_row
+  - decision_queue_table
+  - multi_case_list
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.03_case_model_intelligence
+- dashboard_id: 03_primary_case_decision_command_tab
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+  visible_title: Decision command tab
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - case_context_header
+  - case_tab_strip
+  - evidence_pack_strip
+  - bilingual_narrative
+  - recommendation_summary
+  - action_authorisation
+  - audit_assurance
+  zones:
+  - zone_id: case_context_header
+    zone_purpose: Show one case identity, municipality, KPI, risk score, decision status
+    width_intent: full
+    nesting_rules: must remain a distinct case-scoped decision region; may not be replaced by a queue or generic shell
+    required_components:
+    - case_context_header
+    visual_dependency_between_zones: preserve single-case authorisation reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone case_context_header must render components case_context_header in this case-scoped zone; these components may not be
+      moved to a cross-case queue or generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: case_tab_strip
+    zone_purpose: Preserve Level 3 case navigation and visible locked Recovery tab
+    width_intent: full
+    nesting_rules: must remain a distinct case-scoped decision region; may not be replaced by a queue or generic shell
+    required_components:
+    - case_workspace_tab_strip
+    - recovery_tab_locked_state
+    visual_dependency_between_zones: preserve single-case authorisation reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone case_tab_strip must render components case_workspace_tab_strip, recovery_tab_locked_state in this case-scoped zone;
+      these components may not be moved to a cross-case queue or generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: evidence_pack_strip
+    zone_purpose: Show evidence artefacts supporting the decision
+    width_intent: dashboard_grid_region
+    nesting_rules: must remain a distinct case-scoped decision region; may not be replaced by a queue or generic shell
+    required_components:
+    - evidence_pack_strip
+    visual_dependency_between_zones: preserve single-case authorisation reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone evidence_pack_strip must render components evidence_pack_strip in this case-scoped zone; these components may not be
+      moved to a cross-case queue or generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: bilingual_narrative
+    zone_purpose: Show editable English and Arabic MOMRAH narrative side by side
+    width_intent: dashboard_grid_region
+    nesting_rules: must remain a distinct case-scoped decision region; may not be replaced by a queue or generic shell
+    required_components:
+    - bilingual_narrative_panel
+    - narrative_version_history_action
+    visual_dependency_between_zones: preserve single-case authorisation reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone bilingual_narrative must render components bilingual_narrative_panel, narrative_version_history_action in this case-scoped
+      zone; these components may not be moved to a cross-case queue or generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: recommendation_summary
+    zone_purpose: Summarise top model recommendation and its evidence basis
+    width_intent: dashboard_grid_region
+    nesting_rules: must remain a distinct case-scoped decision region; may not be replaced by a queue or generic shell
+    required_components:
+    - recommendation_summary_panel
+    visual_dependency_between_zones: preserve single-case authorisation reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone recommendation_summary must render components recommendation_summary_panel in this case-scoped zone; these components
+      may not be moved to a cross-case queue or generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: action_authorisation
+    zone_purpose: Present human-authorised action buttons with consequence hints and confirmation contract
+    width_intent: dashboard_grid_region
+    nesting_rules: must remain a distinct case-scoped decision region; may not be replaced by a queue or generic shell
+    required_components:
+    - case_action_button_row
+    - action_consequence_preview
+    - confirmation_modal_contract
+    visual_dependency_between_zones: preserve single-case authorisation reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone action_authorisation must render components case_action_button_row, action_consequence_preview, confirmation_modal_contract
+      in this case-scoped zone; these components may not be moved to a cross-case queue or generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: audit_assurance
+    zone_purpose: Show HITL, audit, bilingual, no autonomous escalation, and append-only assertions
+    width_intent: full
+    nesting_rules: must remain a distinct case-scoped decision region; may not be replaced by a queue or generic shell
+    required_components:
+    - audit_footnote_panel
+    visual_dependency_between_zones: preserve single-case authorisation reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone audit_assurance must render components audit_footnote_panel in this case-scoped zone; these components may not be moved
+      to a cross-case queue or generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  decision_surface_role: single_case_authorisation
+  queue_forbidden: true
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.03_primary_case_decision_command_tab
+  dashboard_specific_rule: single-case only; no queue; side-by-side bilingual narrative; locked recovery tab visible; consequence-preview action
+    row
+- dashboard_id: 04_outcome_recovery_feedback
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+  visible_title: Outcome recovery and learning feedback
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - case_recovery_header
+  - before_target_after_recovery
+  - recovery_trajectory
+  - model_learning_feedback
+  - evidence_pack_footer
+  zones:
+  - zone_id: case_recovery_header
+    zone_purpose: Case and recovery context
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - case_recovery_header
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone case_recovery_header must render components case_recovery_header in this zone; these components may not be moved to
+      a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: before_target_after_recovery
+    zone_purpose: Before, target, day-30/day-90 measured outcomes
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - before_target_after_recovery_cards
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone before_target_after_recovery must render components before_target_after_recovery_cards in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: recovery_trajectory
+    zone_purpose: Trajectory sourced from measurements and decision.approved event
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - recovery_trajectory_chart
+    - action_approved_marker
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone recovery_trajectory must render components recovery_trajectory_chart, action_approved_marker in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: model_learning_feedback
+    zone_purpose: Forecast accuracy, recommendation effectiveness, and pillar credit
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - forecast_accuracy_card
+    - recommendation_effectiveness_card
+    - pillar_credit_grid
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone model_learning_feedback must render components forecast_accuracy_card, recommendation_effectiveness_card, pillar_credit_grid
+      in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: evidence_pack_footer
+    zone_purpose: Real evidence pack link and audit logged report viewer
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - evidence_pack_link
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone evidence_pack_footer must render components evidence_pack_link in this zone; these components may not be moved to a
+      generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.04_outcome_recovery_feedback
+- dashboard_id: 04_decision_command_centre
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  visible_title: Decision command centre
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - decision_summary_strip
+  - decision_candidate_queue
+  - selected_decision_detail
+  - recommended_actions_panel
+  - human_authorised_action_area
+  - confirmation_drawer_region
+  - corrective_action_lifecycle
+  zones:
+  - zone_id: decision_summary_strip
+    zone_purpose: Decision counts, under review, approved, escalated, tickets, emails
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - decision_summary_strip
+    - new_decisions_counter
+    - under_review_counter
+    - approved_counter
+    - escalated_counter
+    - tickets_created_counter
+    - emails_sent_counter
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone decision_summary_strip must render components decision_summary_strip, new_decisions_counter, under_review_counter,
+      approved_counter, escalated_counter, tickets_created_counter, emails_sent_counter in this zone; these components may not be moved to a generic
+      shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: decision_candidate_queue
+    zone_purpose: Generated decision candidate table
+    width_intent: eight_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - decision_table
+    - decision_queue_row
+    - visible_action_buttons
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone decision_candidate_queue must render components decision_table, decision_queue_row, visible_action_buttons in this
+      zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: selected_decision_detail
+    zone_purpose: Selected decision narrative, risk evidence, and recommendation
+    width_intent: four_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - selected_decision_detail_panel
+    - decision_rationale_panel
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone selected_decision_detail must render components selected_decision_detail_panel, decision_rationale_panel in this zone;
+      these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: recommended_actions_panel
+    zone_purpose: Ranked recommended interventions
+    width_intent: four_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - recommended_actions_panel
+    - recommended_action_ranked_list
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone recommended_actions_panel must render components recommended_actions_panel, recommended_action_ranked_list in this
+      zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: human_authorised_action_area
+    zone_purpose: Approve, revise, escalate, create ticket, email owner, view details
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - action_button_bar
+    - approve_button
+    - request_revision_button
+    - escalate_button
+    - create_ticket_button
+    - email_owner_button
+    - view_details_button
+    - human_approval_notice
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone human_authorised_action_area must render components action_button_bar, approve_button, request_revision_button, escalate_button,
+      create_ticket_button, email_owner_button, view_details_button, human_approval_notice in this zone; these components may not be moved to
+      a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: confirmation_drawer_region
+    zone_purpose: Confirmation drawer for external side effects
+    width_intent: overlay
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - confirmation_drawer
+    - external_side_effect_summary
+    - confirmation_required_notice
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone confirmation_drawer_region must render components confirmation_drawer, external_side_effect_summary, confirmation_required_notice
+      in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: corrective_action_lifecycle
+    zone_purpose: Lifecycle of action from proposed to closed
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - corrective_action_lifecycle
+    - action_stage_tracker
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone corrective_action_lifecycle must render components corrective_action_lifecycle, action_stage_tracker in this zone;
+      these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.04_decision_command_centre
+- dashboard_id: 05_runtime_evidence_execution_history
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  visible_title: Runtime evidence and execution history
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - runtime_status_summary
+  - runtime_card_grid
+  - execution_history_panel
+  - input_output_lineage_panel
+  - schedule_and_next_run_panel
+  zones:
+  - zone_id: runtime_status_summary
+    zone_purpose: Runtime online/offline status and run counts
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - runtime_status_summary
+    - online_runtime_counter
+    - seeded_demo_status_chip
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone runtime_status_summary must render components runtime_status_summary, online_runtime_counter, seeded_demo_status_chip
+      in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: runtime_card_grid
+    zone_purpose: Cards for RNN, anomaly, decision candidate runtimes
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - runtime_card
+    - rnn_runtime_card
+    - anomaly_runtime_card
+    - decision_candidate_runtime_card
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone runtime_card_grid must render components runtime_card, rnn_runtime_card, anomaly_runtime_card, decision_candidate_runtime_card
+      in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: execution_history_panel
+    zone_purpose: Last seven runs and rows processed
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - runtime_execution_history
+    - last_seven_runs_indicator
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone execution_history_panel must render components runtime_execution_history, last_seven_runs_indicator in this zone; these
+      components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: input_output_lineage_panel
+    zone_purpose: Analytics inputs, output tables, decision outputs
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - runtime_lineage_panel
+    - input_marts_list
+    - output_tables_list
+    - raw_layer_forbidden_notice
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone input_output_lineage_panel must render components runtime_lineage_panel, input_marts_list, output_tables_list, raw_layer_forbidden_notice
+      in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: schedule_and_next_run_panel
+    zone_purpose: Schedules and next run times
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - runtime_schedule_panel
+    - next_run_label
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone schedule_and_next_run_panel must render components runtime_schedule_panel, next_run_label in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.05_runtime_evidence_execution_history
+- dashboard_id: 06_decision_action_audit
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  visible_title: Decision queue and action audit
+  collapse_forbidden: true
+  substitution_forbidden: true
+  zone_order:
+  - audit_summary_strip
+  - decision_queue
+  - action_event_timeline
+  - email_delivery_log
+  - ticket_request_log
+  - corrective_action_tracker
+  zones:
+  - zone_id: audit_summary_strip
+    zone_purpose: New decisions, approvals, escalations, tickets, emails, actions closed
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - audit_summary_strip
+    - email_sent_counter
+    - ticket_created_counter
+    - actions_in_progress_counter
+    - actions_closed_counter
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone audit_summary_strip must render components audit_summary_strip, email_sent_counter, ticket_created_counter, actions_in_progress_counter,
+      actions_closed_counter in this zone; these components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: decision_queue
+    zone_purpose: Decision queue with state and action history link
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - decision_table
+    - decision_queue_row
+    - action_status_badges
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone decision_queue must render components decision_table, decision_queue_row, action_status_badges in this zone; these
+      components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: action_event_timeline
+    zone_purpose: Action/audit events by timestamp, actor, action, channel, result
+    width_intent: six_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - action_audit_timeline
+    - audit_event_row
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone action_event_timeline must render components action_audit_timeline, audit_event_row in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: email_delivery_log
+    zone_purpose: Email outbox/delivery evidence
+    width_intent: three_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - email_delivery_log_panel
+    - notification_outbox_row
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone email_delivery_log must render components email_delivery_log_panel, notification_outbox_row in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: ticket_request_log
+    zone_purpose: Ticket request and external ref evidence
+    width_intent: three_columns
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - ticket_request_log_panel
+    - ticket_request_row
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone ticket_request_log must render components ticket_request_log_panel, ticket_request_row in this zone; these components
+      may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  - zone_id: corrective_action_tracker
+    zone_purpose: Corrective actions created from decisions
+    width_intent: full
+    nesting_rules: must remain a distinct dashboard region
+    required_components:
+    - corrective_action_tracker
+    - corrective_action_row
+    visual_dependency_between_zones: preserve declared reading order
+    component_lock: zone_component_binding_required
+    flattening_forbidden: true
+    render_assertion: zone corrective_action_tracker must render components corrective_action_tracker, corrective_action_row in this zone; these
+      components may not be moved to a generic shell
+    acceptance_evidence:
+    - route_component_inventory
+    - screenshot_region_check
+    - zone_component_presence_check
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.06_decision_action_audit

@@ -1,0 +1,25 @@
+kind: ClassificationContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+classification_levels:
+- public
+- internal
+- confidential
+- restricted
+default_classification: internal
+phi_present: false
+pii_present: possible municipal staff owner names only; avoid personal identifiers
+  in dashboard
+rules:
+- match: municipality performance metrics
+  classification: internal
+- match: decision audit records
+  classification: confidential
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

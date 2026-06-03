@@ -1,0 +1,6 @@
+kind: ReusableScreenCatalogPattern
+required_rules:
+- business_purpose_specific_to_screen
+- business_question_answered_specific_to_screen
+- no_generic_placeholder_metadata
+- deprecated_tabs_not_canonical

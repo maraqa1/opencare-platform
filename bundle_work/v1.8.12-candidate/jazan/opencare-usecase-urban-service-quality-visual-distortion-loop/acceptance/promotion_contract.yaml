@@ -1,0 +1,48 @@
+kind: PromotionContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+demo_ready_criteria:
+- package validates
+- screens have business alignment
+- dashboard acceptance exists
+- runtime images declared
+- platform capabilities declared
+production_mapping_required_criteria:
+- source systems mapped
+- data owner approved
+- freshness configured
+- quality tests implemented
+production_live_criteria:
+- dbt tests pass
+- runtime evidence fresh
+- decision workflow enabled
+- audit logging enabled
+live_verified_criteria:
+- all populated state proofs pass
+- no placeholders
+- runtime outputs fresh
+- dashboard acceptance pass
+promotion_blockers:
+- missing business_alignment_matrix
+- missing platform_capabilities
+- missing runtime image for required runtime
+- missing dashboard acceptance
+- fake governance PASS
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

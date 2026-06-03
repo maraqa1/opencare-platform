@@ -1,0 +1,18 @@
+kind: RequiredFileTree
+required_roots:
+- manifest/
+- business/
+- data/
+- dbt/
+- runtime/
+- decisions/
+- decision-workflows/
+- screens/
+- bindings/
+- governance/
+- acceptance/
+- validation/
+- schemas/
+- assets/i18n/
+- demo-data/
+- docs/

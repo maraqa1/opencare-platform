@@ -1,0 +1,28 @@
+kind: NotificationsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+notifications:
+- notification_id: owner_email
+  channel: email
+  trigger: btn.email_owner
+  template: i18n email template
+  audit_event: decision.owner_emailed
+  autonomous: false
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

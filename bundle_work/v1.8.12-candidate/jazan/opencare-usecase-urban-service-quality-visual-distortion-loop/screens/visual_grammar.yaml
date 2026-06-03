@@ -1,0 +1,634 @@
+kind: DashboardVisualGrammar
+use_case_slug: urban-service-quality-visual-distortion-loop
+global:
+  density: operational_compact
+  card_density: compact
+  section_spacing: tight_but_readable
+  status_badge_rules: status badges must include text and colour role; colour alone is insufficient
+  severity_colour_roles:
+    meeting_target: green
+    approaching_trigger: amber
+    in_breach: red
+    decision_candidate: blue
+    needs_data: neutral
+  threshold_rail_required: required on KPI threshold cards where thresholds exist
+  connector_line_required: required where dashboard declares a sequence or KPI connector rail
+  active_case_banner_required: required on screens with an active seeded case
+  CTA_prominence: primary workflow action must be visually distinct and text-labelled
+  bilingual_label_placement: English primary label with Arabic sublabel where declared
+  must_not_flatten:
+  - KPI connector rails
+  - threshold rails
+  - active case alert bands
+  - decision action controls
+  - runtime evidence cards
+  - audit timelines
+  design_notes_contract_truth: true
+  typography:
+    allowed_font_weights:
+    - 400
+    - 500
+    forbidden_font_weights:
+    - 600
+    - 700
+    - 800
+    - 900
+    header_size: 17-18px
+    body_size: 11-12px
+    small_label_size: 9-10px
+    rule: no heavy marketing weights
+  colour_policy:
+    state_only: true
+    red: reserved for breach/failure
+    amber: reserved for warning/degraded
+    green: reserved for success/recovered
+    purple: strategic objective and HITL only
+    blue: information only
+    decorative_colour_forbidden: true
+  rounding_policy:
+    kpi_values_decimals: 2
+    days_decimals: 1
+    counts: integer
+    js_float_leakage_forbidden: true
+  empty_state_policy:
+    honest_absence_required: true
+    no_fake_zero: true
+    no_fake_green: true
+  confirmation_modal_policy:
+    payload_preview_required: true
+    generic_are_you_sure_forbidden: true
+dashboards:
+- dashboard_id: 01_strategic_objective_monitoring
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - strategic_objective_header
+  - kpi_threshold_cards
+  - in_breach_kpi_state
+  - decision_candidate_summary
+  - active_case_banner
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  bilingual_required: true
+  visual_non_negotiables:
+  - strategic_objective_header
+  - kpi_threshold_cards
+  - in_breach_kpi_state
+  - decision_candidate_summary
+  - active_case_banner
+  - declared zone order
+  - declared required components
+  - page_header
+  - page_header_bar
+  - demo_status_chip
+  - route_status_chip
+  - strategic_objective_band
+  - objective_metadata_chips
+  - municipality_coverage_chip
+  - kpi_state_summary_strip
+  - meeting_target_counter
+  - approaching_trigger_counter
+  - in_breach_counter
+  - decision_candidate_counter
+  - kpi_connector_rail
+  - kpi_marker_sequence
+  - kpi_to_card_connectors
+  - kpi_threshold_card_grid
+  - kpi_threshold_card
+  - highest_priority_case_alert
+  - review_case_action
+  zone_component_binding_required: true
+  zone_component_non_negotiables:
+    page_header:
+    - page_header_bar
+    - demo_status_chip
+    - route_status_chip
+    strategic_objective_band:
+    - strategic_objective_header
+    - objective_metadata_chips
+    - municipality_coverage_chip
+    kpi_state_summary_strip:
+    - kpi_state_summary_strip
+    - meeting_target_counter
+    - approaching_trigger_counter
+    - in_breach_counter
+    - decision_candidate_counter
+    kpi_connector_rail:
+    - kpi_connector_rail
+    - kpi_marker_sequence
+    - kpi_to_card_connectors
+    kpi_threshold_card_grid:
+    - kpi_threshold_card_grid
+    - kpi_threshold_card
+    highest_priority_case_alert:
+    - highest_priority_case_alert
+    - review_case_action
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.01_strategic_objective_monitoring
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+  direction_aware_threshold_bars_required: true
+  active_case_banner_conditional: true
+  data_driven_cascade_dot_colours: true
+  url_persisted_locale_required: true
+- dashboard_id: 02_kpi_municipality_workspace
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - municipality_ranking
+  - governance_panel
+  - open_cases_list
+  - risk_score_binding
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  bilingual_required: true
+  visual_non_negotiables:
+  - municipality_ranking
+  - governance_panel
+  - open_cases_list
+  - risk_score_binding
+  - declared zone order
+  - declared required components
+  - page_header
+  - page_header_bar
+  - active_kpi_context_header
+  - kpi_summary_strip
+  - kpi_target_status_card
+  - kpi_risk_card
+  - municipality_ranking_table
+  - municipality_risk_rows
+  - trend_forecast_view
+  - trend_forecast_chart
+  - threshold_reference_line
+  - governance_evidence_panel
+  - classification_badge
+  - ownership_badge
+  - lineage_link
+  - freshness_badge
+  - open_case_row
+  - open_case_action
+  zone_component_binding_required: true
+  zone_component_non_negotiables:
+    page_header:
+    - page_header_bar
+    - active_kpi_context_header
+    kpi_summary_strip:
+    - kpi_summary_strip
+    - kpi_target_status_card
+    - kpi_risk_card
+    municipality_ranking:
+    - municipality_ranking_table
+    - municipality_risk_rows
+    trend_forecast_view:
+    - trend_forecast_chart
+    - threshold_reference_line
+    governance_evidence_panel:
+    - governance_evidence_panel
+    - classification_badge
+    - ownership_badge
+    - lineage_link
+    - freshness_badge
+    open_cases_list:
+    - open_cases_list
+    - open_case_row
+    - open_case_action
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.02_kpi_municipality_workspace
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+- dashboard_id: 03_case_model_intelligence
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - forecast_chart
+  - anomaly_card
+  - recommendations
+  - recovery_trajectory
+  - human_approval_notice
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  bilingual_required: where_labels_declared
+  visual_non_negotiables:
+  - forecast_chart
+  - anomaly_card
+  - recommendations
+  - recovery_trajectory
+  - human_approval_notice
+  - declared zone order
+  - declared required components
+  - case_header
+  - active_case_banner
+  - case_identity_header
+  - case_status_chips
+  - model_risk_explanation
+  - composite_risk_score_card
+  - feature_contribution_bar
+  - model_driver_list
+  - forecast_path
+  - rnn_forecast_chart
+  - forecast_breach_marker
+  - forecast_confidence_band
+  - anomaly_signal
+  - anomaly_detection_card
+  - z_score_indicator
+  - recommendation_rankings
+  - recommendation_ranked_cards
+  - intervention_effectiveness_badge
+  - decision_evidence_panel
+  - generated_decision_evidence_panel
+  - recovery_path
+  - recovery_trajectory_chart
+  - target_recovery_marker
+  zone_component_binding_required: true
+  zone_component_non_negotiables:
+    case_header:
+    - active_case_banner
+    - case_identity_header
+    - case_status_chips
+    model_risk_explanation:
+    - composite_risk_score_card
+    - feature_contribution_bar
+    - model_driver_list
+    forecast_path:
+    - rnn_forecast_chart
+    - forecast_breach_marker
+    - forecast_confidence_band
+    anomaly_signal:
+    - anomaly_detection_card
+    - z_score_indicator
+    recommendation_rankings:
+    - recommendation_ranked_cards
+    - intervention_effectiveness_badge
+    decision_evidence_panel:
+    - generated_decision_evidence_panel
+    - human_approval_notice
+    recovery_path:
+    - recovery_trajectory_chart
+    - target_recovery_marker
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.03_case_model_intelligence
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+  feature_contributions_must_sum_to_composite_score: true
+  real_confidence_band_required: true
+  queryable_comparable_cases_required: true
+  monospace_table_identifiers_required: true
+  decision_surface_role: model_evidence_only
+  authorisation_surface_forbidden: true
+  must_not_render:
+  - case_action_button_row
+  - decision_queue_table
+  - multi_case_list
+  - external_action_buttons
+  allowed_action: open_case_decision_tab only
+- dashboard_id: 03_primary_case_decision_command_tab
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - case_context_header
+  - case_workspace_tab_strip
+  - evidence_pack_strip
+  - bilingual_narrative_panel
+  - narrative_version_history_action
+  - recommendation_summary_panel
+  - case_action_button_row
+  - action_consequence_preview
+  - confirmation_modal_contract
+  - audit_footnote_panel
+  - recovery_tab_locked_state
+  - side_by_side_bilingual_narrative
+  - confirmation_modal_payload_preview
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  bilingual_required: true
+  visual_non_negotiables:
+  - case_context_header
+  - case_workspace_tab_strip
+  - evidence_pack_strip
+  - bilingual_narrative_panel
+  - narrative_version_history_action
+  - recommendation_summary_panel
+  - case_action_button_row
+  - action_consequence_preview
+  - confirmation_modal_contract
+  - audit_footnote_panel
+  - recovery_tab_locked_state
+  - no_queue
+  - visible_locked_recovery_tab
+  - all_five_action_buttons_visible
+  - side_by_side_bilingual_narrative
+  - confirmation_modal_for_every_action
+  zone_component_binding_required: true
+  zone_component_non_negotiables:
+    case_context_header:
+    - case_context_header
+    case_tab_strip:
+    - case_workspace_tab_strip
+    - recovery_tab_locked_state
+    evidence_pack_strip:
+    - evidence_pack_strip
+    bilingual_narrative:
+    - bilingual_narrative_panel
+    - narrative_version_history_action
+    recommendation_summary:
+    - recommendation_summary_panel
+    action_authorisation:
+    - case_action_button_row
+    - action_consequence_preview
+    - confirmation_modal_contract
+    audit_assurance:
+    - audit_footnote_panel
+  colour_rule: purple only for objective/HITL, red amber green reserved for state, blue information only
+  typography_rule: regular 400 and medium 500 only; no heavy marketing weights
+  forbidden_simplifications:
+  - render_multi_case_queue
+  - hide_action_buttons_in_overflow
+  - translation_toggle_only
+  - hide_locked_recovery_tab
+  - silent_external_dispatch
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.03_primary_case_decision_command_tab
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+  single_case_only: true
+  queue_forbidden: true
+  side_by_side_bilingual_narrative_required: true
+  locked_recovery_tab_visible_required: true
+  consequence_preview_action_row_required: true
+  audit_footnote_compliance_script_required: true
+- dashboard_id: 04_outcome_recovery_feedback
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - before_target_after_recovery
+  - binary_pillar_credit_grid
+  - evidence_pack_link
+  - recovery_marker_from_audit_event
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  - shadow_softness
+  bilingual_required: true
+  visual_non_negotiables:
+  - recovery_trajectory
+  - day_30_day_90_measurements
+  - forecast_accuracy
+  - recommendation_effectiveness
+  - pillar_credit_grid
+  - evidence_pack_link
+  - action_approved_marker
+  forbidden_simplifications:
+  - synthetic_recovery_values
+  - hide_locked_recovery_tab
+  - fake_in_progress_pillar_credits
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.04_outcome_recovery_feedback
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+  screen_id: SCREEN-L3-CASE-RECOVERY
+- dashboard_id: 04_decision_command_centre
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - generated_decision_queue
+  - visible_action_buttons
+  - human_approval_rule
+  - decision_detail_drawer
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  bilingual_required: true
+  visual_non_negotiables:
+  - generated_decision_queue
+  - visible_action_buttons
+  - human_approval_rule
+  - decision_detail_drawer
+  - declared zone order
+  - declared required components
+  - decision_summary_strip
+  - new_decisions_counter
+  - under_review_counter
+  - approved_counter
+  - escalated_counter
+  - tickets_created_counter
+  - emails_sent_counter
+  - decision_candidate_queue
+  - decision_table
+  - decision_queue_row
+  - selected_decision_detail
+  - selected_decision_detail_panel
+  - decision_rationale_panel
+  - recommended_actions_panel
+  - recommended_action_ranked_list
+  - human_authorised_action_area
+  - action_button_bar
+  - approve_button
+  - request_revision_button
+  - escalate_button
+  - create_ticket_button
+  - email_owner_button
+  - view_details_button
+  - human_approval_notice
+  - confirmation_drawer_region
+  - confirmation_drawer
+  - external_side_effect_summary
+  - confirmation_required_notice
+  - corrective_action_lifecycle
+  - action_stage_tracker
+  zone_component_binding_required: true
+  zone_component_non_negotiables:
+    decision_summary_strip:
+    - decision_summary_strip
+    - new_decisions_counter
+    - under_review_counter
+    - approved_counter
+    - escalated_counter
+    - tickets_created_counter
+    - emails_sent_counter
+    decision_candidate_queue:
+    - decision_table
+    - decision_queue_row
+    - visible_action_buttons
+    selected_decision_detail:
+    - selected_decision_detail_panel
+    - decision_rationale_panel
+    recommended_actions_panel:
+    - recommended_actions_panel
+    - recommended_action_ranked_list
+    human_authorised_action_area:
+    - action_button_bar
+    - approve_button
+    - request_revision_button
+    - escalate_button
+    - create_ticket_button
+    - email_owner_button
+    - view_details_button
+    - human_approval_notice
+    confirmation_drawer_region:
+    - confirmation_drawer
+    - external_side_effect_summary
+    - confirmation_required_notice
+    corrective_action_lifecycle:
+    - corrective_action_lifecycle
+    - action_stage_tracker
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.04_decision_command_centre
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+  five_visible_action_buttons_required: true
+  action_button_order:
+  - approve_decision
+  - request_revision
+  - escalate_decision
+  - create_ticket
+  - email_owner
+  confirmation_modal_for_every_action: true
+- dashboard_id: 05_runtime_evidence_execution_history
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - runtime_cards
+  - last_run_status
+  - input_tables
+  - output_tables
+  - schedule
+  - raw_layer_forbidden_notice
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  bilingual_required: where_labels_declared
+  visual_non_negotiables:
+  - runtime_cards
+  - last_run_status
+  - input_tables
+  - output_tables
+  - schedule
+  - raw_layer_forbidden_notice
+  - declared zone order
+  - declared required components
+  - runtime_status_summary
+  - online_runtime_counter
+  - seeded_demo_status_chip
+  - runtime_card_grid
+  - runtime_card
+  - rnn_runtime_card
+  - anomaly_runtime_card
+  - decision_candidate_runtime_card
+  - execution_history_panel
+  - runtime_execution_history
+  - last_seven_runs_indicator
+  - input_output_lineage_panel
+  - runtime_lineage_panel
+  - input_marts_list
+  - output_tables_list
+  - schedule_and_next_run_panel
+  - runtime_schedule_panel
+  - next_run_label
+  zone_component_binding_required: true
+  zone_component_non_negotiables:
+    runtime_status_summary:
+    - runtime_status_summary
+    - online_runtime_counter
+    - seeded_demo_status_chip
+    runtime_card_grid:
+    - runtime_card
+    - rnn_runtime_card
+    - anomaly_runtime_card
+    - decision_candidate_runtime_card
+    execution_history_panel:
+    - runtime_execution_history
+    - last_seven_runs_indicator
+    input_output_lineage_panel:
+    - runtime_lineage_panel
+    - input_marts_list
+    - output_tables_list
+    - raw_layer_forbidden_notice
+    schedule_and_next_run_panel:
+    - runtime_schedule_panel
+    - next_run_label
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.05_runtime_evidence_execution_history
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+  honest_degraded_runtime_day_visible: true
+  hitl_pill_mandatory: true
+  technical_identifiers_monospace_untranslated: true
+- dashboard_id: 06_decision_action_audit
+  density: operational_compact
+  exact_fidelity_required_elements:
+  - action_history
+  - email_log
+  - ticket_log
+  - corrective_action_tracker
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  bilingual_required: where_labels_declared
+  visual_non_negotiables:
+  - action_history
+  - email_log
+  - ticket_log
+  - corrective_action_tracker
+  - declared zone order
+  - declared required components
+  - audit_summary_strip
+  - email_sent_counter
+  - ticket_created_counter
+  - actions_in_progress_counter
+  - actions_closed_counter
+  - decision_queue
+  - decision_table
+  - decision_queue_row
+  - action_status_badges
+  - action_event_timeline
+  - action_audit_timeline
+  - audit_event_row
+  - email_delivery_log
+  - email_delivery_log_panel
+  - notification_outbox_row
+  - ticket_request_log
+  - ticket_request_log_panel
+  - ticket_request_row
+  - corrective_action_row
+  zone_component_binding_required: true
+  zone_component_non_negotiables:
+    audit_summary_strip:
+    - audit_summary_strip
+    - email_sent_counter
+    - ticket_created_counter
+    - actions_in_progress_counter
+    - actions_closed_counter
+    decision_queue:
+    - decision_table
+    - decision_queue_row
+    - action_status_badges
+    action_event_timeline:
+    - action_audit_timeline
+    - audit_event_row
+    email_delivery_log:
+    - email_delivery_log_panel
+    - notification_outbox_row
+    ticket_request_log:
+    - ticket_request_log_panel
+    - ticket_request_row
+    corrective_action_tracker:
+    - corrective_action_tracker
+    - corrective_action_row
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.06_decision_action_audit
+  state_colour_only: true
+  typography_weight_discipline_required: true
+  render_boundary_rounding_required: true
+  append_only_history_required: true
+  auditable_artifact_links_required: true
+  signed_export_required: true

@@ -1,0 +1,33 @@
+kind: OutputTablesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+analytics_tables:
+- analytics.fct_jazan_citizen_satisfaction
+- analytics.fct_jazan_emergency_readiness
+- analytics.fct_jazan_permit_performance
+- analytics.fct_jazan_service_coverage
+- analytics.fct_jazan_service_quality
+- analytics.fct_jazan_visual_distortion_performance
+- analytics.fct_jazan_kpi_portfolio_summary
+- analytics.dim_jazan_municipality
+runtime_output_tables:
+- output.jazan_service_quality_anomaly
+- output.jazan_service_rnn_forecast
+decision_tables:
+- decision.jazan_generated_service_decisions
+- decision.jazan_service_quality_action_queue
+dashboard_consumers:
+- SCREEN-L1-STRATEGIC
+- SCREEN-L2-KPI
+- SCREEN-L3-CASE
+- SCREEN-CC-DECISIONS
+- SCREEN-CC-RUNTIMES
+- SCREEN-CC-AUDIT
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

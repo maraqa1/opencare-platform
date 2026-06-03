@@ -1,0 +1,84 @@
+kind: BusinessDecisionContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+decisions:
+- decision_id: decision.review_kpi_breach
+  business_trigger: KPI breaches or approaches trigger threshold for a municipality.
+  decision_owner: performance_office
+  required_evidence:
+  - kpi_current_value
+  - trend
+  - risk_score
+  - forecast
+  - lineage
+  - freshness
+  source_kpis:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  - KPI-PIT-03
+  - KPI-USC-04
+  - KPI-ERR-05
+  - KPI-CSI-06
+  action_options:
+  - approve
+  - request_revision
+  - escalate
+  - create_ticket
+  - email_owner
+  escalation_route: performance_office_or_higher
+  audit_event: decision.reviewed
+  notification_ticket_side_effects:
+  - optional_email
+  - optional_external_ticket
+- decision_id: decision.approve_corrective_action
+  business_trigger: A generated decision candidate is ready for human review.
+  decision_owner: performance_office
+  required_evidence:
+  - recommended_intervention
+  - risk_score
+  - affected_municipality
+  - affected_kpi
+  source_kpis:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  - KPI-PIT-03
+  - KPI-USC-04
+  - KPI-ERR-05
+  - KPI-CSI-06
+  action_options:
+  - approve
+  - request_revision
+  escalation_route: municipality_owner_or_momrah_liaison
+  audit_event: decision.approved
+  notification_ticket_side_effects:
+  - corrective_action_created
+- decision_id: decision.escalate_service_quality_case
+  business_trigger: Case remains high risk or unresolved beyond defined cadence.
+  decision_owner: performance_office_or_higher
+  required_evidence:
+  - case_history
+  - audit_log
+  - runtime_evidence
+  source_kpis:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  - KPI-PIT-03
+  - KPI-USC-04
+  - KPI-ERR-05
+  - KPI-CSI-06
+  action_options:
+  - escalate
+  - email_owner
+  escalation_route: emarah_diwan_or_momrah_liaison
+  audit_event: decision.escalated
+  notification_ticket_side_effects:
+  - email_notification
+  - escalation_record
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

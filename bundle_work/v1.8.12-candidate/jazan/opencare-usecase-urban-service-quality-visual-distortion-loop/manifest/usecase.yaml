@@ -1,0 +1,65 @@
+api_version: opencare.io/v1
+kind: UseCaseManifest
+standard_version: golden-bundle-1.8.8-decision-surface-canonical-routes
+use_case_slug: urban-service-quality-visual-distortion-loop
+use_case_name: Urban Service Quality & Visual Distortion Loop
+business_domain: Municipal Performance and Urban Service Quality
+owner: Jazan Amanah Performance Office
+steward: Jazan Data Analytics Team
+lifecycle_stage: golden_bundle_ready
+default_route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+supported_modes:
+- demo
+- production
+visualization_engine: opencare_native_bi
+runtime_required: true
+governance_required: true
+phi_sensitive: false
+materialization_mode: strict
+business_summary: Closed-loop municipal service quality workspace for Jazan, linking strategic objectives, KPI performance, predictive/runtime
+  outputs, human decisions, corrective actions, and audit evidence.
+primary_objective_id: OBJ-SVC-QUALITY-01
+primary_kpis:
+- KPI-VDQ-01
+- KPI-SRC-02
+- KPI-PIT-03
+- KPI-USC-04
+- KPI-ERR-05
+- KPI-CSI-06
+runtime_ids:
+- rt_jazan_service_rnn_forecast
+- rt_jazan_service_anomaly
+- rt_jazan_decision_candidate
+screen_ids:
+- SCREEN-L1-STRATEGIC
+- SCREEN-L2-KPI
+- SCREEN-L3-CASE
+- SCREEN-L3-CASE-DECISIONS
+- SCREEN-CC-DECISIONS
+- SCREEN-CC-RUNTIMES
+- SCREEN-CC-AUDIT
+principles_ref: manifest/principles.yaml
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true
+decision_surface_scope_rule: Case decision command tab is single-case; decision queue/action audit is cross-case. Both are required and must not
+  be merged.
+bundle_version: 1.8.10
+contract_posture:
+  dashboard_design_notes_contract_truth: true

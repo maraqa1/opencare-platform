@@ -1,0 +1,9 @@
+kind: ReusableDecisionWorkflowPattern
+required_sections:
+- decisions/action_buttons.yaml
+- decisions/audit.yaml
+- bindings/routes.yaml
+rules:
+- human_authorisation_required
+- confirmation_modal_payload_preview_required
+- email_owner_canonical_name_required

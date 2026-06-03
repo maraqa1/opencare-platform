@@ -1,0 +1,32 @@
+kind: LifecycleAction
+use_case_slug: urban-service-quality-visual-distortion-loop
+action: uninstall
+steps:
+- id: require_ confirmation
+  label: require confirmation
+  required: true
+- id: unregister_ workspace
+  label: unregister workspace
+  required: true
+- id: preserve_ export_ audit_ history
+  label: preserve/export audit history
+  required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

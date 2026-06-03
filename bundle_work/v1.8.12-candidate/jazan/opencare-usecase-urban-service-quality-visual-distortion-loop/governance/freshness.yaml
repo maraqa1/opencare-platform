@@ -1,0 +1,17 @@
+kind: FreshnessContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+freshness_sla:
+  source: daily
+  analytics: daily
+  runtime_output: daily_06_30
+  decision: daily_06_30
+stale_data_behavior: show_stale_badge_and_block_live_verified
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

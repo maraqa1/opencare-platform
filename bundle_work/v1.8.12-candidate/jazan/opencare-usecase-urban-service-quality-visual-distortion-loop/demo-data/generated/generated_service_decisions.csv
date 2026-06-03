@@ -1,0 +1,7 @@
+﻿"decision_id","municipality_id","kpi_id","case_id","generated_at","recommended_action","owner_role","status"
+"DEC-1001","M003","KPI-VDQ-01","CASE-M003-202605","2026-05-21T00:00:00","create_ticket","field_compliance","approved"
+"DEC-1002","M003","KPI-VDQ-01","CASE-M003-202606","2026-06-21T00:00:00","create_ticket","field_compliance","approved"
+"DEC-1003","M007","KPI-VDQ-01","CASE-M007-202605","2026-05-21T00:00:00","approve_decision","field_compliance","approved"
+"DEC-1004","M007","KPI-VDQ-01","CASE-M007-202606","2026-06-21T00:00:00","approve_decision","field_compliance","approved"
+"DEC-1005","M011","KPI-VDQ-01","CASE-M011-202605","2026-05-21T00:00:00","email_owner","field_compliance","under_review"
+"DEC-1006","M011","KPI-VDQ-01","CASE-M011-202606","2026-06-21T00:00:00","email_owner","field_compliance","under_review"

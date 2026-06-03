@@ -1,0 +1,7 @@
+kind: ReusableRenderedConformancePattern
+required_evidence:
+- route_screenshot
+- component_inventory
+- action_inventory
+- data_binding_inventory
+- gap_register

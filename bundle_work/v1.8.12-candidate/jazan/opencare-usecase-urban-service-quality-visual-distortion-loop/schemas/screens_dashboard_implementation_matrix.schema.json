@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "screens_dashboard_implementation_matrix.schema.json",
+  "type": "object",
+  "required": [
+    "kind",
+    "use_case_slug",
+    "dashboards"
+  ],
+  "properties": {
+    "kind": {
+      "const": "DashboardImplementationMatrix"
+    },
+    "dashboards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "dashboard_id",
+          "screen_id",
+          "canonical",
+          "route",
+          "required_components",
+          "must_render",
+          "must_bind",
+          "must_not_collapse_into_other_screen"
+        ],
+        "properties": {
+          "dashboard_id": {
+            "type": "string"
+          },
+          "screen_id": {
+            "type": "string"
+          },
+          "canonical": {
+            "const": true
+          },
+          "route": {
+            "type": "string"
+          },
+          "required_components": {
+            "type": "array",
+            "minItems": 1
+          },
+          "must_render": {
+            "const": true
+          },
+          "must_bind": {
+            "const": true
+          },
+          "must_not_collapse_into_other_screen": {
+            "const": true
+          }
+        }
+      }
+    }
+  }
+}

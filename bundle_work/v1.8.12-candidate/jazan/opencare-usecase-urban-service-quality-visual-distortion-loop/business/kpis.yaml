@@ -1,0 +1,287 @@
+kind: BusinessKPIContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+strategic_objective:
+  id: OBJ-SVC-QUALITY-01
+  name_key: objective.name
+  aliases:
+  - vision_2030_quality_of_life
+  - momrah_municipal_index
+  - jazan_25_municipalities
+  description_key: objective.description
+kpis:
+- kpi_id: KPI-VDQ-01
+  short_slug: visual-distortion-closure-quality
+  business_name_key: kpi.1.name
+  business_question_answered: Is visual-distortion-closure-quality meeting target, approaching breach, or requiring municipal action?
+  formula_plain_language: Closed visual-distortion cases that meet the closure quality bar divided by all closed visual-distortion cases in the monitoring period.
+  formula_sql_expression: sum(cases_meeting_quality_bar) / nullif(sum(cases_closed), 0)
+  dbt_expression_reference: dbt/models/analytics/fct_jazan_visual_distortion_performance.sql#visual_distortion_closure_quality
+  calculation_fields:
+  - cases_meeting_quality_bar
+  - cases_closed
+  analytics_mart: analytics.fct_jazan_visual_distortion_performance
+  source_table: analytics.fct_jazan_visual_distortion_performance
+  source_field: visual_distortion_closure_quality
+  grain: municipality_period_kpi
+  target: 0.85
+  threshold: 0.75
+  trigger_value: 0.75
+  target_unit: ratio
+  direction: higher_is_better
+  owner: role.field_compliance
+  data_owner: role.data_analytics
+  steward: role.data_analytics
+  frequency: monthly
+  review_cadence: monthly
+  reconciliation_status: sql_aligned
+  reconciliation_note: The analytics mart calculates the same ratio declared in the business contract.
+  thresholds:
+    meeting: at_or_beyond_target_in_correct_direction
+    approaching: between_target_and_trigger
+    breach: crosses_trigger_in_wrong_direction
+  escalation_meaning: kpi.1.trigger_rule
+  downstream_decision_linkage:
+  - decision.review_kpi_breach
+  - decision.generate_corrective_action_candidate
+  screen_components_using_it:
+  - kpi_threshold_card_grid
+  - kpi_summary_strip
+  - municipality_ranking_table
+  - trend_forecast_chart
+  - rnn_forecast_chart
+- kpi_id: KPI-SRC-02
+  short_slug: service-request-closure-rate
+  business_name_key: kpi.2.name
+  business_question_answered: Is service-request-closure-rate meeting target, approaching breach, or requiring municipal action?
+  formula_plain_language: Service requests completed within SLA divided by valid service requests received in the monitoring period, excluding rejected requests.
+  formula_sql_expression: sum(requests_completed_within_sla) / nullif(sum(requests_received - requests_rejected), 0)
+  dbt_expression_reference: dbt/models/analytics/fct_jazan_service_quality.sql#service_request_closure_rate
+  calculation_fields:
+  - requests_completed_within_sla
+  - requests_received
+  - requests_rejected
+  analytics_mart: analytics.fct_jazan_service_quality
+  source_table: analytics.fct_jazan_service_quality
+  source_field: service_request_closure_rate
+  grain: municipality_period_kpi
+  target: 0.9
+  threshold: 0.85
+  trigger_value: 0.85
+  target_unit: ratio
+  direction: higher_is_better
+  owner: role.operations
+  data_owner: role.data_analytics
+  steward: role.data_analytics
+  frequency: monthly
+  review_cadence: monthly
+  reconciliation_status: sql_aligned
+  reconciliation_note: The analytics mart implements the business ratio directly from service-request SLA outcomes.
+  thresholds:
+    meeting: at_or_beyond_target_in_correct_direction
+    approaching: between_target_and_trigger
+    breach: crosses_trigger_in_wrong_direction
+  escalation_meaning: kpi.2.trigger_rule
+  downstream_decision_linkage:
+  - decision.review_kpi_breach
+  - decision.generate_corrective_action_candidate
+  screen_components_using_it:
+  - kpi_threshold_card_grid
+  - kpi_summary_strip
+  - municipality_ranking_table
+  - trend_forecast_chart
+  - rnn_forecast_chart
+- kpi_id: KPI-PIT-03
+  short_slug: permit-issuance-time
+  business_name_key: kpi.3.name
+  business_question_answered: Is permit-issuance-time meeting target, approaching breach, or requiring municipal action?
+  formula_plain_language: Mean working-day difference between permit submission date and permit approval date for permits completed in the monitoring period.
+  formula_sql_expression: avg(avg_resolution_hours) / 24.0
+  dbt_expression_reference: dbt/models/analytics/fct_jazan_permit_performance.sql#avg_permit_issuance_days
+  calculation_fields:
+  - permit_submission_date
+  - permit_approval_date
+  - avg_resolution_hours
+  analytics_mart: analytics.fct_jazan_permit_performance
+  source_table: analytics.fct_jazan_permit_performance
+  source_field: avg_permit_issuance_days
+  grain: municipality_period_kpi
+  target: 5.0
+  threshold: 7.0
+  trigger_value: 7.0
+  target_unit: days
+  direction: lower_is_better
+  owner: role.permit_office
+  data_owner: role.data_analytics
+  steward: role.data_analytics
+  frequency: monthly
+  review_cadence: monthly
+  reconciliation_status: discrepancy_found
+  reconciliation_note: The current dbt model proxies permit issuance time from service-request resolution hours and does not yet use permit submission and approval dates from a permit source table.
+  thresholds:
+    meeting: at_or_beyond_target_in_correct_direction
+    approaching: between_target_and_trigger
+    breach: crosses_trigger_in_wrong_direction
+  escalation_meaning: kpi.3.trigger_rule
+  downstream_decision_linkage:
+  - decision.review_kpi_breach
+  - decision.generate_corrective_action_candidate
+  screen_components_using_it:
+  - kpi_threshold_card_grid
+  - kpi_summary_strip
+  - municipality_ranking_table
+  - trend_forecast_chart
+  - rnn_forecast_chart
+- kpi_id: KPI-USC-04
+  short_slug: urban-service-coverage
+  business_name_key: kpi.4.name
+  business_question_answered: Is urban-service-coverage meeting target, approaching breach, or requiring municipal action?
+  formula_plain_language: Covered population divided by total population in the municipality for the monitored service portfolio and period.
+  formula_sql_expression: service_request_closure_rate * 0.70 + (1 - reopen_rate) * 0.20 + avg_request_satisfaction_score * 0.10
+  dbt_expression_reference: dbt/models/analytics/fct_jazan_service_coverage.sql#service_coverage_rate
+  calculation_fields:
+  - covered_population
+  - total_population
+  - service_request_closure_rate
+  - reopen_rate
+  - avg_request_satisfaction_score
+  analytics_mart: analytics.fct_jazan_service_coverage
+  source_table: analytics.fct_jazan_service_coverage
+  source_field: service_coverage_rate
+  grain: municipality_period_kpi
+  target: 0.95
+  threshold: 0.93
+  trigger_value: 0.93
+  target_unit: ratio
+  direction: higher_is_better
+  owner: role.planning_office
+  data_owner: role.data_analytics
+  steward: role.data_analytics
+  frequency: monthly
+  review_cadence: monthly
+  reconciliation_status: discrepancy_found
+  reconciliation_note: The current dbt model uses a weighted proxy from service quality metrics and does not yet calculate covered population over total population from service-coverage asset data.
+  thresholds:
+    meeting: at_or_beyond_target_in_correct_direction
+    approaching: between_target_and_trigger
+    breach: crosses_trigger_in_wrong_direction
+  escalation_meaning: kpi.4.trigger_rule
+  downstream_decision_linkage:
+  - decision.review_kpi_breach
+  - decision.generate_corrective_action_candidate
+  screen_components_using_it:
+  - kpi_threshold_card_grid
+  - kpi_summary_strip
+  - municipality_ranking_table
+  - trend_forecast_chart
+  - rnn_forecast_chart
+- kpi_id: KPI-ERR-05
+  short_slug: emergency-readiness
+  business_name_key: kpi.5.name
+  business_question_answered: Is emergency-readiness meeting target, approaching breach, or requiring municipal action?
+  formula_plain_language: Weighted readiness composite combining completed checks, drill pass rate, and recovery-time adherence for the monitoring period.
+  formula_sql_expression: service_request_closure_rate * 0.35 + visual_distortion_closure_quality * 0.35 + no_critical_cases_flag * 0.30
+  dbt_expression_reference: dbt/models/analytics/fct_jazan_emergency_readiness.sql#emergency_readiness_composite
+  calculation_fields:
+  - completed_readiness_checks
+  - drill_pass_rate
+  - recovery_time_adherence
+  - service_request_closure_rate
+  - visual_distortion_closure_quality
+  - no_critical_cases_flag
+  analytics_mart: analytics.fct_jazan_emergency_readiness
+  source_table: analytics.fct_jazan_emergency_readiness
+  source_field: emergency_readiness_composite
+  grain: municipality_period_kpi
+  target: 0.8
+  threshold: 0.75
+  trigger_value: 0.75
+  target_unit: ratio
+  direction: higher_is_better
+  owner: role.civil_defense_liaison
+  data_owner: role.data_analytics
+  steward: role.data_analytics
+  frequency: monthly
+  review_cadence: monthly
+  reconciliation_status: discrepancy_found
+  reconciliation_note: The current dbt mart derives a proxy from service-quality and visual-distortion outcomes rather than readiness-check, drill, and recovery-time source data.
+  thresholds:
+    meeting: at_or_beyond_target_in_correct_direction
+    approaching: between_target_and_trigger
+    breach: crosses_trigger_in_wrong_direction
+  escalation_meaning: kpi.5.trigger_rule
+  downstream_decision_linkage:
+  - decision.review_kpi_breach
+  - decision.generate_corrective_action_candidate
+  screen_components_using_it:
+  - kpi_threshold_card_grid
+  - kpi_summary_strip
+  - municipality_ranking_table
+  - trend_forecast_chart
+  - rnn_forecast_chart
+- kpi_id: KPI-CSI-06
+  short_slug: citizen-satisfaction
+  business_name_key: kpi.6.name
+  business_question_answered: Is citizen-satisfaction meeting target, approaching breach, or requiring municipal action?
+  formula_plain_language: Population-weighted citizen satisfaction score derived from survey responses for the quarter, normalized to a 0-1 scale.
+  formula_sql_expression: avg_request_satisfaction_score * 0.65 + service_request_closure_rate * 0.25 + (1 - reopen_rate) * 0.10
+  dbt_expression_reference: dbt/models/analytics/fct_jazan_citizen_satisfaction.sql#weighted_satisfaction_index
+  calculation_fields:
+  - survey_score
+  - respondent_weight
+  - avg_request_satisfaction_score
+  - service_request_closure_rate
+  - reopen_rate
+  analytics_mart: analytics.fct_jazan_citizen_satisfaction
+  source_table: analytics.fct_jazan_citizen_satisfaction
+  source_field: weighted_satisfaction_index
+  grain: municipality_period_kpi
+  target: 0.75
+  threshold: 0.7
+  trigger_value: 0.7
+  target_unit: ratio
+  direction: higher_is_better
+  owner: role.performance_office
+  data_owner: role.data_analytics
+  steward: role.data_analytics
+  frequency: quarterly
+  review_cadence: quarterly
+  reconciliation_status: discrepancy_found
+  reconciliation_note: The current dbt mart uses a proxy blend of service-quality metrics and satisfaction score rather than a population-weighted survey calculation over the full quarterly response set.
+  thresholds:
+    meeting: at_or_beyond_target_in_correct_direction
+    approaching: between_target_and_trigger
+    breach: crosses_trigger_in_wrong_direction
+  escalation_meaning: kpi.6.trigger_rule
+  downstream_decision_linkage:
+  - decision.review_kpi_breach
+  - decision.generate_corrective_action_candidate
+  screen_components_using_it:
+  - kpi_threshold_card_grid
+  - kpi_summary_strip
+  - municipality_ranking_table
+  - trend_forecast_chart
+  - rnn_forecast_chart
+monitoring_rules:
+  shared:
+    breach_state_when: current_value crosses trigger_value in the wrong direction for the KPI direction
+    approaching_state_when: current_value is between target and trigger
+    meeting_state_when: current_value is at or beyond target in the right direction
+  evaluation_cadence:
+    weekly:
+    - KPI-VDQ-01
+    - KPI-SRC-02
+    monthly:
+    - KPI-PIT-03
+    - KPI-USC-04
+    - KPI-ERR-05
+    quarterly:
+    - KPI-CSI-06
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

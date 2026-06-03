@@ -1,0 +1,120 @@
+kind: DashboardDesignNotesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+rule: Design notes are canonical contract input for government operational dashboard fidelity, not presentation advice.
+global_delivery_rules:
+  typography_weight_discipline:
+    allowed_weights:
+    - 400
+    - 500
+    forbidden_weights:
+    - 600
+    - 700
+    - 800
+    - 900
+    headers: 17-18px medium 500
+    body: 11-12px regular 400
+    small_labels: 9-10px regular 400 tertiary text
+    rationale: Saudi government operational dashboards should feel like infrastructure, not marketing.
+  colour_semantics:
+    rule: Colour means state, not decoration.
+    reserved:
+      red: in_breach_or_failed
+      amber: approaching_trigger_warning_or_degraded
+      green: meeting_target_recovered_or_success
+      purple: strategic_objective_and_HITL_only
+      blue: informational_only
+      gray: neutral_structure
+    decorative_colour_is_bug: true
+  rounding:
+    rule: Every number is rounded at rendering boundary.
+    kpi_values_precision: 2
+    days_precision: 1
+    counts_precision: integer
+    forbidden: JS float leakage such as 0.8500000001
+  bilingual_structure:
+    rule: Bilingual rendering is structural, not bolted on.
+    headline_strategy: English and Arabic visible side-by-side or primary/subtitle where declared.
+    translation_toggle_insufficient_for_canonical_bilingual_components: true
+  honest_empty_states:
+    rule: Absence is shown honestly.
+    runtime_no_execution: no execution recorded yet with hyphen timestamp
+    kpi_missing_value: data not yet available, not 0.00
+    fake_green_for_missing_data_forbidden: true
+  confirmation_modals:
+    rule: Every external-effect action opens confirmation modal with payload preview.
+    must_show:
+    - action_summary
+    - who_will_be_notified
+    - external_systems_invoked
+    - records_created
+    - confirm_cancel_pair
+    silent_dispatch_forbidden: true
+    generic_are_you_sure_forbidden: true
+per_dashboard_rules:
+- dashboard_id: 01_strategic_objective_monitoring
+  screen_label: Dashboard 01 · Strategic objective cascade
+  rules:
+  - customer must understand portfolio health within five seconds
+  - 'direction-aware threshold bars: lower_is_better flips green zone left'
+  - active-case banner conditional and hidden when no breach exists
+  - cascade terminus dot colours computed from KPI current state
+  - locale persistence in URL
+  - KPI card hover = 1px border emphasis, no shadow
+- dashboard_id: 03_case_model_intelligence
+  screen_label: Dashboard 02 · Model intelligence and risk overview
+  rules:
+  - feature contributions must sum exactly to composite score
+  - validation fails rather than renormalising if components do not sum
+  - forecast confidence band sourced from RNN standard_error column
+  - comparable historical cases queryable by decision_id
+  - technical output table identifiers shown in monospace and not translated
+- dashboard_id: 04_decision_command_centre
+  screen_label: Dashboard 03 · Cross-cutting decision command centre
+  rules:
+  - five action buttons visible at once in exact order
+  - Approve primary; remaining four secondary
+  - confirmation modal required for every action
+  - New decisions counter filters queue
+  - urgent row highlight distinct from selected row state
+- dashboard_id: 04_outcome_recovery_feedback
+  screen_label: Dashboard 04 · Outcome recovery and learning feedback
+  rules:
+  - tab visible only when case.status in closed/recovered or locked when unavailable
+  - before/target/after values from real day-30 and day-90 measurements
+  - pillar credits are binary credited or not-credited
+  - evidence pack ID links to report viewer and click is audit logged
+  - action approved marker sourced from decision.approved audit event
+- dashboard_id: 05_runtime_evidence_execution_history
+  screen_label: Dashboard 05 · Runtime evidence and execution history
+  rules:
+  - 7-day runtime history must include honest degraded/retry-succeeded day when present
+  - do not paint over degradations
+  - HITL pill mandatory on decision runtime
+  - inputs and outputs are monospace and untranslated
+  - raw layer never queried by runtimes sourced from runtime bindings
+- dashboard_id: 06_decision_action_audit
+  screen_label: Dashboard 06 · Decision queue and action audit
+  rules:
+  - action history append-only
+  - no edit or delete affordance
+  - created record links are clickable and audit logged
+  - evidence status column stays visible including Pending and Not due
+  - export audit generates signed PDF or JSONL bundle
+  - full lifecycle counters include actions in progress and actions closed
+- dashboard_id: 03_primary_case_decision_command_tab
+  screen_label: Dashboard 03-PRIMARY · Case workspace decisions tab
+  rules:
+  - single-case only, no queue or list
+  - evidence pack strip required
+  - side-by-side bilingual narrative equal weight
+  - Edit and Version history controls required
+  - Recovery tab visible but locked until closed/recovered
+  - five action buttons visible with consequence hints
+  - audit footnote includes HITL, no autonomous escalation, append-only action history
+validator_expectations:
+- typography rules enforced in visual grammar
+- colour semantics enforced in visual grammar
+- rounding contract enforced in component anatomy
+- bilingual structural requirements enforced in bilingual contract
+- honest empty states enforced in visual acceptance
+- confirmation modal payload preview enforced in interaction/action contracts

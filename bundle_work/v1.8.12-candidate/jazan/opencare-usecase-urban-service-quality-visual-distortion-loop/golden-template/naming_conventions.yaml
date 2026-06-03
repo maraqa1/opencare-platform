@@ -1,0 +1,8 @@
+kind: NamingConventions
+rules:
+  dashboard_ids: lower_snake_case_with_numeric_prefixes_for_ordered_dashboards
+  screen_ids: SCREEN-[scope]-[semantic-name]
+  action_ids: lower_snake_case_canonical_names_only
+  route_ids: route.scope.semantic_name
+  entity_ids: singular_lower_snake_case
+  template_versioning: semantic_candidate_or_release_labels_only

@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Promotion contract",
+  "description": "The package's side of the deal with the OpenCare platform promoter. Declares what evidence the platform must verify before promoting this package to first-class status, what behaviours are forbidden in any environment, and what triggers demotion. Authored alongside the package; consumed by the platform's promotion service.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "use_case_slug",
+    "package_version",
+    "required_artifacts",
+    "proof_freshness",
+    "forbidden_behaviors",
+    "demotion_triggers",
+    "human_in_the_loop_assertion"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0.0" },
+    "kind": { "type": "string", "const": "PromotionContract" },
+    "use_case_slug": { "type": "string", "const": "urban-service-quality-visual-distortion-loop" },
+    "package_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "opencare_contract_version": { "type": "string", "const": "1.7.1" },
+    "maturity_required": {
+      "type": "string",
+      "enum": ["piloted", "production"],
+      "description": "Maturity threshold. proposed maturity blocks promotion."
+    },
+    "required_artifacts": {
+      "type": "array",
+      "description": "Files that must be present in the package for promotion to be considered.",
+      "items": {
+        "type": "object",
+        "required": ["path", "schema_ref", "must_validate"],
+        "properties": {
+          "path": { "type": "string" },
+          "schema_ref": { "type": "string" },
+          "must_validate": { "type": "boolean" }
+        }
+      },
+      "default": [
+        { "path": "package.yaml", "schema_ref": "platform://schemas/package.schema.json", "must_validate": true },
+        { "path": "manifest/usecase.yaml", "schema_ref": "platform://schemas/usecase.schema.json", "must_validate": true },
+        { "path": "business/kpis.yaml", "schema_ref": "platform://schemas/kpi.schema.json", "must_validate": true },
+        { "path": "contracts/screens.yaml", "schema_ref": "platform://schemas/screens.schema.json", "must_validate": true },
+        { "path": "contracts/data_bindings.yaml", "schema_ref": "platform://schemas/data_bindings.schema.json", "must_validate": true },
+        { "path": "contracts/routes.yaml", "schema_ref": "platform://schemas/routes.schema.json", "must_validate": true },
+        { "path": "i18n/en.yaml", "schema_ref": null, "must_validate": false },
+        { "path": "i18n/ar.yaml", "schema_ref": null, "must_validate": false },
+        { "path": "governance/policies.yaml", "schema_ref": "platform://schemas/governance.schema.json", "must_validate": true },
+        { "path": "proofs/populated_state_proof.yaml", "schema_ref": "schemas/populated_state_proof.schema.json", "must_validate": true }
+      ]
+    },
+    "proof_freshness": {
+      "type": "object",
+      "required": ["populated_state_proof_max_age_hours", "package_content_hash_must_match"],
+      "properties": {
+        "populated_state_proof_max_age_hours": {
+          "type": "number",
+          "const": 24,
+          "description": "Populated state proof older than 24 hours is rejected. The package must regenerate before promotion."
+        },
+        "package_content_hash_must_match": {
+          "type": "boolean",
+          "const": true,
+          "description": "The package_content_hash in the proof must match the SHA-256 of the package being promoted. Detects proof reuse across package versions."
+        }
+      }
+    },
+    "forbidden_behaviors": {
+      "type": "array",
+      "description": "Behaviors that are not allowed in this package in any environment. Detection by validators blocks promotion or triggers demotion.",
+      "items": { "type": "string" },
+      "default": [
+        "silent_demo_data_fallback",
+        "render_placeholder_when_data_missing",
+        "preview_only_workspace_mode",
+        "autonomous_external_ticket_creation",
+        "autonomous_external_email_or_sms_notification",
+        "autonomous_escalation_to_emarah_diwan_or_momrah",
+        "raw_layer_query_from_workspace_or_runtime",
+        "phi_field_in_workspace_component_response",
+        "version_drift_between_readme_and_package_metadata",
+        "generic_workspace_fallback_render",
+        "live_chip_when_proof_stale_or_missing"
+      ]
+    },
+    "demotion_triggers": {
+      "type": "array",
+      "description": "Conditions that, if observed in production, trigger automatic demotion of this package from first-class status back to admission-only.",
+      "items": { "type": "string" },
+      "default": [
+        "populated_state_proof_stale_more_than_24_hours",
+        "any_runtime_offline_more_than_72_hours",
+        "audit_log_write_failure",
+        "phi_unmasked_in_non_admin_response",
+        "human_in_the_loop_bypass_detected",
+        "external_action_without_audit_log",
+        "validator_failure_after_promotion"
+      ]
+    },
+    "human_in_the_loop_assertion": {
+      "type": "object",
+      "required": ["enforced", "covered_actions", "audit_log_required"],
+      "properties": {
+        "enforced": { "type": "boolean", "const": true },
+        "covered_actions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [
+            "decision_approval",
+            "ticket_creation",
+            "external_escalation",
+            "email_notification",
+            "sms_notification",
+            "narrative_publication"
+          ]
+        },
+        "audit_log_required": { "type": "boolean", "const": true },
+        "platform_must_block_if_bypass_attempted": { "type": "boolean", "const": true }
+      }
+    },
+    "bilingual_assertion": {
+      "type": "object",
+      "properties": {
+        "supported_locales": { "type": "array", "items": { "type": "string" }, "default": ["ar-SA", "en-US"] },
+        "default_locale": { "type": "string", "const": "ar-SA" },
+        "key_parity_required": { "type": "boolean", "const": true },
+        "native_speaker_review_blocking_for_production": { "type": "boolean", "const": true }
+      }
+    },
+    "promotion_workflow": {
+      "type": "object",
+      "properties": {
+        "approver_role_required": { "type": "string", "default": "opencare_platform_admin" },
+        "approval_requires_proof_review": { "type": "boolean", "const": true },
+        "demotion_requires_approver_notification": { "type": "boolean", "const": true }
+      }
+    }
+  }
+}

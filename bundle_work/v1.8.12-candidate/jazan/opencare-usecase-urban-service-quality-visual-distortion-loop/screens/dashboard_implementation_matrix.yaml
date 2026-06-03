@@ -1,0 +1,801 @@
+kind: DashboardImplementationMatrix
+use_case_slug: urban-service-quality-visual-distortion-loop
+rule: Declared dashboards are canonical implementation units. They must not be collapsed, substituted, reinterpreted, or approximated
+  through another shell shape.
+dashboard_source_of_truth: screens/dashboard_implementation_matrix.yaml
+dashboards:
+- dashboard_id: 01_strategic_objective_monitoring
+  screen_id: SCREEN-L1-STRATEGIC
+  canonical: true
+  business_purpose: Show the strategic objective, KPI monitoring state, threshold breaches, and the active case that starts
+    the golden thread.
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  visible_title: Strategic objective cascade - monitoring & thresholds
+  layout_contract: screens/layout_zones.yaml#01_strategic_objective_monitoring
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - open_kpi_workspace
+  - review_active_case
+  governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_dependencies: []
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: false
+  must_not_collapse_into_other_screen: true
+  required_components:
+  - page_header_bar
+  - demo_status_chip
+  - route_status_chip
+  - strategic_objective_header
+  - objective_metadata_chips
+  - municipality_coverage_chip
+  - kpi_state_summary_strip
+  - meeting_target_counter
+  - approaching_trigger_counter
+  - in_breach_counter
+  - decision_candidate_counter
+  - kpi_connector_rail
+  - kpi_marker_sequence
+  - kpi_to_card_connectors
+  - kpi_threshold_card_grid
+  - kpi_threshold_card
+  - highest_priority_case_alert
+  - review_case_action
+  prohibited_omissions: &id001
+  - strategic_objective_header
+  - kpi_threshold_cards
+  - in_breach_kpi_state
+  - decision_candidate_summary
+  - active_case_banner
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - empty_state_check
+  - demo_state_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#01_strategic_objective_monitoring
+  visual_grammar_ref: screens/visual_grammar.yaml#01_strategic_objective_monitoring
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#kpi_threshold_card
+  forbidden_simplifications:
+  - strategic_objective_header
+  - kpi_threshold_cards
+  - in_breach_kpi_state
+  - decision_candidate_summary
+  - active_case_banner
+  - collapse_into_overview
+  - replace_with_generic_card_stack
+  - move_zone_components_to_generic_shell
+  - leave_required_zone_empty
+  - omit_zone_component_inventory
+  - follow_legacy_layouts_yaml
+  - use_legacy_l1_l2_l3_cc_component_ids
+  - flatten_zone_components_into_primary_section
+  exact_fidelity_required_elements: *id001
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  - shadow_softness
+  - font_family_within_design_system
+  zone_component_bindings_required: true
+  layout_zone_component_contract: screens/layout_zones.yaml
+  rendered_conformance_required: true
+  required_render_evidence:
+  - route_screenshot
+  - route_component_inventory
+  - zone_component_inventory
+  - data_binding_inventory
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.01_strategic_objective_monitoring
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+- dashboard_id: 02_kpi_municipality_workspace
+  screen_id: SCREEN-L2-KPI
+  canonical: true
+  business_purpose: Show KPI status by municipality, trends, governance evidence, and open cases generated from monitored
+    KPI thresholds.
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  visible_title: KPI workspace - municipality monitoring and governance
+  layout_contract: screens/layout_zones.yaml#02_kpi_municipality_workspace
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - open_case_workspace
+  - filter_municipality
+  - view_governance_evidence
+  governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_dependencies:
+  - rt_jazan_service_rnn_forecast
+  - rt_jazan_service_anomaly
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: true
+  must_not_collapse_into_other_screen: true
+  required_components:
+  - page_header_bar
+  - active_kpi_context_header
+  - kpi_summary_strip
+  - kpi_target_status_card
+  - kpi_risk_card
+  - municipality_ranking_table
+  - municipality_risk_rows
+  - trend_forecast_chart
+  - threshold_reference_line
+  - governance_evidence_panel
+  - classification_badge
+  - ownership_badge
+  - lineage_link
+  - freshness_badge
+  - open_cases_list
+  - open_case_row
+  - open_case_action
+  prohibited_omissions: &id002
+  - municipality_ranking
+  - governance_panel
+  - open_cases_list
+  - risk_score_binding
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - runtime_binding_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#02_kpi_municipality_workspace
+  visual_grammar_ref: screens/visual_grammar.yaml#02_kpi_municipality_workspace
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#kpi_threshold_card
+  forbidden_simplifications:
+  - municipality_ranking
+  - governance_panel
+  - open_cases_list
+  - risk_score_binding
+  - collapse_into_overview
+  - replace_with_generic_card_stack
+  - move_zone_components_to_generic_shell
+  - leave_required_zone_empty
+  - omit_zone_component_inventory
+  - follow_legacy_layouts_yaml
+  - use_legacy_l1_l2_l3_cc_component_ids
+  - flatten_zone_components_into_primary_section
+  exact_fidelity_required_elements: *id002
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  - shadow_softness
+  - font_family_within_design_system
+  zone_component_bindings_required: true
+  layout_zone_component_contract: screens/layout_zones.yaml
+  rendered_conformance_required: true
+  required_render_evidence:
+  - route_screenshot
+  - route_component_inventory
+  - zone_component_inventory
+  - data_binding_inventory
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.02_kpi_municipality_workspace
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+- dashboard_id: 03_case_model_intelligence
+  screen_id: SCREEN-L3-CASE
+  canonical: true
+  business_purpose: Show one municipality risk case from forecast/anomaly evidence to recommendation. It may link to the case
+    decision tab, but it must not authorise actions.
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+  visible_title: Case workspace - model intelligence, recommendation, decision, and recovery
+  layout_contract: screens/layout_zones.yaml#03_case_model_intelligence
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - open_case_decision_tab
+  governance_evidence:
+  - lineage
+  - freshness
+  - runtime_status
+  - quality
+  - ownership
+  - action_audit
+  runtime_dependencies:
+  - rt_jazan_service_rnn_forecast
+  - rt_jazan_service_anomaly
+  - rt_jazan_decision_candidate
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: true
+  must_not_collapse_into_other_screen: true
+  required_components:
+  - active_case_banner
+  - case_identity_header
+  - case_status_chips
+  - composite_risk_score_card
+  - feature_contribution_bar
+  - model_driver_list
+  - rnn_forecast_chart
+  - forecast_breach_marker
+  - forecast_confidence_band
+  - anomaly_detection_card
+  - z_score_indicator
+  - recommendation_ranked_cards
+  - intervention_effectiveness_badge
+  - generated_decision_evidence_panel
+  - human_approval_notice
+  - recovery_trajectory_chart
+  - target_recovery_marker
+  prohibited_omissions:
+  - forecast_chart
+  - anomaly_card
+  - recommendations
+  - recovery_trajectory
+  - human_approval_notice
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - interaction_contract_check
+  - runtime_evidence_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#03_case_model_intelligence
+  visual_grammar_ref: screens/visual_grammar.yaml#03_case_model_intelligence
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#decision_table
+  forbidden_simplifications:
+  - forecast_chart
+  - anomaly_card
+  - recommendations
+  - recovery_trajectory
+  - human_approval_notice
+  - collapse_into_overview
+  - replace_with_generic_card_stack
+  - move_zone_components_to_generic_shell
+  - leave_required_zone_empty
+  - omit_zone_component_inventory
+  - follow_legacy_layouts_yaml
+  - use_legacy_l1_l2_l3_cc_component_ids
+  - flatten_zone_components_into_primary_section
+  exact_fidelity_required_elements:
+  - forecast_chart
+  - anomaly_card
+  - recommendations
+  - recovery_trajectory
+  - human_approval_notice
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  - shadow_softness
+  - font_family_within_design_system
+  zone_component_bindings_required: true
+  layout_zone_component_contract: screens/layout_zones.yaml
+  rendered_conformance_required: true
+  required_render_evidence:
+  - route_screenshot
+  - route_component_inventory
+  - zone_component_inventory
+  - data_binding_inventory
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  decision_surface_role: model_evidence_only
+  action_scope: navigation_only
+  authorisation_surface_forbidden: true
+  prohibited_components:
+  - case_action_button_row
+  - decision_queue_table
+  - multi_case_list
+  - external_action_buttons
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.03_case_model_intelligence
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+  feature_contributions_sum_required: true
+  confidence_band_real_data_required: true
+  historical_comparable_cases_queryable: true
+  technical_identifiers_monospace_untranslated: true
+- dashboard_id: 03_primary_case_decision_command_tab
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  canonical: true
+  scope: single_case
+  business_purpose: Provide the case-scoped authorisation surface where a reviewer evaluates the evidence pack, bilingual
+    narrative, recommendation summary, and approves or redirects action for one active case.
+  decision_question: For this specific case, should the recommended action be approved, revised, escalated, ticketed, or communicated
+    to the owner?
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+  visible_title: Decision command tab
+  layout_contract: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - approve_decision
+  - request_revision
+  - escalate_decision
+  - create_ticket
+  - email_owner
+  governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  - audit
+  runtime_dependencies: []
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: false
+  must_not_collapse_into_other_screen: true
+  queue_forbidden: true
+  required_components:
+  - case_context_header
+  - case_workspace_tab_strip
+  - evidence_pack_strip
+  - bilingual_narrative_panel
+  - narrative_version_history_action
+  - recommendation_summary_panel
+  - case_action_button_row
+  - action_consequence_preview
+  - confirmation_modal_contract
+  - audit_footnote_panel
+  - recovery_tab_locked_state
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  legacy_component_ids_allowed: false
+  prohibited_components:
+  - decision_queue_table
+  - multi_case_list
+  - generic_dashboard_shell
+  prohibited_omissions:
+  - side_by_side_bilingual_narrative
+  - action_button_side_effect_hints
+  - confirmation_modal_requirement
+  - no_autonomous_escalation_notice
+  - audit_logged_notice
+  - recovery_tab_locked_state
+  forbidden_simplifications:
+  - hiding_recovery_tab
+  - multi_case_list
+  - overflow_action_menu
+  - overflow_menu_for_actions
+  - queue_table
+  - rendering_multi_case_queue
+  - silent_external_dispatch
+  - translation_toggle_only
+  acceptance_evidence:
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - action_button_inventory
+  - confirmation_modal_check
+  - bilingual_panel_check
+  - empty_state_check
+  - demo_state_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+  visual_grammar_ref: screens/visual_grammar.yaml#03_primary_case_decision_command_tab
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#case_workspace_tab_strip
+  - screens/component_anatomy.yaml#bilingual_narrative_panel
+  - screens/component_anatomy.yaml#case_action_button_row
+  - screens/component_anatomy.yaml#audit_footnote_panel
+  style_flexible_elements:
+  - border_radius
+  - shadow_softness
+  - exact_font_family_within_design_system
+  - minor_spacing
+  decision_surface_role: single_case_authorisation
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.03_primary_case_decision_command_tab
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+  single_case_only: true
+  required_action_order:
+  - approve_decision
+  - request_revision
+  - escalate_decision
+  - create_ticket
+  - email_owner
+- dashboard_id: 04_outcome_recovery_feedback
+  screen_id: SCREEN-L3-CASE-RECOVERY
+  canonical: true
+  business_purpose: Prove the loop closed through measured recovery, forecast accuracy, intervention effectiveness, evidence
+    pack, and learning feedback.
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+  visible_title: Outcome recovery and learning feedback
+  layout_contract: screens/layout_zones.yaml#04_outcome_recovery_feedback
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - view_evidence_pack
+  governance_evidence:
+  - action_audit
+  - evidence_pack
+  - ownership
+  - freshness
+  - lineage
+  runtime_dependencies: []
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: false
+  must_not_collapse_into_other_screen: true
+  required_components:
+  - case_recovery_header
+  - before_target_after_recovery_cards
+  - recovery_trajectory_chart
+  - action_approved_marker
+  - forecast_accuracy_card
+  - recommendation_effectiveness_card
+  - pillar_credit_grid
+  - evidence_pack_link
+  prohibited_omissions:
+  - before_target_after_recovery_cards
+  - binary_pillar_credit_grid
+  - evidence_pack_link
+  - action_approved_marker_from_audit_event
+  acceptance_evidence:
+  - route_render_check
+  - component_presence_check
+  - data_binding_check
+  - audit_event_marker_check
+  - evidence_pack_link_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#04_outcome_recovery_feedback
+  visual_grammar_ref: screens/visual_grammar.yaml#04_outcome_recovery_feedback
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#evidence_pack_link
+  forbidden_simplifications:
+  - synthetic_recovery_values
+  - fake_pillar_progress
+  - hardcoded_action_marker
+  - collapse_into_overview
+  exact_fidelity_required_elements:
+  - before_target_after_recovery_cards
+  - binary_pillar_credit_grid
+  - evidence_pack_link
+  - action_approved_marker_from_audit_event
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  zone_component_bindings_required: true
+  layout_zone_component_contract: screens/layout_zones.yaml
+  rendered_conformance_required: true
+  required_render_evidence:
+  - route_screenshot
+  - route_component_inventory
+  - zone_component_inventory
+  - data_binding_inventory
+  - governance_panel_inventory
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.04_outcome_recovery_feedback
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+- dashboard_id: 04_decision_command_centre
+  screen_id: SCREEN-CC-DECISIONS
+  canonical: true
+  business_purpose: Show generated decision candidates awaiting human approval, decision details, action buttons, and workflow
+    commands.
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  visible_title: Decision command centre
+  layout_contract: screens/layout_zones.yaml#04_decision_command_centre
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - approve_decision
+  - request_revision
+  - escalate_decision
+  - create_ticket
+  - email_owner
+  - view_details
+  governance_evidence:
+  - action_audit
+  - ownership
+  - human_approval
+  - notification_trace
+  - ticket_trace
+  runtime_dependencies:
+  - rt_jazan_decision_candidate
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: true
+  must_not_collapse_into_other_screen: true
+  required_components:
+  - decision_summary_strip
+  - new_decisions_counter
+  - under_review_counter
+  - approved_counter
+  - escalated_counter
+  - tickets_created_counter
+  - emails_sent_counter
+  - decision_table
+  - decision_queue_row
+  - visible_action_buttons
+  - selected_decision_detail_panel
+  - decision_rationale_panel
+  - recommended_actions_panel
+  - recommended_action_ranked_list
+  - action_button_bar
+  - approve_button
+  - request_revision_button
+  - escalate_button
+  - create_ticket_button
+  - email_owner_button
+  - view_details_button
+  - human_approval_notice
+  - confirmation_drawer
+  - external_side_effect_summary
+  - confirmation_required_notice
+  - corrective_action_lifecycle
+  - action_stage_tracker
+  prohibited_omissions: &id003
+  - generated_decision_queue
+  - visible_action_buttons
+  - human_approval_rule
+  - decision_detail_drawer
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - interaction_contract_check
+  - audit_event_check
+  - notification_ticket_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#04_decision_command_centre
+  visual_grammar_ref: screens/visual_grammar.yaml#04_decision_command_centre
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#decision_table
+  forbidden_simplifications:
+  - generated_decision_queue
+  - visible_action_buttons
+  - human_approval_rule
+  - decision_detail_drawer
+  - collapse_into_overview
+  - replace_with_generic_card_stack
+  - move_zone_components_to_generic_shell
+  - leave_required_zone_empty
+  - omit_zone_component_inventory
+  - follow_legacy_layouts_yaml
+  - use_legacy_l1_l2_l3_cc_component_ids
+  - flatten_zone_components_into_primary_section
+  exact_fidelity_required_elements: *id003
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  - shadow_softness
+  - font_family_within_design_system
+  zone_component_bindings_required: true
+  layout_zone_component_contract: screens/layout_zones.yaml
+  rendered_conformance_required: true
+  required_render_evidence:
+  - route_screenshot
+  - route_component_inventory
+  - zone_component_inventory
+  - data_binding_inventory
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  decision_surface_role: cross_case_queue
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.04_decision_command_centre
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+  action_button_order:
+  - approve_decision
+  - request_revision
+  - escalate_decision
+  - create_ticket
+  - email_owner
+  confirmation_modal_for_every_action: true
+- dashboard_id: 05_runtime_evidence_execution_history
+  screen_id: SCREEN-CC-RUNTIMES
+  canonical: true
+  business_purpose: Show RNN forecast, anomaly, and decision-candidate runtimes with inputs, outputs, schedules, last runs,
+    and execution evidence.
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  visible_title: Runtime evidence and execution history
+  layout_contract: screens/layout_zones.yaml#05_runtime_evidence_execution_history
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - view_runtime_detail
+  - view_lineage
+  governance_evidence:
+  - runtime_status
+  - lineage
+  - freshness
+  - quality
+  - raw_layer_forbidden
+  runtime_dependencies:
+  - rt_jazan_service_rnn_forecast
+  - rt_jazan_service_anomaly
+  - rt_jazan_decision_candidate
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: true
+  must_not_collapse_into_other_screen: true
+  required_components:
+  - runtime_status_summary
+  - online_runtime_counter
+  - seeded_demo_status_chip
+  - runtime_card
+  - rnn_runtime_card
+  - anomaly_runtime_card
+  - decision_candidate_runtime_card
+  - runtime_execution_history
+  - last_seven_runs_indicator
+  - runtime_lineage_panel
+  - input_marts_list
+  - output_tables_list
+  - raw_layer_forbidden_notice
+  - runtime_schedule_panel
+  - next_run_label
+  prohibited_omissions: &id004
+  - runtime_cards
+  - last_run_status
+  - input_tables
+  - output_tables
+  - schedule
+  - raw_layer_forbidden_notice
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - runtime_contract_check
+  - execution_log_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#05_runtime_evidence_execution_history
+  visual_grammar_ref: screens/visual_grammar.yaml#05_runtime_evidence_execution_history
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#runtime_card
+  forbidden_simplifications:
+  - runtime_cards
+  - last_run_status
+  - input_tables
+  - output_tables
+  - schedule
+  - raw_layer_forbidden_notice
+  - collapse_into_overview
+  - replace_with_generic_card_stack
+  - move_zone_components_to_generic_shell
+  - leave_required_zone_empty
+  - omit_zone_component_inventory
+  - follow_legacy_layouts_yaml
+  - use_legacy_l1_l2_l3_cc_component_ids
+  - flatten_zone_components_into_primary_section
+  exact_fidelity_required_elements: *id004
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  - shadow_softness
+  - font_family_within_design_system
+  zone_component_bindings_required: true
+  layout_zone_component_contract: screens/layout_zones.yaml
+  rendered_conformance_required: true
+  required_render_evidence:
+  - route_screenshot
+  - route_component_inventory
+  - zone_component_inventory
+  - data_binding_inventory
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.05_runtime_evidence_execution_history
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+  honest_degraded_runtime_day_required: true
+  hitl_pill_mandatory: true
+- dashboard_id: 06_decision_action_audit
+  screen_id: SCREEN-CC-AUDIT
+  canonical: true
+  business_purpose: Show the queue of decisions, actions taken, emails sent, tickets created, and corrective actions tracked
+    to closure.
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  visible_title: Decision queue and action audit
+  layout_contract: screens/layout_zones.yaml#06_decision_action_audit
+  component_contract: screens/components.yaml
+  data_bindings: bindings/data_bindings.yaml
+  actions:
+  - filter_action_history
+  - open_decision
+  - open_ticket
+  - open_notification
+  governance_evidence:
+  - action_audit
+  - email_delivery_log
+  - ticket_trace
+  - human_approval
+  - ownership
+  runtime_dependencies: []
+  must_render: true
+  must_bind: true
+  must_show_actions: true
+  must_show_governance: true
+  must_show_runtime_evidence: false
+  must_not_collapse_into_other_screen: true
+  required_components:
+  - audit_summary_strip
+  - email_sent_counter
+  - ticket_created_counter
+  - actions_in_progress_counter
+  - actions_closed_counter
+  - decision_table
+  - decision_queue_row
+  - action_status_badges
+  - action_audit_timeline
+  - audit_event_row
+  - email_delivery_log_panel
+  - notification_outbox_row
+  - ticket_request_log_panel
+  - ticket_request_row
+  - corrective_action_tracker
+  - corrective_action_row
+  prohibited_omissions: &id005
+  - action_history
+  - email_log
+  - ticket_log
+  - corrective_action_tracker
+  acceptance_evidence:
+  - screenshot
+  - route_render_check
+  - component_presence_check
+  - audit_event_check
+  - email_ticket_trace_check
+  substitution_forbidden: true
+  layout_zones_ref: screens/layout_zones.yaml#06_decision_action_audit
+  visual_grammar_ref: screens/visual_grammar.yaml#06_decision_action_audit
+  component_anatomy_refs:
+  - screens/component_anatomy.yaml#decision_table
+  - screens/component_anatomy.yaml#action_audit_timeline
+  forbidden_simplifications:
+  - action_history
+  - email_log
+  - ticket_log
+  - corrective_action_tracker
+  - collapse_into_overview
+  - replace_with_generic_card_stack
+  - move_zone_components_to_generic_shell
+  - leave_required_zone_empty
+  - omit_zone_component_inventory
+  - follow_legacy_layouts_yaml
+  - use_legacy_l1_l2_l3_cc_component_ids
+  - flatten_zone_components_into_primary_section
+  exact_fidelity_required_elements: *id005
+  style_flexible_elements:
+  - minor_spacing
+  - border_radius
+  - shadow_softness
+  - font_family_within_design_system
+  zone_component_bindings_required: true
+  layout_zone_component_contract: screens/layout_zones.yaml
+  rendered_conformance_required: true
+  required_render_evidence:
+  - route_screenshot
+  - route_component_inventory
+  - zone_component_inventory
+  - data_binding_inventory
+  component_vocabulary: zone_rigid_components
+  legacy_component_ids_allowed: false
+  required_components_source: screens/layout_zones.yaml.zones[].required_components
+  design_notes_contract_ref: screens/design_notes_contract.yaml#per_dashboard_rules.06_decision_action_audit
+  implementation_quality_bar: Saudi government operational audience; control-surface fidelity, not generic cards
+  append_only_action_history: true
+  signed_export_required: true
+dashboard_design_notes_are_contract_truth: true

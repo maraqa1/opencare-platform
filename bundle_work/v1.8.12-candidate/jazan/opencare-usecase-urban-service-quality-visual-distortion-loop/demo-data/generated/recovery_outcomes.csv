@@ -1,0 +1,5 @@
+﻿"recovery_outcome_id","case_id","action_id","municipality_id","resolved_at","recovered_flag","current_value_after_recovery"
+"REC-8000","CASE-M003-202605","ACT-2001","M003","2026-06-11T00:00:00","true","0.88"
+"REC-8001","CASE-M003-202606","ACT-2002","M003","2026-07-12T00:00:00","true","0.88"
+"REC-8002","CASE-M007-202605","ACT-2003","M007","2026-06-11T00:00:00","true","0.88"
+"REC-8003","CASE-M007-202606","ACT-2004","M007","2026-07-12T00:00:00","true","0.88"

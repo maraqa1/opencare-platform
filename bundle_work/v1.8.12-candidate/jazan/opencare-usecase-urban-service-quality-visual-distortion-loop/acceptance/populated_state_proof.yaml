@@ -1,0 +1,34 @@
+kind: PopulatedStateProof
+use_case_slug: urban-service-quality-visual-distortion-loop
+proofs:
+- proof_id: ASRT-L1-ROLLUP
+  screen: SCREEN-L1-STRATEGIC
+  component: kpi_state_summary_strip
+  condition: portfolio rollup returns KPI state counts from analytics facts
+- proof_id: ASRT-L2-RANKING
+  screen: SCREEN-L2-KPI
+  component: municipality_ranking_table
+  condition: ranking returns 25 municipality rows joined to risk score
+- proof_id: ASRT-L3-RISK-SCORE
+  screen: SCREEN-L3-CASE
+  component: composite_risk_score_card
+  condition: selected case has risk score and evidence pack
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

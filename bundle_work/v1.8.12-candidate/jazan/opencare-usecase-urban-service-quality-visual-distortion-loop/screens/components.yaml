@@ -1,0 +1,4092 @@
+kind: ScreenComponentsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+component_vocabulary: zone_rigid_components
+legacy_component_ids_allowed: false
+controlled_component_types:
+- action_button
+- audit_timeline
+- dashboard_component
+- evidence_panel
+- governance_badge
+- line_chart
+- queue_table
+- runtime_status_card
+- summary_card
+components:
+- component_id: action_audit_timeline
+  component_type: audit_timeline
+  business_meaning: Renders the zone-rigid component action_audit_timeline for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: action_event_timeline
+  source_binding: action_audit_timeline
+  aggregation_logic: decision.jazan_decision_action_events
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: &id001
+    default: en
+    supported:
+    - en
+    - ar
+    direction:
+      en: ltr
+      ar: rtl
+    text_policy: all user-visible labels must use locale-aware text or i18n keys
+- component_id: action_button_bar
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component action_button_bar for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: action_button_bar
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: action_stage_tracker
+  component_type: audit_timeline
+  business_meaning: Renders the zone-rigid component action_stage_tracker for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: corrective_action_lifecycle
+  source_binding: action_stage_tracker
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: action_status_badges
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component action_status_badges for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: decision_queue
+  source_binding: action_status_badges
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: actions_closed_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component actions_closed_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: audit_summary_strip
+  source_binding: actions_closed_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: actions_in_progress_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component actions_in_progress_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: audit_summary_strip
+  source_binding: actions_in_progress_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: active_case_banner
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component active_case_banner for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: case_header
+  source_binding: active_case_banner
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: active_kpi_context_header
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component active_kpi_context_header for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: page_header
+  source_binding: active_kpi_context_header
+  aggregation_logic: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: anomaly_detection_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component anomaly_detection_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: anomaly_signal
+  source_binding: anomaly_detection_card
+  aggregation_logic: output.jazan_service_quality_anomaly
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: anomaly_runtime_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component anomaly_runtime_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: runtime_card_grid
+  source_binding: anomaly_runtime_card
+  aggregation_logic: output.jazan_service_quality_anomaly
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: approaching_trigger_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component approaching_trigger_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_state_summary_strip
+  source_binding: approaching_trigger_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: approve_button
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component approve_button for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: approve_button
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: approved_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component approved_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_summary_strip
+  source_binding: approved_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: audit_event_row
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component audit_event_row for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: action_event_timeline
+  source_binding: audit_event_row
+  aggregation_logic: decision.jazan_decision_action_events
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: audit_summary_strip
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component audit_summary_strip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: audit_summary_strip
+  source_binding: audit_summary_strip
+  aggregation_logic: decision.jazan_decision_action_events
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: case_identity_header
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component case_identity_header for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: case_header
+  source_binding: case_identity_header
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: case_status_chips
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component case_status_chips for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: case_header
+  source_binding: case_status_chips
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: classification_badge
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component classification_badge for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: governance_evidence_panel
+  source_binding: classification_badge
+  aggregation_logic: governance.business_trust_map and governance.governed_datasets
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: composite_risk_score_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component composite_risk_score_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: model_risk_explanation
+  source_binding: composite_risk_score_card
+  aggregation_logic: output.jazan_municipality_service_risk_score
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: confirmation_drawer
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component confirmation_drawer for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: confirmation_drawer_region
+  source_binding: confirmation_drawer
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: confirmation_required_notice
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component confirmation_required_notice for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: confirmation_drawer_region
+  source_binding: confirmation_required_notice
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: corrective_action_lifecycle
+  component_type: audit_timeline
+  business_meaning: Renders the zone-rigid component corrective_action_lifecycle for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: corrective_action_lifecycle
+  source_binding: corrective_action_lifecycle
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: corrective_action_row
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component corrective_action_row for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: corrective_action_tracker
+  source_binding: corrective_action_row
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: corrective_action_tracker
+  component_type: audit_timeline
+  business_meaning: Renders the zone-rigid component corrective_action_tracker for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: corrective_action_tracker
+  source_binding: corrective_action_tracker
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: create_ticket_button
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component create_ticket_button for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: create_ticket_button
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: decision_candidate_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component decision_candidate_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_state_summary_strip
+  source_binding: decision_candidate_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: decision_candidate_runtime_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component decision_candidate_runtime_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: runtime_card_grid
+  source_binding: decision_candidate_runtime_card
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: decision_queue_row
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component decision_queue_row for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_candidate_queue
+  - dashboard_id: 06_decision_action_audit
+    zone_id: decision_queue
+  source_binding: decision_queue_row
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: decision_rationale_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component decision_rationale_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: selected_decision_detail
+  source_binding: decision_rationale_panel
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: decision_summary_strip
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component decision_summary_strip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_summary_strip
+  source_binding: decision_summary_strip
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: decision_table
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component decision_table for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_candidate_queue
+  - dashboard_id: 06_decision_action_audit
+    zone_id: decision_queue
+  source_binding: decision_table
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: demo_status_chip
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component demo_status_chip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: page_header
+  source_binding: demo_status_chip
+  aggregation_logic: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: email_delivery_log_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component email_delivery_log_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: email_delivery_log
+  source_binding: email_delivery_log_panel
+  aggregation_logic: decision.jazan_email_delivery_log and decision.jazan_notification_outbox
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: email_owner_button
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component email_owner_button for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: email_owner_button
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: email_sent_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component email_sent_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: audit_summary_strip
+  source_binding: email_sent_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: emails_sent_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component emails_sent_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_summary_strip
+  source_binding: emails_sent_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: escalate_button
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component escalate_button for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: escalate_button
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: escalated_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component escalated_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_summary_strip
+  source_binding: escalated_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: external_side_effect_summary
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component external_side_effect_summary for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: confirmation_drawer_region
+  source_binding: external_side_effect_summary
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: feature_contribution_bar
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component feature_contribution_bar for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: model_risk_explanation
+  source_binding: feature_contribution_bar
+  aggregation_logic: output.jazan_municipality_service_risk_score
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: forecast_breach_marker
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component forecast_breach_marker for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: forecast_path
+  source_binding: forecast_breach_marker
+  aggregation_logic: output.jazan_service_rnn_forecast
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: forecast_confidence_band
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component forecast_confidence_band for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: forecast_path
+  source_binding: forecast_confidence_band
+  aggregation_logic: output.jazan_service_rnn_forecast
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: freshness_badge
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component freshness_badge for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: governance_evidence_panel
+  source_binding: freshness_badge
+  aggregation_logic: governance.business_trust_map and governance.governed_datasets
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: generated_decision_evidence_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component generated_decision_evidence_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: decision_evidence_panel
+  source_binding: generated_decision_evidence_panel
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: governance_evidence_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component governance_evidence_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: governance_evidence_panel
+  source_binding: governance_evidence_panel
+  aggregation_logic: governance.business_trust_map and governance.governed_datasets
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: highest_priority_case_alert
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component highest_priority_case_alert for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: highest_priority_case_alert
+  source_binding: highest_priority_case_alert
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: human_approval_notice
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component human_approval_notice for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: decision_evidence_panel
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: human_approval_notice
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: in_breach_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component in_breach_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_state_summary_strip
+  source_binding: in_breach_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: input_marts_list
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component input_marts_list for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: input_output_lineage_panel
+  source_binding: input_marts_list
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: intervention_effectiveness_badge
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component intervention_effectiveness_badge for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: recommendation_rankings
+  source_binding: intervention_effectiveness_badge
+  aggregation_logic: output.jazan_recommended_intervention
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_connector_rail
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component kpi_connector_rail for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_connector_rail
+  source_binding: kpi_connector_rail
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_marker_sequence
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component kpi_marker_sequence for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_connector_rail
+  source_binding: kpi_marker_sequence
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_risk_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component kpi_risk_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: kpi_summary_strip
+  source_binding: kpi_risk_card
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_state_summary_strip
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component kpi_state_summary_strip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_state_summary_strip
+  source_binding: kpi_state_summary_strip
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_summary_strip
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component kpi_summary_strip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: kpi_summary_strip
+  source_binding: kpi_summary_strip
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_target_status_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component kpi_target_status_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: kpi_summary_strip
+  source_binding: kpi_target_status_card
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_threshold_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component kpi_threshold_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_threshold_card_grid
+  source_binding: kpi_threshold_card
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_threshold_card_grid
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component kpi_threshold_card_grid for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_threshold_card_grid
+  source_binding: kpi_threshold_card_grid
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: kpi_to_card_connectors
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component kpi_to_card_connectors for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_connector_rail
+  source_binding: kpi_to_card_connectors
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: last_seven_runs_indicator
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component last_seven_runs_indicator for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: execution_history_panel
+  source_binding: last_seven_runs_indicator
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: lineage_link
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component lineage_link for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: governance_evidence_panel
+  source_binding: lineage_link
+  aggregation_logic: governance.business_trust_map and governance.governed_datasets
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: meeting_target_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component meeting_target_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: kpi_state_summary_strip
+  source_binding: meeting_target_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: model_driver_list
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component model_driver_list for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: model_risk_explanation
+  source_binding: model_driver_list
+  aggregation_logic: output.jazan_municipality_service_risk_score
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: municipality_coverage_chip
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component municipality_coverage_chip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: strategic_objective_band
+  source_binding: municipality_coverage_chip
+  aggregation_logic: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: municipality_ranking_table
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component municipality_ranking_table for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: municipality_ranking
+  source_binding: municipality_ranking_table
+  aggregation_logic: output.jazan_municipality_service_risk_score JOIN analytics.dim_jazan_municipality
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: municipality_risk_rows
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component municipality_risk_rows for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: municipality_ranking
+  source_binding: municipality_risk_rows
+  aggregation_logic: output.jazan_municipality_service_risk_score JOIN analytics.dim_jazan_municipality
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: new_decisions_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component new_decisions_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_summary_strip
+  source_binding: new_decisions_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: next_run_label
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component next_run_label for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: schedule_and_next_run_panel
+  source_binding: next_run_label
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: notification_outbox_row
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component notification_outbox_row for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: email_delivery_log
+  source_binding: notification_outbox_row
+  aggregation_logic: decision.jazan_email_delivery_log and decision.jazan_notification_outbox
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: objective_metadata_chips
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component objective_metadata_chips for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: strategic_objective_band
+  source_binding: objective_metadata_chips
+  aggregation_logic: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: online_runtime_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component online_runtime_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: runtime_status_summary
+  source_binding: online_runtime_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: open_case_action
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component open_case_action for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: open_cases_list
+  source_binding: open_case_action
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: open_case_row
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component open_case_row for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: open_cases_list
+  source_binding: open_case_row
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: open_cases_list
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component open_cases_list for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: open_cases_list
+  source_binding: open_cases_list
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: output_tables_list
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component output_tables_list for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: input_output_lineage_panel
+  source_binding: output_tables_list
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: ownership_badge
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component ownership_badge for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: governance_evidence_panel
+  source_binding: ownership_badge
+  aggregation_logic: governance.business_trust_map and governance.governed_datasets
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: page_header_bar
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component page_header_bar for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: page_header
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: page_header
+  source_binding: page_header_bar
+  aggregation_logic: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: raw_layer_forbidden_notice
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component raw_layer_forbidden_notice for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: input_output_lineage_panel
+  source_binding: raw_layer_forbidden_notice
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: recommendation_ranked_cards
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component recommendation_ranked_cards for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: recommendation_rankings
+  source_binding: recommendation_ranked_cards
+  aggregation_logic: output.jazan_recommended_intervention
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: recommended_action_ranked_list
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component recommended_action_ranked_list for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: recommended_actions_panel
+  source_binding: recommended_action_ranked_list
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: recommended_actions_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component recommended_actions_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: recommended_actions_panel
+  source_binding: recommended_actions_panel
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: recovery_trajectory_chart
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component recovery_trajectory_chart for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: recovery_path
+  source_binding: recovery_trajectory_chart
+  aggregation_logic: decision.jazan_visual_distortion_recovery_outcome
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: request_revision_button
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component request_revision_button for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: request_revision_button
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: review_case_action
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component review_case_action for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: highest_priority_case_alert
+  source_binding: review_case_action
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: rnn_forecast_chart
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component rnn_forecast_chart for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: forecast_path
+  source_binding: rnn_forecast_chart
+  aggregation_logic: output.jazan_service_rnn_forecast
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: rnn_runtime_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component rnn_runtime_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: runtime_card_grid
+  source_binding: rnn_runtime_card
+  aggregation_logic: output.jazan_service_rnn_forecast
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: route_status_chip
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component route_status_chip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: page_header
+  source_binding: route_status_chip
+  aggregation_logic: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: runtime_card
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component runtime_card for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: runtime_card_grid
+  source_binding: runtime_card
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: runtime_execution_history
+  component_type: runtime_status_card
+  business_meaning: Renders the zone-rigid component runtime_execution_history for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: execution_history_panel
+  source_binding: runtime_execution_history
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: runtime_lineage_panel
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component runtime_lineage_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: input_output_lineage_panel
+  source_binding: runtime_lineage_panel
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: runtime_schedule_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component runtime_schedule_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: schedule_and_next_run_panel
+  source_binding: runtime_schedule_panel
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: runtime_status_summary
+  component_type: runtime_status_card
+  business_meaning: Renders the zone-rigid component runtime_status_summary for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: runtime_status_summary
+  source_binding: runtime_status_summary
+  aggregation_logic: runtime.evidence.yaml and output.jazan_runtime_executions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: seeded_demo_status_chip
+  component_type: governance_badge
+  business_meaning: Renders the zone-rigid component seeded_demo_status_chip for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 05_runtime_evidence_execution_history
+  required_zones:
+  - dashboard_id: 05_runtime_evidence_execution_history
+    zone_id: runtime_status_summary
+  source_binding: seeded_demo_status_chip
+  aggregation_logic: declared_dashboard_context
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: selected_decision_detail_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component selected_decision_detail_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: selected_decision_detail
+  source_binding: selected_decision_detail_panel
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: strategic_objective_header
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component strategic_objective_header for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 01_strategic_objective_monitoring
+  required_zones:
+  - dashboard_id: 01_strategic_objective_monitoring
+    zone_id: strategic_objective_band
+  source_binding: strategic_objective_header
+  aggregation_logic: business.objectives.yaml#OBJ-SVC-QUALITY-01
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: target_recovery_marker
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component target_recovery_marker for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: recovery_path
+  source_binding: target_recovery_marker
+  aggregation_logic: decision.jazan_visual_distortion_recovery_outcome
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: threshold_reference_line
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component threshold_reference_line for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: trend_forecast_view
+  source_binding: threshold_reference_line
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: ticket_created_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component ticket_created_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: audit_summary_strip
+  source_binding: ticket_created_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: ticket_request_log_panel
+  component_type: evidence_panel
+  business_meaning: Renders the zone-rigid component ticket_request_log_panel for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: ticket_request_log
+  source_binding: ticket_request_log_panel
+  aggregation_logic: decision.jazan_ticket_requests
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: ticket_request_row
+  component_type: queue_table
+  business_meaning: Renders the zone-rigid component ticket_request_row for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 06_decision_action_audit
+  required_zones:
+  - dashboard_id: 06_decision_action_audit
+    zone_id: ticket_request_log
+  source_binding: ticket_request_row
+  aggregation_logic: decision.jazan_ticket_requests
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: tickets_created_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component tickets_created_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_summary_strip
+  source_binding: tickets_created_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: trend_forecast_chart
+  component_type: line_chart
+  business_meaning: Renders the zone-rigid component trend_forecast_chart for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 02_kpi_municipality_workspace
+  required_zones:
+  - dashboard_id: 02_kpi_municipality_workspace
+    zone_id: trend_forecast_view
+  source_binding: trend_forecast_chart
+  aggregation_logic: output.jazan_service_rnn_forecast
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: under_review_counter
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component under_review_counter for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_summary_strip
+  source_binding: under_review_counter
+  aggregation_logic: analytics.fct_jazan_service_kpi_monitoring
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: view_details_button
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component view_details_button for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: human_authorised_action_area
+  source_binding: view_details_button
+  aggregation_logic: decision.jazan_generated_service_decisions
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: visible_action_buttons
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component visible_action_buttons for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 04_decision_command_centre
+  required_zones:
+  - dashboard_id: 04_decision_command_centre
+    zone_id: decision_candidate_queue
+  source_binding: visible_action_buttons
+  aggregation_logic: decision.jazan_service_quality_action_queue
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: z_score_indicator
+  component_type: summary_card
+  business_meaning: Renders the zone-rigid component z_score_indicator for canonical dashboard zones
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_case_model_intelligence
+  required_zones:
+  - dashboard_id: 03_case_model_intelligence
+    zone_id: anomaly_signal
+  source_binding: z_score_indicator
+  aggregation_logic: output.jazan_service_quality_anomaly
+  filter_dependencies:
+  - current_kpi
+  - current_municipality
+  - date_range
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_zone_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id001
+- component_id: case_context_header
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component case_context_header for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: case_context_header
+  source_binding: case_context_header
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: &id002
+    default: en
+    supported:
+    - en
+    - ar
+    direction:
+      en: ltr
+      ar: rtl
+    text_policy: all user-visible labels must use locale-aware text or i18n keys
+- component_id: case_workspace_tab_strip
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component case_workspace_tab_strip for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: case_tab_strip
+  source_binding: case_workspace_tab_strip
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: evidence_pack_strip
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component evidence_pack_strip for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: evidence_pack_strip
+  source_binding: evidence_pack_strip
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: bilingual_narrative_panel
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component bilingual_narrative_panel for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: bilingual_narrative
+  source_binding: bilingual_narrative_panel
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: narrative_version_history_action
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component narrative_version_history_action for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: bilingual_narrative
+  source_binding: narrative_version_history_action
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: recommendation_summary_panel
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component recommendation_summary_panel for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: recommendation_summary
+  source_binding: recommendation_summary_panel
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: case_action_button_row
+  component_type: action_button
+  business_meaning: Renders the zone-rigid component case_action_button_row for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: action_authorisation
+  source_binding: case_action_button_row
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: action_consequence_preview
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component action_consequence_preview for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: action_authorisation
+  source_binding: action_consequence_preview
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: confirmation_modal_contract
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component confirmation_modal_contract for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: action_authorisation
+  source_binding: confirmation_modal_contract
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: audit_footnote_panel
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component audit_footnote_panel for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: audit_assurance
+  source_binding: audit_footnote_panel
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: recovery_tab_locked_state
+  component_type: dashboard_component
+  business_meaning: Renders the zone-rigid component recovery_tab_locked_state for the case-scoped decision command tab
+  zone_rigid: true
+  legacy_component_id: false
+  used_in_dashboards:
+  - 03_primary_case_decision_command_tab
+  required_zones:
+  - dashboard_id: 03_primary_case_decision_command_tab
+    zone_id: case_tab_strip
+  source_binding: recovery_tab_locked_state
+  aggregation_logic: decision.jazan_generated_service_decisions and related decision workflow artifacts
+  filter_dependencies:
+  - case_id
+  - decision_id
+  - current_kpi
+  - current_municipality
+  threshold_logic: business/kpis.yaml monitoring_rules where applicable
+  visual_intent: canonical_case_decision_component
+  supported_states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
+  governance_evidence:
+  - lineage
+  - freshness
+  - quality
+  - ownership
+  - classification
+  - audit
+  phi_masking_audit_rules: not_applicable_no_phi
+  drilldown_action_behavior: see screens/interactions.yaml and workspace/interaction contracts
+  component_vocabulary: zone_rigid_components
+  locale: *id002
+- component_id: action_approved_marker
+  component_vocabulary: zone_rigid_components
+  business_meaning: Renders required zone-rigid component action_approved_marker
+  source_binding: action_approved_marker
+  empty_state: No data loaded
+  demo_state: Seeded demo data labelled
+  live_state: Bound to declared source
+- component_id: before_target_after_recovery_cards
+  component_vocabulary: zone_rigid_components
+  business_meaning: Renders required zone-rigid component before_target_after_recovery_cards
+  source_binding: before_target_after_recovery_cards
+  empty_state: No data loaded
+  demo_state: Seeded demo data labelled
+  live_state: Bound to declared source
+- component_id: case_recovery_header
+  component_vocabulary: zone_rigid_components
+  business_meaning: Renders required zone-rigid component case_recovery_header
+  source_binding: case_recovery_header
+  empty_state: No data loaded
+  demo_state: Seeded demo data labelled
+  live_state: Bound to declared source
+- component_id: evidence_pack_link
+  component_vocabulary: zone_rigid_components
+  business_meaning: Renders required zone-rigid component evidence_pack_link
+  source_binding: evidence_pack_link
+  empty_state: No data loaded
+  demo_state: Seeded demo data labelled
+  live_state: Bound to declared source
+- component_id: forecast_accuracy_card
+  component_vocabulary: zone_rigid_components
+  business_meaning: Renders required zone-rigid component forecast_accuracy_card
+  source_binding: forecast_accuracy_card
+  empty_state: No data loaded
+  demo_state: Seeded demo data labelled
+  live_state: Bound to declared source
+- component_id: pillar_credit_grid
+  component_vocabulary: zone_rigid_components
+  business_meaning: Renders required zone-rigid component pillar_credit_grid
+  source_binding: pillar_credit_grid
+  empty_state: No data loaded
+  demo_state: Seeded demo data labelled
+  live_state: Bound to declared source
+- component_id: recommendation_effectiveness_card
+  component_vocabulary: zone_rigid_components
+  business_meaning: Renders required zone-rigid component recommendation_effectiveness_card
+  source_binding: recommendation_effectiveness_card
+  empty_state: No data loaded
+  demo_state: Seeded demo data labelled
+  live_state: Bound to declared source

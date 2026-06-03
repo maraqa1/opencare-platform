@@ -1,0 +1,9 @@
+kind: ReusableDataPipelinePattern
+required_sections:
+- source_systems
+- raw_landing_tables
+- staging_models
+- analytics_marts
+- output_tables
+- decision_tables
+- action_lifecycle_policy

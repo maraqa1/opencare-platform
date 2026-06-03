@@ -1,0 +1,122 @@
+kind: ScreenCatalog
+use_case_slug: urban-service-quality-visual-distortion-loop
+screens:
+- screen_id: SCREEN-L1-STRATEGIC
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop
+  title_key: nav.level.strategic
+  persona: performance_office_reviewer
+  business_purpose: Track one strategic municipal objective across six governed KPIs, threshold states, and the highest-priority active case that starts the operating thread.
+  business_question_answered: Which KPI is breached or approaching trigger, and which active case should be reviewed first?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  level: 1
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L1-STRATEGIC
+  layout_ref: screens/layout_zones.yaml#01_strategic_objective_monitoring
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-L2-KPI
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/{kpi_slug}
+  title_key: nav.level.tactical
+  persona: performance_office_reviewer
+  business_purpose: Rank municipalities for one KPI, show trend and forecast evidence, and expose the governed cases created from KPI deviation.
+  business_question_answered: Which municipalities are driving this KPI away from target, how is the trend evolving, and which open cases need action?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  level: 2
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L2-KPI
+  layout_ref: screens/layout_zones.yaml#02_kpi_municipality_workspace
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-L3-CASE
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+  title_key: nav.level.operational
+  persona: performance_office_reviewer
+  business_purpose: Present single-case model evidence only: risk score, forecast path, anomaly signal, and recommended intervention for one municipality case.
+  business_question_answered: What is driving risk in this case, what does the model predict next, and why is this recommendation being made?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  level: 3
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
+  layout_ref: screens/layout_zones.yaml#03_case_model_intelligence
+  source_of_truth: canonical_contract
+  canonical_tab: intelligence
+  case_scoped_route_shape: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/{tab}
+  authorisation_surface_forbidden: true
+- screen_id: SCREEN-L3-CASE-DECISIONS
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+  title_key: nav.case.decisions
+  persona: performance_office_reviewer
+  business_purpose: Single-case decision authorisation surface with bilingual rationale, consequence preview, confirmation modal, and explicit human-approved actions for one case only.
+  business_question_answered: For this case, should the recommendation be approved, revised, escalated, ticketed, or emailed to the owner?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+  level: 3
+  scope: single_case_decision_tab
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-DECISIONS
+  layout_ref: screens/layout_zones.yaml#03_primary_case_decision_command_tab
+  source_of_truth: canonical_contract
+  canonical_tab: decisions
+  queue_forbidden: true
+- screen_id: SCREEN-L3-CASE-RECOVERY
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+  title_key: nav.case.recovery
+  persona: performance_office_reviewer
+  business_purpose: Show measured recovery, forecast accuracy, intervention effectiveness, pillar credits, and audit-backed evidence-pack links for one closed or recovered case.
+  business_question_answered: Did the corrective action recover the KPI, did the model predict accurately, and what learning should feed back into future interventions?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-RECOVERY
+  level: 3
+  scope: single_case_recovery_tab
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE-RECOVERY
+  layout_ref: screens/layout_zones.yaml#04_outcome_recovery_feedback
+  source_of_truth: canonical_contract
+  canonical_tab: recovery
+  enabled_when: case.status in ['closed', 'recovered']
+  locked_when: case.status not in ['closed', 'recovered']
+  locked_tooltip: Recovery data appears after corrective action closes.
+  hide_when_unavailable: false
+- screen_id: SCREEN-CC-DECISIONS
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decisions
+  title_key: nav.crosscut.decisions
+  persona: performance_office_reviewer
+  business_purpose: Cross-case triage queue for generated decisions, selected decision detail, and explicitly confirmed outbound actions across municipalities.
+  business_question_answered: Which decisions across municipalities require immediate human triage, what action is proposed, and what side effects will approval create?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  level: crosscut
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-DECISIONS
+  layout_ref: screens/layout_zones.yaml#04_decision_command_centre
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-CC-RUNTIMES
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes
+  title_key: nav.crosscut.runtimes
+  persona: it_lead_or_audit_liaison
+  business_purpose: Runtime evidence and execution history surface for forecast, anomaly, and decision-generation services, including governed inputs and outputs.
+  business_question_answered: Are the runtimes healthy, traceable, and producing governed outputs with honest execution history?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  level: crosscut
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-RUNTIMES
+  layout_ref: screens/layout_zones.yaml#05_runtime_evidence_execution_history
+  source_of_truth: canonical_contract
+- screen_id: SCREEN-CC-AUDIT
+  route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit
+  title_key: nav.crosscut.audit
+  persona: emarah_diwan_auditor
+  business_purpose: Audit and traceability surface for action history, lifecycle state, emails, tickets, and corrective-action closure across the operating loop.
+  business_question_answered: What actions, emails, tickets, and evidence transitions occurred, in what order, and are they defensible to auditors?
+  screen_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  level: crosscut
+  screen_contract_ref: screens/screen_catalog.yaml#SCREEN-CC-AUDIT
+  layout_ref: screens/layout_zones.yaml#06_decision_action_audit
+  source_of_truth: canonical_contract
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

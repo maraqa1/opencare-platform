@@ -1,0 +1,102 @@
+contract_version: '1.7.1'
+kind: DesignTokens
+use_case_slug: urban-service-quality-visual-distortion-loop
+
+localization:
+  default_locale: ar-SA
+  supported_locales: [ar-SA, en-US]
+  layout_direction:
+    ar-SA: rtl
+    en-US: ltr
+  numerals:
+    ar-SA: western
+    en-US: western
+  date_calendar:
+    ar-SA: gregorian_default_hijri_optional
+    en-US: gregorian
+  bilingual_display:
+    headers: side_by_side
+    body: locale_only
+    narratives: side_by_side
+    table_headers: locale_only_with_tooltip_alternate
+  font_family:
+    ar-SA: ['IBM Plex Sans Arabic', 'Cairo', 'Tajawal', 'Noto Sans Arabic', 'sans-serif']
+    en-US: ['Inter', 'IBM Plex Sans', 'sans-serif']
+  font_loading: load_both_locale_fonts_on_first_paint
+
+design_principles:
+  density: high_information_density_government_audit_aesthetic
+  visual_style: flat_no_gradients_no_drop_shadows
+  borders: 0_5px_subtle
+  card_radius: medium
+  typography_weights: [400_regular, 500_medium]  # never 600 or 700
+
+semantic_states:
+  in_breach:
+    bg: red_50
+    text: red_900
+    accent: red_700
+    icon: alert_octagon
+  approaching_trigger:
+    bg: amber_50
+    text: amber_900
+    accent: amber_700
+    icon: alert_triangle
+  meeting_target:
+    bg: teal_50
+    text: teal_900
+    accent: teal_700
+    icon: circle_check
+  demo_data:
+    bg: blue_50
+    text: blue_800
+    icon: test_pipe
+    label_key: chip.demo_data
+  not_yet_materialised:
+    bg: gray_50
+    text: gray_800
+    icon: clock
+    label_key: chip.not_materialised
+
+product_rendering_rules:
+  no_random_fallback_values: true
+  no_fake_green_live_status: true
+  no_placeholder_text: true
+  no_lorem_ipsum: true
+  empty_state_must_be_explicit: true
+  show_component_debug_labels: false
+  bilingual_labels: true
+  responsive_breakpoints: [mobile_narrow, tablet, desktop_default, desktop_wide]
+
+forbidden_rendering_behaviors:
+  - render_placeholder
+  - silent_demo_fallback
+  - autonomous_external_notification
+  - generic_workspace_template
+
+threshold_bar:
+  zones:
+    - id: breach
+      colour_ramp: red
+      stop: 100
+    - id: warning
+      colour_ramp: amber
+      stop: 100
+    - id: meeting
+      colour_ramp: teal
+      stop: 100
+  marker_style: vertical_line_with_label
+  zone_direction_per_kpi: determined_by_kpi.direction  # higher_is_better or lower_is_better
+
+mode_chip:
+  always_visible: true
+  position: header_right
+  states:
+    - demo_data
+    - live_populated
+    - not_yet_materialised
+    - partial_population
+  demo_data_label_key: chip.demo_data
+  live_populated_label_key: chip.live
+  not_yet_materialised_label_key: chip.not_materialised
+  partial_population_label_key: chip.partial

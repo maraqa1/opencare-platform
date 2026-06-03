@@ -1,0 +1,7 @@
+﻿"action_id","decision_id","case_id","municipality_id","action_type","owner_role","created_at"
+"ACT-2001","DEC-1001","CASE-M003-202605","M003","create_ticket","field_compliance","2026-05-21T00:00:00"
+"ACT-2002","DEC-1002","CASE-M003-202606","M003","create_ticket","field_compliance","2026-06-21T00:00:00"
+"ACT-2003","DEC-1003","CASE-M007-202605","M007","approve_decision","field_compliance","2026-05-21T00:00:00"
+"ACT-2004","DEC-1004","CASE-M007-202606","M007","approve_decision","field_compliance","2026-06-21T00:00:00"
+"ACT-2005","DEC-1005","CASE-M011-202605","M011","email_owner","field_compliance","2026-05-21T00:00:00"
+"ACT-2006","DEC-1006","CASE-M011-202606","M011","email_owner","field_compliance","2026-06-21T00:00:00"

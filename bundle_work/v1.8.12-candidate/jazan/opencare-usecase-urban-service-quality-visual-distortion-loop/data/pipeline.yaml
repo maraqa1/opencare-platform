@@ -1,0 +1,83 @@
+kind: DataPipelineContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+pipeline_stages:
+- source
+- raw
+- staging
+- analytics
+- output
+- decision
+- dashboard
+ingestion_mode: source_adapter_or_demo_seed
+source_systems:
+- jazan_municipal_service_platform
+- jazan_visual_distortion_platform
+- jazan_permit_platform
+- citizen_satisfaction_survey
+- jazan_municipality_owner_directory
+raw_landing_tables:
+- raw.jazan_service_requests
+- raw.jazan_visual_distortion_cases
+- raw.jazan_municipality_owners
+staging_models:
+- stg_jazan_service_requests
+- stg_jazan_visual_distortion_cases
+- stg_jazan_municipality_owners
+analytics_marts:
+- analytics.fct_jazan_citizen_satisfaction
+- analytics.fct_jazan_emergency_readiness
+- analytics.fct_jazan_permit_performance
+- analytics.fct_jazan_service_coverage
+- analytics.fct_jazan_service_quality
+- analytics.fct_jazan_visual_distortion_performance
+- analytics.dim_jazan_municipality_owners
+output_tables:
+- output.jazan_service_quality_anomaly
+- output.jazan_service_rnn_forecast
+- output.jazan_municipality_service_risk_score
+- output.jazan_recommended_intervention
+- output.jazan_runtime_executions
+decision_tables:
+- decision.jazan_generated_service_decisions
+- decision.jazan_service_quality_action_queue
+- decision.jazan_action_lifecycle
+- decision.jazan_decision_action_events
+- decision.jazan_notification_outbox
+- decision.jazan_email_delivery_log
+- decision.jazan_ticket_requests
+- decision.jazan_visual_distortion_recovery_outcome
+dashboard_consumers:
+- screens/components.yaml
+action_lifecycle_policy:
+  snapshot_table: decision.jazan_action_lifecycle
+  event_stream_table: decision.jazan_decision_action_events
+  snapshot_role: current_state_of_each_action
+  event_stream_role: append_only_state_transition_history
+  lifecycle_links_required:
+  - notification_outbox
+  - email_delivery_log
+  - ticket_requests
+  - recovery_outcome
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+owner_lookup_materialization:
+  entity: dim_jazan_municipality_owners
+  source_system: jazan_municipality_owner_directory
+  source_entity: municipality_owners
+  raw_landing_table: raw.jazan_municipality_owners
+  staging_model: stg_jazan_municipality_owners
+  analytics_model: dim_jazan_municipality_owners
+  analytics_table: analytics.dim_jazan_municipality_owners
+  consumed_by:
+  - btn.create_ticket
+  - btn.email_owner
+  - decision_command_centre
+  - decision_action_audit
+  notes: Owner lookup must be materialized before ticket/email actions can be activated.

@@ -1,0 +1,28 @@
+kind: DataJoinsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+joins:
+- join_id: service_quality_to_municipality
+  from: analytics.fct_jazan_service_quality.municipality_id
+  to: dim_jazan_municipality.municipality_id
+  type: many_to_one
+- join_id: visual_distortion_to_municipality
+  from: analytics.fct_jazan_visual_distortion_performance.municipality_id
+  to: dim_jazan_municipality.municipality_id
+  type: many_to_one
+- join_id: risk_score_to_municipality_kpi
+  from: output.jazan_municipality_service_risk_score.municipality_id,kpi_id
+  to: analytics facts municipality_id,kpi_id
+  type: one_to_many
+- join_id: decision_to_municipality_kpi
+  from: decision.jazan_generated_service_decisions.municipality_id,kpi_id
+  to: analytics facts municipality_id,kpi_id
+  type: many_to_one
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

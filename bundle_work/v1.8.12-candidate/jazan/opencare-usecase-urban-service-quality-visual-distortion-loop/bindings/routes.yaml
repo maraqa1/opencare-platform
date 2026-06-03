@@ -1,0 +1,232 @@
+kind: RouteBindings
+use_case_slug: urban-service-quality-visual-distortion-loop
+base_path: /api/v1/use-cases/urban-service-quality-visual-distortion-loop
+global_policy:
+  no_route_returns_sample_data: true
+  no_route_serves_placeholder_response: true
+  unbound_routes_return: typed_not_yet_materialised
+  phi_classification_enforced: true
+  audit_log_all_post_actions: true
+  bilingual_response_envelope: yes_when_responses_include_text
+routes:
+- id: route.zone_rigid_component
+  path: /portfolio/summary
+  method: GET
+  serves_component: kpi_state_summary_strip
+  backend_query: SELECT_kpi_state_distribution_from_kpi_portfolio_summary
+  response_schema_ref: backend/schemas/portfolio_summary.response.schema.json
+  populated_assertion_required: true
+  role_context_allowed:
+  - performance_office
+  - mayor_office
+  - momrah_liaison
+  - admin
+- id: route.zone_rigid_component
+  path: /kpi/{kpi_slug}/current
+  method: GET
+  serves_component: kpi_threshold_card_grid (per KPI)
+  backend_query: SELECT_latest_value_from_kpi_specific_mart
+  response_schema_ref: backend/schemas/kpi_current.response.schema.json
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /portfolio/active-case
+  method: GET
+  serves_component: highest_priority_case_alert
+  backend_query: SELECT_highest_priority_open_case_from_decisions
+  response_schema_ref: backend/schemas/active_case.response.schema.json
+  empty_response_valid: true
+- id: route.zone_rigid_component
+  path: /kpi/{kpi_slug}/summary
+  method: GET
+  serves_component: kpi_summary_strip
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /kpi/{kpi_slug}/ranking
+  method: GET
+  serves_component: municipality_ranking_table
+  backend_query: JOIN_kpi_mart_WITH_municipality_dim_WITH_risk_score
+  response_includes: 25_rows_one_per_municipality
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /kpi/{kpi_slug}/trend
+  method: GET
+  serves_component: trend_forecast_chart
+  backend_query: monthly_aggregate_24_months_plus_forecast_extension
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /kpi/{kpi_slug}/open-cases
+  method: GET
+  serves_component: open_cases_list
+  empty_response_valid: true
+- id: route.zone_rigid_component
+  path: /case/{case_id}
+  method: GET
+  serves_component: active_case_banner and zone_rigid_component
+  backend_query: SELECT_case_FROM_decisions_WITH_municipality_AND_kpi_context
+  response_schema_ref: backend/schemas/case_detail.response.schema.json
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /case/{case_id}/intelligence
+  method: GET
+  serves_component: case intelligence components
+  backend_query: SELECT_risk_score_forecast_anomaly_recommendations_for_case
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /case/{case_id}/recovery
+  method: GET
+  serves_component: zone_rigid_component
+  empty_response_valid: true
+  visible_when_response_empty: false
+- id: route.zone_rigid_component
+  path: /decisions
+  method: GET
+  serves_component: decision_table
+  backend_query: SELECT_open_decisions_with_municipality_and_kpi
+  populated_assertion_required: true
+  pagination: cursor_based_max_50_per_page
+- id: route.zone_rigid_component
+  path: /decisions/counters
+  method: GET
+  serves_component: decision_summary_strip and audit_summary_strip
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /runtimes
+  method: GET
+  serves_component: runtime_card_grid
+  backend_source: opencare.runtime_registry
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /runtimes/{runtime_id}/history
+  method: GET
+  serves_component: runtime_execution_history
+  backend_source: opencare.runtime_execution_log
+  last_n_days: 7
+- id: route.zone_rigid_component
+  path: /audit/decision/{decision_id}/actions
+  method: GET
+  serves_component: action_audit_timeline
+  populated_assertion_required: true
+- id: route.zone_rigid_component
+  path: /audit/decision/{decision_id}/emails
+  method: GET
+  serves_component: email_delivery_log_panel
+  empty_response_valid: true
+- id: route.zone_rigid_component
+  path: /audit/decision/{decision_id}/tickets
+  method: GET
+  serves_component: ticket_request_log_panel
+  empty_response_valid: true
+- id: route.zone_rigid_component
+  path: /audit/corrective-actions
+  method: GET
+  serves_component: corrective_action_tracker
+  populated_assertion_required: true
+- id: route.action.approve
+  path: /case/{case_id}/actions/approve
+  method: POST
+  serves_action_button: btn.approve
+  requires_role: performance_office
+  requires_human_authorisation: true
+  audit_event_type: decision.approved
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  side_effects:
+  - update decision.jazan_action_lifecycle
+  - update decision.jazan_decision_action_events
+  - create decision.jazan_corrective_actions row
+  response_schema_ref: backend/schemas/action_result.response.schema.json
+- id: route.action.request_revision
+  path: /case/{case_id}/actions/request-revision
+  method: POST
+  serves_action_button: btn.request_revision
+  requires_role: performance_office
+  requires_human_authorisation: true
+  requires_revision_reason: true
+  audit_event_type: decision.revision_requested
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+- id: route.action.escalate
+  path: /case/{case_id}/actions/escalate
+  method: POST
+  serves_action_button: btn.escalate
+  requires_role: performance_office_or_higher
+  requires_human_authorisation: true
+  requires_escalation_target: true
+  audit_event_type: decision.escalated
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  notification_table: decision.jazan_notification_outbox
+- id: route.action.create_ticket
+  path: /case/{case_id}/actions/create-ticket
+  method: POST
+  serves_action_button: btn.create_ticket
+  requires_role: mayor_office_or_delegated
+  requires_human_authorisation: true
+  external_system: MAKEEN_or_Service_Desk
+  audit_event_type: decision.ticket_created
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  ticket_table: decision.jazan_ticket_requests
+  notification_table: decision.jazan_notification_outbox
+- id: route.action.email_owner
+  path: /case/{case_id}/actions/email-owner
+  method: POST
+  serves_action_button: btn.email_owner
+  requires_role: performance_office
+  requires_human_authorisation: true
+  notification_channel: email
+  audit_event_type: decision.owner_emailed
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  notification_table: decision.jazan_notification_outbox
+  delivery_log_table: decision.jazan_email_delivery_log
+- id: route.action.edit_narrative
+  path: /case/{case_id}/narrative
+  method: POST
+  serves_action: edit_bilingual_narrative
+  requires_role: performance_office
+  versioned: true
+  audit_event_type: decision.narrative_edited
+- id: route.case.decisions
+  path: /case/{case_id}/decisions
+  method: GET
+  serves_component: case decision command tab components
+  populated_assertion_required: false
+  role_context_allowed:
+  - performance_office
+  - admin
+- id: route.case.narrative.edit
+  path: /case/{case_id}/narrative
+  method: POST
+  serves_component: bilingual_narrative_panel
+  populated_assertion_required: false
+  role_context_allowed:
+  - performance_office
+  - admin
+- id: route.dashboard.outcome_recovery_feedback
+  method: GET
+  path: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/recovery
+  response_schema: backend/schemas/case_detail.response.schema.json
+  screen_id: SCREEN-L3-CASE-RECOVERY
+  dashboard_id: 04_outcome_recovery_feedback
+  auth_required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true
+design_notes_contract_truth: true

@@ -1,0 +1,32 @@
+kind: LifecycleAction
+use_case_slug: urban-service-quality-visual-distortion-loop
+action: compile
+steps:
+- id: compile_ contracts_ into_ opencare_ runtime_ definition
+  label: compile contracts into OpenCare runtime definition
+  required: true
+- id: resolve_ platform_ capabilities
+  label: resolve platform capabilities
+  required: true
+- id: resolve_ routes_ components_ data_ bindings
+  label: resolve routes/components/data bindings
+  required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

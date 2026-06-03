@@ -1,0 +1,209 @@
+kind: DashboardAcceptanceContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+screen_acceptance:
+- screen_id: SCREEN-L1-STRATEGIC
+  must_answer:
+  - Which KPIs or municipalities require attention?
+  must_show:
+  - strategic_objective_header
+  - kpi_state_summary_strip
+  - kpi_connector_rail
+  - kpi_threshold_card_grid
+  - highest_priority_case_alert
+  must_bind_to:
+  - analytics tables declared in data/output_tables.yaml
+  - runtime outputs declared in runtime/images.yaml where applicable
+  forbidden:
+  - placeholder chart
+  - sample payload
+  - unguided mockup-only rendering
+  - unbound route generic fallback
+  required_drill_paths:
+  - L1 to L2
+  - L2 to L3 case
+  - crosscut decisions/audit/runtimes
+  required_governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_outputs_required: []
+  platform_capabilities_required:
+  - native_bi_charts
+  - decision_workflow
+  - runtime_evidence
+- screen_id: SCREEN-L2-KPI
+  must_answer:
+  - Which KPIs or municipalities require attention?
+  must_show:
+  - kpi_summary_strip
+  - municipality_ranking_table
+  - trend_forecast_chart
+  - governance_evidence_panel
+  - open_cases_list
+  must_bind_to:
+  - analytics tables declared in data/output_tables.yaml
+  - runtime outputs declared in runtime/images.yaml where applicable
+  forbidden:
+  - placeholder chart
+  - sample payload
+  - unguided mockup-only rendering
+  - unbound route generic fallback
+  required_drill_paths:
+  - L1 to L2
+  - L2 to L3 case
+  - crosscut decisions/audit/runtimes
+  required_governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_outputs_required:
+  - output.jazan_municipality_service_risk_score
+  platform_capabilities_required:
+  - native_bi_charts
+  - decision_workflow
+  - runtime_evidence
+- screen_id: SCREEN-L3-CASE
+  must_answer:
+  - Which KPIs or municipalities require attention?
+  must_show:
+  - active_case_banner
+  - trend_forecast_chart
+  - composite_risk_score_card
+  - rnn_forecast_chart
+  - anomaly_detection_card
+  - recommendation_ranked_cards
+  - action_button_bar
+  - generated_decision_evidence_panel
+  - recovery_trajectory_chart
+  must_bind_to:
+  - analytics tables declared in data/output_tables.yaml
+  - runtime outputs declared in runtime/images.yaml where applicable
+  forbidden:
+  - placeholder chart
+  - sample payload
+  - unguided mockup-only rendering
+  - unbound route generic fallback
+  required_drill_paths:
+  - L1 to L2
+  - L2 to L3 case
+  - crosscut decisions/audit/runtimes
+  required_governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_outputs_required:
+  - output.jazan_municipality_service_risk_score
+  platform_capabilities_required:
+  - native_bi_charts
+  - decision_workflow
+  - runtime_evidence
+- screen_id: SCREEN-CC-DECISIONS
+  must_answer:
+  - What decisions, runtime evidence, or audit actions require attention?
+  must_show:
+  - decision_summary_strip
+  - decision_table
+  - selected_decision_detail_panel
+  must_bind_to:
+  - analytics tables declared in data/output_tables.yaml
+  - runtime outputs declared in runtime/images.yaml where applicable
+  forbidden:
+  - placeholder chart
+  - sample payload
+  - unguided mockup-only rendering
+  - unbound route generic fallback
+  required_drill_paths:
+  - crosscut navigation
+  required_governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_outputs_required: []
+  platform_capabilities_required:
+  - native_bi_charts
+  - decision_workflow
+  - runtime_evidence
+- screen_id: SCREEN-CC-RUNTIMES
+  must_answer:
+  - What decisions, runtime evidence, or audit actions require attention?
+  must_show:
+  - runtime_card_grid
+  - runtime_execution_history
+  must_bind_to:
+  - analytics tables declared in data/output_tables.yaml
+  - runtime outputs declared in runtime/images.yaml where applicable
+  forbidden:
+  - placeholder chart
+  - sample payload
+  - unguided mockup-only rendering
+  - unbound route generic fallback
+  required_drill_paths:
+  - crosscut navigation
+  required_governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_outputs_required: []
+  platform_capabilities_required:
+  - native_bi_charts
+  - decision_workflow
+  - runtime_evidence
+- screen_id: SCREEN-CC-AUDIT
+  must_answer:
+  - What decisions, runtime evidence, or audit actions require attention?
+  must_show:
+  - audit_summary_strip
+  - action_audit_timeline
+  - email_delivery_log_panel
+  - ticket_request_log_panel
+  - corrective_action_tracker
+  must_bind_to:
+  - analytics tables declared in data/output_tables.yaml
+  - runtime outputs declared in runtime/images.yaml where applicable
+  forbidden:
+  - placeholder chart
+  - sample payload
+  - unguided mockup-only rendering
+  - unbound route generic fallback
+  required_drill_paths:
+  - crosscut navigation
+  required_governance_evidence:
+  - classification
+  - ownership
+  - freshness
+  - quality
+  - lineage
+  runtime_outputs_required: []
+  platform_capabilities_required:
+  - native_bi_charts
+  - decision_workflow
+  - runtime_evidence
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true

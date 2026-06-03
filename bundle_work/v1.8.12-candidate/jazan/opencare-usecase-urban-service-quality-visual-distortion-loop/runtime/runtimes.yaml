@@ -1,0 +1,82 @@
+kind: RuntimesContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+runtimes:
+- id: rt_jazan_service_rnn_forecast
+  name_key: runtime.forecast.name
+  description_key: runtime.forecast.description
+  runtime_type: rnn_forecast
+  implementation_family: GRU_or_LSTM
+  forecast_targets:
+  - KPI-VDQ-01
+  - KPI-SRC-02
+  - KPI-PIT-03
+  - KPI-USC-04
+  - KPI-ERR-05
+  forecast_horizon_weeks_min: 4
+  forecast_horizon_weeks_max: 8
+  inputs:
+  - analytics.fct_jazan_visual_distortion_performance
+  - analytics.fct_jazan_service_quality
+  - analytics.fct_jazan_permit_performance
+  - analytics.fct_jazan_citizen_satisfaction
+  outputs:
+  - output.jazan_service_rnn_forecast
+  schedule: daily_06_00
+  raw_layer_access: forbidden
+  human_in_the_loop_required: false
+  explainability: forecast_confidence_band_and_input_window
+  governance_class: internal
+- id: rt_jazan_service_anomaly
+  name_key: runtime.anomaly.name
+  description_key: runtime.anomaly.description
+  runtime_type: anomaly_detection
+  implementation_family: z_score
+  baseline_window_months: 24
+  inputs:
+  - analytics.fct_jazan_visual_distortion_performance
+  - analytics.fct_jazan_service_quality
+  outputs:
+  - output.jazan_service_quality_anomaly
+  schedule: daily_06_10
+  raw_layer_access: forbidden
+  human_in_the_loop_required: false
+  explainability: z_score_with_contributing_weekly_observations
+  governance_class: internal
+- id: rt_jazan_decision_candidate
+  name_key: runtime.decision.name
+  description_key: runtime.decision.description
+  runtime_type: decision_candidate_generation
+  inputs:
+  - output.jazan_service_rnn_forecast
+  - output.jazan_service_quality_anomaly
+  - output.jazan_municipality_service_risk_score
+  - output.jazan_recommended_intervention
+  outputs:
+  - decision.jazan_generated_service_decisions
+  - decision.jazan_service_quality_action_queue
+  schedule: daily_06_20
+  raw_layer_access: forbidden
+  human_in_the_loop_required: true
+  explainability: bilingual_narrative_with_evidence_pack_and_audit_trail
+  governance_class: internal
+  autonomous_actions_permitted: []
+  requires_human_approval_for:
+  - ticket_creation
+  - external_escalation
+  - email_notification
+  - sms_notification
+runtime_catalog_requirements:
+  platform_must_register:
+  - runtime_type: rnn_forecast
+  - runtime_type: anomaly_detection
+  - runtime_type: decision_candidate_generation
+  promotion_blocker_if_missing: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys

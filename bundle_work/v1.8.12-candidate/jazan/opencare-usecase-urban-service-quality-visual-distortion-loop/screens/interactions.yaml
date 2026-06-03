@@ -1,0 +1,120 @@
+kind: ScreenInteractionsContract
+use_case_slug: urban-service-quality-visual-distortion-loop
+interactions:
+- interaction_id: l2_to_l3_case_open
+  source_screen: SCREEN-L2-KPI
+  source_component: open_cases_list
+  behavior: navigate
+  target_route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
+  propagate_filters:
+  - kpi_slug
+  - case_id
+  - municipality_id
+  audit_event: case.viewed
+- id: approve_decision
+  component: case_action_button_row
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  requires_confirmation: true
+  human_in_the_loop_required: true
+  audit_required: true
+  confirmation_modal: payload_preview_required
+  source_screen: SCREEN-L3-CASE-DECISIONS
+  silent_dispatch_forbidden: true
+  payload_preview_must_show:
+  - action_summary
+  - who_will_be_notified
+  - external_systems_invoked
+  - records_created
+  - confirm_cancel_pair
+- id: request_revision
+  component: case_action_button_row
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  requires_confirmation: true
+  human_in_the_loop_required: true
+  audit_required: true
+  confirmation_modal: payload_preview_required
+  source_screen: SCREEN-L3-CASE-DECISIONS
+  silent_dispatch_forbidden: true
+  payload_preview_must_show:
+  - action_summary
+  - who_will_be_notified
+  - external_systems_invoked
+  - records_created
+  - confirm_cancel_pair
+- id: escalate_decision
+  component: case_action_button_row
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  requires_confirmation: true
+  human_in_the_loop_required: true
+  audit_required: true
+  confirmation_modal: payload_preview_required
+  source_screen: SCREEN-L3-CASE-DECISIONS
+  silent_dispatch_forbidden: true
+  payload_preview_must_show:
+  - action_summary
+  - who_will_be_notified
+  - external_systems_invoked
+  - records_created
+  - confirm_cancel_pair
+- id: create_ticket
+  component: case_action_button_row
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  requires_confirmation: true
+  human_in_the_loop_required: true
+  audit_required: true
+  confirmation_modal: payload_preview_required
+  source_screen: SCREEN-L3-CASE-DECISIONS
+  silent_dispatch_forbidden: true
+  payload_preview_must_show:
+  - action_summary
+  - who_will_be_notified
+  - external_systems_invoked
+  - records_created
+  - confirm_cancel_pair
+- id: email_owner
+  component: case_action_button_row
+  screen_id: SCREEN-L3-CASE-DECISIONS
+  requires_confirmation: true
+  human_in_the_loop_required: true
+  audit_required: true
+  confirmation_modal: payload_preview_required
+  source_screen: SCREEN-L3-CASE-DECISIONS
+  silent_dispatch_forbidden: true
+  payload_preview_must_show:
+  - action_summary
+  - who_will_be_notified
+  - external_systems_invoked
+  - records_created
+  - confirm_cancel_pair
+- interaction_id: open_case_decision_tab
+  source_screen: SCREEN-L3-CASE
+  source_component: open_case_decision_tab_action
+  behavior: navigate
+  target_route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/decisions
+  requires_human_authorisation: false
+  audit_event: case.decision_tab_opened
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true
+design_notes_contract_truth: true
+case_decision_tab_constraints:
+  single_case_only: true
+  queue_forbidden: true
+  all_five_action_buttons_visible_at_once: true
+  overflow_menu_forbidden: true

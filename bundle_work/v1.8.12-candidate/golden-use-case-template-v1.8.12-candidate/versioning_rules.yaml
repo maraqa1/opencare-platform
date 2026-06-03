@@ -1,0 +1,10 @@
+kind: VersioningRules
+required_fields:
+- package_version
+- opencare_golden_template_version
+- compatibility.opencare_golden_template
+forbidden_redundant_fields:
+- version
+- bundle_version
+- golden_template_version
+- metadata.version

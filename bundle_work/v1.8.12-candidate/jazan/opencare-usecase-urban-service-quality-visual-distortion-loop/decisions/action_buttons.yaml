@@ -1,0 +1,300 @@
+kind: DecisionActionButtons
+use_case_slug: urban-service-quality-visual-distortion-loop
+global_policy:
+  every_action_requires_human_authorisation: true
+  every_action_audit_logged: true
+  every_action_bilingual: true
+  no_autonomous_external_notification: true
+  every_external_action_requires_human_authorisation: true
+  all_five_case_decision_buttons_visible_at_once: true
+  overflow_menu_for_case_decision_buttons_forbidden: true
+action_lifecycle_contract:
+  snapshot_table: decision.jazan_action_lifecycle
+  event_stream_table: decision.jazan_decision_action_events
+  every_state_transition_writes_audit_event: true
+  current_state_snapshot_only: true
+  append_only_history_via_event_stream: true
+  null_means_unknown: true
+  zero_means_actual_zero: true
+confirmation_modal:
+  required_for_all: true
+  show_action_summary: true
+  show_who_will_be_notified: true
+  show_external_systems_affected: true
+  bilingual: true
+  payload_preview_required: true
+  generic_are_you_sure_forbidden: true
+action_buttons:
+- id: btn.approve
+  action_id: approve_decision
+  label_key: action.approve.label
+  description_key: action.approve.description
+  style: primary_green
+  icon: ti-check
+  backend_route_id: route.action.approve
+  requires_role: performance_office
+  side_effects:
+  - audit_log
+  - create_corrective_action
+  - update_decision_status
+  audit_event_type: decision.approved
+  requires_human_authorisation: true
+  audit_required: true
+  action_lifecycle_required: true
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  lifecycle_transition_on_authorisation: authorised
+  lifecycle_transition_on_dispatch: fired
+  lifecycle_event_link_required: true
+  side_effect_hint: Authorises top recommendation
+  confirmation_modal_required: true
+  human_in_the_loop_required: true
+  payload_preview_required: true
+  confirmation_payload_must_show:
+  - decision_id
+  - case_id
+  - recommended_action
+  - owner
+  - records_created
+  - notification_targets
+  - audit_event
+- id: btn.request_revision
+  action_id: request_revision
+  label_key: action.request_revision.label
+  description_key: action.request_revision.description
+  style: secondary
+  icon: ti-edit
+  backend_route_id: route.action.request_revision
+  requires_role: performance_office
+  requires_input:
+  - id: revision_reason
+    label_key: action.request_revision.reason_input.label
+    type: text_bilingual
+    required: true
+    max_length: 500
+  side_effects:
+  - audit_log
+  - update_decision_status_to_under_revision
+  audit_event_type: decision.revision_requested
+  requires_human_authorisation: true
+  audit_required: true
+  action_lifecycle_required: true
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  lifecycle_transition_on_authorisation: authorised
+  lifecycle_transition_on_dispatch: fired
+  lifecycle_event_link_required: true
+  side_effect_hint: Return to runtime or reviewer
+  confirmation_modal_required: true
+  human_in_the_loop_required: true
+  payload_preview_required: true
+  confirmation_payload_must_show:
+  - decision_id
+  - case_id
+  - recommended_action
+  - owner
+  - records_created
+  - notification_targets
+  - audit_event
+- id: btn.escalate
+  action_id: escalate_decision
+  label_key: action.escalate.label
+  description_key: action.escalate.description
+  style: secondary
+  icon: ti-arrow-up-right
+  backend_route_id: route.action.escalate
+  requires_role: performance_office_or_higher
+  requires_input:
+  - id: escalation_target
+    label_key: action.escalate.target_input.label
+    type: select
+    options:
+    - emarah_diwan
+    - momrah_liaison
+    - regional_governor_office
+    required: true
+  - id: escalation_note
+    label_key: action.escalate.note_input.label
+    type: text_bilingual
+    required: true
+  side_effects:
+  - audit_log
+  - send_escalation_email
+  - update_decision_status_to_escalated
+  audit_event_type: decision.escalated
+  requires_human_authorisation: true
+  audit_required: true
+  action_lifecycle_required: true
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  lifecycle_transition_on_authorisation: authorised
+  lifecycle_transition_on_dispatch: escalated
+  lifecycle_event_link_required: true
+  external_reference_field: notification_id
+  external_side_effects_require_confirmation: true
+  side_effect_hint: Emarah or MOMRAH escalation
+  confirmation_modal_required: true
+  human_in_the_loop_required: true
+  payload_preview_required: true
+  confirmation_payload_must_show:
+  - decision_id
+  - case_id
+  - recommended_action
+  - owner
+  - records_created
+  - notification_targets
+  - audit_event
+- id: btn.create_ticket
+  action_id: create_ticket
+  label_key: action.create_ticket.label
+  description_key: action.create_ticket.description
+  style: secondary
+  icon: ti-ticket
+  backend_route_id: route.action.create_ticket
+  requires_role: mayor_office_or_delegated
+  requires_input:
+  - id: ticket_owner
+    label_key: action.create_ticket.owner_input.label
+    type: select
+    options_source: dim_jazan_municipality_owners
+    required: true
+  - id: ticket_priority
+    label_key: action.create_ticket.priority_input.label
+    type: select
+    options:
+    - low
+    - normal
+    - high
+    - urgent
+    required: true
+  - id: ticket_due_days
+    label_key: action.create_ticket.due_input.label
+    type: number
+    required: true
+    min: 1
+    max: 60
+  side_effects:
+  - audit_log
+  - create_external_ticket_in_makeen_or_service_desk
+  - link_ticket_to_decision
+  - send_owner_notification
+  audit_event_type: decision.ticket_created
+  external_system_call: MAKEEN_or_Service_Desk_API
+  requires_human_authorisation: true
+  audit_required: true
+  action_lifecycle_required: true
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  lifecycle_transition_on_authorisation: authorised
+  lifecycle_transition_on_dispatch: fired
+  lifecycle_event_link_required: true
+  external_reference_field: ticket_id
+  notification_link_field: notification_id
+  external_side_effects_require_confirmation: true
+  side_effect_hint: MAKEEN or Service Desk ticket plus owner notification
+  confirmation_modal_required: true
+  human_in_the_loop_required: true
+  payload_preview_required: true
+  confirmation_payload_must_show:
+  - decision_id
+  - case_id
+  - recommended_action
+  - owner
+  - records_created
+  - notification_targets
+  - audit_event
+- id: btn.email_owner
+  action_id: email_owner
+  label_key: action.email_owner.label
+  description_key: action.email_owner.description
+  style: secondary
+  icon: ti-mail
+  backend_route_id: route.action.email_owner
+  requires_role: performance_office
+  requires_input:
+  - id: email_owner_target
+    label_key: action.email_owner.target_input.label
+    type: select
+    options_source: dim_jazan_municipality_owners
+    required: true
+  - id: notify_message
+    label_key: action.email_owner.message_input.label
+    type: text_bilingual
+    required: true
+  side_effects:
+  - audit_log
+  - send_email_notification
+  - update_decision_owner_emailed_timestamp
+  audit_event_type: decision.owner_emailed
+  notification_channel: email
+  requires_human_authorisation: true
+  audit_required: true
+  action_lifecycle_required: true
+  lifecycle_snapshot_table: decision.jazan_action_lifecycle
+  lifecycle_event_stream_table: decision.jazan_decision_action_events
+  lifecycle_transition_on_authorisation: authorised
+  lifecycle_transition_on_dispatch: fired
+  lifecycle_event_link_required: true
+  external_reference_field: notification_id
+  email_delivery_link_field: notification_id
+  external_side_effect: email_notification
+  external_side_effects_require_confirmation: true
+  side_effect_hint: Bilingual owner notification
+  confirmation_modal_required: true
+  human_in_the_loop_required: true
+  payload_preview_required: true
+  confirmation_payload_must_show:
+  - decision_id
+  - case_id
+  - recommended_action
+  - owner
+  - records_created
+  - notification_targets
+  - audit_event
+- id: btn.view_detail
+  action_id: view_details
+  label_key: action.view_detail.label
+  style: tertiary_icon_only
+  icon: ti-eye
+  target: navigate_to_l3_case_overview
+  audit_event_type: case.viewed
+  requires_human_authorisation: true
+  audit_required: true
+- id: btn.view_full_audit
+  action_id: view_full_audit
+  label_key: action.view_full_audit.label
+  style: tertiary_link
+  target: navigate_to_crosscut_audit_with_case_preselected
+  audit_event_type: audit.viewed
+  requires_human_authorisation: true
+  audit_required: true
+locale:
+  default: en
+  supported:
+  - en
+  - ar
+  direction:
+    en: ltr
+    ar: rtl
+  text_policy: all user-visible labels must use locale-aware text or i18n keys
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+  - email_notification
+  - ticket_creation
+  - external_escalation
+  - external_system_update
+  - runtime_trigger_with_external_side_effect
+  default_behavior: block_until_confirmed
+  audit_required: true
+case_decision_tab_order:
+- btn.approve
+- btn.request_revision
+- btn.escalate
+- btn.create_ticket
+- btn.email_owner
+case_decision_tab_policy:
+  all_buttons_visible_at_once: true
+  overflow_menu_forbidden: true
+  silent_dispatch_forbidden: true
+design_notes_contract_truth: true
