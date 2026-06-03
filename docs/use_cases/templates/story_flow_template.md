@@ -1,43 +1,39 @@
 # Story Flow Template
 
-Use this file to declare the required narrative order of the dashboards.
+Use this template to define the canonical dashboard journey.
 
-This prevents implementation from preserving the data contract while losing the intended operating story.
+The story flow explains why each dashboard exists and what the user must understand before moving to the next one.
 
-## Required rule
+## Story sequence
 
-The story flow is canonical.
+For each dashboard define:
 
-If the bundle defines a dashboard order, implementation must preserve that order unless the bundle explicitly allows alternate navigation.
+- Order:
+- Dashboard ID:
+- Route:
+- Narrative role:
+- Primary question answered:
+- Secondary question answered:
+- Expected user action after viewing:
+- Required learning before next dashboard:
+- Governance or runtime proof that must be visible:
 
-## Template
+## Transition rules
 
-```yaml
-story_flow:
-  locale:
-    default: en
-    supported:
-      - en
-      - ar
-  direction:
-    en: ltr
-    ar: rtl
+For each transition define:
 
-  steps:
-    - sequence: 1
-      dashboard_id: "01_strategic_objective_monitoring"
-      purpose: "Establish the strategic objective, KPI threshold state, and current breach posture."
-      user_should_learn:
-        - "Whether the objective is on track"
-        - "Which KPI branch is in breach"
-      next_dashboard: "02_model_intelligence_risk_overview"
-```
+- From dashboard:
+- To dashboard:
+- Why the transition exists:
+- What must remain consistent:
+  - KPI identity
+  - case identity
+  - municipality identity
+  - decision identity
+  - runtime identity
 
-## External action rule
+## Non-negotiables
 
-Any story step that triggers an external action must declare:
-
-- `human_authorization_required: true`
-- `audit_event_type`
-- `notification_side_effect`
-- `ticket_side_effect`
+- The dashboard order may not be silently rearranged.
+- The story may not be flattened into a generic overview screen.
+- Cross-cut routes must still preserve the declared narrative logic.

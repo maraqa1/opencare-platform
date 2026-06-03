@@ -1,8 +1,8 @@
 # Use-Case Contract Lessons Learned
 
-This document captures the lessons from implementing Revenue Cycle Management so future OpenCare use cases are easier to deliver on the shared platform with less patch churn.
+This document captures the lessons from implementing Revenue Cycle Management and from evolving the Jazan dashboard-rigid bundle standard so future OpenCare use cases are easier to deliver on the shared platform with less patch churn.
 
-For the canonical import-ready package contract, see:
+For the canonical repeated bundle contract, see:
 
 - [golden_use_case_package_template.md](C:/R_Home/opencare-platform/docs/use_cases/golden_use_case_package_template.md)
 
@@ -19,6 +19,58 @@ The problems came from an under-specified use-case contract:
 - Superset rendering and access requirements were not explicit enough
 - validation stopped too early at object creation instead of true runtime readiness
 - dashboard quality and dashboard discoverability were not specified strongly enough
+- dashboards were too easy to reinterpret into weaker generic UI shapes
+- layout and component vocabulary were not controlled tightly enough
+
+## New dashboard-rigid lessons
+
+These are now part of the repeated pattern and should be preserved for all future bundles.
+
+### 1. A dashboard is canonical, not inspirational
+
+If the bundle defines six dashboards, the implementation must honor those six dashboards directly.
+
+The implementation should not:
+
+- flatten them into a generic overview page
+- reinterpret them as looser sections
+- preserve the data while losing the operational composition
+
+### 2. Single layout authority matters
+
+The bundle must have one canonical layout authority, and all metadata, implementation matrices, and validation should point to it.
+
+If multiple layout authorities survive in canonical files, implementers will naturally choose the weaker one.
+
+### 3. Single component vocabulary matters
+
+The bundle must not define the dashboards in one component language and validate them in another.
+
+Routes, bindings, acceptance, and validation should all use the same canonical component vocabulary.
+
+### 4. Visual non-negotiables must be explicit
+
+Business meaning is not enough on its own.
+
+The bundle must explicitly declare the visual structures that cannot be removed, such as:
+
+- connector rails
+- threshold rails
+- active-case alert bands
+- runtime cards
+- audit timelines
+- bilingual label placement
+
+### 5. Bundle validation must enforce the anti-drift rules
+
+It is not enough to document:
+
+- story flow
+- dashboard fidelity
+- rendered conformance
+- bilingual composition
+
+The bundle validator should enforce their presence and cross-reference consistency.
 
 ## What future use-case prompts must include
 
@@ -413,77 +465,6 @@ Future use cases should use the TALEMIA implementation as the best current worki
 - [Dashboard Contract Template](/C:/R_Home/opencare-platform/docs/use_cases/templates/dashboard_contract_template.md)
 
 Those files are intended to reduce prompt ambiguity and make new use cases easier to add with the same shape every time.
-
-## Additional lessons from the Urban Service Quality golden bundle
-
-The later Jazan golden bundle added a second class of lesson beyond platform structure: dashboard fidelity.
-
-### 14. Dashboard fidelity contract
-
-If a bundle declares dashboards explicitly, implementation must render those dashboards explicitly.
-
-Important lessons:
-
-- a declared dashboard is not optional
-- a declared dashboard should not be silently merged into another page
-- route existence is not enough if the intended dashboard composition and story are lost
-
-Future bundles should require:
-
-- `screens/dashboard_implementation_matrix.yaml`
-- `screens/story_flow.yaml`
-- `acceptance/dashboard_fidelity_contract.yaml`
-
-### 15. Story contract
-
-The dashboard order is part of the operating model.
-
-Future bundles should define:
-
-- what the user should learn from each dashboard
-- what question each dashboard answers
-- which dashboard comes next in the intended decision journey
-
-### 16. Locale and direction are structural
-
-For Saudi public-sector use cases, bilingual readiness should be contractual.
-
-Future bundles should require:
-
-- locale metadata
-- direction metadata
-- bilingual labels for critical user-facing elements
-
-### 17. External actions must remain human-authorized
-
-External actions such as email, escalation, ticket creation, approval, and closure should explicitly declare:
-
-- who is allowed to authorize the action
-- what audit event is written
-- what notification or external side effect is emitted
-
-### 18. Runtime images must be explicit
-
-Future bundles should keep runtime declarations explicit through:
-
-- `runtime/runtimes.yaml`
-- `runtime/images.yaml`
-- `runtime/schedules.yaml`
-- `runtime/evidence.yaml`
-
-### 19. Capability truthfulness must be evidence-based
-
-Future bundles should require a capability map where each entry is labeled:
-
-- `reuse_existing`
-- `partially_supported`
-- `requires_extension`
-
-Each entry should cite:
-
-- intended platform binding
-- current platform evidence
-- known limitation
 
 ## Final takeaway
 

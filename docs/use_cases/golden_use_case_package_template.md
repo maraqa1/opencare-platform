@@ -1,255 +1,564 @@
-# Golden Use-Case Package Template
+# Golden Use-Case Bundle Template
 
-This document defines the canonical OpenCare golden bundle standard for future use cases.
+This document defines the canonical OpenCare use-case bundle standard.
 
-The goal is not just to describe a use case well. The goal is to define a **repeatable shell contract** that can be implemented on the OpenCare platform without ambiguity, fake capability assumptions, or dashboard drift.
+It replaces the older idea of a generic dashboard ZIP or an “upload and hope” package.
 
-## Non-negotiable principles
+The golden bundle is the **source contract** for a use case that will be implemented as a native shell on the OpenCare platform.
 
-Every future bundle must obey these rules:
+## Bottom line
 
-1. Business defines the dashboard.
-2. Every screen component binds to governed data, declared runtime output, or explicit empty-state semantics.
-3. Every runtime declares its image, inputs, outputs, schedule, and evidence source.
-4. Every action declares its audit and notification side effects.
-5. Every platform capability is labeled truthfully as `reuse_existing`, `partially_supported`, or `requires_extension`.
-6. Every artefact declares locale and direction so bilingual readiness is structural, not bolt-on.
-7. Every external action requires human authorization so human-in-the-loop is contractual, not behavioral.
-8. If a dashboard contract exists, implementation must render that dashboard directly. It may not silently collapse it into a different shell shape.
+The platform is the durable product.
 
-## Purpose
+The use case is a governed shell or module that reuses platform capabilities:
 
-The golden bundle exists to support this repeatable workflow:
+- ingestion
+- dbt transformation
+- backend services
+- portal workspace patterns
+- governance and trust surfaces
+- decision workflows
+- notifications where supported
 
-1. define the business problem
-2. fill out the standard bundle structure
-3. validate the bundle contracts
-4. map the bundle to current OpenCare capabilities
-5. implement the use case as a native shell on the platform
+The bundle does **not** pretend to be a mini-platform.
 
-The bundle is not a mini-platform. It is a **source contract** for OpenCare implementation.
+It declares what the use case needs, how the dashboards must behave, what data and runtime artifacts must exist, and what the platform already supports versus what still needs extension.
 
-## Canonical bundle structure
+## Current platform truth
 
-```text
-use-case-bundle.zip
-  <root-folder>/
-    package.yaml
-    manifest/
-      usecase.yaml
-      personas.yaml
-      navigation.yaml
-      principles.yaml
-    business/
-      objectives.yaml
-      kpis.yaml
-      decisions.yaml
-      workflows.yaml
-    data/
-      source_systems.yaml
-      pipeline.yaml
-      entities.yaml
-      joins.yaml
-      output_tables.yaml
-    dbt/
-      model_index.yaml
-      tests.yaml
-      models/
-        staging/
-        analytics/
-        output/
-        decision/
-        dictionary/
-      macros/
-    runtime/
-      runtimes.yaml
-      images.yaml
-      schedules.yaml
-      evidence.yaml
-    decisions/
-      action_buttons.yaml
-      decision_states.yaml
-      escalations.yaml
-      notifications.yaml
-      tickets.yaml
-      audit.yaml
-    screens/
-      information_architecture.yaml
-      screen_catalog.yaml
-      layouts.yaml
-      components.yaml
-      interactions.yaml
-      empty_states.yaml
-      visual_traceability.yaml
-      business_alignment_matrix.yaml
-      dashboard_implementation_matrix.yaml
-      story_flow.yaml
-    bindings/
-      routes.yaml
-      data_bindings.yaml
-      runtime_bindings.yaml
-      governance_bindings.yaml
-      platform_capabilities.yaml
-    governance/
-      ownership.yaml
-      freshness_sla.yaml
-      dq_rules.yaml
-      lineage.yaml
-      evidence_pack.yaml
-      classification.yaml
-    acceptance/
-      dashboard_acceptance.yaml
-      dashboard_fidelity_contract.yaml
-      populated_state_proof.yaml
-      promotion_contract.yaml
-    validation/
-      checks.yaml
-      *.sh
-      *.py
-    schemas/
-      *.yaml
-    legacy/
-      ...
-```
+Today, the safest and most honest OpenCare workflow is:
 
-Rules:
+1. define the use case through a golden bundle
+2. review the platform capability bindings honestly
+3. map the bundle into OpenCare implementation targets
+4. build it as a native shell in the repo
+5. validate the shell against the bundle
 
-- the ZIP must contain exactly one root folder
-- `legacy/` is reference only and may never override the canonical contract directories
-- no path traversal, secrets, `.git`, `node_modules`, or build output folders
+The bundle should therefore be treated as:
 
-## Package identity
+- a **canonical source contract**
+- a **repeatable implementation pattern**
+- a **validation target**
 
-`package.yaml` must declare:
+It should not assume that OpenCare already auto-materializes every uploaded ZIP into live routes, dbt assets, dashboards, and workflows.
 
-- `api_version`
-- `kind`
-- `package_id`
-- `metadata.slug`
-- `metadata.name`
-- `metadata.version`
-- `compatibility`
-- `entrypoints`
-- `features`
+If a capability is not yet implemented platform-wide, the bundle must say so explicitly.
 
-The package identity must match the manifest identity and route identity.
+## Core principles
 
-## Dashboard contract
+The golden bundle must follow these principles.
 
-Dashboards are canonical implementation units.
+### 1. Platform-first
 
-If the bundle declares six dashboards, implementation must render those six dashboards. It may not:
+The bundle describes a use case that runs on top of OpenCare.
 
-- collapse them into a generic page
-- merge them into other screens
-- replace them with “similar” sections
-- omit required components
+It must reuse the platform where possible rather than inventing a parallel execution model.
 
-Required dashboard contract files:
+### 2. Dashboards are canonical
 
-- `screens/components.yaml`
-- `screens/business_alignment_matrix.yaml`
-- `screens/dashboard_implementation_matrix.yaml`
-- `screens/story_flow.yaml`
-- `acceptance/dashboard_acceptance.yaml`
-- `acceptance/dashboard_fidelity_contract.yaml`
+If a dashboard exists in the bundle, it is not a suggestion.
 
-Required dashboard rules:
+It is a canonical implementation unit.
 
-- no screen component may exist without a business alignment row
-- every dashboard route must appear in the implementation matrix
-- every dashboard in the implementation matrix must appear in the fidelity contract
-- if visual assets are supplied with structured YAML, the YAML and declared dashboard composition are source of truth
+The implementation must not:
 
-## Runtime contract
+- collapse it into a generic card stack
+- substitute it with another shell shape
+- flatten the story into looser sections
 
-Predictive or analytical runtimes must be explicit.
+### 3. Business alignment is structural
 
-Required runtime files:
+Every dashboard component must map back to:
 
-- `runtime/runtimes.yaml`
-- `runtime/images.yaml`
-- `runtime/schedules.yaml`
-- `runtime/evidence.yaml`
+- a business objective
+- a KPI
+- a decision
+- a governed data artifact
 
-Each runtime must declare:
+No component may exist as decoration only.
 
-- runtime id
-- purpose
-- image
-- entrypoint
-- owner
-- input tables
-- output tables
-- schedule
-- evidence source
+### 4. Locale and direction are structural
 
-## Platform capability binding contract
+Every relevant artefact must declare:
 
-Every bundle must contain:
+- locale
+- direction
+- bilingual requirements where applicable
 
-- `bindings/platform_capabilities.yaml`
+Bilingual readiness must be built into the contract, not left for later.
 
-Each capability must be labeled as:
+### 5. Human authorization is contractual
+
+Every external action must require explicit human authorization.
+
+This includes:
+
+- approve
+- request revision
+- escalate
+- create ticket
+- email owner
+- any external workflow side effect
+
+### 6. Capability truthfulness is mandatory
+
+Every capability binding must be classified conservatively as one of:
 
 - `reuse_existing`
 - `partially_supported`
 - `requires_extension`
 
-Each capability entry should cite:
+The bundle must not imply support the platform does not actually have.
 
-- platform binding name
-- current platform evidence
-- known limitation
+### 7. Single layout authority
 
-The bundle must never bind to a phantom interface.
+Canonical metadata, implementation matrices, and validation must all reference the same layout authority.
 
-## Validation contract
+The bundle must not keep multiple competing layout models active in canonical documents.
 
-Minimum validation areas:
+### 8. Single component vocabulary
 
-1. package structure
-2. manifest consistency
-3. business and data contract completeness
-4. dbt asset readiness
-5. backend asset readiness
-6. portal asset readiness
-7. runtime declaration readiness
-8. governance readiness
-9. dashboard fidelity readiness
-10. locale/direction readiness
-11. human-authorization readiness
+Canonical routes, bindings, acceptance, and validation must all use the same component vocabulary.
 
-## Golden compliance checklist
+Do not allow a dashboard to be defined by one component language and validated by another.
 
-A bundle is golden-template compliant when:
+## What the golden bundle is
 
-- it follows the canonical structure
-- it includes `manifest/principles.yaml`
-- it includes `runtime/images.yaml`
-- it includes `screens/dashboard_implementation_matrix.yaml`
-- it includes `screens/story_flow.yaml`
-- it includes `bindings/platform_capabilities.yaml`
-- it includes `acceptance/dashboard_fidelity_contract.yaml`
-- it labels platform capabilities truthfully
-- it preserves dashboard fidelity
-- it keeps external actions human-authorized
+The golden bundle is:
 
-## Reuse rule
+- a business contract
+- a dashboard contract
+- a data contract
+- a runtime contract
+- a decision and action contract
+- a governance contract
+- a capability binding contract
+- an acceptance contract
 
-Future use cases should reuse:
+It is **not** just:
+
+- a dashboard mockup
+- a YAML route list
+- a dbt package
+- a ZIP upload artifact with vague expectations
+
+## Canonical bundle structure
+
+The canonical structure is:
+
+```text
+opencare-usecase-<slug>/
+  package.yaml
+  README.md
+  manifest/
+    usecase.yaml
+    principles.yaml
+    personas.yaml
+    navigation.yaml
+  business/
+    objectives.yaml
+    kpis.yaml
+    decisions.yaml
+    workflows.yaml
+  data/
+    source_systems.yaml
+    pipeline.yaml
+    entities.yaml
+    joins.yaml
+    output_tables.yaml
+  dbt/
+    model_index.yaml
+    tests.yaml
+    models/
+      staging/
+      analytics/
+      output/
+      decision/
+  runtime/
+    runtimes.yaml
+    images.yaml
+    schedules.yaml
+    evidence.yaml
+  decisions/
+    action_buttons.yaml
+    decision_states.yaml
+    escalations.yaml
+    notifications.yaml
+    tickets.yaml
+    audit.yaml
+  screens/
+    information_architecture.yaml
+    screen_catalog.yaml
+    components.yaml
+    component_anatomy.yaml
+    layout_zones.yaml
+    visual_grammar.yaml
+    dashboard_implementation_matrix.yaml
+    story_flow.yaml
+    business_alignment_matrix.yaml
+    bilingual_contract.yaml
+    visual_traceability.yaml
+  bindings/
+    routes.yaml
+    data_bindings.yaml
+    runtime_bindings.yaml
+    governance_bindings.yaml
+    platform_capabilities.yaml
+  governance/
+    assets.yaml
+    columns.yaml
+    classification.yaml
+    ownership.yaml
+    freshness.yaml
+    quality.yaml
+    lineage.yaml
+  acceptance/
+    dashboard_acceptance.yaml
+    dashboard_fidelity_contract.yaml
+    rendered_dashboard_conformance.yaml
+    populated_state_proof.yaml
+    promotion_contract.yaml
+  validation/
+    checks.yaml
+    validate_golden_bundle.py
+  schemas/
+    *.schema.yaml
+  assets/
+    mockups/
+    storyboards/
+    i18n/
+  legacy/
+    ...
+```
+
+Rules:
+
+- exactly one canonical root folder
+- no dead references in canonical files
+- `legacy/` may exist, but must remain reference-only
+- no `.git`, `node_modules`, `__pycache__`, build output, or secrets
+
+## Mandatory dashboard-rigid contracts
+
+The following contracts are mandatory for a dashboard-rigid bundle:
+
+- `screens/layout_zones.yaml`
+- `screens/visual_grammar.yaml`
+- `screens/component_anatomy.yaml`
+- `screens/dashboard_implementation_matrix.yaml`
+- `screens/story_flow.yaml`
+- `screens/business_alignment_matrix.yaml`
+- `screens/bilingual_contract.yaml`
+- `acceptance/dashboard_fidelity_contract.yaml`
+- `acceptance/rendered_dashboard_conformance.yaml`
+
+These files are what prevent a future implementation from degrading into a generic UI approximation.
+
+## What each dashboard-rigid file must do
+
+### `screens/layout_zones.yaml`
+
+Defines:
+
+- dashboard IDs
+- routes
+- exact zone order
+- zone purpose
+- width intent
+- required components per zone
+- flattening and substitution rules
+
+### `screens/visual_grammar.yaml`
+
+Defines:
+
+- density
+- status badge rules
+- threshold rail requirements
+- connector line requirements
+- CTA prominence
+- bilingual label placement
+- visual non-negotiables per dashboard
+
+### `screens/component_anatomy.yaml`
+
+Defines required anatomy for critical components such as:
+
+- KPI threshold card
+- active case banner
+- decision table
+- runtime card
+- action audit timeline
+- governance evidence panel
+
+### `screens/dashboard_implementation_matrix.yaml`
+
+Defines:
+
+- dashboard identity
+- business purpose
+- route
+- required components
+- governance evidence
+- runtime dependencies
+- action expectations
+- forbidden simplifications
+
+### `screens/story_flow.yaml`
+
+Defines:
+
+- why each dashboard exists
+- what question it answers
+- what the user must learn before moving to the next dashboard
+
+### `screens/business_alignment_matrix.yaml`
+
+Defines:
+
+- objective
+- KPI
+- dashboard
+- component
+- source table
+- downstream decision
+- governance evidence
+
+This is the strongest protection against dashboard/business drift.
+
+### `screens/bilingual_contract.yaml`
+
+Defines:
+
+- required locales
+- direction
+- which visible dashboard elements must be bilingual
+- which can rely on i18n keys only
+
+### `acceptance/dashboard_fidelity_contract.yaml`
+
+Defines:
+
+- required dashboard count
+- required dashboard IDs
+- dashboard fidelity required
+- screen substitution forbidden
+- forbidden simplifications
+- non-negotiable visual elements
+
+### `acceptance/rendered_dashboard_conformance.yaml`
+
+Defines the rendered proof requirements per dashboard:
+
+- route screenshot
+- route component inventory
+- zone component inventory
+- data binding inventory
+- mockup linkage where applicable
+
+## Required business contract
+
+The bundle must define:
+
+- business objectives
+- users and personas
+- KPI list
+- decisions supported
+- operational workflows
+- success criteria
+
+The dashboard story must emerge from the business contract, not the other way around.
+
+## Required data contract
+
+The bundle must define:
+
+- source systems
+- source entities
+- raw landing path
+- staging expectations
+- analytics marts
+- output tables
+- decision tables
+- joins and grain
+- ownership and stewardship
+
+No dashboard may bind to undeclared or phantom data.
+
+## Required runtime contract
+
+If the bundle uses prediction, scoring, anomaly detection, or runtime execution, it must explicitly declare:
+
+- runtime IDs
+- runtime purpose
+- input tables
+- output tables
+- schedules
+- execution evidence
+- runtime images
+
+`runtime/images.yaml` is mandatory when predictive/runtime behavior is declared.
+
+It must state:
+
+- runtime ID
+- image
+- owner
+- entrypoint
+- inputs
+- outputs
+- evidence source
+
+## Required decision and action contract
+
+If the bundle supports human decisions, it must declare:
+
+- action buttons
+- decision states
+- escalation path
+- notification behavior
+- ticket behavior
+- audit events
+
+For each action, define:
+
+- label
+- business purpose
+- preconditions
+- human authorization rule
+- audit event
+- notification side effect
+- ticket side effect
+
+## Required platform capability binding
+
+`bindings/platform_capabilities.yaml` is mandatory.
+
+For each capability, it must define:
+
+- status
+- platform binding
+- evidence source
+- confidence
+- limitations
+- whether review is still required
+
+Typical capabilities include:
+
+- decision_workflow
+- email_notification
+- runtime_evidence
+- lineage
+- record_spec
+- governance_registry
+- role_based_access
+- human_authorised_external_actions
+
+## Required governance contract
+
+The bundle must preserve:
+
+- source to raw to staging to analytics to output to decision to dashboard lineage
+- column descriptions
+- classification
+- ownership and stewardship
+- freshness and quality status
+- evidence-pack traceability
+
+## Required acceptance and validation
+
+The bundle is not complete if the validator only checks file presence.
+
+Validation must enforce:
+
+- required files exist
+- schema refs resolve
+- route refs resolve
+- dashboard IDs are consistent across contracts
+- component vocabulary is consistent across contracts
+- layout authority is singular
+- no dead canonical refs
+- no undeclared data dependencies
+- forbidden substitutions are declared
+- required dashboards are present
+
+Rendered conformance should be required where the bundle claims dashboard fidelity.
+
+## OpenCare implementation truth
+
+The golden bundle is currently the **contract for native shell implementation**.
+
+That means the standard is aligned to this workflow:
+
+1. author the golden bundle
+2. review capability truthfulness
+3. create an implementation mapping
+4. implement the shell inside OpenCare
+5. validate the shell against the bundle
+
+The bundle should not claim that OpenCare already supports full automatic generation of:
+
+- Next.js routes
+- FastAPI routes
+- dbt models
+- runtime jobs
+- dashboard materialization
+
+unless those features are truly implemented.
+
+## Repeated pattern for future use cases
+
+Every future use case should follow the same pattern:
+
+1. define the business contract
+2. define the dashboard suite and story flow
+3. define the governed data path
+4. define runtime and action contracts
+5. bind capabilities honestly
+6. validate the bundle
+7. map the bundle into OpenCare
+8. implement the native shell
+9. validate the implementation against the bundle
+
+What changes from one use case to another:
+
+- business domain
+- KPIs
+- source systems
+- runtime logic
+- decisions
+- dashboard story
+
+What should stay the same:
 
 - the bundle structure
-- the principles
-- the fidelity rules
-- the runtime declaration pattern
-- the capability truth model
+- the dashboard-rigid rules
+- the capability truthfulness rule
+- the governance discipline
+- the acceptance pattern
 
-Future use cases should customize:
+## Golden checklist
 
-- the business domain
-- the KPIs
-- the sources
-- the runtimes
-- the dashboard content
-- the governance specifics
+A bundle is compliant when:
+
+- the canonical structure is present
+- the dashboard-rigid contracts exist
+- the dashboard story is explicit
+- the layout authority is singular
+- the component vocabulary is singular
+- all canonical refs resolve
+- runtime images are declared when needed
+- external actions are human-authorized
+- bilingual structure is explicit where required
+- capability bindings are honest
+- validation covers the canonical rules
+
+## Recommended next implementation artifacts
+
+The bundle standard should always be paired with:
+
+- an implementation mapping
+- reusable contract templates
+- validation utilities
+
+Those are the assets that make the standard repeatable rather than one-off.

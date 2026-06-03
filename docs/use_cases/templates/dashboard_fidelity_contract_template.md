@@ -1,51 +1,38 @@
 # Dashboard Fidelity Contract Template
 
-Use this file when a bundle declares dashboards that must be implemented with full fidelity to the source contract.
+Use this template to define what makes a dashboard implementation faithful to the bundle.
 
-## Required rule
+## Bundle-wide rules
 
-If a dashboard is declared in the bundle, implementation must prove that:
+- Required dashboard count:
+- Required dashboard IDs:
+- Dashboard fidelity required:
+- Screen substitution forbidden:
+- Mockup traceability required:
+- Rendered conformance proof required:
 
-- the dashboard exists as a visible surface
-- the required components are present
-- the required data bindings are present
-- the required actions are present
-- the required governance and runtime evidence surfaces are present where declared
-- the dashboard has not been collapsed into another screen or generic shell section
+## For each dashboard
 
-## Template
+- Dashboard ID:
+- Route:
+- Required zones:
+- Required components:
+- Required visual non-negotiables:
+- Required governance evidence:
+- Required runtime evidence:
+- Required actions:
 
-```yaml
-dashboard_fidelity_contract:
-  required_dashboard_count: 6
-  required_dashboard_ids:
-    - "01_strategic_objective_monitoring"
-    - "02_model_intelligence_risk_overview"
-    - "03_decision_command_centre"
-    - "04_outcome_recovery_learning_feedback"
-    - "05_runtime_evidence_execution_history"
-    - "06_decision_queue_action_audit"
+### Forbidden simplifications
 
-  fidelity_rules:
-    dashboard_fidelity_required: true
-    screen_substitution_forbidden: true
-    generic_shell_substitution_forbidden: true
-    silent_dashboard_merging_forbidden: true
+- Forbidden layout collapses:
+- Forbidden component substitutions:
+- Forbidden omission of bilingual elements:
+- Forbidden omission of threshold rails, connector lines, or alert treatments where declared:
+- Forbidden downgrade of human-authorised actions into unguarded actions:
 
-  evidence_requirements:
-    - dashboard_route
-    - rendered_screen_capture
-    - component_inventory
-    - binding_inventory
-    - action_inventory
-    - governance_inventory
-    - runtime_evidence_inventory
-```
+### Render proof
 
-## Validation expectation
-
-Every dashboard listed here must also appear in:
-
-- `screens/dashboard_implementation_matrix.yaml`
-- `screens/story_flow.yaml`
-- `acceptance/dashboard_acceptance.yaml`
+- Required screenshot:
+- Required rendered component inventory:
+- Required mockup linkage:
+- Required evidence reviewer:

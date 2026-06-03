@@ -1,326 +1,252 @@
 # Use-Case Template Playbook
 
-This playbook turns the current TALEMIA implementation into the recommended reference pattern for future OpenCare use cases.
+This playbook explains the repeatable OpenCare pattern for adding a new use case.
 
-For the importable package standard that future cloud-generated ZIPs should follow, see:
+For the canonical bundle standard, see:
 
-- [golden_use_case_package_template.md](C:/R_Home/opencare-platform/docs/use_cases/golden_use_case_package_template.md)
+- [golden_use_case_package_template.md](/C:/R_Home/opencare-platform/docs/use_cases/golden_use_case_package_template.md)
 
-It is intended to answer one practical question:
+The practical question this playbook answers is:
 
-"If we want to add a new use case next week, what do we create, where does it live, and how do we prove it works?"
+"If we bring another use case next week, what do we produce first, what do we implement in the repo, and how do we prove the result matches the contract?"
 
 ## Bottom line
 
-The best current reference pattern is:
+The repeated pattern is now:
 
-- `config/use_cases.yaml` for manifest metadata
-- `docs/use_cases/<use_case>/...` for the contract and dashboard definition
-- `dbt/opencare/models/<use_case>/...` for staging, marts, and dictionary models
-- `apps/backend/app/routes/<use_case>.py` and `apps/backend/app/services/<use_case>_service.py` for APIs
-- `apps/portal/app/use-cases/<slug>/...` and `apps/portal/components/<use_case>/...` for the workspace UI
-- `scripts/use_cases/apply_use_case.sh <use_case>` for provisioning
-- `scripts/use_cases/validate_use_case.sh <use_case>` for acceptance validation
-- `scripts/use_cases/remove_use_case.sh <use_case>` for operational exclusion
+1. define the use case as a **golden bundle**
+2. review its platform capability bindings honestly
+3. create an implementation mapping
+4. implement it as a native shell on OpenCare
+5. validate the implementation against the bundle
 
-TALEMIA is the best current example because it now proves:
+This is better than starting directly in code because it keeps:
 
-- add
-- provision
-- validate
-- include/exclude
-- restore
+- business meaning
+- dashboard fidelity
+- governance
+- runtime intent
+- human authorization
 
-## Required implementation layers
+explicit before implementation starts.
 
-Every new use case should be designed as one module that spans all platform layers.
+## Two artifacts always exist
 
-Required layers:
+Every future use case should have two connected artifacts.
 
-- business contract
-- manifest registration
-- source or synthetic demo data path
-- dbt staging models
-- dbt marts
-- dbt dictionary models
-- backend APIs
-- portal workspace
-- governance visibility
-- provisioning workflow
-- validation workflow
-- operational remove or exclude workflow
+### 1. The golden bundle
 
-If one of these layers is skipped, the use case is usually only partially real.
+This is the source contract.
 
-## Canonical folder pattern
+It declares:
 
-Use this layout as the default target:
+- business objectives
+- KPI suite
+- dashboard story
+- data path
+- runtime contracts
+- decision and action contracts
+- governance
+- capability bindings
+- fidelity and validation rules
+
+### 2. The native OpenCare implementation
+
+This is the working shell in the repository.
+
+It reuses platform layers such as:
+
+- `config/use_cases.yaml`
+- `dbt/`
+- `apps/backend/`
+- `apps/portal/`
+- governance surfaces
+- shared decision and notification paths where supported
+
+## The implementation sequence
+
+Use this sequence every time.
+
+### 1. Define the bundle
+
+Create or receive a bundle with:
+
+- manifest
+- business
+- data
+- dbt
+- runtime
+- decisions
+- screens
+- bindings
+- governance
+- acceptance
+- validation
+
+Do not start from screenshots alone.
+
+### 2. Check capability truthfulness
+
+Before implementation, classify every platform dependency as:
+
+- `reuse_existing`
+- `partially_supported`
+- `requires_extension`
+
+This prevents a use case from binding to phantom platform capabilities.
+
+### 3. Create the implementation mapping
+
+Map the bundle into repo targets.
+
+Typical mapping targets:
+
+- `config/use_cases.yaml`
+- `dbt/opencare/models/<use_case>/...`
+- `apps/backend/app/routes/<use_case>.py`
+- `apps/backend/app/services/<use_case>_service.py`
+- `apps/portal/app/...`
+- `apps/portal/components/...`
+- governance registry or trust surfaces
+
+### 4. Implement as a native shell
+
+Build the use case on top of the platform.
+
+Do not make it a separate product.
+
+### 5. Validate against the bundle
+
+Validate not only:
+
+- route existence
+- API existence
+
+but also:
+
+- dashboard fidelity
+- story order
+- required components
+- governance evidence
+- runtime evidence
+- action authorization
+
+## What “good” looks like
+
+A good new use case has:
+
+- a strong bundle
+- a clear implementation mapping
+- a native shell implementation
+- honest capability boundaries
+- repeatable validation
+
+## What to avoid
+
+Avoid these failure patterns:
+
+- implementing from mockups without a dashboard contract
+- treating dashboards as decorative rather than canonical
+- inventing unsupported platform behavior
+- mixing multiple layout authorities
+- mixing multiple component vocabularies
+- making human authorization a UI convention instead of a contract
+
+## Repo implementation pattern
+
+The most common repo targets are still:
 
 ```text
 config/use_cases.yaml
-docs/use_cases/<use_case>/
-docs/use_cases/<use_case>/use_case_contract.md
-docs/use_cases/<use_case>/dashboard_suite_contract.md
-docs/use_cases/<use_case>/dashboards/<dashboard>_contract.md
-dbt/opencare/macros/<use_case>_raw_relation.sql            # if a custom raw resolver is needed
-dbt/opencare/models/<use_case>/schema.yml
-dbt/opencare/models/<use_case>/staging/*.sql
-dbt/opencare/models/<use_case>/marts/*.sql
-dbt/opencare/models/<use_case>/dictionary/*.sql
+docs/use_cases/<use_case>/...
+dbt/opencare/models/<use_case>/...
 apps/backend/app/routes/<use_case>.py
 apps/backend/app/services/<use_case>_service.py
-apps/portal/app/use-cases/<slug>/page.tsx
-apps/portal/app/use-cases/<slug>/layout.tsx
-apps/portal/app/use-cases/<slug>/[tab]/page.tsx
-apps/portal/components/<use_case>/<Workspace>.tsx
-scripts/<use_case>/*                                       # raw loaders, generators, helpers
+apps/portal/app/.../<use_case>/...
+apps/portal/components/<use_case>/...
 ```
 
-## Manifest pattern
+But now the driving artifact is the bundle, not a loose dashboard brief.
 
-Start by adding a manifest entry to `config/use_cases.yaml`.
+## Required implementation layers
 
-Use this structure as the reference model:
+Every use case should still span all of these layers:
 
-```yaml
-use_cases:
-  example_use_case:
-    enabled: true
-    name: "Example Use Case"
-    slug: example-use-case
-    domain: operational-intelligence
-    description: >
-      Short business-readable explanation of the use case.
-    owner_team: "Operations"
-    portal:
-      default_route: /use-cases/example-use-case
-      tabs:
-        - key: overview
-          label: Overview
-          route: /use-cases/example-use-case
-        - key: governance
-          label: Governance
-          route: /use-cases/example-use-case/governance
-    backend:
-      api_prefix: /api/v1/example
-      endpoints:
-        - /summary
-        - /detail
-        - /governance/reconciliation
-    data:
-      raw_schema: raw_demo
-      primary_marts:
-        - analytics.fct_example_summary
-        - analytics.fct_example_detail
-      dictionary_tables:
-        - dictionary.dict_example_metrics
-    workflows:
-      apply_script: scripts/use_cases/apply_use_case.sh example_use_case
-      validate_script: scripts/use_cases/validate_use_case.sh example_use_case
-      remove_script: scripts/use_cases/remove_use_case.sh example_use_case
-```
+- business contract
+- manifest registration
+- source or synthetic data path
+- dbt models
+- backend APIs
+- portal shell
+- governance visibility
+- decision and action behavior where relevant
+- validation
 
-Keep the manifest business-readable.
-It should describe the shape of the use case, not hide logic in prose.
+If one of these is missing, the use case is usually only partially real.
 
-## Contract documents
+## Repeated dashboard-rigid pattern
 
-Each use case should have three contract levels:
+For dashboard-rigid use cases, the implementation must specifically honor:
 
-1. `use_case_contract.md`
-- business outcome
-- source systems
-- data entities
-- expected users
-- portal routes
-- backend endpoints
-- success criteria
+- `layout_zones.yaml`
+- `visual_grammar.yaml`
+- `component_anatomy.yaml`
+- `dashboard_implementation_matrix.yaml`
+- `story_flow.yaml`
+- `business_alignment_matrix.yaml`
+- `dashboard_fidelity_contract.yaml`
+- `rendered_dashboard_conformance.yaml`
 
-2. `dashboard_suite_contract.md`
-- dashboard list
-- dataset dependencies
-- KPI groups
-- cross-dashboard consistency rules
+These are not optional extras.
 
-3. `dashboards/<dashboard>_contract.md`
-- chart list
-- KPI definitions
-- filter behavior
-- intended audience
-- empty-state behavior
+They are what stop the implementation from flattening into a generic page.
 
-If the dashboard contracts are weak, the use case usually becomes visually inconsistent or semantically vague.
+## Suggested workflow for future use cases
 
-## Data model pattern
+### Authoring phase
 
-For future use cases, follow the TALEMIA split:
+1. define business outcome
+2. define KPI suite
+3. define dashboard suite
+4. define data and runtime artifacts
+5. define decisions and governance
+6. define capability bindings
 
-- `staging/`
-  - raw cleanup
-  - typing
-  - normalization
-  - dimension joins if lightweight
+### Mapping phase
 
-- `marts/`
-  - use-case-grain facts
-  - executive aggregates
-  - reconciliation outputs
-  - drilldown outputs
+1. register the use case
+2. define repo targets
+3. identify reused capabilities
+4. identify required extensions
 
-- `dictionary/`
-  - KPI definitions
-  - glossary terms
-  - business-readable metric semantics
+### Build phase
 
-Recommended conventions:
+1. add seeded or connected data path
+2. add dbt assets
+3. add backend routes and service
+4. add portal shell
+5. wire governance and evidence
 
-- keep staging models raw-shaped but typed
-- keep marts audience-shaped
-- make one table the primary detail mart
-- make one table the primary executive aggregate mart
-- add one governance or reconciliation mart if the use case claims controlled metrics
+### Validation phase
 
-## Backend API pattern
+1. data exists
+2. routes resolve
+3. dashboards render
+4. story order holds
+5. required components exist
+6. human authorization and audit expectations are visible
 
-Each use case service should expose a small, explicit endpoint family.
+## Final takeaway
 
-Recommended pattern:
+The repeatable pattern is no longer:
 
-- summary endpoint
-- one or more dimensional aggregate endpoints
-- detail endpoint
-- update or activity endpoint if relevant
-- KPI or dictionary endpoint
-- governance reconciliation endpoint
+- write some routes
+- make a dashboard
+- patch until it looks acceptable
 
-Recommended backend rules:
+The repeatable pattern is:
 
-- return `meta.empty` truthfully
-- return `data: []` for empty list endpoints
-- return a business-readable `message` when data is absent
-- include lineage and limitations in `meta` when useful
-
-Do not hide data absence behind fake zeroes unless that is contractually correct.
-
-## Portal workspace pattern
-
-A future use case should ship with:
-
-- a root workspace page
-- tabbed navigation
-- one layout guard using `UseCaseEnabledLayout`
-- a dedicated workspace component under `apps/portal/components/<use_case>/`
-
-Recommended portal conventions:
-
-- one use-case slug
-- one workspace component
-- one tab registry export
-- one route guard layout
-
-That keeps the UI shape consistent even when the actual business visuals differ.
-
-## Provisioning pattern
-
-Provisioning should stay use-case-specific.
-
-The default sequence is:
-
-1. prepare source data
-2. load raw data
-3. refresh dbt project config in-cluster
-4. run dbt for the use case
-5. sync dependent analytics surfaces if needed
-
-Recommended `apply_use_case.sh` behavior:
-
-- fail if the manifest entry does not exist
-- fail if the use case is disabled in the manifest
-- call the use-case-specific raw loader if one exists
-- use `DBT_SELECT=tag:<tag>` when the use case has dedicated dbt models
-- avoid relying on a global full-project dbt run when a targeted run is safer
-
-## Validation pattern
-
-Validation should prove five things:
-
-1. raw data exists
-2. marts exist
-3. dictionary tables exist if promised
-4. backend endpoints return populated data
-5. portal route resolves
-
-Recommended validation checks:
-
-- `select count(*)` > 0 for primary marts
-- HTTP checks for all primary APIs
-- one portal route check for the workspace root
-- one governance or reconciliation check when governance is part of the contract
-
-The validation script should fail on missing core marts, not merely log warnings.
-
-## Remove or exclude pattern
-
-Use `remove_use_case.sh` for operational removal.
-
-That means:
-
-- disable through the same override path as the admin UI
-- hide from Home, Use Cases, and public Governance
-- block workspace entry routes
-
-This is not the same as deleting the code.
-
-There are two separate concepts:
-
-1. operational remove
-- exclude from the running platform
-
-2. repository delete
-- remove files, registrations, models, docs, and routes
-
-Future prompts should say explicitly which one is intended.
-
-## Golden checklist for a new use case
-
-Use this checklist before calling a new use case complete.
-
-- manifest entry added to `config/use_cases.yaml`
-- contract docs added under `docs/use_cases/<use_case>/`
-- raw data path defined
-- staging models created
-- marts created
-- dictionary models created if promised
-- backend route created
-- backend service created
-- portal workspace created
-- portal route guard added
-- use-case registry entry added
-- governance registration added if needed
-- provisioning path wired into `apply_use_case.sh`
-- validation path wired into `validate_use_case.sh`
-- remove or exclude path supported
-- VM deployment path tested
-- data values visible in the workspace
-- exclude and restore tested
-
-## Suggested future enhancement
-
-The next step after this playbook is a real scaffold flow.
-
-Target outcome:
-
-```bash
-bash scripts/use_cases/scaffold_use_case.sh example_use_case
-```
-
-That scaffold should eventually create:
-
-- manifest skeleton
-- docs skeleton
-- dbt folder skeleton
-- backend route and service stubs
-- portal route and workspace stubs
-- apply and validate placeholders
-
-Until that exists, TALEMIA should be treated as the reference implementation pattern.
+- define the golden bundle
+- map it to OpenCare
+- implement the shell
+- validate the shell against the bundle

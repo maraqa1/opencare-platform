@@ -1,102 +1,136 @@
 # Dashboard Contract Template
 
-## Dashboard identity
+Use this template for each canonical dashboard in a use case.
+
+A dashboard contract is not complete unless it defines:
+
+- business purpose
+- route
+- zone structure
+- component set
+- visual grammar
+- data bindings
+- action rules
+- governance evidence
+- fidelity acceptance
+
+## 1. Dashboard identity
 
 - Dashboard name:
+- Dashboard ID:
 - Dashboard slug:
-- Dashboard id:
+- Visible title:
 - Route:
 - Audience:
-- Workspace tab:
-- Locale(s):
-- Direction(s):
+- Workspace position:
 
-## Business purpose
+## 2. Business purpose
 
 - What decision should this dashboard support?
 - What should a user understand within 30 seconds?
-- What exact story step does this dashboard represent?
+- What question must this dashboard answer before the user moves on?
 
-## Canonical implementation rule
+## 3. Canonical zones
 
-- Is this dashboard canonical and non-substitutable? `yes/no`
-- If yes, implementation may not merge or collapse it into another page.
+List zones in required order.
 
-## Required datasets
+For each zone define:
 
-- `analytics.<dataset_1>`
-- `analytics.<dataset_2>`
-- `output.<runtime_output>` when predictive/runtime evidence is required
+- Zone ID:
+- Zone purpose:
+- Width intent:
+- Nesting rules:
+- Required components:
+- Flattening forbidden:
+- Render assertion:
 
-## Required components
+## 4. Required components
 
-For each required component define:
+For each component define:
 
-- component id
-- component type
-- business meaning
-- data binding
-- action binding
-- governance evidence binding
+- Component ID:
+- Component type:
+- Business meaning:
+- Data binding:
+- Required anatomy:
+- Required labels:
+- Required bilingual behavior:
+- Allowed states:
+  - populated
+  - empty
+  - loading
+  - hidden
+  - blocked
 
-## Required charts
+## 5. Visual grammar
 
-For each chart define:
+Define:
 
-- title
-- KPI or dimension
-- viz type
+- density
+- status badge rules
+- threshold rail requirements
+- connector line requirements
+- CTA prominence
+- bilingual label placement
+- visual non-negotiables
+- style-flexible elements
+
+## 6. Data bindings
+
+- Primary datasets:
+- Required marts:
+- Runtime outputs:
+- Governance evidence sources:
+
+For each critical component define:
+
 - source dataset
-- expected filters
-- whether the chart is mandatory for acceptance
+- grain
+- aggregation logic
+- filters
+- sort order
 
-## KPI definitions
+## 7. Actions
 
-- KPI name:
-- SQL or model source:
-- business meaning:
-- empty-state meaning:
+List visible actions.
 
-## Filter contract
+For each action define:
 
-- default filters:
-- optional filters:
-- filter labels:
-- filter interaction rules:
+- label
+- purpose
+- preconditions
+- required evidence
+- authorization requirement
+- audit event
+- external side effect if any
 
-## Actions
+## 8. Governance and runtime evidence
 
-- required actions:
-- human authorization required:
-- audit event emitted:
-- notification side effect:
-- ticket side effect:
+- Required governance elements:
+- Required runtime evidence elements:
+- Required lineage entry points:
+- Freshness or quality badges:
 
-## Governance and runtime evidence
+## 9. Empty-state behavior
 
-- required lineage panel:
-- required record spec:
-- required freshness:
-- required runtime status:
-- required execution history:
+- What should show when no data exists?
+- What should show when only partial data exists?
+- What should not be faked?
 
-## Empty-state behavior
+## 10. Fidelity and anti-drift rules
 
-- what should render when the dataset is empty?
-- what should render when only partial data exists?
+- Required visual elements:
+- Forbidden simplifications:
+- Screen substitution forbidden:
+- Dashboard fidelity required:
+- Mockup traceability required:
 
-## Fidelity rules
+## 11. Validation
 
-- required dashboard count in this workspace:
-- dashboard substitution forbidden:
-- required companion dashboards:
-
-## Validation
-
-- datasets exist
-- dashboard route resolves
-- charts render
-- values reconcile to expected metrics
-- dashboard appears in `dashboard_implementation_matrix.yaml`
-- dashboard appears in `story_flow.yaml`
-- dashboard appears in `dashboard_fidelity_contract.yaml`
+- Route resolves
+- Required zones render
+- Required components render
+- Data bindings resolve
+- Governance evidence visible
+- Runtime evidence visible where required
+- Rendered conformance evidence captured
