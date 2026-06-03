@@ -27,7 +27,7 @@ screens:
   route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
   title_key: nav.level.operational
   persona: performance_office_reviewer
-  business_purpose: Present single-case model evidence only: risk score, forecast path, anomaly signal, and recommended intervention for one municipality case.
+  business_purpose: "Present single-case model evidence only: risk score, forecast path, anomaly signal, and recommended intervention for one municipality case."
   business_question_answered: What is driving risk in this case, what does the model predict next, and why is this recommendation being made?
   screen_ref: screens/screen_catalog.yaml#SCREEN-L3-CASE
   level: 3

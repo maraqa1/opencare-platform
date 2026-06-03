@@ -198,8 +198,8 @@ dashboards:
 - dashboard_id: 03_case_model_intelligence
   screen_id: SCREEN-L3-CASE
   canonical: true
-  business_purpose: Show one municipality risk case from forecast/anomaly evidence to recommendation. It may link to the case
-    decision tab, but it must not authorise actions.
+  business_purpose: Show one municipality risk case as model evidence only from forecast/anomaly evidence to recommendation.
+    It may link to the case decision tab, but it must not authorise actions.
   route: /jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/{case_id}/intelligence
   visible_title: Case workspace - model intelligence, recommendation, decision, and recovery
   layout_contract: screens/layout_zones.yaml#03_case_model_intelligence
