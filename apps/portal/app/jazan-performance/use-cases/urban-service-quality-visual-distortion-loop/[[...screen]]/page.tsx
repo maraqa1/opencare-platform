@@ -313,7 +313,7 @@ const fallbackShellData: ShellData = {
     base_route: baseRoute,
     default_kpi_slug: "visual-distortion-closure-quality",
     default_case_id: "JZN-DEC-1007",
-    supported_tabs: ["overview", "intelligence", "decisions", "recovery"],
+    supported_tabs: ["intelligence", "decisions", "recovery"],
   },
   purpose: {
     eyebrow: "Jazan Performance Management",
@@ -363,7 +363,7 @@ const fallbackShellData: ShellData = {
       risk_score: "84 / 100",
       breach_probability: "0.78",
       summary: "Fallback active case",
-      href: `${baseRoute}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1007/overview?demo=1`,
+      href: `${baseRoute}/case/JZN-DEC-1007/intelligence?demo=1`,
     },
   },
   kpi_workspaces: [],
@@ -459,15 +459,16 @@ function buildHref(path: string, demoMode: boolean) {
   return demoMode ? `${path}${path.includes("?") ? "&" : "?"}demo=1` : path;
 }
 
-function buildCaseHref(kpiSlug: string, caseId: string, tab: CaseTab, demoMode: boolean) {
-  return buildHref(`${baseRoute}/kpi/${kpiSlug}/case/${caseId}/${tab}`, demoMode);
+function buildCaseHref(caseId: string, tab: CaseTab, demoMode: boolean) {
+  return buildHref(`${baseRoute}/case/${caseId}/${tab}`, demoMode);
 }
 
 function resolveRoute(
   rawSegments: string[],
-  navigation: ShellData["navigation"],
+  data: ShellData,
   preferredDecisionId: string | undefined,
 ): RouteState | null {
+  const { navigation } = data;
   if (rawSegments.length === 0 || rawSegments[0] === "overview") {
     return { kind: "strategic" };
   }
@@ -507,6 +508,25 @@ function resolveRoute(
     return { kind: "audit" };
   }
 
+  if (first === "case") {
+    const caseId = rawSegments[1] ?? defaultCaseId;
+    const requestedTab = rawSegments[2] ?? "intelligence";
+    const normalizedTab = (requestedTab === "overview" ? "intelligence" : requestedTab) as CaseTab;
+    if (!navigation.supported_tabs.includes(normalizedTab)) {
+      return null;
+    }
+
+    const caseWorkspace =
+      data.case_workspaces.find((item) => item.case_id === caseId) ?? data.case_workspaces[0] ?? emptyCaseWorkspace;
+
+    return {
+      kind: "case",
+      kpiSlug: caseWorkspace.kpi_slug,
+      caseId,
+      tab: normalizedTab,
+    };
+  }
+
   if (first !== "kpi") {
     return null;
   }
@@ -516,16 +536,21 @@ function resolveRoute(
   }
 
   if (rawSegments.length >= 4 && rawSegments[2] === "case") {
-    const tab = (rawSegments[4] ?? "overview") as CaseTab;
-    if (!navigation.supported_tabs.includes(tab)) {
+    const caseId = rawSegments[3];
+    const requestedTab = rawSegments[4] ?? "intelligence";
+    const normalizedTab = (requestedTab === "overview" ? "intelligence" : requestedTab) as CaseTab;
+    if (!navigation.supported_tabs.includes(normalizedTab)) {
       return null;
     }
 
+    const caseWorkspace =
+      data.case_workspaces.find((item) => item.case_id === caseId) ?? data.case_workspaces[0] ?? emptyCaseWorkspace;
+
     return {
       kind: "case",
-      kpiSlug: rawSegments[1],
-      caseId: rawSegments[3],
-      tab,
+      kpiSlug: caseWorkspace.kpi_slug || rawSegments[1],
+      caseId,
+      tab: normalizedTab,
     };
   }
 
@@ -580,7 +605,7 @@ function dashboardRail(route: RouteState, data: ShellData, demoMode: boolean) {
       id: "03",
       label: "Case intelligence",
       subtitle: "Forecast and action",
-      href: buildCaseHref(currentKpiSlug, currentCaseId, "overview", demoMode),
+      href: buildCaseHref(currentCaseId, "intelligence", demoMode),
       active: route.kind === "case",
     },
     {
@@ -927,19 +952,21 @@ function renderDecisionButtons(buttons: ActionButton[], detailHref?: string) {
 
   return (
     <div className="jazan-action-strip">
-      {normalized.map((button) =>
-        button.id === "view-details" && detailHref ? (
+      {normalized.map((button) => {
+        const lookupId = button.id === "email-owner" ? "notify-owner" : button.id;
+
+        return button.id === "view-details" && detailHref ? (
           <Link key={button.id} href={detailHref} className={`jazan-action-button tone-${button.tone}`}>
             <span>{button.label}</span>
-            <small>{actionLookup(button.id)}</small>
+            <small>{actionLookup(lookupId)}</small>
           </Link>
         ) : (
           <button key={button.id} type="button" className={`jazan-action-button tone-${button.tone}`}>
             <span>{button.label}</span>
-            <small>{actionLookup(button.id)}</small>
+            <small>{actionLookup(lookupId)}</small>
           </button>
-        ),
-      )}
+        );
+      })}
     </div>
   );
 }
@@ -1062,7 +1089,7 @@ function KpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean }) {
                     row.status,
                     row.case_id ? (
                       <Link
-                        href={buildCaseHref(kpi.slug, row.case_id, "overview", demoMode)}
+                        href={buildCaseHref(row.case_id, "intelligence", demoMode)}
                         className="jazan-inline-link"
                       >
                         Open case
@@ -1153,7 +1180,7 @@ function CaseWorkspaceScreen(props: {
         {tabs.map((tab) => (
           <Link
             key={tab.id}
-            href={buildCaseHref(caseWorkspace.kpi_slug, caseWorkspace.case_id, tab.id, demoMode)}
+            href={buildCaseHref(caseWorkspace.case_id, tab.id, demoMode)}
             className={`jazan-case-tab${route.tab === tab.id ? " is-active" : ""}`}
           >
             {tab.label}
@@ -1737,7 +1764,7 @@ function BundleKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean;
                     renderStatusBadge(row.status, row.status === "In breach" ? "critical" : "warning"),
                     row.case_id ? (
                       <Link
-                        href={buildCaseHref(kpi.slug, row.case_id, "overview", demoMode)}
+                        href={buildCaseHref(row.case_id, "intelligence", demoMode)}
                         className="jazan-inline-link"
                       >
                         Open case
@@ -1792,28 +1819,54 @@ function BundleCaseWorkspaceScreen(props: {
   data: ShellData;
 }) {
   const { route, caseWorkspace, demoMode, data } = props;
-  const detailHref = buildCaseHref(caseWorkspace.kpi_slug, caseWorkspace.case_id, "overview", demoMode);
-  const tabs: Array<{ id: CaseTab; label: string }> = [
-    { id: "overview", label: "Overview" },
+  const decisionHref = buildCaseHref(caseWorkspace.case_id, "decisions", demoMode);
+  const tabs: Array<{ id: Extract<CaseTab, "intelligence" | "decisions" | "recovery">; label: string }> = [
     { id: "intelligence", label: "Model intelligence" },
     { id: "decisions", label: "Decision command" },
     { id: "recovery", label: "Outcome recovery" },
   ];
+  const isRecoveryLocked = !["closed", "recovered"].includes(caseWorkspace.status.toLowerCase());
+  const screenMeta =
+    route.tab === "decisions"
+      ? {
+          screenId: "03P",
+          title: "Primary case decision command tab",
+          subtitle: "Single-case authorisation surface with visible actions, rationale, and consequence preview",
+          routeText: "Route 03-primary - case decisions",
+          alertTag: "PRIMARY CASE DECISION TAB",
+        }
+      : route.tab === "recovery"
+        ? {
+            screenId: "04",
+            title: "Outcome recovery and learning feedback",
+            subtitle: isRecoveryLocked
+              ? "Recovery remains visible but locked until the authorised action closes the case"
+              : "Measured recovery evidence, forecast accuracy, and learning feedback for the closed case",
+            routeText: "Route 04 - case recovery",
+            alertTag: isRecoveryLocked ? "RECOVERY LOCKED UNTIL CLOSURE" : "OUTCOME RECOVERY EVIDENCE",
+          }
+        : {
+            screenId: "03",
+            title: "Case model intelligence and recommendation evidence",
+            subtitle: "Single-case model evidence only; authorisation moves to the decision tab",
+            routeText: "Route 03 - case intelligence",
+            alertTag: "ACTIVE CASE - MODEL EVIDENCE ONLY",
+          };
 
   return (
     <div className="jazan-screen-stack">
       {renderScreenHeader({
-        screenId: "03",
-        title: "Case workspace - model intelligence, recommendation, decision, and recovery",
-        subtitle: "One municipality case from forecast and anomaly evidence through approval and recovery path",
-        routeText: `Route 03 - ${route.tab}`,
+        screenId: screenMeta.screenId,
+        title: screenMeta.title,
+        subtitle: screenMeta.subtitle,
+        routeText: screenMeta.routeText,
         snapshot: screenSnapshot(data),
         demoMode,
       })}
 
       <section className="jazan-alert-band jazan-alert-band--case">
         <div className="jazan-alert-copy">
-          <span className="jazan-alert-tag">ACTIVE CASE - MODEL INTELLIGENCE</span>
+          <span className="jazan-alert-tag">{screenMeta.alertTag}</span>
           <h3>{`${caseWorkspace.municipality} - ${caseWorkspace.kpi_name}`}</h3>
           <p>{caseWorkspace.rationale}</p>
         </div>
@@ -1837,7 +1890,7 @@ function BundleCaseWorkspaceScreen(props: {
         {tabs.map((tab) => (
           <Link
             key={tab.id}
-            href={buildCaseHref(caseWorkspace.kpi_slug, caseWorkspace.case_id, tab.id, demoMode)}
+            href={buildCaseHref(caseWorkspace.case_id, tab.id, demoMode)}
             className={`jazan-case-tab${route.tab === tab.id ? " is-active" : ""}`}
           >
             {tab.label}
@@ -1845,116 +1898,180 @@ function BundleCaseWorkspaceScreen(props: {
         ))}
       </div>
 
-      <div className="jazan-two-column-grid">
-        <SectionCard eyebrow="Composite risk score" title="Feature contribution and model drivers">
-          <div className="jazan-risk-summary">
-            <div className="jazan-risk-orb">
-              <span>Composite risk score</span>
-              <strong>{caseWorkspace.risk_score}</strong>
-              <small>out of 100</small>
+      {route.tab === "intelligence" ? (
+        <>
+          <div className="jazan-two-column-grid">
+            <SectionCard eyebrow="Composite risk score" title="Feature contribution and model drivers">
+              <div className="jazan-risk-summary">
+                <div className="jazan-risk-orb">
+                  <span>Composite risk score</span>
+                  <strong>{caseWorkspace.risk_score}</strong>
+                  <small>out of 100</small>
+                </div>
+                <div className="jazan-driver-list">
+                  {caseWorkspace.intelligence.feature_contributions.map((item) => (
+                    <article key={item.label} className="jazan-driver-row">
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard eyebrow="Forecast path" title="Observed and forecast path against the target line">
+              {trendChart(caseWorkspace.intelligence.trend)}
+            </SectionCard>
+          </div>
+
+          <div className="jazan-two-column-grid jazan-two-column-grid--wide-right">
+            <SectionCard eyebrow="Anomaly signal" title="Anomaly score and operating context">
+              <div className="jazan-card-grid">
+                <article className="jazan-detail-card">
+                  <strong>Anomaly score</strong>
+                  <p>2.6</p>
+                  <small>Complaint-cluster severity against the 24-month baseline</small>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Current KPI vs target</strong>
+                  <p>{`${caseWorkspace.current_value} against ${caseWorkspace.target_value}`}</p>
+                  <small>{caseWorkspace.owner}</small>
+                </article>
+              </div>
+            </SectionCard>
+
+            <SectionCard eyebrow="Recommendation rankings" title="Ranked interventions from comparable municipalities">
+              <div className="jazan-recommendation-grid">
+                {caseWorkspace.intelligence.ranked_actions.map((action, index) => (
+                  <article key={action.title} className="jazan-recommendation-card">
+                    <span className="jazan-pill is-light">{`#${index + 1}`}</span>
+                    <strong>{action.title}</strong>
+                    <p>{action.impact}</p>
+                    <small>{action.note}</small>
+                  </article>
+                ))}
+              </div>
+            </SectionCard>
+          </div>
+
+          <SectionCard eyebrow="Decision evidence" title="Model evidence stays separate from authorisation">
+            <div className="jazan-two-column-grid jazan-two-column-grid--wide-right">
+              <div className="jazan-card-grid">
+                {caseWorkspace.decisions.evidence_pack.map((item) => (
+                  <article key={item.label} className="jazan-detail-card">
+                    <strong>{item.label}</strong>
+                    <p>{item.value}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="jazan-screen-stack compact">
+                <p className="jazan-seed-note">
+                  This intelligence surface is model evidence only. Human authorisation moves to the dedicated decisions tab.
+                </p>
+                <Link href={decisionHref} className="jazan-case-link-button">
+                  Open case decision tab
+                </Link>
+              </div>
             </div>
-            <div className="jazan-driver-list">
-              {caseWorkspace.intelligence.feature_contributions.map((item) => (
-                <article key={item.label} className="jazan-driver-row">
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+          </SectionCard>
+        </>
+      ) : null}
+
+      {route.tab === "decisions" ? (
+        <>
+          <SectionCard eyebrow="Evidence pack" title="Single-case authorisation rests on certified evidence">
+            <div className="jazan-card-grid">
+              {caseWorkspace.decisions.evidence_pack.map((item) => (
+                <article key={item.label} className="jazan-detail-card">
+                  <strong>{item.label}</strong>
+                  <p>{item.value}</p>
                 </article>
               ))}
             </div>
+          </SectionCard>
+
+          <div className="jazan-two-column-grid">
+            <SectionCard eyebrow="English rationale" title="Recommendation basis for approvers">
+              <p>{caseWorkspace.rationale}</p>
+            </SectionCard>
+            <SectionCard eyebrow="Arabic rationale" title="Bilingual narrative carried into approval">
+              <p className="jazan-bilingual-copy">{caseWorkspace.rationale}</p>
+              <small className="jazan-seed-note">Arabic customer copy remains subject to native-speaker review in the bundle.</small>
+            </SectionCard>
           </div>
-        </SectionCard>
 
-        <SectionCard eyebrow="Forecast path" title="Observed and forecast path against the target line">
-          {trendChart(caseWorkspace.intelligence.trend)}
-        </SectionCard>
-      </div>
+          <SectionCard eyebrow="Action row" title="All five actions remain visible with consequence preview">
+            <div className="jazan-screen-stack compact">
+              {renderDecisionButtons(caseWorkspace.decisions.action_buttons, decisionHref)}
+              <div className="jazan-card-grid">
+                {caseWorkspace.decisions.action_buttons.map((button) => (
+                  <article key={`${button.id}-preview`} className="jazan-detail-card">
+                    <strong>{button.label}</strong>
+                    <p>{button.note ?? "Human-authorised workflow action"}</p>
+                  </article>
+                ))}
+              </div>
+              <p className="jazan-action-notice">{caseWorkspace.decisions.human_authorisation_note}</p>
+            </div>
+          </SectionCard>
 
-      <div className="jazan-two-column-grid jazan-two-column-grid--wide-right">
-        <SectionCard eyebrow="Anomaly signal" title="Anomaly score and operating context">
-          <div className="jazan-card-grid">
-            <article className="jazan-detail-card">
-              <strong>Anomaly score</strong>
-              <p>2.6</p>
-              <small>Complaint-cluster severity against the 24-month baseline</small>
-            </article>
-            <article className="jazan-detail-card">
-              <strong>Current KPI vs target</strong>
-              <p>{`${caseWorkspace.current_value} against ${caseWorkspace.target_value}`}</p>
-              <small>{caseWorkspace.owner}</small>
-            </article>
-          </div>
-        </SectionCard>
+          <SectionCard eyebrow="Recovery state" title="Recovery remains visible but locked until closure">
+            <p className="jazan-seed-note">
+              The recovery tab stays available for audit continuity, but measured recovery evidence unlocks only after the authorised action closes the case.
+            </p>
+          </SectionCard>
+        </>
+      ) : null}
 
-        <SectionCard eyebrow="Recommendation rankings" title="Ranked interventions from comparable municipalities">
-          <div className="jazan-recommendation-grid">
-            {caseWorkspace.intelligence.ranked_actions.map((action, index) => (
-              <article key={action.title} className="jazan-recommendation-card">
-                <span className="jazan-pill is-light">{`#${index + 1}`}</span>
-                <strong>{action.title}</strong>
-                <p>{action.impact}</p>
-                <small>{action.note}</small>
+      {route.tab === "recovery" ? (
+        isRecoveryLocked ? (
+          <SectionCard eyebrow="Recovery locked" title="Visible now, evidence unlocks only after closure">
+            <p className="jazan-seed-note">
+              This case is still {caseWorkspace.status.toLowerCase()}. Recovery proof, pillar credits, and accuracy scoring will populate after closure or confirmed recovery.
+            </p>
+          </SectionCard>
+        ) : (
+          <SectionCard eyebrow="Recovery path" title="Measured recovery trajectory and learning feedback">
+            <div className="jazan-card-grid">
+              <article className="jazan-detail-card">
+                <strong>Baseline</strong>
+                <p>{caseWorkspace.recovery.baseline}</p>
               </article>
-            ))}
-          </div>
-        </SectionCard>
-      </div>
-
-      <SectionCard eyebrow="Decision evidence" title="Human-authorised action sits on certified evidence">
-        <div className="jazan-two-column-grid jazan-two-column-grid--wide-right">
-          <div className="jazan-card-grid">
-            {caseWorkspace.decisions.evidence_pack.map((item) => (
-              <article key={item.label} className="jazan-detail-card">
-                <strong>{item.label}</strong>
-                <p>{item.value}</p>
+              <article className="jazan-detail-card">
+                <strong>Target</strong>
+                <p>{caseWorkspace.recovery.target}</p>
               </article>
-            ))}
-          </div>
-          <div className="jazan-screen-stack compact">
-            {renderDecisionButtons(caseWorkspace.decisions.action_buttons, detailHref)}
-            <p className="jazan-action-notice">{caseWorkspace.decisions.human_authorisation_note}</p>
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard eyebrow="Recovery path" title="Expected recovery trajectory and learning feedback">
-        <div className="jazan-card-grid">
-          <article className="jazan-detail-card">
-            <strong>Baseline</strong>
-            <p>{caseWorkspace.recovery.baseline}</p>
-          </article>
-          <article className="jazan-detail-card">
-            <strong>Target</strong>
-            <p>{caseWorkspace.recovery.target}</p>
-          </article>
-          <article className="jazan-detail-card">
-            <strong>After 30 days</strong>
-            <p>{caseWorkspace.recovery.after_30_days}</p>
-          </article>
-          <article className="jazan-detail-card">
-            <strong>Forecast accuracy</strong>
-            <p>{caseWorkspace.recovery.forecast_accuracy}</p>
-          </article>
-          <article className="jazan-detail-card">
-            <strong>Intervention effectiveness</strong>
-            <p>{caseWorkspace.recovery.intervention_effectiveness}</p>
-          </article>
-          <article className="jazan-detail-card">
-            <strong>Learning pillars</strong>
-            <ul className="jazan-bullet-list">
-              {caseWorkspace.recovery.learning_pillars.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </article>
-        </div>
-      </SectionCard>
+              <article className="jazan-detail-card">
+                <strong>After 30 days</strong>
+                <p>{caseWorkspace.recovery.after_30_days}</p>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Forecast accuracy</strong>
+                <p>{caseWorkspace.recovery.forecast_accuracy}</p>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Intervention effectiveness</strong>
+                <p>{caseWorkspace.recovery.intervention_effectiveness}</p>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Learning pillars</strong>
+                <ul className="jazan-bullet-list">
+                  {caseWorkspace.recovery.learning_pillars.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </article>
+            </div>
+          </SectionCard>
+        )
+      ) : null}
     </div>
   );
 }
 
 function BundleDecisionCommandScreen(props: { data: ShellData; selected: CaseWorkspace; demoMode: boolean }) {
   const counters = buildDecisionCounters(props.data);
-  const detailHref = buildCaseHref(props.selected.kpi_slug, props.selected.case_id, "overview", props.demoMode);
+  const detailHref = buildCaseHref(props.selected.case_id, "decisions", props.demoMode);
 
   return (
     <div className="jazan-screen-stack">
@@ -2274,7 +2391,7 @@ export default async function UrbanServiceQualityLoopPage({ params, searchParams
     cacheMode: "no-store",
   });
 
-  const route = resolveRoute(screen, data.navigation, query.decision);
+  const route = resolveRoute(screen, data, query.decision);
   if (!route) {
     notFound();
   }

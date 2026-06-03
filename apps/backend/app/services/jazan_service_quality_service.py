@@ -7,7 +7,7 @@ from typing import Any
 BASE_ROUTE = "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop"
 DEFAULT_KPI_SLUG = "visual-distortion-closure-quality"
 DEFAULT_CASE_ID = "JZN-DEC-1007"
-SUPPORTED_TABS = ["overview", "intelligence", "decisions", "recovery"]
+SUPPORTED_TABS = ["intelligence", "decisions", "recovery"]
 
 KPI_WORKSPACES: list[dict[str, Any]] = [
     {
@@ -81,14 +81,14 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Sabya",
                 "reason": "Complaint cluster and repeat closures degrading below target.",
                 "owner": "Field Compliance",
-                "href": f"{BASE_ROUTE}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1007/overview?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1007/intelligence?demo=1",
             },
             {
                 "case_id": "JZN-DEC-1011",
                 "municipality": "Abu Arish",
                 "reason": "Forecast breach probability remains above 60% for four weeks.",
                 "owner": "Services Agency",
-                "href": f"{BASE_ROUTE}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1011/overview?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1011/intelligence?demo=1",
             },
         ],
         "governance": [
@@ -151,7 +151,7 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Abu Arish",
                 "reason": "Backlog and repeated SLA misses require field rebalance.",
                 "owner": "Services Agency",
-                "href": f"{BASE_ROUTE}/kpi/service-request-closure-rate/case/JZN-DEC-1011/overview?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1011/intelligence?demo=1",
             }
         ],
         "governance": [
@@ -205,7 +205,7 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Samtah",
                 "reason": "Permit backlog recovery sprint required before quarter close.",
                 "owner": "Licensing Department",
-                "href": f"{BASE_ROUTE}/kpi/average-permit-issuance-time/case/JZN-DEC-1015/overview?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1015/intelligence?demo=1",
             }
         ],
         "governance": [
@@ -291,7 +291,7 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Farasan",
                 "reason": "Emergency drill gap needs action plan before next review.",
                 "owner": "Civil Defence",
-                "href": f"{BASE_ROUTE}/kpi/emergency-readiness/case/JZN-DEC-1018/overview?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1018/intelligence?demo=1",
             }
         ],
         "governance": [
@@ -405,7 +405,7 @@ CASE_WORKSPACES: list[dict[str, Any]] = [
                 {"id": "request-revision", "label": "Request revision", "tone": "neutral"},
                 {"id": "escalate", "label": "Escalate", "tone": "warning"},
                 {"id": "create-ticket", "label": "Create ticket", "tone": "outline"},
-                {"id": "notify-owner", "label": "Email owner", "tone": "outline"},
+                {"id": "email-owner", "label": "Email owner", "tone": "outline"},
             ],
             "human_authorisation_note": (
                 "Every external action is human authorised, audit logged, and bilingual ready."
@@ -480,7 +480,7 @@ CASE_WORKSPACES: list[dict[str, Any]] = [
             "action_buttons": [
                 {"id": "approve", "label": "Approve", "tone": "approve"},
                 {"id": "request-revision", "label": "Request revision", "tone": "neutral"},
-                {"id": "notify-owner", "label": "Email owner", "tone": "outline"},
+                {"id": "email-owner", "label": "Email owner", "tone": "outline"},
             ],
             "human_authorisation_note": (
                 "Owner notification is human authorised before any external email is sent."
@@ -663,7 +663,7 @@ STRATEGIC_DASHBOARD: dict[str, Any] = {
         "risk_score": "84 / 100",
         "breach_probability": "0.78",
         "summary": "Decision candidate awaiting review after complaint-cluster anomaly and forecast breach.",
-        "href": f"{BASE_ROUTE}/kpi/visual-distortion-closure-quality/case/JZN-DEC-1007/overview?demo=1",
+        "href": f"{BASE_ROUTE}/case/JZN-DEC-1007/intelligence?demo=1",
     },
 }
 
@@ -759,7 +759,7 @@ SHELL_DATA: dict[str, Any] = {
             {"id": "request-revision", "label": "Request revision", "tone": "neutral", "note": "Return to owner"},
             {"id": "escalate", "label": "Escalate", "tone": "warning", "note": "Escalate with approval"},
             {"id": "create-ticket", "label": "Create ticket", "tone": "outline", "note": "Requires human authorisation"},
-            {"id": "notify-owner", "label": "Email owner", "tone": "outline", "note": "SMTP workflow evidence logged"},
+            {"id": "email-owner", "label": "Email owner", "tone": "outline", "note": "SMTP workflow evidence logged"},
         ],
         "human_authorisation_note": (
             "Every external action is human authorised, audit logged, and bilingual ready."
