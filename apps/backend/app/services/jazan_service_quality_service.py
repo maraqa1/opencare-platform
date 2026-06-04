@@ -1060,6 +1060,14 @@ def case_workspace_payload() -> dict[str, Any]:
     return _payload("case_workspaces")
 
 
+def case_overview_payload(case_id: str) -> dict[str, Any]:
+    case = _find_case_workspace(case_id)
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "case_overview": deepcopy(case),
+    }
+
+
 def decision_command_payload() -> dict[str, Any]:
     return _payload("decision_command")
 

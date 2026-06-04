@@ -475,6 +475,31 @@ function buildCaseHref(caseId: string, tab: CaseTab, demoMode: boolean) {
   return buildHref(`${baseRoute}/case/${caseId}/${tab}`, demoMode);
 }
 
+function normalizeCaseTab(rawTab: string | undefined, supportedTabs: CaseTab[]): CaseTab | null {
+  const normalized = (rawTab ?? "overview").toLowerCase();
+  const aliases: Record<string, CaseTab> = {
+    overview: "overview",
+    case: "overview",
+    intel: "intelligence",
+    intelligence: "intelligence",
+    "model-intelligence": "intelligence",
+    decide: "decisions",
+    decision: "decisions",
+    decisions: "decisions",
+    "decision-command": "decisions",
+    recovery: "recovery",
+    "outcome-recovery": "recovery",
+    "outcome-feedback": "recovery",
+  };
+
+  const resolved = aliases[normalized];
+  if (!resolved || !supportedTabs.includes(resolved)) {
+    return null;
+  }
+
+  return resolved;
+}
+
 function resolveRoute(
   rawSegments: string[],
   data: ShellData,
@@ -522,9 +547,8 @@ function resolveRoute(
 
   if (first === "case") {
     const caseId = rawSegments[1] ?? defaultCaseId;
-    const requestedTab = (rawSegments[2] ?? "overview") as CaseTab;
-    const normalizedTab = requestedTab;
-    if (!navigation.supported_tabs.includes(normalizedTab)) {
+    const normalizedTab = normalizeCaseTab(rawSegments[2], navigation.supported_tabs);
+    if (!normalizedTab) {
       return null;
     }
 
@@ -549,9 +573,8 @@ function resolveRoute(
 
   if (rawSegments.length >= 4 && rawSegments[2] === "case") {
     const caseId = rawSegments[3];
-    const requestedTab = (rawSegments[4] ?? "overview") as CaseTab;
-    const normalizedTab = requestedTab;
-    if (!navigation.supported_tabs.includes(normalizedTab)) {
+    const normalizedTab = normalizeCaseTab(rawSegments[4], navigation.supported_tabs);
+    if (!normalizedTab) {
       return null;
     }
 

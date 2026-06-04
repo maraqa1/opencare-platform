@@ -240,6 +240,14 @@ def service_quality_case_workspace() -> dict[str, object]:
     return jazan_service_quality_service.case_workspace_payload()
 
 
+@router.get("/service-quality/cases/{case_id}/overview")
+def service_quality_case_overview(case_id: str) -> dict[str, object]:
+    try:
+        return jazan_service_quality_service.case_overview_payload(case_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Jazan case not found") from exc
+
+
 @router.get("/service-quality/cases/{case_id}/intelligence")
 def service_quality_case_intelligence(case_id: str) -> dict[str, object]:
     try:
