@@ -7324,6 +7324,48 @@ code {
   position: relative;
 }
 
+.jazan-case-trajectory-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.jazan-case-trajectory-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.jazan-case-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.jazan-case-legend-chip i {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  border-top: 3px solid #304ca8;
+  border-radius: 999px;
+}
+
+.jazan-case-legend-chip i.is-forecast {
+  border-top-color: #7d72d8;
+  border-top-style: dashed;
+}
+
+.jazan-case-legend-note {
+  color: var(--oc-gray-600);
+  font-size: 12px;
+}
+
 .jazan-case-trajectory-svg {
   width: 100%;
   height: auto;
@@ -7366,6 +7408,15 @@ code {
   stroke-linejoin: round;
 }
 
+.jazan-case-forecast-series {
+  fill: none;
+  stroke: #7d72d8;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 8 6;
+}
+
 .jazan-case-axis-label,
 .jazan-case-value-label,
 .jazan-case-trigger-label,
@@ -7387,6 +7438,10 @@ code {
   fill: #304ca8;
   stroke: #fff;
   stroke-width: 3;
+}
+
+.jazan-case-point.is-forecast {
+  fill: #7d72d8;
 }
 
 .jazan-case-drill-grid,
@@ -7662,6 +7717,11 @@ code {
   .jazan-case-drill-grid,
   .jazan-case-id-grid,
   .jazan-case-comparable-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jazan-case-trajectory-meta,
+  .jazan-decision-cycle {
     grid-template-columns: 1fr;
   }
 
@@ -8166,6 +8226,63 @@ code {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 14px;
+}
+
+.jazan-decision-cycle {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.jazan-decision-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.jazan-decision-step:hover {
+  border-color: rgba(73, 56, 194, 0.24);
+  box-shadow: 0 12px 28px rgba(24, 32, 56, 0.05);
+  transform: translateY(-1px);
+}
+
+.jazan-decision-step.is-active {
+  border-color: rgba(73, 56, 194, 0.28);
+  background: rgba(242, 239, 255, 0.96);
+}
+
+.jazan-decision-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(73, 56, 194, 0.12);
+  color: #4938c2;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.jazan-decision-step strong {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--oc-ink);
+}
+
+.jazan-decision-step small {
+  display: block;
+  color: var(--oc-gray-600);
+  line-height: 1.45;
 }
 
 .jazan-consequence-card {

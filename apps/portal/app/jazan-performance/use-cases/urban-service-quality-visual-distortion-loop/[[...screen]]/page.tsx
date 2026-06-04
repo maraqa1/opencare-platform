@@ -16,10 +16,11 @@ export const metadata: Metadata = {
 
 type PageProps = {
   params: Promise<{ screen?: string[] }>;
-  searchParams?: Promise<{ demo?: string; decision?: string; selected?: string }>;
+  searchParams?: Promise<{ demo?: string; decision?: string; selected?: string; step?: string }>;
 };
 
 type CaseTab = "overview" | "intelligence" | "decisions" | "recovery";
+type DecisionStep = "review" | "action" | "consequences" | "authorise" | "recovery";
 
 type Metric = {
   label: string;
@@ -475,6 +476,10 @@ function buildCaseHref(caseId: string, tab: CaseTab, demoMode: boolean) {
   return buildHref(`${baseRoute}/case/${caseId}/${tab}`, demoMode);
 }
 
+function buildDecisionStepHref(caseId: string, step: DecisionStep, demoMode: boolean) {
+  return buildHref(`${baseRoute}/case/${caseId}/decisions?step=${step}`, demoMode);
+}
+
 function normalizeCaseTab(rawTab: string | undefined, supportedTabs: CaseTab[]): CaseTab | null {
   const normalized = (rawTab ?? "overview").toLowerCase();
   const aliases: Record<string, CaseTab> = {
@@ -498,6 +503,25 @@ function normalizeCaseTab(rawTab: string | undefined, supportedTabs: CaseTab[]):
   }
 
   return resolved;
+}
+
+function normalizeDecisionStep(rawStep: string | undefined): DecisionStep {
+  const normalized = (rawStep ?? "review").toLowerCase();
+  const aliases: Record<string, DecisionStep> = {
+    review: "review",
+    evidence: "review",
+    action: "action",
+    decide: "action",
+    consequences: "consequences",
+    confirm: "consequences",
+    authorise: "authorise",
+    authorize: "authorise",
+    approve: "authorise",
+    recovery: "recovery",
+    track: "recovery",
+  };
+
+  return aliases[normalized] ?? "review";
 }
 
 function resolveRoute(
@@ -1032,14 +1056,32 @@ function caseTrajectoryChart(caseWorkspace: CaseWorkspace) {
   const pointY = (value: number) =>
     top + chartHeight - ((value - domainMin) / Math.max(0.01, domainMax - domainMin)) * chartHeight;
 
-  const seriesPoints = points.map((point, index) => {
+  const actualPolyline = points
+    .map((point, index) =>
+      point.actual !== undefined ? `${pointX(index).toFixed(1)},${pointY(point.actual).toFixed(1)}` : null,
+    )
+    .filter(Boolean)
+    .join(" ");
+
+  const forecastStart = points.findIndex((point) => point.forecast !== undefined);
+  const forecastPolyline =
+    forecastStart >= 0
+      ? points
+          .slice(Math.max(0, forecastStart - 1))
+          .map((point, offset) => {
+            const index = Math.max(0, forecastStart - 1) + offset;
+            const value = point.forecast ?? point.actual ?? point.target;
+            return `${pointX(index).toFixed(1)},${pointY(value).toFixed(1)}`;
+          })
+          .join(" ")
+      : "";
+
+  const fillSeries = points.map((point, index) => {
     const value = point.actual ?? point.forecast ?? point.target;
     return `${pointX(index).toFixed(1)},${pointY(value).toFixed(1)}`;
   });
 
-  const areaPath = `M ${left} ${height - bottom} L ${seriesPoints.join(" L ")} L ${pointX(points.length - 1)} ${
-    height - bottom
-  } Z`;
+  const areaPath = `M ${left} ${height - bottom} L ${fillSeries.join(" L ")} L ${pointX(points.length - 1)} ${height - bottom} Z`;
 
   const targetValue = points[0]?.target ?? 0;
   const targetY = pointY(targetValue);
@@ -1054,6 +1096,19 @@ function caseTrajectoryChart(caseWorkspace: CaseWorkspace) {
 
   return (
     <div className="jazan-case-trajectory-shell" role="img" aria-label="Case KPI trajectory with breach onset marker">
+      <div className="jazan-case-trajectory-meta">
+        <div className="jazan-case-trajectory-legend">
+          <span className="jazan-case-legend-chip">
+            <i className="is-actual" />
+            Observed to date
+          </span>
+          <span className="jazan-case-legend-chip">
+            <i className="is-forecast" />
+            Forecast future
+          </span>
+        </div>
+        <span className="jazan-case-legend-note">Months are shown by year; forecasted periods use a separate colour.</span>
+      </div>
       <svg viewBox={`0 0 ${width} ${height}`} className="jazan-case-trajectory-svg">
         <rect x={left} y={top} width={chartWidth} height={chartHeight} className="jazan-case-chart-frame" />
         <line x1={left} y1={targetY} x2={width - right} y2={targetY} className="jazan-case-target-line" />
@@ -1064,24 +1119,30 @@ function caseTrajectoryChart(caseWorkspace: CaseWorkspace) {
           <line x1={breachX} y1={top} x2={breachX} y2={height - bottom} className="jazan-case-breach-line" />
         ) : null}
         <path d={areaPath} className="jazan-case-area" />
-        <polyline points={seriesPoints.join(" ")} className="jazan-case-series" />
+        {actualPolyline ? <polyline points={actualPolyline} className="jazan-case-series" /> : null}
+        {forecastPolyline ? <polyline points={forecastPolyline} className="jazan-case-forecast-series" /> : null}
         {points.map((point, index) => {
           const value = point.actual ?? point.forecast ?? point.target;
           return (
             <g key={`${caseWorkspace.case_id}-${point.label}`}>
               <text x={pointX(index)} y={height - 8} textAnchor="middle" className="jazan-case-axis-label">
-                {point.label}
+                {formatTrajectoryPeriod(point.label)}
               </text>
-              <circle cx={pointX(index)} cy={pointY(value)} r={index === points.length - 1 ? 4 : 0} className="jazan-case-point" />
+              <circle
+                cx={pointX(index)}
+                cy={pointY(value)}
+                r={index === points.length - 1 || point.forecast !== undefined ? 4 : 0}
+                className={`jazan-case-point${point.forecast !== undefined ? " is-forecast" : ""}`}
+              />
             </g>
           );
         })}
         <text x={left - 8} y={targetY + 4} textAnchor="end" className="jazan-case-value-label">
-          {targetValue}
+          {formatTrajectoryValue(caseWorkspace, targetValue)}
         </text>
         {triggerY !== null && triggerValue !== undefined ? (
           <text x={left - 8} y={triggerY + 4} textAnchor="end" className="jazan-case-trigger-label">
-            {triggerValue}
+            {formatTrajectoryValue(caseWorkspace, triggerValue)}
           </text>
         ) : null}
         {breachX !== null ? (
@@ -1338,6 +1399,22 @@ const ACTION_CONSEQUENCE_PREVIEW: Record<string, { effect: string; records: stri
 function extractNumber(value: string) {
   const match = value.match(/-?\d+(?:\.\d+)?/);
   return match ? Number(match[0]) : 0;
+}
+
+function formatTrajectoryValue(caseWorkspace: CaseWorkspace, value: number) {
+  if (caseWorkspace.kpi_slug === "average-permit-issuance-time") {
+    return `${value.toFixed(1)}d`;
+  }
+
+  if (Math.abs(value) <= 1.5) {
+    return `${Math.round(value * 100)}%`;
+  }
+
+  return value.toFixed(2);
+}
+
+function formatTrajectoryPeriod(label: string) {
+  return `${label} 2026`;
 }
 
 function statusLookup(text: string) {
@@ -2636,8 +2713,9 @@ function BundleCaseWorkspaceScreen(props: {
   caseWorkspace: CaseWorkspace;
   demoMode: boolean;
   data: ShellData;
+  decisionStep: DecisionStep;
 }) {
-  const { route, caseWorkspace, demoMode, data } = props;
+  const { route, caseWorkspace, demoMode, data, decisionStep } = props;
   const kpiWorkspace = findKpiWorkspace(data, caseWorkspace.kpi_slug);
   const caseCode = caseWorkspace.case_id.replace(/^JZN-/, "");
   const activeTab = route.tab === "recovery" ? null : route.tab;
@@ -2663,6 +2741,40 @@ function BundleCaseWorkspaceScreen(props: {
   const evidenceSummary = caseWorkspace.decisions.evidence_pack.map((item) => item.label).slice(0, 2).join(" · ");
   const comparableCases = data.case_workspaces.filter((item) => item.case_id !== caseWorkspace.case_id).slice(0, 2);
   const headlineStatus = caseWorkspace.status === "Awaiting review" ? "Under review" : caseWorkspace.status;
+  const selectedActionButton = actionButtons.find((button) => button.id !== "view-details") ?? actionButtons[0];
+  const selectedActionPreview = selectedActionButton ? actionConsequence(selectedActionButton) : null;
+  const decisionCycle = [
+    {
+      id: "review" as const,
+      label: "1. Review evidence",
+      title: "Review certified evidence before choosing an action",
+      summary: "Forecast, anomaly, governance, and KPI context should be read together before approval.",
+    },
+    {
+      id: "action" as const,
+      label: "2. Select action",
+      title: "Choose the operational response with the strongest recovery path",
+      summary: "Comparable-case effectiveness and owner capacity should guide the action choice.",
+    },
+    {
+      id: "consequences" as const,
+      label: "3. Preview consequences",
+      title: "Preview the external and internal side effects before firing the action",
+      summary: "Every email, ticket, or escalation should be visible before a human confirms it.",
+    },
+    {
+      id: "authorise" as const,
+      label: "4. Authorise and log",
+      title: "Human reviewer authorises the action and writes the approval record",
+      summary: "Bilingual rationale and audit logging are part of the decision, not an afterthought.",
+    },
+    {
+      id: "recovery" as const,
+      label: "5. Track recovery",
+      title: "Keep the recovery path visible even before closure",
+      summary: "The decision remains accountable until measured recovery evidence unlocks.",
+    },
+  ];
   const pageLabel =
     route.tab === "intelligence"
       ? "Model intelligence"
@@ -2886,70 +2998,67 @@ function BundleCaseWorkspaceScreen(props: {
 
       {route.tab === "decisions" ? (
         <>
-          <SectionCard eyebrow="Decision summary" title="Single-case authorisation surface">
-            <div className="jazan-card-grid">
-              {caseWorkspace.overview_metrics.map((item) => (
-                <article key={item.label} className="jazan-detail-card">
-                  <strong>{item.label}</strong>
-                  <p>{item.value}</p>
-                  {item.note ? <small>{item.note}</small> : null}
-                </article>
+          <SectionCard eyebrow="Decision cycle" title="Move the reviewer through a clear authorisation sequence">
+            <div className="jazan-decision-cycle">
+              {decisionCycle.map((step, index) => (
+                <Link
+                  key={step.id}
+                  href={buildDecisionStepHref(caseWorkspace.case_id, step.id, demoMode)}
+                  className={`jazan-decision-step${decisionStep === step.id ? " is-active" : ""}${index < decisionCycle.length - 1 ? " has-connector" : ""}`}
+                >
+                  <span className="jazan-decision-step-index">{index + 1}</span>
+                  <div>
+                    <strong>{step.label}</strong>
+                    <small>{step.summary}</small>
+                  </div>
+                </Link>
               ))}
             </div>
           </SectionCard>
 
-          <SectionCard eyebrow="Evidence pack" title="Single-case authorisation rests on certified evidence">
-            <div className="jazan-card-grid">
-              {caseWorkspace.decisions.evidence_pack.map((item) => (
-                <article key={item.label} className="jazan-detail-card">
-                  <strong>{item.label}</strong>
-                  <p>{item.value}</p>
+          <SectionCard
+            eyebrow={decisionCycle.find((step) => step.id === decisionStep)?.label ?? "Decision step"}
+            title={decisionCycle.find((step) => step.id === decisionStep)?.title ?? "Decision workflow"}
+          >
+            {decisionStep === "review" ? (
+              <div className="jazan-card-grid">
+                {caseWorkspace.overview_metrics.map((item) => (
+                  <article key={item.label} className="jazan-detail-card">
+                    <strong>{item.label}</strong>
+                    <p>{item.value}</p>
+                    {item.note ? <small>{item.note}</small> : null}
+                  </article>
+                ))}
+                {caseWorkspace.decisions.evidence_pack.map((item) => (
+                  <article key={item.label} className="jazan-detail-card">
+                    <strong>{item.label}</strong>
+                    <p>{item.value}</p>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+
+            {decisionStep === "action" ? (
+              <div className="jazan-card-grid">
+                <article className="jazan-detail-card">
+                  <strong>Top recommendation</strong>
+                  <p>{primaryRecommendation?.title ?? "—"}</p>
+                  <small>{primaryRecommendation?.impact ?? "Awaiting runtime evidence"}</small>
                 </article>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard eyebrow="Recommendation summary" title="Top recommendation, confidence, and similar-case context">
-            <div className="jazan-card-grid">
-              <article className="jazan-detail-card">
-                <strong>Top recommendation</strong>
-                <p>{primaryRecommendation?.title ?? "—"}</p>
-                <small>{primaryRecommendation?.impact ?? "Awaiting runtime evidence"}</small>
-              </article>
-              <article className="jazan-detail-card">
-                <strong>Comparable cases</strong>
-                <p className="jazan-mono-text">{caseWorkspace.case_id}</p>
-                <small>{primaryRecommendation?.note ? `Comparable recovery window ${primaryRecommendation.note}` : "Historical case linkage pending"}</small>
-              </article>
-              <article className="jazan-detail-card">
-                <strong>Expected owner</strong>
-                <p>{caseWorkspace.owner}</p>
-                <small>{`Decision due ${caseWorkspace.due_date}`}</small>
-              </article>
-            </div>
-          </SectionCard>
-
-          <div className="jazan-two-column-grid">
-            <SectionCard eyebrow="English rationale" title="Recommendation basis for approvers">
-              <p>{caseWorkspace.rationale}</p>
-              <div className="jazan-version-row">
-                <span className="jazan-pill">Edit draft</span>
-                <span className="jazan-pill">Version history</span>
+                <article className="jazan-detail-card">
+                  <strong>Second-best option</strong>
+                  <p>{secondaryRecommendation?.title ?? "—"}</p>
+                  <small>{secondaryRecommendation?.impact ?? "No seeded uplift attached yet"}</small>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Operational owner</strong>
+                  <p>{caseWorkspace.owner}</p>
+                  <small>{`Decision due ${caseWorkspace.due_date}`}</small>
+                </article>
               </div>
-            </SectionCard>
-            <SectionCard eyebrow="Arabic rationale" title="Bilingual narrative carried into approval">
-              <p className="jazan-bilingual-copy">{bilingualNarrative}</p>
-              <div className="jazan-version-row">
-                <span className="jazan-pill">تحرير</span>
-                <span className="jazan-pill">سجل الإصدارات</span>
-              </div>
-              <small className="jazan-seed-note">Arabic customer copy remains subject to native-speaker review in the bundle.</small>
-            </SectionCard>
-          </div>
+            ) : null}
 
-          <SectionCard eyebrow="Action row" title="All five actions remain visible with consequence preview">
-            <div className="jazan-screen-stack compact">
-              {renderDecisionButtons(actionButtons, decisionHref)}
+            {decisionStep === "consequences" ? (
               <div className="jazan-consequence-grid">
                 {actionButtons.map((button) => (
                   <article key={`${button.id}-preview`} className="jazan-consequence-card">
@@ -2961,8 +3070,52 @@ function BundleCaseWorkspaceScreen(props: {
                   </article>
                 ))}
               </div>
-              <p className="jazan-action-notice">{caseWorkspace.decisions.human_authorisation_note}</p>
-            </div>
+            ) : null}
+
+            {decisionStep === "authorise" ? (
+              <div className="jazan-screen-stack compact">
+                <div className="jazan-two-column-grid">
+                  <article className="jazan-detail-card">
+                    <strong>English rationale</strong>
+                    <p>{caseWorkspace.rationale}</p>
+                    <div className="jazan-version-row">
+                      <span className="jazan-pill">Edit draft</span>
+                      <span className="jazan-pill">Version history</span>
+                    </div>
+                  </article>
+                  <article className="jazan-detail-card">
+                    <strong>Arabic rationale</strong>
+                    <p className="jazan-bilingual-copy">{bilingualNarrative}</p>
+                    <div className="jazan-version-row">
+                      <span className="jazan-pill">تحرير</span>
+                      <span className="jazan-pill">سجل الإصدارات</span>
+                    </div>
+                  </article>
+                </div>
+                {renderDecisionButtons(actionButtons, decisionHref)}
+                <p className="jazan-action-notice">{caseWorkspace.decisions.human_authorisation_note}</p>
+              </div>
+            ) : null}
+
+            {decisionStep === "recovery" ? (
+              <div className="jazan-card-grid">
+                <article className="jazan-detail-card">
+                  <strong>Recovery visibility</strong>
+                  <p>{isRecoveryLocked ? "Locked until closure" : "Recovery evidence available"}</p>
+                  <small>The recovery tab stays visible for continuity even before measured closure evidence is unlocked.</small>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Current action record</strong>
+                  <p>{linkedAction?.action_id ?? "Pending"}</p>
+                  <small>{linkedAction?.status ?? "No corrective action has been created yet"}</small>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Outbound notification</strong>
+                  <p>{linkedNotification?.notification_id ?? "Pending"}</p>
+                  <small>{linkedNotification?.status ?? "No external message has been sent yet"}</small>
+                </article>
+              </div>
+            ) : null}
           </SectionCard>
 
           <SectionCard eyebrow="Audit assurance" title="Human authorisation, no autonomous escalation, append-only evidence">
@@ -2972,16 +3125,11 @@ function BundleCaseWorkspaceScreen(props: {
                 <p>No approval runs autonomously from this page.</p>
               </article>
               <article className="jazan-detail-card">
-                <strong>External side effects</strong>
-                <p>Email, ticket, and escalation flows remain confirmation-gated.</p>
+                <strong>Selected action preview</strong>
+                <p>{selectedActionPreview?.effect ?? "Human-authorised workflow action"}</p>
+                <small>{selectedActionPreview?.records ?? "Audit event only"}</small>
               </article>
             </div>
-          </SectionCard>
-
-          <SectionCard eyebrow="Recovery state" title="Recovery remains visible but locked until closure">
-            <p className="jazan-seed-note">
-              The recovery tab stays available for audit continuity, but measured recovery evidence unlocks only after the authorised action closes the case.
-            </p>
           </SectionCard>
         </>
       ) : null}
@@ -3481,6 +3629,7 @@ export default async function UrbanServiceQualityLoopPage({ params, searchParams
   const [{ screen = [] }, query = {}] = await Promise.all([params, searchParams]);
   const demoMode = query.demo === "1";
   const selectedId = query.selected ?? query.decision;
+  const decisionStep = normalizeDecisionStep(query.step);
 
   const data = await getApiJson<ShellData>({
     path: "/api/v1/jazan/service-quality/shell",
@@ -3520,6 +3669,7 @@ export default async function UrbanServiceQualityLoopPage({ params, searchParams
         caseWorkspace={findCaseWorkspace(data, route.kpiSlug, route.caseId)}
         demoMode={demoMode}
         data={data}
+        decisionStep={decisionStep}
       />
     );
   } else if (route.kind === "decisions") {
