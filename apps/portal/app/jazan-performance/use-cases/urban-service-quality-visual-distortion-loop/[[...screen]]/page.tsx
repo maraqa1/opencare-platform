@@ -77,6 +77,10 @@ type KpiWorkspace = {
   slug: string;
   short_label: string;
   name: string;
+  description?: string;
+  calculation?: string;
+  source_asset?: string;
+  last_refresh?: string;
   current_value: string;
   target_value: string;
   status: string;
@@ -1257,6 +1261,35 @@ function impactMagnitude(impact: string) {
   return match ? Number(match[0]).toFixed(2) : impact;
 }
 
+function kpiDefinitionText(kpi: KpiWorkspace) {
+  if (kpi.description) {
+    return kpi.description;
+  }
+  return `Portfolio current ${kpi.current_value} against target ${kpi.target_value}. ${
+    THRESHOLD_CONFIG[kpi.slug]?.direction === "lower"
+      ? "Lower values indicate stronger service delivery."
+      : "Higher values indicate stronger service delivery."
+  }`;
+}
+
+function kpiCalculationText(kpi: KpiWorkspace) {
+  if (kpi.calculation && kpi.source_asset) {
+    return (
+      <>
+        {kpi.calculation} <span className="mono">{kpi.source_asset}</span>.
+      </>
+    );
+  }
+  if (kpi.source_asset) {
+    return (
+      <>
+        Computed from <span className="mono">{kpi.source_asset}</span>.
+      </>
+    );
+  }
+  return null;
+}
+
 function municipalityRankingTable(kpi: KpiWorkspace, demoMode: boolean) {
   if (kpi.municipality_ranking.length === 0) {
     return <p className="jazan-ranking-empty">No municipality ranking has been seeded for this KPI yet.</p>;
@@ -1271,7 +1304,7 @@ function municipalityRankingTable(kpi: KpiWorkspace, demoMode: boolean) {
             <th>Municipality</th>
             <th>Current</th>
             <th>Position</th>
-            <th>Delta</th>
+            <th>Target</th>
             <th>State</th>
             <th>Drill</th>
           </tr>
@@ -1297,11 +1330,16 @@ function municipalityRankingTable(kpi: KpiWorkspace, demoMode: boolean) {
                     </div>
                   </div>
                 </td>
-                <td className={`jazan-ranking-mono tone-${severity}`}>{rankingDelta(row.current, row.target)}</td>
+                <td>
+                  <div className="jazan-ranking-target">
+                    <strong className="jazan-ranking-mono">{row.target}</strong>
+                    <small className={`jazan-ranking-mono tone-${severity}`}>{rankingDelta(row.current, row.target)}</small>
+                  </div>
+                </td>
                 <td>{renderStatusBadge(row.status, rowTone)}</td>
                 <td>
                   {row.case_id ? (
-                  <Link href={buildCaseHref(row.case_id, "overview", demoMode)} className="jazan-ranking-drill">
+                    <Link href={buildCaseHref(row.case_id, "overview", demoMode)} className="jazan-ranking-drill">
                       Open case
                     </Link>
                   ) : (
@@ -1327,6 +1365,8 @@ const KPI_ARABIC_LABELS: Record<string, string> = {
   "urban-service-coverage":
     "\u0646\u0633\u0628\u0629 \u062a\u063a\u0637\u064a\u0629 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0627\u0644\u062d\u0636\u0631\u064a\u0629",
   "emergency-resilience-readiness":
+    "\u0645\u0624\u0634\u0631 \u0635\u0645\u0648\u062f \u0627\u0644\u0623\u0632\u0645\u0627\u062a \u0648\u0627\u0644\u0637\u0648\u0627\u0631\u0626",
+  "emergency-readiness":
     "\u0645\u0624\u0634\u0631 \u0635\u0645\u0648\u062f \u0627\u0644\u0623\u0632\u0645\u0627\u062a \u0648\u0627\u0644\u0637\u0648\u0627\u0631\u0626",
   "citizen-satisfaction": "\u0631\u0636\u0627 \u0627\u0644\u0645\u0633\u062a\u0641\u064a\u062f\u064a\u0646",
 };
@@ -1364,6 +1404,7 @@ const THRESHOLD_CONFIG: Record<
   "average-permit-issuance-time": { min: 0, trigger: 7, target: 5, max: 10, direction: "lower" },
   "urban-service-coverage": { min: 0.5, trigger: 0.93, target: 0.95, max: 1 },
   "emergency-resilience-readiness": { min: 0.5, trigger: 0.75, target: 0.8, max: 1 },
+  "emergency-readiness": { min: 0.5, trigger: 0.75, target: 0.8, max: 1 },
   "citizen-satisfaction": { min: 0, trigger: 0.7, target: 0.75, max: 1 },
 };
 
@@ -2665,11 +2706,8 @@ function EnhancedKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolea
               {renderStatusBadge(kpi.status, kpi.status_tone)}
             </div>
             <h2>{kpi.name}</h2>
-            <p>{`Portfolio current ${kpi.current_value} against target ${kpi.target_value}. ${
-              THRESHOLD_CONFIG[kpi.slug]?.direction === "lower"
-                ? "Lower values indicate stronger service delivery."
-                : "Higher values indicate stronger service delivery."
-            }`}</p>
+            <p>{kpiDefinitionText(kpi)}</p>
+            {kpiCalculationText(kpi) ? <p className="jazan-workspace-formula">{kpiCalculationText(kpi)}</p> : null}
             <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[kpi.slug] ?? "Operational KPI"}</small>
           </div>
 
@@ -2716,7 +2754,7 @@ function EnhancedKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolea
         ))}
       </nav>
 
-      <SectionCard eyebrow="Portfolio trend" title="Cross-municipality average and threshold reference">
+      <SectionCard eyebrow="Portfolio trend" title="Cross-municipality average">
         {workspaceTrendChart(kpi.trend, kpi.slug)}
       </SectionCard>
 
@@ -2738,7 +2776,7 @@ function EnhancedKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolea
         <div className="jazan-ranking-header">
           <div>
             <h3>{`Municipality ranking - ${PORTFOLIO_MUNICIPALITY_COUNT} municipalities`}</h3>
-            <p>Current value, position, target delta, and direct drill path into the case workspace.</p>
+            <p>Current value, position, target, state, and direct drill path into the case workspace.</p>
           </div>
         </div>
         {municipalityRankingTable(kpi, demoMode)}

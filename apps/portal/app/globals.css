@@ -8749,6 +8749,11 @@ code {
   line-height: 1.55;
 }
 
+.jazan-workspace-formula {
+  color: var(--oc-gray-700);
+  font-size: 13px;
+}
+
 .jazan-workspace-meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -8912,6 +8917,19 @@ code {
 
 .jazan-ranking-bar-fill.tone-breach {
   background: #a32d2d;
+}
+
+.jazan-ranking-target {
+  display: grid;
+  gap: 3px;
+}
+
+.jazan-ranking-target strong {
+  font-size: 12px;
+}
+
+.jazan-ranking-target small {
+  font-size: 11px;
 }
 
 .jazan-ranking-mono {
