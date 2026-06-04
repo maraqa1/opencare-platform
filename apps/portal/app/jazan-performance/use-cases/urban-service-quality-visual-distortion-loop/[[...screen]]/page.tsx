@@ -858,6 +858,21 @@ function rankingDelta(currentValue: string, targetValue: string) {
   return `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`;
 }
 
+function formatKpiDelta(currentValue: string, targetValue: string, kpiSlug: string) {
+  const current = extractNumber(currentValue);
+  const target = extractNumber(targetValue);
+  const rawDelta = current - target;
+
+  if (kpiSlug === "average-permit-issuance-time") {
+    const magnitude = Math.abs(rawDelta).toFixed(1);
+    const tone = rawDelta <= 0 ? "better" : "above";
+    return `${magnitude}d ${tone}`;
+  }
+
+  const signed = `${rawDelta >= 0 ? "+" : ""}${rawDelta.toFixed(2)}`;
+  return `${signed} vs target`;
+}
+
 function positionWidth(currentValue: string, kpiSlug: string) {
   const config = THRESHOLD_CONFIG[kpiSlug];
   if (!config) {
