@@ -1219,6 +1219,7 @@ function CaseWorkspaceScreen(props: {
   demoMode: boolean;
 }) {
   const { route, caseWorkspace, demoMode } = props;
+  const isRecoveryLocked = !["closed", "recovered"].includes(caseWorkspace.status.toLowerCase());
   const tabs: Array<{ id: CaseTab; label: string }> = [
     { id: "overview", label: "Overview" },
     { id: "intelligence", label: "Intelligence" },
