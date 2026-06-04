@@ -1219,35 +1219,41 @@ function municipalityRankingTable(kpi: KpiWorkspace, demoMode: boolean) {
 }
 
 const KPI_ARABIC_LABELS: Record<string, string> = {
-  "visual-distortion-closure-quality": "Ø¬ÙˆØ¯Ø© Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„ØªØ´ÙˆÙ‡ Ø§Ù„Ø¨ØµØ±ÙŠ",
-  "service-request-closure-rate": "Ù†Ø³Ø¨Ø© Ø¥ØºÙ„Ø§Ù‚ Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø®Ø¯Ù…Ø§Øª",
-  "average-permit-issuance-time": "Ù…ØªÙˆØ³Ø· Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø±Ø®Øµ",
-  "urban-service-coverage": "Ù†Ø³Ø¨Ø© ØªØºØ·ÙŠØ© Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ø­Ø¶Ø±ÙŠØ©",
-  "emergency-resilience-readiness": "Ù…Ø¤Ø´Ø± ØµÙ…ÙˆØ¯ Ø§Ù„Ø£Ø²Ù…Ø§Øª ÙˆØ§Ù„Ø·ÙˆØ§Ø±Ø¦",
-  "citizen-satisfaction": "Ø±Ø¶Ø§ Ø§Ù„Ù…Ø³ØªÙÙŠØ¯ÙŠÙ†",
+  "visual-distortion-closure-quality":
+    "\u062c\u0648\u062f\u0629 \u0625\u063a\u0644\u0627\u0642 \u0627\u0644\u062a\u0634\u0648\u0647 \u0627\u0644\u0628\u0635\u0631\u064a",
+  "service-request-closure-rate":
+    "\u0646\u0633\u0628\u0629 \u0625\u063a\u0644\u0627\u0642 \u0637\u0644\u0628\u0627\u062a \u0627\u0644\u062e\u062f\u0645\u0627\u062a",
+  "average-permit-issuance-time":
+    "\u0645\u062a\u0648\u0633\u0637 \u0625\u0635\u062f\u0627\u0631 \u0627\u0644\u0631\u062e\u0635",
+  "urban-service-coverage":
+    "\u0646\u0633\u0628\u0629 \u062a\u063a\u0637\u064a\u0629 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0627\u0644\u062d\u0636\u0631\u064a\u0629",
+  "emergency-resilience-readiness":
+    "\u0645\u0624\u0634\u0631 \u0635\u0645\u0648\u062f \u0627\u0644\u0623\u0632\u0645\u0627\u062a \u0648\u0627\u0644\u0637\u0648\u0627\u0631\u0626",
+  "citizen-satisfaction": "\u0631\u0636\u0627 \u0627\u0644\u0645\u0633\u062a\u0641\u064a\u062f\u064a\u0646",
 };
 
 const STATUS_ARABIC_LABELS: Record<string, string> = {
-  "in breach": "Ù…ÙØ®Ù„ Ø¨Ø§Ù„Ø­Ø¯",
-  "approaching trigger": "ÙŠÙ‚ØªØ±Ø¨ Ù…Ù† Ø§Ù„Ø¹ØªØ¨Ø©",
-  "meeting target": "Ù…Ø­Ù‚Ù‚ Ø§Ù„Ù‡Ø¯Ù",
-  watch: "Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ù‚Ø¨Ø©",
-  queued: "Ù‚ÙŠØ¯ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±",
-  "awaiting review": "Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©",
-  approved: "Ù…Ø¹ØªÙ…Ø¯",
-  escalated: "Ù…ØµØ¹Ø¯",
-  online: "Ù…ØªØµÙ„",
-  offline: "Ù…ØªÙˆÙ‚Ù",
+  "in breach": "\u0645\u064f\u062e\u0644 \u0628\u0627\u0644\u062d\u062f",
+  "approaching trigger": "\u064a\u0642\u062a\u0631\u0628 \u0645\u0646 \u0627\u0644\u0639\u062a\u0628\u0629",
+  "meeting target": "\u0645\u062d\u0642\u0642 \u0627\u0644\u0647\u062f\u0641",
+  watch: "\u0642\u064a\u062f \u0627\u0644\u0645\u0631\u0627\u0642\u0628\u0629",
+  queued: "\u0642\u064a\u062f \u0627\u0644\u0627\u0646\u062a\u0638\u0627\u0631",
+  "awaiting review": "\u0628\u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629",
+  approved: "\u0645\u0639\u062a\u0645\u062f",
+  escalated: "\u0645\u0635\u0639\u062f",
+  online: "\u0645\u062a\u0635\u0644",
+  offline: "\u0645\u062a\u0648\u0642\u0641",
 };
 
 const ACTION_ARABIC_LABELS: Record<string, string> = {
-  approve: "Ø§Ø¹ØªÙ…Ø§Ø¯",
-  "request-revision": "Ø·Ù„Ø¨ ØªØ¹Ø¯ÙŠÙ„",
-  revise: "Ø·Ù„Ø¨ ØªØ¹Ø¯ÙŠÙ„",
-  escalate: "ØªØµØ¹ÙŠØ¯",
-  "create-ticket": "Ø¥Ù†Ø´Ø§Ø¡ ØªØ°ÙƒØ±Ø©",
-  "notify-owner": "Ø¥Ø´Ø¹Ø§Ø± Ø§Ù„Ù…Ø§Ù„Ùƒ",
-  "view-details": "Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„",
+  approve: "\u0627\u0639\u062a\u0645\u0627\u062f",
+  "request-revision": "\u0637\u0644\u0628 \u062a\u0639\u062f\u064a\u0644",
+  revise: "\u0637\u0644\u0628 \u062a\u0639\u062f\u064a\u0644",
+  escalate: "\u062a\u0635\u0639\u064a\u062f",
+  "create-ticket": "\u0625\u0646\u0634\u0627\u0621 \u062a\u0630\u0643\u0631\u0629",
+  "notify-owner": "\u0625\u0634\u0639\u0627\u0631 \u0627\u0644\u0645\u0627\u0644\u0643",
+  "email-owner": "\u0628\u0631\u064a\u062f \u0627\u0644\u0645\u0627\u0644\u0643",
+  "view-details": "\u0639\u0631\u0636 \u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644",
 };
 
 const THRESHOLD_CONFIG: Record<
@@ -1312,11 +1318,11 @@ function extractNumber(value: string) {
 }
 
 function statusLookup(text: string) {
-  return STATUS_ARABIC_LABELS[text.toLowerCase()] ?? "Ø¬Ø§Ù‡Ø²ÙŠØ© ØªØ´ØºÙŠÙ„ÙŠØ©";
+  return STATUS_ARABIC_LABELS[text.toLowerCase()] ?? "\u062c\u0627\u0647\u0632\u064a\u0629 \u062a\u0634\u063a\u064a\u0644\u064a\u0629";
 }
 
 function actionLookup(id: string) {
-  return ACTION_ARABIC_LABELS[id] ?? "Ø¥Ø¬Ø±Ø§Ø¡";
+  return ACTION_ARABIC_LABELS[id] ?? "\u0625\u062c\u0631\u0627\u0621";
 }
 
 function arabicRationale(caseId: string, fallback: string) {
@@ -1420,7 +1426,7 @@ function renderScreenHeader(props: {
           <span className="jazan-mode-chip neutral">{props.routeText}</span>
           <div className="jazan-locale-switch" aria-label="Locale readiness">
             <span className="jazan-locale-chip is-active">EN</span>
-            <span className="jazan-locale-chip">Ø¹Ø±Ø¨ÙŠ</span>
+            <span className="jazan-locale-chip">عربي</span>
           </div>
           <small className="jazan-screen-snapshot">{props.snapshot}</small>
         </div>
@@ -2151,7 +2157,7 @@ function BundleStrategicScreen(props: { data: ShellData; demoMode: boolean }) {
             <span className="jazan-objective-tag">Strategic objective</span>
           <h2>{strategic.title}</h2>
           <p>{strategic.subtitle}</p>
-          <small className="jazan-bilingual-copy">Ø§Ø³ØªØ¯Ø§Ù…Ø© ÙˆØªØ­Ø³ÙŠÙ† Ø¬ÙˆØ¯Ø© Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ø¨Ù„Ø¯ÙŠØ© ÙˆÙ…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„ØªØ´ÙˆÙ‡ Ø§Ù„Ø¨ØµØ±ÙŠ</small>
+          <small className="jazan-bilingual-copy">{STRATEGIC_OBJECTIVE_ARABIC}</small>
         </div>
         <div className="jazan-objective-chips">
           {strategic.objective_context.map((item) => (
@@ -2192,7 +2198,7 @@ function BundleStrategicScreen(props: { data: ShellData; demoMode: boolean }) {
               <div>
                 <span>{card.short_label}</span>
                 <h3>{card.name}</h3>
-                <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[card.slug] ?? "Ù…Ø¤Ø´Ø± ØªØ´ØºÙŠÙ„ÙŠ"}</small>
+                <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[card.slug] ?? "\u0645\u0624\u0634\u0631 \u062a\u0634\u063a\u064a\u0644\u064a"}</small>
               </div>
               {renderStatusBadge(card.status, card.status_tone)}
             </div>
@@ -2262,7 +2268,7 @@ function BundleKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean;
         <div>
           <p className="jazan-eyebrow">{kpi.short_label}</p>
           <h2>{kpi.name}</h2>
-          <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[kpi.slug] ?? "Ù…Ø¤Ø´Ø± ØªØ´ØºÙŠÙ„ÙŠ"}</small>
+          <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[kpi.slug] ?? "\u0645\u0624\u0634\u0631 \u062a\u0634\u063a\u064a\u0644\u064a"}</small>
         </div>
         <div className="jazan-zone-card-meta">
           {renderStatusBadge(kpi.status, kpi.status_tone)}
