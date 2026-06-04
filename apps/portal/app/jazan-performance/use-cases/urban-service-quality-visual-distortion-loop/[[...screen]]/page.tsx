@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -768,36 +768,305 @@ function governanceMiniRail(items: GovernanceChip[]) {
   );
 }
 
+const PORTFOLIO_MUNICIPALITY_COUNT = 25;
+const STRATEGIC_OBJECTIVE_ARABIC =
+  "\u0627\u0633\u062a\u062f\u0627\u0645\u0629 \u0648\u062a\u062d\u0633\u064a\u0646 \u062c\u0648\u062f\u0629 \u0627\u0644\u062e\u062f\u0645\u0627\u062a \u0627\u0644\u0628\u0644\u062f\u064a\u0629 \u0648\u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u062a\u0634\u0648\u0647 \u0627\u0644\u0628\u0635\u0631\u064a";
+
+function severityFromTone(tone: string) {
+  if (tone === "critical") {
+    return "breach";
+  }
+  if (tone === "warning") {
+    return "approaching";
+  }
+  return "meeting";
+}
+
+function severityFromStatus(status: string) {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("breach")) {
+    return "breach";
+  }
+  if (normalized.includes("watch") || normalized.includes("approaching")) {
+    return "approaching";
+  }
+  return "meeting";
+}
+
+function toneFromStatus(status: string) {
+  const severity = severityFromStatus(status);
+  if (severity === "breach") {
+    return "critical";
+  }
+  if (severity === "approaching") {
+    return "warning";
+  }
+  return "positive";
+}
+
+function rankingDelta(currentValue: string, targetValue: string) {
+  const current = extractNumber(currentValue);
+  const target = extractNumber(targetValue);
+  const delta = current - target;
+  return `${delta >= 0 ? "+" : ""}${delta.toFixed(3)}`;
+}
+
+function positionWidth(currentValue: string, kpiSlug: string) {
+  const config = THRESHOLD_CONFIG[kpiSlug];
+  if (!config) {
+    return 0;
+  }
+
+  const current = extractNumber(currentValue);
+  return Math.max(8, Math.min(100, (current / config.max) * 100));
+}
+
+function sparklinePath(points: TrendPoint[]) {
+  if (points.length === 0) {
+    return null;
+  }
+
+  // Plot raw values so lower-is-better KPIs still show a visible decline when performance improves.
+  const values = points.map((point) => point.actual ?? point.forecast ?? point.target);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(0.01, max - min);
+  const width = 60;
+  const height = 22;
+  const step = points.length === 1 ? 0 : (width - 4) / (points.length - 1);
+
+  const coordinates = points.map((point, index) => {
+    const value = point.actual ?? point.forecast ?? point.target;
+    const normalized = (value - min) / span;
+    const x = 2 + step * index;
+    const y = height - 4 - normalized * (height - 8);
+    return { x, y };
+  });
+
+  const polyline = coordinates.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+  const lastPoint = coordinates[coordinates.length - 1];
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="jazan-mini-sparkline" aria-hidden="true">
+      <polyline
+        points={polyline}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx={lastPoint.x.toFixed(1)} cy={lastPoint.y.toFixed(1)} r="2" fill="currentColor" />
+    </svg>
+  );
+}
+
+function compactThresholdBar(card: KpiCard) {
+  const config = THRESHOLD_CONFIG[card.slug];
+  if (!config) {
+    return null;
+  }
+
+  return (
+    <div className={`jazan-mini-threshold-track${config.direction === "lower" ? " is-lower-better" : ""}`} aria-hidden="true">
+      <span className="jazan-mini-threshold-segment is-danger" />
+      <span className="jazan-mini-threshold-segment is-warning" />
+      <span className="jazan-mini-threshold-segment is-success" />
+    </div>
+  );
+}
+
+function workspaceBreakdown(kpi: KpiWorkspace) {
+  const breach = kpi.municipality_ranking.filter((row) => severityFromStatus(row.status) === "breach").length;
+  const riskMetric = kpi.summary_strip.find((item) => {
+    const label = item.label.toLowerCase();
+    return label.includes("watch") || label.includes("at-risk");
+  });
+  const seededAtRisk = riskMetric ? extractNumber(riskMetric.value) : 0;
+  const approaching = Math.max(
+    seededAtRisk > 0
+      ? seededAtRisk - breach
+      : kpi.municipality_ranking.filter((row) => severityFromStatus(row.status) === "approaching").length,
+    0,
+  );
+  const meeting = Math.max(PORTFOLIO_MUNICIPALITY_COUNT - breach - approaching, 0);
+
+  return [
+    { label: "Meeting target", value: `${meeting}`, note: `of ${PORTFOLIO_MUNICIPALITY_COUNT} municipalities` },
+    { label: "Approaching", value: `${approaching}`, note: "watch or trigger threshold" },
+    { label: "In breach", value: `${breach}`, note: "below contractual threshold" },
+    { label: "Open cases", value: `${kpi.open_cases.length}`, note: "decision review required" },
+  ];
+}
+
+function workspaceTrendChart(points: TrendPoint[], slug: string) {
+  if (points.length === 0) {
+    return <p className="jazan-empty-copy">Seeded trend data has not been attached yet.</p>;
+  }
+
+  const config = THRESHOLD_CONFIG[slug];
+  const values = points.flatMap((point) => [point.actual ?? point.forecast ?? point.target, point.target]);
+  if (config) {
+    values.push(config.trigger);
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const padding = Math.max(0.05, (max - min) * 0.18);
+  const domainMin = Math.max(0, min - padding);
+  const domainMax = max + padding;
+  const width = 720;
+  const height = 220;
+  const left = 42;
+  const right = 20;
+  const top = 20;
+  const bottom = 34;
+  const chartWidth = width - left - right;
+  const chartHeight = height - top - bottom;
+  const step = points.length === 1 ? 0 : chartWidth / (points.length - 1);
+
+  const pointX = (index: number) => left + step * index;
+  const pointY = (value: number) =>
+    top + chartHeight - ((value - domainMin) / Math.max(0.01, domainMax - domainMin)) * chartHeight;
+
+  const actualPolyline = points
+    .map((point, index) =>
+      point.actual !== undefined ? `${pointX(index).toFixed(1)},${pointY(point.actual).toFixed(1)}` : null,
+    )
+    .filter(Boolean)
+    .join(" ");
+
+  const forecastStart = points.findIndex((point) => point.forecast !== undefined);
+  const forecastPolyline =
+    forecastStart >= 0
+      ? points
+          .slice(Math.max(0, forecastStart - 1))
+          .map((point, offset) => {
+            const index = Math.max(0, forecastStart - 1) + offset;
+            const value = point.forecast ?? point.actual ?? point.target;
+            return `${pointX(index).toFixed(1)},${pointY(value).toFixed(1)}`;
+          })
+          .join(" ")
+      : "";
+
+  const targetY = pointY(points[0]?.target ?? 0);
+  const triggerY = config ? pointY(config.trigger) : null;
+
+  return (
+    <div className="jazan-line-chart-shell" role="img" aria-label="Portfolio trend across municipality average">
+      <svg viewBox={`0 0 ${width} ${height}`} className="jazan-line-chart-svg">
+        <line x1={left} y1={top} x2={left} y2={height - bottom} className="jazan-line-axis" />
+        <line x1={left} y1={height - bottom} x2={width - right} y2={height - bottom} className="jazan-line-axis" />
+        {triggerY !== null ? <line x1={left} y1={triggerY} x2={width - right} y2={triggerY} className="jazan-line-trigger" /> : null}
+        <line x1={left} y1={targetY} x2={width - right} y2={targetY} className="jazan-line-target" />
+        {actualPolyline ? <polyline points={actualPolyline} className="jazan-line-series" /> : null}
+        {forecastPolyline ? <polyline points={forecastPolyline} className="jazan-line-forecast" /> : null}
+        {points.map((point, index) => {
+          const plottedValue = point.actual ?? point.forecast ?? point.target;
+          return (
+            <g key={`${slug}-${point.label}`}>
+              <text x={pointX(index)} y={height - 10} textAnchor="middle" className="jazan-line-label">
+                {point.label}
+              </text>
+              {point.actual !== undefined ? <circle cx={pointX(index)} cy={pointY(plottedValue)} r="3" className="jazan-line-dot" /> : null}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function municipalityRankingTable(kpi: KpiWorkspace, demoMode: boolean) {
+  if (kpi.municipality_ranking.length === 0) {
+    return <p className="jazan-ranking-empty">No municipality ranking has been seeded for this KPI yet.</p>;
+  }
+
+  return (
+    <div className="jazan-ranking-table-wrap">
+      <table className="jazan-ranking-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Municipality</th>
+            <th>Current</th>
+            <th>Position</th>
+            <th>Delta</th>
+            <th>State</th>
+            <th>Drill</th>
+          </tr>
+        </thead>
+        <tbody>
+          {kpi.municipality_ranking.map((row, index) => {
+            const severity = severityFromStatus(row.status);
+            const rowTone = toneFromStatus(row.status);
+            return (
+              <tr key={`${kpi.slug}-${row.municipality}`} className={`jazan-ranking-row tone-${severity}`}>
+                <td>{index + 1}</td>
+                <td>
+                  <strong>{row.municipality}</strong>
+                </td>
+                <td className="jazan-ranking-mono">{row.current}</td>
+                <td>
+                  <div className="jazan-ranking-position">
+                    <div className="jazan-ranking-bar">
+                      <span
+                        className={`jazan-ranking-bar-fill tone-${severity}`}
+                        style={{ width: `${positionWidth(row.current, kpi.slug)}%` }}
+                      />
+                    </div>
+                  </div>
+                </td>
+                <td className={`jazan-ranking-mono tone-${severity}`}>{rankingDelta(row.current, row.target)}</td>
+                <td>{renderStatusBadge(row.status, rowTone)}</td>
+                <td>
+                  {row.case_id ? (
+                    <Link href={buildCaseHref(row.case_id, "intelligence", demoMode)} className="jazan-ranking-drill">
+                      Open case
+                    </Link>
+                  ) : (
+                    <span className="jazan-ranking-empty-state">No case</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const KPI_ARABIC_LABELS: Record<string, string> = {
-  "visual-distortion-closure-quality": "جودة إغلاق التشوه البصري",
-  "service-request-closure-rate": "نسبة إغلاق طلبات الخدمات",
-  "average-permit-issuance-time": "متوسط إصدار الرخص",
-  "urban-service-coverage": "نسبة تغطية الخدمات الحضرية",
-  "emergency-resilience-readiness": "مؤشر صمود الأزمات والطوارئ",
-  "citizen-satisfaction": "رضا المستفيدين",
+  "visual-distortion-closure-quality": "Ø¬ÙˆØ¯Ø© Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„ØªØ´ÙˆÙ‡ Ø§Ù„Ø¨ØµØ±ÙŠ",
+  "service-request-closure-rate": "Ù†Ø³Ø¨Ø© Ø¥ØºÙ„Ø§Ù‚ Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ø®Ø¯Ù…Ø§Øª",
+  "average-permit-issuance-time": "Ù…ØªÙˆØ³Ø· Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø±Ø®Øµ",
+  "urban-service-coverage": "Ù†Ø³Ø¨Ø© ØªØºØ·ÙŠØ© Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ø­Ø¶Ø±ÙŠØ©",
+  "emergency-resilience-readiness": "Ù…Ø¤Ø´Ø± ØµÙ…ÙˆØ¯ Ø§Ù„Ø£Ø²Ù…Ø§Øª ÙˆØ§Ù„Ø·ÙˆØ§Ø±Ø¦",
+  "citizen-satisfaction": "Ø±Ø¶Ø§ Ø§Ù„Ù…Ø³ØªÙÙŠØ¯ÙŠÙ†",
 };
 
 const STATUS_ARABIC_LABELS: Record<string, string> = {
-  "in breach": "مُخل بالحد",
-  "approaching trigger": "يقترب من العتبة",
-  "meeting target": "محقق الهدف",
-  watch: "قيد المراقبة",
-  queued: "قيد الانتظار",
-  "awaiting review": "بانتظار المراجعة",
-  approved: "معتمد",
-  escalated: "مصعد",
-  online: "متصل",
-  offline: "متوقف",
+  "in breach": "Ù…ÙØ®Ù„ Ø¨Ø§Ù„Ø­Ø¯",
+  "approaching trigger": "ÙŠÙ‚ØªØ±Ø¨ Ù…Ù† Ø§Ù„Ø¹ØªØ¨Ø©",
+  "meeting target": "Ù…Ø­Ù‚Ù‚ Ø§Ù„Ù‡Ø¯Ù",
+  watch: "Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ù‚Ø¨Ø©",
+  queued: "Ù‚ÙŠØ¯ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø±",
+  "awaiting review": "Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©",
+  approved: "Ù…Ø¹ØªÙ…Ø¯",
+  escalated: "Ù…ØµØ¹Ø¯",
+  online: "Ù…ØªØµÙ„",
+  offline: "Ù…ØªÙˆÙ‚Ù",
 };
 
 const ACTION_ARABIC_LABELS: Record<string, string> = {
-  approve: "اعتماد",
-  "request-revision": "طلب تعديل",
-  revise: "طلب تعديل",
-  escalate: "تصعيد",
-  "create-ticket": "إنشاء تذكرة",
-  "notify-owner": "إشعار المالك",
-  "view-details": "عرض التفاصيل",
+  approve: "Ø§Ø¹ØªÙ…Ø§Ø¯",
+  "request-revision": "Ø·Ù„Ø¨ ØªØ¹Ø¯ÙŠÙ„",
+  revise: "Ø·Ù„Ø¨ ØªØ¹Ø¯ÙŠÙ„",
+  escalate: "ØªØµØ¹ÙŠØ¯",
+  "create-ticket": "Ø¥Ù†Ø´Ø§Ø¡ ØªØ°ÙƒØ±Ø©",
+  "notify-owner": "Ø¥Ø´Ø¹Ø§Ø± Ø§Ù„Ù…Ø§Ù„Ùƒ",
+  "view-details": "Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„",
 };
 
 const THRESHOLD_CONFIG: Record<
@@ -862,11 +1131,11 @@ function extractNumber(value: string) {
 }
 
 function statusLookup(text: string) {
-  return STATUS_ARABIC_LABELS[text.toLowerCase()] ?? "جاهزية تشغيلية";
+  return STATUS_ARABIC_LABELS[text.toLowerCase()] ?? "Ø¬Ø§Ù‡Ø²ÙŠØ© ØªØ´ØºÙŠÙ„ÙŠØ©";
 }
 
 function actionLookup(id: string) {
-  return ACTION_ARABIC_LABELS[id] ?? "إجراء";
+  return ACTION_ARABIC_LABELS[id] ?? "Ø¥Ø¬Ø±Ø§Ø¡";
 }
 
 function arabicRationale(caseId: string, fallback: string) {
@@ -970,7 +1239,7 @@ function renderScreenHeader(props: {
           <span className="jazan-mode-chip neutral">{props.routeText}</span>
           <div className="jazan-locale-switch" aria-label="Locale readiness">
             <span className="jazan-locale-chip is-active">EN</span>
-            <span className="jazan-locale-chip">عربي</span>
+            <span className="jazan-locale-chip">Ø¹Ø±Ø¨ÙŠ</span>
           </div>
           <small className="jazan-screen-snapshot">{props.snapshot}</small>
         </div>
@@ -1695,12 +1964,13 @@ function BundleStrategicScreen(props: { data: ShellData; demoMode: boolean }) {
         demoMode: props.demoMode,
       })}
 
-      <section className="jazan-objective-band">
-        <div className="jazan-objective-copy">
-          <span className="jazan-objective-tag">OBJECTIVE</span>
+      <section className="jazan-portfolio-hero">
+        <div className="jazan-portfolio-hero-main">
+          <div className="jazan-objective-copy">
+            <span className="jazan-objective-tag">Strategic objective</span>
           <h2>{strategic.title}</h2>
           <p>{strategic.subtitle}</p>
-          <small className="jazan-bilingual-copy">استدامة وتحسين جودة الخدمات البلدية ومعالجة التشوه البصري</small>
+          <small className="jazan-bilingual-copy">Ø§Ø³ØªØ¯Ø§Ù…Ø© ÙˆØªØ­Ø³ÙŠÙ† Ø¬ÙˆØ¯Ø© Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ø¨Ù„Ø¯ÙŠØ© ÙˆÙ…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„ØªØ´ÙˆÙ‡ Ø§Ù„Ø¨ØµØ±ÙŠ</small>
         </div>
         <div className="jazan-objective-chips">
           {strategic.objective_context.map((item) => (
@@ -1708,6 +1978,7 @@ function BundleStrategicScreen(props: { data: ShellData; demoMode: boolean }) {
               {item}
             </span>
           ))}
+        </div>
         </div>
       </section>
 
@@ -1740,7 +2011,7 @@ function BundleStrategicScreen(props: { data: ShellData; demoMode: boolean }) {
               <div>
                 <span>{card.short_label}</span>
                 <h3>{card.name}</h3>
-                <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[card.slug] ?? "مؤشر تشغيلي"}</small>
+                <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[card.slug] ?? "Ù…Ø¤Ø´Ø± ØªØ´ØºÙŠÙ„ÙŠ"}</small>
               </div>
               {renderStatusBadge(card.status, card.status_tone)}
             </div>
@@ -1810,7 +2081,7 @@ function BundleKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean;
         <div>
           <p className="jazan-eyebrow">{kpi.short_label}</p>
           <h2>{kpi.name}</h2>
-          <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[kpi.slug] ?? "مؤشر تشغيلي"}</small>
+          <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[kpi.slug] ?? "Ù…Ø¤Ø´Ø± ØªØ´ØºÙŠÙ„ÙŠ"}</small>
         </div>
         <div className="jazan-zone-card-meta">
           {renderStatusBadge(kpi.status, kpi.status_tone)}
@@ -1889,6 +2160,263 @@ function BundleKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean;
           </div>
         </SectionCard>
       </div>
+    </div>
+  );
+}
+
+function EnhancedStrategicScreen(props: { data: ShellData; demoMode: boolean }) {
+  const { strategic_dashboard: strategic } = props.data;
+  const activeCase =
+    props.data.case_workspaces.find((item) => item.case_id === strategic.active_case_banner.case_id) ??
+    props.data.case_workspaces[0] ??
+    emptyCaseWorkspace;
+  const kpiWorkspaceMap = new Map(props.data.kpi_workspaces.map((workspace) => [workspace.slug, workspace]));
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "01",
+        title: "Strategic objective cascade - monitoring & thresholds",
+        subtitle: "One objective - six governed KPIs - live threshold state",
+        routeText: "Route 01 - strategic",
+        snapshot: screenSnapshot(props.data),
+        demoMode: props.demoMode,
+      })}
+
+      <section className="jazan-portfolio-hero">
+        <div className="jazan-portfolio-hero-main">
+          <div className="jazan-objective-copy">
+            <span className="jazan-objective-tag">Strategic objective</span>
+            <h2>{strategic.title}</h2>
+            <p>{strategic.subtitle}</p>
+            <small className="jazan-bilingual-copy">{STRATEGIC_OBJECTIVE_ARABIC}</small>
+          </div>
+          <div className="jazan-objective-chips">
+            {strategic.objective_context.map((item) => (
+              <span key={item} className="jazan-pill is-light">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="jazan-portfolio-summary-grid">
+          {strategic.summary_strip.map((item) => (
+            <article key={item.label} className="jazan-portfolio-stat">
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{statusLookup(item.label)}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="jazan-cascade-shell">
+        <div className="jazan-cascade-shell-header">
+          <span>Cascade - one objective to six KPIs - drill into any KPI workspace</span>
+          <small>live seeded navigation</small>
+        </div>
+        <div className="jazan-cascade-objective-anchor">
+          <span className="jazan-cascade-objective-badge">OBJ-SVC-QUALITY-01</span>
+          <strong>Objective governance spine</strong>
+        </div>
+        <div className="jazan-cascade-grid">
+          {strategic.kpi_cards.map((card) => (
+            <Link key={card.slug} href={card.href} className="jazan-cascade-column">
+              <span className={`jazan-cascade-line tone-${card.status_tone}`} />
+              <span className={`jazan-cascade-dot tone-${card.status_tone}`} />
+              <strong>{card.short_label}</strong>
+              <small>{card.name}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="jazan-kpi-showcase-grid">
+        {strategic.kpi_cards.map((card) => {
+          const workspace = kpiWorkspaceMap.get(card.slug);
+          return (
+            <Link
+              key={card.slug}
+              href={card.href}
+              className={`jazan-kpi-showcase-card kpi-card ${`kpi-card--${severityFromTone(card.status_tone)}`}`}
+            >
+              <div className="jazan-kpi-card-header">
+                <div>
+                  <span>{card.short_label}</span>
+                  <h3>{card.name}</h3>
+                  <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[card.slug] ?? "Operational KPI"}</small>
+                </div>
+                {renderStatusBadge(card.status, card.status_tone)}
+              </div>
+
+              <div className="jazan-kpi-card-value-row">
+                <div>
+                  <strong className="jazan-kpi-card-main-value">{card.current_value}</strong>
+                  <span>{`target ${card.target_value}`}</span>
+                </div>
+                <div className="jazan-kpi-card-target">
+                  {sparklinePath(workspace?.trend ?? [])}
+                  <small>{card.delta}</small>
+                </div>
+              </div>
+
+              {compactThresholdBar(card)}
+
+              <div className="jazan-kpi-pill-row">
+                <span className="jazan-pill is-light">{card.owner}</span>
+                <span className="jazan-pill is-light">{card.cadence}</span>
+                {(workspace?.open_cases.length ?? 0) > 0 ? (
+                  <span className="jazan-pill is-light">{`${workspace?.open_cases.length ?? 0} open cases`}</span>
+                ) : null}
+              </div>
+
+              <p className="jazan-threshold-trigger">{card.trigger}</p>
+            </Link>
+          );
+        })}
+      </section>
+
+      {strategic.active_case_banner.case_id ? (
+        <section className="jazan-portfolio-alert">
+          <div className="jazan-workspace-alert-copy">
+            <span className="jazan-alert-tag">Active risk case - highest priority</span>
+            <h3>{`${strategic.active_case_banner.municipality} - ${strategic.active_case_banner.kpi}`}</h3>
+            <p>{strategic.active_case_banner.summary}</p>
+            <small className="jazan-mono-text">{`${activeCase.case_id} - ${activeCase.status}`}</small>
+          </div>
+          <div className="jazan-alert-metrics">
+            <div>
+              <span>Risk score</span>
+              <strong>{strategic.active_case_banner.risk_score}</strong>
+            </div>
+            <div>
+              <span>Forecast breach</span>
+              <strong>{strategic.active_case_banner.breach_probability}</strong>
+            </div>
+            <Link href={strategic.active_case_banner.href} className="jazan-case-link-button">
+              Review case
+            </Link>
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function EnhancedKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolean; data: ShellData }) {
+  const { kpi, demoMode, data } = props;
+  const breakdown = workspaceBreakdown(kpi);
+  const direction = THRESHOLD_CONFIG[kpi.slug]?.direction === "lower" ? "lower is better" : "higher is better";
+  const openCase = kpi.open_cases[0];
+  const tabLinks = [
+    { id: "overview", label: "Overview", href: buildHref(`${baseRoute}/kpi/${kpi.slug}`, demoMode), active: true },
+    { id: "decisions", label: "Decisions", href: buildHref(`${baseRoute}/decisions`, demoMode), active: false },
+    { id: "runtimes", label: "Runtimes", href: buildHref(`${baseRoute}/runtimes`, demoMode), active: false },
+    { id: "audit", label: "Audit", href: buildHref(`${baseRoute}/audit`, demoMode), active: false },
+  ];
+
+  return (
+    <div className="jazan-screen-stack">
+      {renderScreenHeader({
+        screenId: "02",
+        title: "KPI workspace - municipality monitoring and governance",
+        subtitle: "Show KPI status by municipality, portfolio trend, open cases, and the drill path into case review",
+        routeText: "Route 02 - KPI workspace",
+        snapshot: screenSnapshot(data),
+        demoMode,
+      })}
+
+      <section className="jazan-workspace-hero">
+        <div className="jazan-workspace-hero-header">
+          <div className="jazan-workspace-definition">
+            <div className="jazan-workspace-code">
+              <span className="jazan-pill">{kpi.short_label.replace(" ", "-")}</span>
+              {renderStatusBadge(kpi.status, kpi.status_tone)}
+            </div>
+            <h2>{kpi.name}</h2>
+            <p>{`Portfolio current ${kpi.current_value} against target ${kpi.target_value}. ${
+              THRESHOLD_CONFIG[kpi.slug]?.direction === "lower"
+                ? "Lower values indicate stronger service delivery."
+                : "Higher values indicate stronger service delivery."
+            }`}</p>
+            <small className="jazan-bilingual-copy">{KPI_ARABIC_LABELS[kpi.slug] ?? "Operational KPI"}</small>
+          </div>
+
+          <div className="jazan-workspace-meta-grid">
+            <article className="jazan-workspace-meta-item">
+              <span>Target</span>
+              <strong>{kpi.target_value}</strong>
+            </article>
+            <article className="jazan-workspace-meta-item">
+              <span>Trigger</span>
+              <strong>{kpi.trigger}</strong>
+            </article>
+            <article className="jazan-workspace-meta-item">
+              <span>Direction</span>
+              <strong>{direction}</strong>
+            </article>
+            <article className="jazan-workspace-meta-item">
+              <span>Owner</span>
+              <strong>{kpi.owner}</strong>
+            </article>
+          </div>
+        </div>
+
+        <div className="jazan-workspace-summary-row">
+          {breakdown.map((item) => (
+            <article key={item.label} className="jazan-workspace-summary-card">
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              {item.note ? <small>{item.note}</small> : null}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <nav className="jazan-workspace-tabs" aria-label="KPI workspace tabs">
+        {tabLinks.map((tab) => (
+          <Link
+            key={tab.id}
+            href={tab.href}
+            className={`jazan-workspace-tab${tab.active ? " is-active" : ""}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
+
+      <SectionCard eyebrow="Portfolio trend" title="Cross-municipality average and threshold reference">
+        {workspaceTrendChart(kpi.trend, kpi.slug)}
+      </SectionCard>
+
+      {openCase ? (
+        <section className="jazan-workspace-alert">
+          <div className="jazan-workspace-alert-copy">
+            <span className="jazan-alert-tag">{`${kpi.open_cases.length} open case${kpi.open_cases.length > 1 ? "s" : ""} on this KPI`}</span>
+            <h3>{`${openCase.municipality} requires review`}</h3>
+            <p>{kpi.open_cases.map((item) => `${item.case_id} - ${item.municipality}`).join(" - ")}</p>
+            <small>{openCase.reason}</small>
+          </div>
+          <Link href={openCase.href} className="jazan-case-link-button">
+            Review case
+          </Link>
+        </section>
+      ) : null}
+
+      <section className="jazan-ranking-shell">
+        <div className="jazan-ranking-header">
+          <div>
+            <h3>{`Municipality ranking - ${PORTFOLIO_MUNICIPALITY_COUNT} municipalities`}</h3>
+            <p>Current value, position, target delta, and direct drill path into the case workspace.</p>
+          </div>
+        </div>
+        {municipalityRankingTable(kpi, demoMode)}
+      </section>
+
+      <SectionCard eyebrow="Governance evidence" title="Certified mart, output, freshness, and ownership">
+        {governanceMiniRail(kpi.governance)}
+      </SectionCard>
     </div>
   );
 }
@@ -2076,7 +2604,7 @@ function BundleCaseWorkspaceScreen(props: {
             <div className="jazan-card-grid">
               <article className="jazan-detail-card">
                 <strong>Top recommendation</strong>
-                <p>{primaryRecommendation?.title ?? "—"}</p>
+                <p>{primaryRecommendation?.title ?? "â€”"}</p>
                 <small>{primaryRecommendation?.impact ?? "Measured after closure"}</small>
               </article>
               <article className="jazan-detail-card">
@@ -2106,7 +2634,7 @@ function BundleCaseWorkspaceScreen(props: {
             <div className="jazan-card-grid">
               <article className="jazan-detail-card">
                 <strong>Top recommendation</strong>
-                <p>{primaryRecommendation?.title ?? "—"}</p>
+                <p>{primaryRecommendation?.title ?? "â€”"}</p>
                 <small>{primaryRecommendation?.impact ?? "Awaiting runtime evidence"}</small>
               </article>
               <article className="jazan-detail-card">
@@ -2133,8 +2661,8 @@ function BundleCaseWorkspaceScreen(props: {
             <SectionCard eyebrow="Arabic rationale" title="Bilingual narrative carried into approval">
               <p className="jazan-bilingual-copy">{bilingualNarrative}</p>
               <div className="jazan-version-row">
-                <span className="jazan-pill">تحرير</span>
-                <span className="jazan-pill">سجل الإصدارات</span>
+                <span className="jazan-pill">ØªØ­Ø±ÙŠØ±</span>
+                <span className="jazan-pill">Ø³Ø¬Ù„ Ø§Ù„Ø¥ØµØ¯Ø§Ø±Ø§Øª</span>
               </div>
               <small className="jazan-seed-note">Arabic customer copy remains subject to native-speaker review in the bundle.</small>
             </SectionCard>
@@ -2204,7 +2732,7 @@ function BundleCaseWorkspaceScreen(props: {
                 </article>
                 <article className="jazan-detail-card">
                   <strong>After 90 days</strong>
-                  <p>—</p>
+                  <p>â€”</p>
                   <small>No day-90 measurement has been seeded yet</small>
                 </article>
               </div>
@@ -2579,7 +3107,7 @@ function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
                   {row.created_record ? (
                     <span className="jazan-mono-text">{row.created_record}</span>
                   ) : (
-                    <span className="jazan-mono-text">—</span>
+                    <span className="jazan-mono-text">â€”</span>
                   )}
                 </div>
               </article>
@@ -2593,13 +3121,13 @@ function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
             rows:
               props.data.decision_action_audit.email_log.length > 0
                 ? props.data.decision_action_audit.email_log.map((row) => [
-                    row.notification_id ?? "—",
+                    row.notification_id ?? "â€”",
                     row.recipient_role ?? row.recipient,
                     row.subject ?? row.template,
                     row.template,
                     row.status,
                     row.sent_at,
-                    row.linked_decision_id ?? "—",
+                    row.linked_decision_id ?? "â€”",
                   ])
                 : [["No seeded emails yet", "-", "-", "-", "-", "-", "-"]],
           })}
@@ -2616,7 +3144,7 @@ function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
                     row.priority,
                     row.status,
                     row.external_ticket_ref ?? row.linked_case,
-                    row.linked_action_id ?? "—",
+                    row.linked_action_id ?? "â€”",
                   ])
                 : [["No seeded tickets yet", "-", "-", "-", "-", "-"]],
           })}
@@ -2693,9 +3221,9 @@ export default async function UrbanServiceQualityLoopPage({ params, searchParams
   let content: ReactNode;
 
   if (route.kind === "strategic") {
-    content = <BundleStrategicScreen data={data} demoMode={demoMode} />;
+    content = <EnhancedStrategicScreen data={data} demoMode={demoMode} />;
   } else if (route.kind === "kpi") {
-    content = <BundleKpiWorkspaceScreen kpi={findKpiWorkspace(data, route.kpiSlug)} demoMode={demoMode} data={data} />;
+    content = <EnhancedKpiWorkspaceScreen kpi={findKpiWorkspace(data, route.kpiSlug)} demoMode={demoMode} data={data} />;
   } else if (route.kind === "case") {
     content = (
       <BundleCaseWorkspaceScreen
