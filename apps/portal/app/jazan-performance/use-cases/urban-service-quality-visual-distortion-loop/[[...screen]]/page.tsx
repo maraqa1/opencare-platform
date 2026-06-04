@@ -246,7 +246,7 @@ type ShellData = {
     base_route: string;
     default_kpi_slug: string;
     default_case_id: string;
-    supported_tabs: string[];
+    supported_tabs: CaseTab[];
   };
   purpose: {
     eyebrow: string;
