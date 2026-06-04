@@ -165,14 +165,18 @@ type DecisionQueueRow = {
 type RuntimeCard = {
   runtime_id: string;
   name: string;
+  model_family?: string;
   status: string;
   last_run: string;
   duration: string;
   rows_out: string;
   next_run: string;
+  note?: string;
   image: string;
   inputs: string[];
   outputs: string[];
+  last_seven_runs?: string[];
+  hitl?: boolean;
 };
 
 type AuditAction = {
@@ -181,13 +185,19 @@ type AuditAction = {
   action: string;
   channel: string;
   result: string;
+  created_record?: string;
+  linked_decision_id?: string;
 };
 
 type EmailLog = {
+  notification_id?: string;
   recipient: string;
+  recipient_role?: string;
+  subject?: string;
   template: string;
   status: string;
   sent_at: string;
+  linked_decision_id?: string;
 };
 
 type TicketLog = {
@@ -196,6 +206,8 @@ type TicketLog = {
   priority: string;
   status: string;
   linked_case: string;
+  external_ticket_ref?: string;
+  linked_action_id?: string;
 };
 
 type CorrectiveAction = {
@@ -800,6 +812,50 @@ const THRESHOLD_CONFIG: Record<
   "citizen-satisfaction": { min: 0, trigger: 0.7, target: 0.75, max: 1 },
 };
 
+const CASE_ARABIC_RATIONALE: Record<string, string> = {
+  "JZN-DEC-1007":
+    "\u062a\u064f\u0638\u0647\u0631 \u0645\u062d\u0627\u0641\u0638\u0629 \u0635\u0628\u064a\u0627 \u0627\u062d\u062a\u0645\u0627\u0644\u0627\u064b \u0645\u0631\u062a\u0641\u0639\u0627\u064b \u0644\u062a\u062c\u0627\u0648\u0632 \u0647\u062f\u0641 \u062c\u0648\u062f\u0629 \u0625\u063a\u0644\u0627\u0642 \u0627\u0644\u062a\u0634\u0648\u0647 \u0627\u0644\u0628\u0635\u0631\u064a \u062e\u0644\u0627\u0644 \u0623\u0631\u0628\u0639\u0629 \u0623\u0633\u0627\u0628\u064a\u0639. \u062a\u0642\u0648\u062f \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u062a\u0631\u0627\u0643\u0645\u0627\u062a \u0627\u0644\u0634\u0643\u0627\u0648\u0649 \u0648\u0627\u0646\u062e\u0641\u0627\u0636 \u062c\u0648\u062f\u0629 \u0627\u0644\u0625\u063a\u0644\u0627\u0642 \u0648\u062a\u0643\u0631\u0627\u0631 \u062d\u0627\u0644\u0627\u062a \u0627\u0644\u0639\u0648\u062f\u0629.",
+  "JZN-DEC-1011":
+    "\u064a\u0624\u062f\u064a \u0646\u0645\u0648 \u0627\u0644\u062a\u0631\u0627\u0643\u0645 \u0648\u0628\u0637\u0621 \u0627\u0644\u0627\u0633\u062a\u062c\u0627\u0628\u0629 \u0627\u0644\u0645\u064a\u062f\u0627\u0646\u064a\u0629 \u0625\u0644\u0649 \u0625\u0636\u0639\u0627\u0641 \u0623\u062f\u0627\u0621 \u0625\u063a\u0644\u0627\u0642 \u0637\u0644\u0628\u0627\u062a \u0627\u0644\u062e\u062f\u0645\u0629 \u0641\u064a \u0623\u0628\u0648 \u0639\u0631\u064a\u0634.",
+  "JZN-DEC-1015":
+    "\u064a\u0642\u062a\u0631\u0628 \u062a\u0631\u0627\u0643\u0645 \u0637\u0644\u0628\u0627\u062a \u0627\u0644\u0631\u062e\u0635 \u0627\u0644\u062a\u062c\u0627\u0631\u064a\u0629 \u0641\u064a \u0635\u0627\u0645\u0637\u0629 \u0645\u0646 \u062d\u062f \u0627\u0644\u062a\u062f\u062e\u0644\u060c \u0645\u0645\u0627 \u064a\u062a\u0637\u0644\u0628 \u0633\u0628\u0627\u0642\u064b\u0627 \u0644\u0644\u0645\u0639\u0627\u0644\u062c\u0629.",
+  "JZN-DEC-1018":
+    "\u062a\u0634\u064a\u0631 \u0646\u062a\u0627\u0626\u062c \u0627\u0644\u062a\u0645\u0627\u0631\u064a\u0646 \u0648\u062c\u0627\u0647\u0632\u064a\u0629 \u0627\u0644\u0645\u0639\u062f\u0627\u062a \u0625\u0644\u0649 \u062d\u0627\u062c\u0629 \u0641\u0627\u0631\u0633\u0627\u0646 \u0625\u0644\u0649 \u062e\u0637\u0629 \u062a\u062f\u062e\u0644 \u0628\u0634\u0631\u064a\u0629 \u0645\u062d\u062f\u062f\u0629.",
+};
+
+const ACTION_CONSEQUENCE_PREVIEW: Record<string, { effect: string; records: string; audience: string }> = {
+  approve: {
+    effect: "Authorises the top recommendation and opens the corrective-action lifecycle.",
+    records: "decision.approved + action.lifecycle snapshot",
+    audience: "Performance Office approver and action owner",
+  },
+  "request-revision": {
+    effect: "Returns the recommendation to the reviewer/runtime owner with tracked feedback.",
+    records: "decision.revision_requested + reviewer note",
+    audience: "Model reviewer and municipality owner",
+  },
+  escalate: {
+    effect: "Triggers an escalated decision path for Emarah or MOMRAH review.",
+    records: "decision.escalated + escalation audit event",
+    audience: "Senior reviewer and escalation recipient",
+  },
+  "create-ticket": {
+    effect: "Creates a municipal service-desk record linked to the corrective action.",
+    records: "ticket.request + linked_action_id",
+    audience: "Service desk and action owner",
+  },
+  "email-owner": {
+    effect: "Sends a bilingual notification to the named municipal owner.",
+    records: "notification.outbox + email delivery log",
+    audience: "Municipality owner and audit trail",
+  },
+  "view-details": {
+    effect: "Opens the linked case workspace without creating an external side effect.",
+    records: "No external record created",
+    audience: "Approver only",
+  },
+};
+
 function extractNumber(value: string) {
   const match = value.match(/-?\d+(?:\.\d+)?/);
   return match ? Number(match[0]) : 0;
@@ -811,6 +867,24 @@ function statusLookup(text: string) {
 
 function actionLookup(id: string) {
   return ACTION_ARABIC_LABELS[id] ?? "إجراء";
+}
+
+function arabicRationale(caseId: string, fallback: string) {
+  return CASE_ARABIC_RATIONALE[caseId] ?? fallback;
+}
+
+function actionConsequence(button: ActionButton) {
+  return (
+    ACTION_CONSEQUENCE_PREVIEW[button.id] ?? {
+      effect: button.note ?? "Human-authorised workflow action",
+      records: "Audit event only",
+      audience: "Reviewer",
+    }
+  );
+}
+
+function runtimeRunTone(status: string) {
+  return status === "degraded" ? " is-degraded" : "";
 }
 
 function screenSnapshot(data: ShellData) {
@@ -1181,7 +1255,13 @@ function CaseWorkspaceScreen(props: {
           <Link
             key={tab.id}
             href={buildCaseHref(caseWorkspace.case_id, tab.id, demoMode)}
-            className={`jazan-case-tab${route.tab === tab.id ? " is-active" : ""}`}
+            className={`jazan-case-tab${route.tab === tab.id ? " is-active" : ""}${tab.id === "recovery" && isRecoveryLocked ? " is-disabled" : ""}`}
+            title={
+              tab.id === "recovery" && isRecoveryLocked
+                ? "Recovery data appears after corrective action closes"
+                : undefined
+            }
+            aria-disabled={tab.id === "recovery" && isRecoveryLocked ? true : undefined}
           >
             {tab.label}
           </Link>
@@ -1820,6 +1900,12 @@ function BundleCaseWorkspaceScreen(props: {
 }) {
   const { route, caseWorkspace, demoMode, data } = props;
   const decisionHref = buildCaseHref(caseWorkspace.case_id, "decisions", demoMode);
+  const contributionTotal = caseWorkspace.intelligence.feature_contributions.reduce(
+    (sum, item) => sum + extractNumber(item.value),
+    0,
+  );
+  const primaryRecommendation = caseWorkspace.intelligence.ranked_actions[0];
+  const bilingualNarrative = arabicRationale(caseWorkspace.case_id, caseWorkspace.rationale);
   const tabs: Array<{ id: Extract<CaseTab, "intelligence" | "decisions" | "recovery">; label: string }> = [
     { id: "intelligence", label: "Model intelligence" },
     { id: "decisions", label: "Decision command" },
@@ -1917,6 +2003,7 @@ function BundleCaseWorkspaceScreen(props: {
                   ))}
                 </div>
               </div>
+              <p className="jazan-seed-note">{`Contribution sum ${contributionTotal.toFixed(1)} matches the displayed composite score with no renormalisation.`}</p>
             </SectionCard>
 
             <SectionCard eyebrow="Forecast path" title="Observed and forecast path against the target line">
@@ -1937,6 +2024,11 @@ function BundleCaseWorkspaceScreen(props: {
                   <p>{`${caseWorkspace.current_value} against ${caseWorkspace.target_value}`}</p>
                   <small>{caseWorkspace.owner}</small>
                 </article>
+                <article className="jazan-detail-card">
+                  <strong>Comparable case lookup</strong>
+                  <p className="jazan-mono-text">{caseWorkspace.case_id}</p>
+                  <small>Recommendations stay queryable by decision id</small>
+                </article>
               </div>
             </SectionCard>
 
@@ -1947,7 +2039,7 @@ function BundleCaseWorkspaceScreen(props: {
                     <span className="jazan-pill is-light">{`#${index + 1}`}</span>
                     <strong>{action.title}</strong>
                     <p>{action.impact}</p>
-                    <small>{action.note}</small>
+                    <small>{`Expected recovery window ${action.note}`}</small>
                   </article>
                 ))}
               </div>
@@ -1965,6 +2057,10 @@ function BundleCaseWorkspaceScreen(props: {
                 ))}
               </div>
               <div className="jazan-screen-stack compact">
+                <article className="jazan-detail-card">
+                  <strong>Linked runtime outputs</strong>
+                  <p className="jazan-mono-text">{caseWorkspace.intelligence.outputs.join(", ")}</p>
+                </article>
                 <p className="jazan-seed-note">
                   This intelligence surface is model evidence only. Human authorisation moves to the dedicated decisions tab.
                 </p>
@@ -1972,6 +2068,21 @@ function BundleCaseWorkspaceScreen(props: {
                   Open case decision tab
                 </Link>
               </div>
+            </div>
+          </SectionCard>
+
+          <SectionCard eyebrow="Recovery path" title="Targeted recovery remains visible from the intelligence tab">
+            <div className="jazan-card-grid">
+              <article className="jazan-detail-card">
+                <strong>Top recommendation</strong>
+                <p>{primaryRecommendation?.title ?? "—"}</p>
+                <small>{primaryRecommendation?.impact ?? "Measured after closure"}</small>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Targeted recovery marker</strong>
+                <p>{caseWorkspace.recovery.target}</p>
+                <small>Recovery evidence unlocks after authorised closure</small>
+              </article>
             </div>
           </SectionCard>
         </>
@@ -1990,12 +2101,40 @@ function BundleCaseWorkspaceScreen(props: {
             </div>
           </SectionCard>
 
+          <SectionCard eyebrow="Recommendation summary" title="Top recommendation, confidence, and similar-case context">
+            <div className="jazan-card-grid">
+              <article className="jazan-detail-card">
+                <strong>Top recommendation</strong>
+                <p>{primaryRecommendation?.title ?? "—"}</p>
+                <small>{primaryRecommendation?.impact ?? "Awaiting runtime evidence"}</small>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Comparable cases</strong>
+                <p className="jazan-mono-text">{caseWorkspace.case_id}</p>
+                <small>{primaryRecommendation?.note ? `Comparable recovery window ${primaryRecommendation.note}` : "Historical case linkage pending"}</small>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>Expected owner</strong>
+                <p>{caseWorkspace.owner}</p>
+                <small>{`Decision due ${caseWorkspace.due_date}`}</small>
+              </article>
+            </div>
+          </SectionCard>
+
           <div className="jazan-two-column-grid">
             <SectionCard eyebrow="English rationale" title="Recommendation basis for approvers">
               <p>{caseWorkspace.rationale}</p>
+              <div className="jazan-version-row">
+                <span className="jazan-pill">Edit draft</span>
+                <span className="jazan-pill">Version history</span>
+              </div>
             </SectionCard>
             <SectionCard eyebrow="Arabic rationale" title="Bilingual narrative carried into approval">
-              <p className="jazan-bilingual-copy">{caseWorkspace.rationale}</p>
+              <p className="jazan-bilingual-copy">{bilingualNarrative}</p>
+              <div className="jazan-version-row">
+                <span className="jazan-pill">تحرير</span>
+                <span className="jazan-pill">سجل الإصدارات</span>
+              </div>
               <small className="jazan-seed-note">Arabic customer copy remains subject to native-speaker review in the bundle.</small>
             </SectionCard>
           </div>
@@ -2003,15 +2142,31 @@ function BundleCaseWorkspaceScreen(props: {
           <SectionCard eyebrow="Action row" title="All five actions remain visible with consequence preview">
             <div className="jazan-screen-stack compact">
               {renderDecisionButtons(caseWorkspace.decisions.action_buttons, decisionHref)}
-              <div className="jazan-card-grid">
+              <div className="jazan-consequence-grid">
                 {caseWorkspace.decisions.action_buttons.map((button) => (
-                  <article key={`${button.id}-preview`} className="jazan-detail-card">
+                  <article key={`${button.id}-preview`} className="jazan-consequence-card">
+                    <span className="jazan-pill">{button.label}</span>
                     <strong>{button.label}</strong>
-                    <p>{button.note ?? "Human-authorised workflow action"}</p>
+                    <p>{actionConsequence(button).effect}</p>
+                    <small>{actionConsequence(button).records}</small>
+                    <small>{actionConsequence(button).audience}</small>
                   </article>
                 ))}
               </div>
               <p className="jazan-action-notice">{caseWorkspace.decisions.human_authorisation_note}</p>
+            </div>
+          </SectionCard>
+
+          <SectionCard eyebrow="Audit assurance" title="Human authorisation, no autonomous escalation, append-only evidence">
+            <div className="jazan-card-grid">
+              <article className="jazan-detail-card">
+                <strong>HITL assurance</strong>
+                <p>No approval runs autonomously from this page.</p>
+              </article>
+              <article className="jazan-detail-card">
+                <strong>External side effects</strong>
+                <p>Email, ticket, and escalation flows remain confirmation-gated.</p>
+              </article>
             </div>
           </SectionCard>
 
@@ -2031,38 +2186,91 @@ function BundleCaseWorkspaceScreen(props: {
             </p>
           </SectionCard>
         ) : (
-          <SectionCard eyebrow="Recovery path" title="Measured recovery trajectory and learning feedback">
-            <div className="jazan-card-grid">
-              <article className="jazan-detail-card">
-                <strong>Baseline</strong>
-                <p>{caseWorkspace.recovery.baseline}</p>
-              </article>
-              <article className="jazan-detail-card">
-                <strong>Target</strong>
-                <p>{caseWorkspace.recovery.target}</p>
-              </article>
-              <article className="jazan-detail-card">
-                <strong>After 30 days</strong>
-                <p>{caseWorkspace.recovery.after_30_days}</p>
-              </article>
-              <article className="jazan-detail-card">
-                <strong>Forecast accuracy</strong>
-                <p>{caseWorkspace.recovery.forecast_accuracy}</p>
-              </article>
-              <article className="jazan-detail-card">
-                <strong>Intervention effectiveness</strong>
-                <p>{caseWorkspace.recovery.intervention_effectiveness}</p>
-              </article>
-              <article className="jazan-detail-card">
-                <strong>Learning pillars</strong>
+          <>
+            <SectionCard eyebrow="Before, target, after" title="Measured values before action and after closure">
+              <div className="jazan-card-grid">
+                <article className="jazan-detail-card">
+                  <strong>Baseline</strong>
+                  <p>{caseWorkspace.recovery.baseline}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>Target</strong>
+                  <p>{caseWorkspace.recovery.target}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>After 30 days</strong>
+                  <p>{caseWorkspace.recovery.after_30_days}</p>
+                </article>
+                <article className="jazan-detail-card">
+                  <strong>After 90 days</strong>
+                  <p>—</p>
+                  <small>No day-90 measurement has been seeded yet</small>
+                </article>
+              </div>
+            </SectionCard>
+
+            <SectionCard eyebrow="Recovery trajectory" title="Recovery path and approval marker">
+              {trendChart([
+                {
+                  label: "Baseline",
+                  actual: extractNumber(caseWorkspace.recovery.baseline),
+                  target: extractNumber(caseWorkspace.recovery.target),
+                },
+                {
+                  label: "Approved",
+                  actual: extractNumber(caseWorkspace.recovery.baseline),
+                  target: extractNumber(caseWorkspace.recovery.target),
+                },
+                {
+                  label: "Day 30",
+                  actual: extractNumber(caseWorkspace.recovery.after_30_days),
+                  target: extractNumber(caseWorkspace.recovery.target),
+                },
+                {
+                  label: "Day 90",
+                  forecast: extractNumber(caseWorkspace.recovery.after_30_days),
+                  target: extractNumber(caseWorkspace.recovery.target),
+                },
+              ])}
+              <p className="jazan-seed-note">Action-approved marker is carried from the first decision approval event in the seeded audit history.</p>
+            </SectionCard>
+
+            <div className="jazan-two-column-grid">
+              <SectionCard eyebrow="Model learning feedback" title="Forecast accuracy and recommendation effectiveness">
+                <div className="jazan-card-grid">
+                  <article className="jazan-detail-card">
+                    <strong>Forecast accuracy</strong>
+                    <p>{caseWorkspace.recovery.forecast_accuracy}</p>
+                  </article>
+                  <article className="jazan-detail-card">
+                    <strong>Intervention effectiveness</strong>
+                    <p>{caseWorkspace.recovery.intervention_effectiveness}</p>
+                  </article>
+                </div>
+              </SectionCard>
+
+              <SectionCard eyebrow="Pillar credits" title="Binary credited or not-credited learning outcomes">
                 <ul className="jazan-bullet-list">
                   {caseWorkspace.recovery.learning_pillars.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-              </article>
+              </SectionCard>
             </div>
-          </SectionCard>
+
+            <SectionCard eyebrow="Evidence pack footer" title="Audited evidence pack for recovery review">
+              <div className="jazan-card-grid">
+                {props.data.governance_evidence.evidence_packs
+                  .filter((item) => item.name === "Outcome learning pack")
+                  .map((item) => (
+                    <article key={item.name} className="jazan-detail-card">
+                      <strong>{item.name}</strong>
+                      <p>{item.contents}</p>
+                    </article>
+                  ))}
+              </div>
+            </SectionCard>
+          </>
         )
       ) : null}
     </div>
@@ -2095,22 +2303,38 @@ function BundleDecisionCommandScreen(props: { data: ShellData; selected: CaseWor
 
       <div className="jazan-two-column-grid jazan-two-column-grid--wide-left">
         <SectionCard eyebrow="Decision candidate queue" title="Generated decisions waiting for human review">
-          {dataTable({
-            columns: ["Decision", "Municipality", "KPI", "Risk", "Breach", "Owner", "Status", "Actions"],
-            rows: props.data.decision_command.queue.map((row) => [
-              row.decision_id,
-              row.municipality,
-              row.kpi,
-              row.risk_score,
-              row.breach_probability,
-              row.owner,
-              renderStatusBadge(row.status, row.status === "Awaiting review" ? "warning" : "positive"),
-              renderDecisionButtons(
-                props.data.decision_command.action_buttons,
-                buildHref(`${baseRoute}/decisions?selected=${row.decision_id}`, props.demoMode),
-              ),
-            ]),
-          })}
+          <div className="jazan-list-stack">
+            {props.data.decision_command.queue.map((row) => {
+              const isSelected = row.decision_id === props.selected.case_id;
+              const isUrgent = row.status === "Awaiting review";
+              return (
+                <article
+                  key={row.decision_id}
+                  className={`jazan-list-row jazan-queue-row${isSelected ? " is-selected" : ""}${isUrgent ? " is-urgent" : ""}`}
+                >
+                  <div className="jazan-screen-stack compact">
+                    <div className="jazan-queue-meta">
+                      <strong className="jazan-mono-text">{row.decision_id}</strong>
+                      {renderStatusBadge(row.status, isUrgent ? "warning" : "positive")}
+                    </div>
+                    <div>
+                      <strong>{`${row.municipality} - ${row.kpi}`}</strong>
+                      <p>{`${row.recommendation} | risk ${row.risk_score} | breach ${row.breach_probability}`}</p>
+                      <small>{`${row.owner} - due ${row.due_date}`}</small>
+                    </div>
+                  </div>
+                  <div className="jazan-queue-actions">
+                    <Link href={buildHref(`${baseRoute}/decisions?selected=${row.decision_id}`, props.demoMode)} className="jazan-inline-link">
+                      Focus
+                    </Link>
+                    <Link href={buildCaseHref(row.decision_id, "decisions", props.demoMode)} className="jazan-inline-link">
+                      Open case
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </SectionCard>
 
         <div className="jazan-screen-stack compact">
@@ -2127,24 +2351,36 @@ function BundleDecisionCommandScreen(props: { data: ShellData; selected: CaseWor
             </div>
           </SectionCard>
 
+          <SectionCard eyebrow="Recommended actions" title="Ranked intervention list for the selected municipality">
+            <div className="jazan-recommendation-grid">
+              {props.selected.intelligence.ranked_actions.map((action, index) => (
+                <article key={`${props.selected.case_id}-${action.title}`} className="jazan-recommendation-card">
+                  <span className="jazan-pill is-light">{`#${index + 1}`}</span>
+                  <strong>{action.title}</strong>
+                  <p>{action.impact}</p>
+                  <small>{action.note}</small>
+                </article>
+              ))}
+            </div>
+          </SectionCard>
+
           <SectionCard eyebrow="Human-authorised action area" title="External side effects require explicit confirmation">
-            {renderDecisionButtons(props.data.decision_command.action_buttons, detailHref)}
             <p className="jazan-action-notice">{props.data.decision_command.human_authorisation_note}</p>
+            {renderDecisionButtons(props.data.decision_command.action_buttons, detailHref)}
           </SectionCard>
         </div>
       </div>
 
       <div className="jazan-two-column-grid">
         <SectionCard eyebrow="Confirmation drawer" title="No external workflow runs without review">
-          <div className="jazan-card-grid">
-            <article className="jazan-detail-card">
-              <strong>External side effects</strong>
-              <p>Email owner, create municipal ticket, create corrective action</p>
-            </article>
-            <article className="jazan-detail-card">
-              <strong>Recipient and owner summary</strong>
-              <p>{`${props.selected.owner} - due ${props.selected.due_date}`}</p>
-            </article>
+          <div className="jazan-consequence-grid">
+            {ensureActionButtons(props.data.decision_command.action_buttons).map((button) => (
+              <article key={`${button.id}-drawer`} className="jazan-consequence-card">
+                <strong>{button.label}</strong>
+                <p>{actionConsequence(button).effect}</p>
+                <small>{actionConsequence(button).records}</small>
+              </article>
+            ))}
           </div>
         </SectionCard>
 
@@ -2198,38 +2434,63 @@ function BundleRuntimeEvidenceScreen(props: { data: ShellData; demoMode: boolean
           <article key={runtime.runtime_id} className="jazan-runtime-card">
             <div className="jazan-runtime-card-header">
               <div>
-                <span>{runtime.runtime_id}</span>
+                <span className="jazan-mono-text">{runtime.runtime_id}</span>
                 <h3>{runtime.name}</h3>
+                <small>{runtime.model_family ?? "Seeded runtime"}</small>
               </div>
-              {renderStatusBadge(runtime.status, runtime.status === "online" ? "positive" : "warning")}
+              <div className="jazan-screen-stack compact">
+                {renderStatusBadge(runtime.status, runtime.status === "online" ? "positive" : "warning")}
+                {runtime.hitl ? <span className="jazan-pill">HITL</span> : null}
+              </div>
             </div>
-            <p>{runtime.image}</p>
+            <p className="jazan-mono-text">{runtime.image}</p>
             <div className="jazan-runtime-stats">
               <span>{`Last run ${runtime.last_run}`}</span>
               <span>{runtime.duration}</span>
               <span>{`${runtime.rows_out} rows`}</span>
               <span>{`Next ${runtime.next_run}`}</span>
             </div>
+            <div className="jazan-runtime-run-strip">
+              {(runtime.last_seven_runs ?? []).map((status, index) => (
+                <span
+                  key={`${runtime.runtime_id}-run-${index}`}
+                  className={`jazan-runtime-run-dot${runtimeRunTone(status)}`}
+                  title={status === "degraded" ? "retry_succeeded" : status}
+                />
+              ))}
+            </div>
             <div className="jazan-runtime-io">
               <strong>Inputs</strong>
-              <span>{runtime.inputs.join(", ")}</span>
+              <span className="jazan-mono-text">{runtime.inputs.join(", ")}</span>
               <strong>Outputs</strong>
-              <span>{runtime.outputs.join(", ")}</span>
+              <span className="jazan-mono-text">{runtime.outputs.join(", ")}</span>
             </div>
+            <small>{runtime.note ?? "No execution recorded yet"}</small>
           </article>
         ))}
       </section>
 
-      <SectionCard eyebrow="Execution history" title="Last seven execution traces">
-        {dataTable({
-          columns: ["Runtime", "Started at", "Status", "Duration"],
-          rows: props.data.runtime_evidence.execution_history.map((row) => [
-            row.runtime,
-            row.started_at,
-            row.status,
-            row.duration,
-          ]),
-        })}
+      <SectionCard eyebrow="Execution history" title="Last seven execution traces with honest degraded days">
+        <div className="jazan-list-stack">
+          {props.data.runtime_evidence.runtime_cards.map((runtime) => (
+            <article key={`${runtime.runtime_id}-history`} className="jazan-list-row">
+              <div>
+                <strong>{runtime.name}</strong>
+                <p className="jazan-mono-text">{runtime.runtime_id}</p>
+                <small>{runtime.note ?? "No execution recorded yet"}</small>
+              </div>
+              <div className="jazan-runtime-run-strip">
+                {(runtime.last_seven_runs ?? []).map((status, index) => (
+                  <span
+                    key={`${runtime.runtime_id}-history-${index}`}
+                    className={`jazan-runtime-run-dot${runtimeRunTone(status)}`}
+                    title={status === "degraded" ? "retry_succeeded" : status}
+                  />
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
       </SectionCard>
 
       <div className="jazan-two-column-grid">
@@ -2241,6 +2502,7 @@ function BundleRuntimeEvidenceScreen(props: { data: ShellData; demoMode: boolean
               </span>
             ))}
           </div>
+          <p className="jazan-seed-note">Raw-layer reads are forbidden on this dashboard surface. Inputs remain analytics.* and outputs remain decision/output identifiers.</p>
         </SectionCard>
 
         <SectionCard eyebrow="Schedules and next run" title="Declared cadence and next execution window">
@@ -2286,7 +2548,7 @@ function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
 
       <SectionCard eyebrow="Decision queue" title="Queue state carried into audit and corrective action follow-through">
         {dataTable({
-          columns: ["Decision", "Municipality", "KPI", "Risk", "Status", "Due"],
+          columns: ["Decision", "Municipality", "KPI", "Risk", "Status", "Due", "Trace"],
           rows: props.data.decision_action_audit.queue.map((row) => [
             row.decision_id,
             row.municipality,
@@ -2294,42 +2556,57 @@ function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
             row.risk_score,
             renderStatusBadge(row.status, row.status === "Awaiting review" ? "warning" : "positive"),
             row.due_date,
+            <Link key={`${row.decision_id}-trace`} href={buildHref(`${baseRoute}/audit?selected=${row.decision_id}`, props.demoMode)} className="jazan-inline-link">
+              Action history
+            </Link>,
           ]),
         })}
       </SectionCard>
 
       <div className="jazan-three-column-grid">
         <SectionCard eyebrow="Action event timeline" title="Who acted, through which channel, and with what result">
-          {dataTable({
-            columns: ["Time", "Actor", "Action", "Channel", "Result"],
-            rows: props.data.decision_action_audit.action_history.map((row) => [
-              row.time,
-              row.actor,
-              row.action,
-              row.channel,
-              row.result,
-            ]),
-          })}
+          <div className="jazan-list-stack">
+            {props.data.decision_action_audit.action_history.map((row) => (
+              <article key={`${row.time}-${row.action}`} className="jazan-timeline-row">
+                <div>
+                  <strong>{row.action}</strong>
+                  <p>{`${row.actor} via ${row.channel}`}</p>
+                  <small>{row.time}</small>
+                </div>
+                <div className="jazan-screen-stack compact">
+                  {renderStatusBadge(row.result, row.result === "Sent" ? "positive" : "neutral")}
+                  {row.created_record ? (
+                    <span className="jazan-mono-text">{row.created_record}</span>
+                  ) : (
+                    <span className="jazan-mono-text">—</span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
         </SectionCard>
 
         <SectionCard eyebrow="Email delivery log" title="Notification outbox and delivery evidence">
           {dataTable({
-            columns: ["Recipient", "Template", "Status", "Sent at"],
+            columns: ["Notification", "Recipient", "Subject", "Template", "Status", "Sent at", "Decision"],
             rows:
               props.data.decision_action_audit.email_log.length > 0
                 ? props.data.decision_action_audit.email_log.map((row) => [
-                    row.recipient,
+                    row.notification_id ?? "—",
+                    row.recipient_role ?? row.recipient,
+                    row.subject ?? row.template,
                     row.template,
                     row.status,
                     row.sent_at,
+                    row.linked_decision_id ?? "—",
                   ])
-                : [["No seeded emails yet", "-", "-", "-"]],
+                : [["No seeded emails yet", "-", "-", "-", "-", "-", "-"]],
           })}
         </SectionCard>
 
         <SectionCard eyebrow="Ticket request log" title="External ticketing references linked to actions">
           {dataTable({
-            columns: ["System", "Ticket", "Priority", "Status", "Case"],
+            columns: ["System", "Ticket", "Priority", "Status", "External ref", "Action"],
             rows:
               props.data.decision_action_audit.ticket_log.length > 0
                 ? props.data.decision_action_audit.ticket_log.map((row) => [
@@ -2337,9 +2614,10 @@ function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
                     row.ticket_id,
                     row.priority,
                     row.status,
-                    row.linked_case,
+                    row.external_ticket_ref ?? row.linked_case,
+                    row.linked_action_id ?? "—",
                   ])
-                : [["No seeded tickets yet", "-", "-", "-", "-"]],
+                : [["No seeded tickets yet", "-", "-", "-", "-", "-"]],
           })}
         </SectionCard>
       </div>
@@ -2358,6 +2636,7 @@ function BundleAuditScreen(props: { data: ShellData; demoMode: boolean }) {
             row.next_step,
           ]),
         })}
+        <p className="jazan-seed-note">{props.data.decision_action_audit.audit_note}</p>
       </SectionCard>
     </div>
   );

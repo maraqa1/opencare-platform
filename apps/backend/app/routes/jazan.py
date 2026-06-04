@@ -240,14 +240,59 @@ def service_quality_case_workspace() -> dict[str, object]:
     return jazan_service_quality_service.case_workspace_payload()
 
 
+@router.get("/service-quality/cases/{case_id}/intelligence")
+def service_quality_case_intelligence(case_id: str) -> dict[str, object]:
+    try:
+        return jazan_service_quality_service.case_intelligence_payload(case_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Jazan case not found") from exc
+
+
+@router.get("/service-quality/cases/{case_id}/decision")
+def service_quality_case_decision(case_id: str) -> dict[str, object]:
+    try:
+        return jazan_service_quality_service.case_decision_payload(case_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Jazan case not found") from exc
+
+
+@router.get("/service-quality/cases/{case_id}/recovery")
+def service_quality_case_recovery(case_id: str) -> dict[str, object]:
+    try:
+        return jazan_service_quality_service.case_recovery_payload(case_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Jazan case not found") from exc
+
+
 @router.get("/service-quality/decision-command")
 def service_quality_decision_command() -> dict[str, object]:
     return jazan_service_quality_service.decision_command_payload()
 
 
+@router.get("/service-quality/decisions/summary")
+def service_quality_decision_summary() -> dict[str, object]:
+    return jazan_service_quality_service.decision_summary_payload()
+
+
+@router.get("/service-quality/decisions/{decision_id}")
+def service_quality_decision_detail(decision_id: str) -> dict[str, object]:
+    try:
+        return jazan_service_quality_service.decision_detail_payload(decision_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Jazan decision not found") from exc
+
+
 @router.get("/service-quality/runtime-evidence")
 def service_quality_runtime_evidence() -> dict[str, object]:
     return jazan_service_quality_service.runtime_evidence_payload()
+
+
+@router.get("/service-quality/runtimes/{runtime_id}/history")
+def service_quality_runtime_history(runtime_id: str) -> dict[str, object]:
+    try:
+        return jazan_service_quality_service.runtime_history_payload(runtime_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Jazan runtime not found") from exc
 
 
 @router.get("/service-quality/decision-queue")
@@ -263,6 +308,26 @@ def service_quality_outcome_feedback() -> dict[str, object]:
 @router.get("/service-quality/decision-action-audit")
 def service_quality_decision_action_audit() -> dict[str, object]:
     return jazan_service_quality_service.decision_action_audit_payload()
+
+
+@router.get("/service-quality/audit/events")
+def service_quality_audit_events() -> dict[str, object]:
+    return jazan_service_quality_service.audit_events_payload()
+
+
+@router.get("/service-quality/audit/emails")
+def service_quality_audit_emails() -> dict[str, object]:
+    return jazan_service_quality_service.audit_emails_payload()
+
+
+@router.get("/service-quality/audit/tickets")
+def service_quality_audit_tickets() -> dict[str, object]:
+    return jazan_service_quality_service.audit_tickets_payload()
+
+
+@router.get("/service-quality/audit/corrective-actions")
+def service_quality_audit_corrective_actions() -> dict[str, object]:
+    return jazan_service_quality_service.audit_corrective_actions_payload()
 
 
 @router.get("/service-quality/governance-evidence")

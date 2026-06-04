@@ -7455,6 +7455,11 @@ code {
   font-weight: 600;
 }
 
+.jazan-mono-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
 .jazan-zone-card {
   padding: 20px 22px;
 }
@@ -7510,6 +7515,32 @@ code {
   background: rgba(31, 56, 100, 0.03);
 }
 
+.jazan-queue-row {
+  border-left: 4px solid transparent;
+}
+
+.jazan-queue-row.is-selected {
+  border-left-color: rgba(59, 88, 164, 0.7);
+  background: rgba(59, 88, 164, 0.08);
+}
+
+.jazan-queue-row.is-urgent {
+  border-left-color: rgba(178, 60, 52, 0.7);
+}
+
+.jazan-queue-meta,
+.jazan-version-row,
+.jazan-queue-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.jazan-queue-actions {
+  justify-content: flex-end;
+}
+
 .jazan-risk-summary,
 .jazan-runtime-card-header {
   display: grid;
@@ -7541,6 +7572,21 @@ code {
   background: rgba(31, 56, 100, 0.03);
 }
 
+.jazan-consequence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.jazan-consequence-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(31, 56, 100, 0.03);
+  border: 1px solid rgba(31, 56, 100, 0.08);
+}
+
 .jazan-action-notice {
   margin: 0;
   color: var(--oc-gray-600);
@@ -7565,6 +7611,37 @@ code {
 .jazan-runtime-stats {
   font-size: 13px;
   color: var(--oc-gray-600);
+}
+
+.jazan-runtime-run-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.jazan-runtime-run-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(74, 143, 88, 0.92);
+}
+
+.jazan-runtime-run-dot.is-degraded {
+  background: rgba(183, 119, 13, 0.92);
+}
+
+.jazan-timeline-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(31, 56, 100, 0.03);
+}
+
+.jazan-case-tab.is-disabled {
+  opacity: 0.78;
 }
 
 .jazan-three-column-grid .jazan-section-card,

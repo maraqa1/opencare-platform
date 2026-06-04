@@ -772,11 +772,13 @@ SHELL_DATA: dict[str, Any] = {
             {
                 "runtime_id": "rt_jazan_service_rnn_forecast",
                 "name": "Jazan Service Quality RNN Forecast",
+                "model_family": "RNN forecast",
                 "status": "online",
                 "last_run": "07 Sep 06:14",
                 "duration": "4m 18s",
                 "rows_out": "1,247",
                 "next_run": "08 Sep 00:00",
+                "note": "Healthy execution window across the last seven runs.",
                 "image": "ghcr.io/opencare/runtimes/jazan-service-rnn:1.0.0",
                 "inputs": [
                     "analytics.fct_jazan_service_quality",
@@ -785,15 +787,27 @@ SHELL_DATA: dict[str, Any] = {
                 "outputs": [
                     "output.jazan_service_rnn_forecast",
                 ],
+                "last_seven_runs": [
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                ],
+                "hitl": False,
             },
             {
                 "runtime_id": "rt_jazan_service_anomaly",
                 "name": "Jazan Service Quality Anomaly Detector",
+                "model_family": "Anomaly detector",
                 "status": "online",
                 "last_run": "07 Sep 06:18",
                 "duration": "1m 47s",
                 "rows_out": "312",
                 "next_run": "08 Sep 00:10",
+                "note": "Healthy execution window across the last seven runs.",
                 "image": "ghcr.io/opencare/runtimes/jazan-anomaly:1.0.0",
                 "inputs": [
                     "analytics.fct_jazan_service_quality",
@@ -802,15 +816,27 @@ SHELL_DATA: dict[str, Any] = {
                 "outputs": [
                     "output.jazan_service_quality_anomaly",
                 ],
+                "last_seven_runs": [
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                ],
+                "hitl": False,
             },
             {
                 "runtime_id": "rt_jazan_decision_candidate",
                 "name": "Jazan Decision Candidate Generator",
+                "model_family": "Decision candidate",
                 "status": "online",
                 "last_run": "07 Sep 06:22",
                 "duration": "0m 38s",
                 "rows_out": "8",
                 "next_run": "08 Sep 00:20",
+                "note": "Apr 2026 retry_succeeded remains visible as honest degraded history.",
                 "image": "ghcr.io/opencare/runtimes/jazan-decision-candidate:1.0.0",
                 "inputs": [
                     "output.jazan_service_rnn_forecast",
@@ -820,6 +846,16 @@ SHELL_DATA: dict[str, Any] = {
                     "decision.jazan_generated_service_decisions",
                     "decision.jazan_service_quality_action_queue",
                 ],
+                "last_seven_runs": [
+                    "succeeded",
+                    "succeeded",
+                    "degraded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                    "succeeded",
+                ],
+                "hitl": True,
             },
         ],
         "execution_history": [
@@ -855,6 +891,8 @@ SHELL_DATA: dict[str, Any] = {
                 "action": "Approved decision",
                 "channel": "Portal",
                 "result": "Success",
+                "created_record": "decision.approved/JZN-DEC-1007",
+                "linked_decision_id": "JZN-DEC-1007",
             },
             {
                 "time": "07 Sep 06:31",
@@ -862,6 +900,8 @@ SHELL_DATA: dict[str, Any] = {
                 "action": "Created corrective action",
                 "channel": "Workflow",
                 "result": "Success",
+                "created_record": "action.lifecycle/ACT-0001",
+                "linked_decision_id": "JZN-DEC-1007",
             },
             {
                 "time": "07 Sep 06:42",
@@ -869,14 +909,20 @@ SHELL_DATA: dict[str, Any] = {
                 "action": "Sent owner notification",
                 "channel": "Email",
                 "result": "Sent",
+                "created_record": "notification.outbox/NOTIF-0042",
+                "linked_decision_id": "JZN-DEC-1007",
             },
         ],
         "email_log": [
             {
+                "notification_id": "NOTIF-0042",
                 "recipient": "Field Compliance Owner",
+                "recipient_role": "Field Compliance",
+                "subject": "Visual distortion closure quality risk alert",
                 "template": "visual_distortion_closure_risk",
                 "status": "Sent",
                 "sent_at": "07 Sep 06:42",
+                "linked_decision_id": "JZN-DEC-1007",
             }
         ],
         "ticket_log": [
@@ -886,6 +932,8 @@ SHELL_DATA: dict[str, Any] = {
                 "priority": "High",
                 "status": "Open",
                 "linked_case": "JZN-DEC-1007",
+                "external_ticket_ref": "SD-2026-0045",
+                "linked_action_id": "ACT-0001",
             }
         ],
         "corrective_actions": [
@@ -1034,3 +1082,137 @@ def decision_action_audit_payload() -> dict[str, Any]:
 
 def governance_evidence_payload() -> dict[str, Any]:
     return _payload("governance_evidence")
+
+
+def _find_case_workspace(case_id: str) -> dict[str, Any]:
+    for case in CASE_WORKSPACES:
+        if case["case_id"] == case_id:
+            return deepcopy(case)
+    raise KeyError(case_id)
+
+
+def _find_decision_row(decision_id: str) -> dict[str, Any]:
+    for row in DECISION_QUEUE_ROWS:
+        if row["decision_id"] == decision_id:
+            return deepcopy(row)
+    raise KeyError(decision_id)
+
+
+def case_intelligence_payload(case_id: str) -> dict[str, Any]:
+    case = _find_case_workspace(case_id)
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "case_intelligence": {
+            "case_id": case["case_id"],
+            "municipality": case["municipality"],
+            "kpi_id": case["kpi_slug"],
+            "risk_score": case["risk_score"],
+            "forecast_breach_probability": case["breach_probability"],
+            "composite_score": case["risk_score"],
+            "feature_contributions": deepcopy(case["intelligence"]["feature_contributions"]),
+            "forecast": {
+                "series": deepcopy(case["intelligence"]["trend"]),
+                "target": case["target_value"],
+            },
+            "anomaly": {
+                "z_score": case["overview_metrics"][2]["value"],
+                "signal_type": case["overview_metrics"][2]["note"],
+                "detected_at": "07 Sep 06:18",
+            },
+            "recommendations": deepcopy(case["intelligence"]["ranked_actions"]),
+            "decision": {
+                "decision_id": case["case_id"],
+                "status": case["status"],
+                "recommended_action": case["decisions"]["recommended_actions"][0],
+            },
+        },
+    }
+
+
+def case_decision_payload(case_id: str) -> dict[str, Any]:
+    case = _find_case_workspace(case_id)
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "case_decision": {
+            "case_id": case["case_id"],
+            "municipality": case["municipality"],
+            "kpi_id": case["kpi_slug"],
+            "risk_score": case["risk_score"],
+            "decision_status": case["status"],
+            "rationale": case["rationale"],
+            "recommended_actions": deepcopy(case["decisions"]["recommended_actions"]),
+            "evidence_pack": deepcopy(case["decisions"]["evidence_pack"]),
+            "action_buttons": deepcopy(case["decisions"]["action_buttons"]),
+            "human_authorisation_note": case["decisions"]["human_authorisation_note"],
+        },
+    }
+
+
+def case_recovery_payload(case_id: str) -> dict[str, Any]:
+    case = _find_case_workspace(case_id)
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "case_recovery": {
+            "case_id": case["case_id"],
+            "status": case["status"],
+            **deepcopy(case["recovery"]),
+        },
+    }
+
+
+def decision_summary_payload() -> dict[str, Any]:
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "decision_summary": deepcopy(SHELL_DATA["decision_command"]["counters"]),
+    }
+
+
+def decision_detail_payload(decision_id: str) -> dict[str, Any]:
+    row = _find_decision_row(decision_id)
+    case = _find_case_workspace(decision_id)
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "decision_detail": {
+            **row,
+            "rationale": case["rationale"],
+            "recommended_actions": deepcopy(case["decisions"]["recommended_actions"]),
+            "action_buttons": deepcopy(case["decisions"]["action_buttons"]),
+            "human_authorisation_note": case["decisions"]["human_authorisation_note"],
+        },
+    }
+
+
+def runtime_history_payload(runtime_id: str) -> dict[str, Any]:
+    runtime = next(
+        (card for card in SHELL_DATA["runtime_evidence"]["runtime_cards"] if card["runtime_id"] == runtime_id),
+        None,
+    )
+    if runtime is None:
+        raise KeyError(runtime_id)
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "runtime_history": {
+            "runtime_id": runtime_id,
+            "last_seven_runs": deepcopy(runtime["last_seven_runs"]),
+            "note": runtime["note"],
+        },
+    }
+
+
+def audit_events_payload() -> dict[str, Any]:
+    return {"meta": deepcopy(SHELL_DATA["meta"]), "events": deepcopy(SHELL_DATA["decision_action_audit"]["action_history"])}
+
+
+def audit_emails_payload() -> dict[str, Any]:
+    return {"meta": deepcopy(SHELL_DATA["meta"]), "emails": deepcopy(SHELL_DATA["decision_action_audit"]["email_log"])}
+
+
+def audit_tickets_payload() -> dict[str, Any]:
+    return {"meta": deepcopy(SHELL_DATA["meta"]), "tickets": deepcopy(SHELL_DATA["decision_action_audit"]["ticket_log"])}
+
+
+def audit_corrective_actions_payload() -> dict[str, Any]:
+    return {
+        "meta": deepcopy(SHELL_DATA["meta"]),
+        "corrective_actions": deepcopy(SHELL_DATA["decision_action_audit"]["corrective_actions"]),
+    }
