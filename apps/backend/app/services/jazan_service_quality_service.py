@@ -7,7 +7,7 @@ from typing import Any
 BASE_ROUTE = "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop"
 DEFAULT_KPI_SLUG = "visual-distortion-closure-quality"
 DEFAULT_CASE_ID = "JZN-DEC-1007"
-SUPPORTED_TABS = ["intelligence", "decisions", "recovery"]
+SUPPORTED_TABS = ["overview", "intelligence", "decisions", "recovery"]
 
 KPI_WORKSPACES: list[dict[str, Any]] = [
     {
@@ -81,14 +81,14 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Sabya",
                 "reason": "Complaint cluster and repeat closures degrading below target.",
                 "owner": "Field Compliance",
-                "href": f"{BASE_ROUTE}/case/JZN-DEC-1007/intelligence?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1007/overview?demo=1",
             },
             {
                 "case_id": "JZN-DEC-1011",
                 "municipality": "Abu Arish",
                 "reason": "Forecast breach probability remains above 60% for four weeks.",
                 "owner": "Services Agency",
-                "href": f"{BASE_ROUTE}/case/JZN-DEC-1011/intelligence?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1011/overview?demo=1",
             },
         ],
         "governance": [
@@ -151,7 +151,7 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Abu Arish",
                 "reason": "Backlog and repeated SLA misses require field rebalance.",
                 "owner": "Services Agency",
-                "href": f"{BASE_ROUTE}/case/JZN-DEC-1011/intelligence?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1011/overview?demo=1",
             }
         ],
         "governance": [
@@ -205,7 +205,7 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Samtah",
                 "reason": "Permit backlog recovery sprint required before quarter close.",
                 "owner": "Licensing Department",
-                "href": f"{BASE_ROUTE}/case/JZN-DEC-1015/intelligence?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1015/overview?demo=1",
             }
         ],
         "governance": [
@@ -291,7 +291,7 @@ KPI_WORKSPACES: list[dict[str, Any]] = [
                 "municipality": "Farasan",
                 "reason": "Emergency drill gap needs action plan before next review.",
                 "owner": "Civil Defence",
-                "href": f"{BASE_ROUTE}/case/JZN-DEC-1018/intelligence?demo=1",
+                "href": f"{BASE_ROUTE}/case/JZN-DEC-1018/overview?demo=1",
             }
         ],
         "governance": [
@@ -663,7 +663,7 @@ STRATEGIC_DASHBOARD: dict[str, Any] = {
         "risk_score": "84 / 100",
         "breach_probability": "0.78",
         "summary": "Decision candidate awaiting review after complaint-cluster anomaly and forecast breach.",
-        "href": f"{BASE_ROUTE}/case/JZN-DEC-1007/intelligence?demo=1",
+        "href": f"{BASE_ROUTE}/case/JZN-DEC-1007/overview?demo=1",
     },
 }
 
