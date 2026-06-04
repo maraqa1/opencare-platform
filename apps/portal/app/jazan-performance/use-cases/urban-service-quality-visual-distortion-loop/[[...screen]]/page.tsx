@@ -1417,6 +1417,34 @@ function formatTrajectoryPeriod(label: string) {
   return `${label} 2026`;
 }
 
+function toOperationalSlug(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function contributionHint(label: string, caseWorkspace: CaseWorkspace) {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("forecast")) {
+    return `RNN · next 4 weeks · p=${caseWorkspace.breach_probability}`;
+  }
+  if (normalized.includes("anomaly")) {
+    return "vs 14-month baseline";
+  }
+  if (normalized.includes("recurrence")) {
+    return "municipality breach history";
+  }
+  if (normalized.includes("complaint")) {
+    return "MAKEEN tickets · elevated";
+  }
+  if (normalized.includes("backlog")) {
+    return "service backlog · municipal queue";
+  }
+  return "seeded model feature";
+}
+
 function statusLookup(text: string) {
   return STATUS_ARABIC_LABELS[text.toLowerCase()] ?? "\u062c\u0627\u0647\u0632\u064a\u0629 \u062a\u0634\u063a\u064a\u0644\u064a\u0629";
 }
@@ -2743,6 +2771,10 @@ function BundleCaseWorkspaceScreen(props: {
   const headlineStatus = caseWorkspace.status === "Awaiting review" ? "Under review" : caseWorkspace.status;
   const selectedActionButton = actionButtons.find((button) => button.id !== "view-details") ?? actionButtons[0];
   const selectedActionPreview = selectedActionButton ? actionConsequence(selectedActionButton) : null;
+  const recommendedSlug = selectedActionButton ? toOperationalSlug(selectedActionButton.id) : "pending";
+  const ownerSlug = toOperationalSlug(caseWorkspace.owner);
+  const generatedAt = linkedNotification?.sent_at ?? caseWorkspace.due_date;
+  const intelligenceRefresh = data.runtime_evidence.runtime_cards[2]?.last_run ?? data.runtime_evidence.runtime_cards[0]?.last_run ?? "Seeded runtime";
   const decisionCycle = [
     {
       id: "review" as const,
@@ -2819,13 +2851,40 @@ function BundleCaseWorkspaceScreen(props: {
 
       <section className="jazan-case-hero-card">
         <div className="jazan-case-hero-main">
-          <div className="jazan-case-hero-title">
-            <span className="jazan-case-id-chip">{caseCode}</span>
-            <h3>{`${caseWorkspace.municipality} · ${caseWorkspace.kpi_name}`}</h3>
+          <div className="jazan-case-hero-copy">
+            <div className="jazan-case-hero-title">
+              <span className="jazan-case-id-chip">{caseCode}</span>
+              <h3>{`${caseWorkspace.municipality} · ${caseWorkspace.kpi_name}`}</h3>
+            </div>
+            <p className="jazan-case-hero-summary">
+              {linkedNotification
+                ? `Action ${recommendedSlug} authorised by reviewer_01 and dispatched. Decision case file not yet closed by Performance Office.`
+                : `Decision case is still awaiting a human-authorised action. Performance Office review is still required before external side effects are fired.`}
+            </p>
           </div>
-          <div className="jazan-case-status-row">
-            <span className="jazan-case-chip is-review">{headlineStatus}</span>
-            {linkedNotification ? <span className="jazan-case-chip is-lilac">Action fired</span> : null}
+          <div className="jazan-case-hero-side">
+            <div className="jazan-case-status-row">
+              <span className="jazan-case-chip is-review">{headlineStatus}</span>
+              {linkedNotification ? <span className="jazan-case-chip is-lilac">Action fired</span> : null}
+            </div>
+            <div className="jazan-case-meta-grid">
+              <div>
+                <span>Generated</span>
+                <strong>{generatedAt}</strong>
+              </div>
+              <div>
+                <span>Due</span>
+                <strong>{caseWorkspace.due_date}</strong>
+              </div>
+              <div>
+                <span>Recommended</span>
+                <strong>{recommendedSlug}</strong>
+              </div>
+              <div>
+                <span>Owner</span>
+                <strong>{ownerSlug}</strong>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2921,7 +2980,9 @@ function BundleCaseWorkspaceScreen(props: {
                 <span>/ 100</span>
               </div>
               <span className="jazan-case-risk-badge">High risk</span>
-              <p>{`Forecast breach persists at ${caseWorkspace.breach_probability}. Anomaly sustained across the seeded observation window.`}</p>
+              <p>{`Forecast breach persists with p=${caseWorkspace.breach_probability}. Gap to target: ${formatKpiDelta(caseWorkspace.current_value, caseWorkspace.target_value, caseWorkspace.kpi_slug)}.`}</p>
+              <div className="jazan-case-risk-divider" />
+              <small>{`Score derived from current state · production reads ${caseWorkspace.intelligence.outputs[2] ?? caseWorkspace.intelligence.outputs[0]}.`}</small>
               <span className="jazan-case-ghost-score">{caseWorkspace.risk_score}</span>
             </article>
 
@@ -2934,7 +2995,10 @@ function BundleCaseWorkspaceScreen(props: {
                   return (
                     <div key={item.label} className="jazan-case-contribution-row">
                       <div className="jazan-case-contribution-meta">
-                        <span>{item.label}</span>
+                        <div>
+                          <span>{item.label}</span>
+                          <small>{contributionHint(item.label, caseWorkspace)}</small>
+                        </div>
                         <strong>{Math.round(extractNumber(item.value))}</strong>
                       </div>
                       <div className="jazan-case-contribution-track">
@@ -2943,6 +3007,20 @@ function BundleCaseWorkspaceScreen(props: {
                     </div>
                   );
                 })}
+              </div>
+              <div className="jazan-case-contribution-footer">
+                <div>
+                  <span>Confidence</span>
+                  <strong>{`${(Math.round(contributionTotal) / 100).toFixed(2)} · high`}</strong>
+                </div>
+                <div>
+                  <span>Last refresh</span>
+                  <strong>{intelligenceRefresh}</strong>
+                </div>
+                <div>
+                  <span>Runtime</span>
+                  <strong>{data.runtime_evidence.runtime_cards[2]?.runtime_id ?? "rt_jazan_decision_candidate"}</strong>
+                </div>
               </div>
             </article>
           </div>
@@ -2967,6 +3045,7 @@ function BundleCaseWorkspaceScreen(props: {
                   </div>
                   <strong>{item.municipality}</strong>
                   <p>{caseWorkspace.intelligence.ranked_actions[index]?.title ?? item.kpi_name}</p>
+                  <small className="jazan-case-comparable-note">{`${item.case_id} · ${comparableCases[Math.max(0, index - 1)]?.case_id ?? item.case_id}`}</small>
                   <div className="jazan-case-comparable-metric">
                     <span>Recovery impact</span>
                     <strong>{caseWorkspace.intelligence.ranked_actions[index]?.impact ?? item.current_value}</strong>
@@ -2975,11 +3054,12 @@ function BundleCaseWorkspaceScreen(props: {
               ))}
               <article className="jazan-case-comparable-item is-current">
                 <div className="jazan-case-comparable-top">
-                  <span className="jazan-pill">This case</span>
+                  <span className="jazan-pill">Rank 3</span>
                   <span className="jazan-case-chip is-progress">{headlineStatus}</span>
                 </div>
                 <strong>{caseWorkspace.municipality}</strong>
                 <p>{linkedNotification ? "email owner · fired" : "email owner · pending"}</p>
+                <small className="jazan-case-comparable-note">{`${caseWorkspace.case_id} · ${linkedAction?.decision_id ?? caseWorkspace.case_id}`}</small>
                 <div className="jazan-case-comparable-metric">
                   <span>Current action</span>
                   <strong>{linkedAction?.status ?? "Pending"}</strong>
@@ -2987,7 +3067,7 @@ function BundleCaseWorkspaceScreen(props: {
               </article>
             </div>
             <div className="jazan-case-comparable-footer">
-              <span>{`Measured in ${caseWorkspace.intelligence.outputs[0]}.`}</span>
+              <span>{`Measured in ${caseWorkspace.intelligence.outputs[0].replace("output.", "")}.`}</span>
               <Link href={decisionHref} className="jazan-inline-link">
                 Decide action
               </Link>

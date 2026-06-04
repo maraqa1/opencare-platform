@@ -7178,6 +7178,11 @@ code {
   gap: 16px;
 }
 
+.jazan-case-hero-copy {
+  display: grid;
+  gap: 10px;
+}
+
 .jazan-case-hero-title {
   display: flex;
   align-items: center;
@@ -7215,6 +7220,40 @@ code {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.jazan-case-hero-side {
+  display: grid;
+  gap: 14px;
+  min-width: 260px;
+}
+
+.jazan-case-hero-summary {
+  margin: 0;
+  color: var(--oc-gray-600);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.jazan-case-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+}
+
+.jazan-case-meta-grid span {
+  display: block;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.jazan-case-meta-grid strong {
+  display: block;
+  color: var(--oc-ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .jazan-case-chip.is-review {
@@ -7486,6 +7525,11 @@ code {
   overflow: hidden;
 }
 
+.jazan-case-risk-divider {
+  height: 1px;
+  background: rgba(179, 56, 51, 0.18);
+}
+
 .jazan-case-drill-card strong,
 .jazan-case-risk-value strong,
 .jazan-case-comparable-item strong {
@@ -7564,6 +7608,16 @@ code {
   gap: 12px;
 }
 
+.jazan-case-contribution-meta > div {
+  display: grid;
+  gap: 4px;
+}
+
+.jazan-case-contribution-meta small {
+  color: var(--oc-gray-600);
+  font-size: 12px;
+}
+
 .jazan-case-contribution-track {
   height: 10px;
   border-radius: 999px;
@@ -7586,6 +7640,29 @@ code {
 .jazan-case-comparable-header {
   display: grid;
   gap: 8px;
+}
+
+.jazan-case-contribution-footer {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.jazan-case-contribution-footer span {
+  display: block;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.jazan-case-contribution-footer strong {
+  display: block;
+  color: var(--oc-ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .jazan-case-comparable-item {
@@ -7628,6 +7705,12 @@ code {
   gap: 12px;
   color: var(--oc-gray-600);
   font-size: 13px;
+}
+
+.jazan-case-comparable-note {
+  color: var(--oc-gray-600);
+  font-family: var(--font-mono);
+  font-size: 12px;
 }
 
 .jazan-case-arrow-link {
@@ -7717,6 +7800,11 @@ code {
   .jazan-case-drill-grid,
   .jazan-case-id-grid,
   .jazan-case-comparable-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jazan-case-meta-grid,
+  .jazan-case-contribution-footer {
     grid-template-columns: 1fr;
   }
 
