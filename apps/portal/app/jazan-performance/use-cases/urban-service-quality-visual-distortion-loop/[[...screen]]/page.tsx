@@ -1071,6 +1071,88 @@ function caseTrajectoryChart(caseWorkspace: CaseWorkspace) {
   );
 }
 
+function governanceEvidenceModule(kpi: KpiWorkspace, data: ShellData) {
+  const fallbackFreshness = kpi.governance.find((item) => item.label === "Freshness")?.value ?? "Governed";
+  const assets = kpi.governance
+    .filter((item) => item.label !== "Freshness")
+    .map((item) => {
+      const matched = data.governance_evidence.datasets.find((dataset) => dataset.asset === item.value);
+      const defaultClassification =
+        item.label === "Source"
+          ? "Restricted source"
+          : item.label === "Analytics mart"
+            ? "Internal analytics mart"
+            : "Internal governed output";
+      const defaultLineage =
+        item.label === "Source"
+          ? "source -> raw -> staging"
+          : item.label === "Analytics mart"
+            ? "source -> raw -> staging -> analytics"
+            : "analytics -> output -> decision -> dashboard";
+
+      return {
+        asset: item.value,
+        classification: matched?.classification ?? defaultClassification,
+        owner: matched?.owner ?? kpi.owner,
+        freshness: matched?.freshness ?? fallbackFreshness,
+        lineage: matched?.lineage ?? defaultLineage,
+      };
+    });
+
+  const lineageSteps =
+    data.governance_evidence.lineage_flow.length > 0
+      ? data.governance_evidence.lineage_flow.flatMap((item) => item.split(" -> ").map((step) => step.trim()))
+      : ["source", "raw", "staging", "analytics", "output", "decision", "dashboard"];
+  const qualityChecks = data.governance_evidence.quality_checks.slice(0, 3);
+
+  return (
+    <div className="jazan-governance-module">
+      {governanceMiniRail(kpi.governance)}
+
+      <div className="jazan-governance-assets">
+        {assets.map((asset) => (
+          <article key={asset.asset} className="jazan-governance-asset-card">
+            <div className="jazan-governance-asset-top">
+              <span className="jazan-governance-classification">{asset.classification}</span>
+              <small>{asset.freshness}</small>
+            </div>
+            <strong className="jazan-mono-text">{asset.asset}</strong>
+            <p>{`Owner: ${asset.owner}`}</p>
+            <div className="jazan-governance-lineage">
+              {asset.lineage.split(" -> ").map((step) => (
+                <span key={`${asset.asset}-${step}`} className="jazan-pill">
+                  {step}
+                </span>
+              ))}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="jazan-two-column-grid">
+        <article className="jazan-detail-card">
+          <strong>Governed lineage path</strong>
+          <div className="jazan-governance-lineage">
+            {lineageSteps.map((step, index) => (
+              <span key={`${step}-${index}`} className="jazan-pill">
+                {step}
+              </span>
+            ))}
+          </div>
+        </article>
+        <article className="jazan-detail-card">
+          <strong>Quality and classification controls</strong>
+          <ul className="jazan-bullet-list">
+            {qualityChecks.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </article>
+      </div>
+    </div>
+  );
+}
+
 function impactMagnitude(impact: string) {
   const match = impact.match(/-?\d+(?:\.\d+)?/);
   return match ? Number(match[0]).toFixed(2) : impact;
@@ -2513,8 +2595,8 @@ function EnhancedKpiWorkspaceScreen(props: { kpi: KpiWorkspace; demoMode: boolea
         {municipalityRankingTable(kpi, demoMode)}
       </section>
 
-      <SectionCard eyebrow="Governance evidence" title="Certified mart, output, freshness, and ownership">
-        {governanceMiniRail(kpi.governance)}
+      <SectionCard eyebrow="Governance evidence" title="Classified assets, freshness, and lineage path">
+        {governanceEvidenceModule(kpi, data)}
       </SectionCard>
     </div>
   );
