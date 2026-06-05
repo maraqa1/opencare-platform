@@ -27,6 +27,7 @@ export type GovernanceDomain =
   | "Clinical Operations"
   | "Financial Operations"
   | "Commercial Operations"
+  | "Municipal Operations"
   | "Platform Administration";
 
 export type ScopeCoverage =
