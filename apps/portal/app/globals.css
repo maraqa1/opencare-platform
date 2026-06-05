@@ -8524,6 +8524,71 @@ code {
   z-index: 1;
 }
 
+.trust-workspace-links {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--surface-shadow);
+}
+
+.trust-workspace-links-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.trust-workspace-links-header h3 {
+  margin: 0;
+  color: var(--oc-gray-900);
+  font-family: var(--font-heading);
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.trust-workspace-links-header p {
+  margin: 8px 0 0;
+  color: var(--oc-gray-600);
+  line-height: 1.5;
+}
+
+.trust-workspace-link-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trust-workspace-link-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 14px;
+  background: rgba(248, 250, 253, 0.92);
+  color: var(--oc-gray-900);
+  text-decoration: none;
+}
+
+.trust-workspace-link-card strong {
+  color: var(--oc-gray-900);
+  font-size: 14px;
+}
+
+.trust-workspace-link-card span {
+  color: var(--oc-gray-500);
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.trust-workspace-link-card:hover {
+  border-color: rgba(83, 74, 183, 0.22);
+  background: rgba(242, 239, 255, 0.72);
+}
+
 .trust-stage-panel {
   display: grid;
   gap: 16px;
@@ -9872,7 +9937,8 @@ code {
 
 @media (max-width: 1200px) {
   .trust-product-header,
-  .trust-map-hero-head {
+  .trust-map-hero-head,
+  .trust-workspace-links-header {
     flex-direction: column;
   }
 
@@ -9896,6 +9962,10 @@ code {
 
   .trust-usecase-option {
     width: auto;
+  }
+
+  .trust-workspace-link-grid {
+    grid-template-columns: 1fr;
   }
 
   .governance-summary-grid,

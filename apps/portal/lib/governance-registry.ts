@@ -1906,12 +1906,13 @@ const governanceUseCases: GovernanceUseCase[] = [
       "source_jazan.municipalities",
     ],
     workspaceCoverage: [
-      { label: "Overview", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop" },
-      { label: "KPI Contract", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi-contract" },
-      { label: "Model Intelligence", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/model-intelligence" },
-      { label: "Decision Tracker", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/decision-tracker" },
-      { label: "Outcome Feedback", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/outcome-feedback" },
-      { label: "Governance Evidence", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/governance" },
+      { label: "Strategic landing", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop?demo=1" },
+      { label: "KPI workspace", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/kpi/visual-distortion-closure-quality?demo=1" },
+      { label: "Case overview", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/JZN-DEC-1007/overview?demo=1" },
+      { label: "Decision command", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/case/JZN-DEC-1007/decisions?demo=1" },
+      { label: "Runtime evidence", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/runtimes?demo=1" },
+      { label: "Audit trail", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/audit?demo=1" },
+      { label: "Governance evidence", href: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/governance-evidence?demo=1" },
     ],
     governedDatasets: [
       {

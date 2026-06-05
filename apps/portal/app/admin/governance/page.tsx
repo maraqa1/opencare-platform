@@ -4,8 +4,8 @@ import { UseCaseConfigurationPanel } from "@/components/admin/UseCaseConfigurati
 import { GovernanceControlTower } from "@/components/GovernanceControlTower";
 import { PageFrame } from "@/components/page-frame";
 import { getApiJson } from "@/lib/api";
-import { getGovernanceUseCases } from "@/lib/governance-registry";
-import { getFallbackUseCaseManifestEntries } from "@/lib/use-cases";
+import { filterGovernanceUseCasesByIds, getGovernanceUseCases } from "@/lib/governance-registry";
+import { getFallbackUseCaseManifestEntries, getManifestEnabledUseCaseIds } from "@/lib/use-cases";
 
 export const metadata: Metadata = {
   title: "Admin Governance - OpenCare Portal",
@@ -29,6 +29,8 @@ export default async function AdminGovernancePage() {
     id,
     config: useCaseConfig,
   }));
+  const enabledUseCaseIds = getManifestEnabledUseCaseIds(manifestUseCases);
+  const governedUseCases = filterGovernanceUseCasesByIds(getGovernanceUseCases(), enabledUseCaseIds);
 
   return (
     <PageFrame
@@ -40,7 +42,7 @@ export default async function AdminGovernancePage() {
       <section className="grid">
         <UseCaseConfigurationPanel initialUseCases={useCases} initialImportedPackages={[]} />
       </section>
-      <GovernanceControlTower useCases={getGovernanceUseCases()} />
+      <GovernanceControlTower useCases={governedUseCases} />
     </PageFrame>
   );
 }

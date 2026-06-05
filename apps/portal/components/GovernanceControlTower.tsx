@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { ClassificationInventory } from "@/components/ClassificationInventory";
@@ -289,6 +290,31 @@ function UseCaseRail({
         );
       })}
     </aside>
+  );
+}
+
+function SelectedUseCaseWorkspaceLinks({ useCase }: { useCase: GovernanceUseCase }) {
+  return (
+    <section className="trust-workspace-links" aria-label={`${useCase.name} governance workspace links`}>
+      <div className="trust-workspace-links-header">
+        <div>
+          <p className="eyebrow">Use Case Workspace</p>
+          <h3>{useCase.name}</h3>
+          <p>{useCase.businessPurpose}</p>
+        </div>
+        <Link className="button secondary" href={useCase.workspacePath}>
+          Open use-case workspace
+        </Link>
+      </div>
+      <div className="trust-workspace-link-grid">
+        {useCase.workspaceCoverage.map((item) => (
+          <Link key={`${useCase.id}-${item.href}`} className="trust-workspace-link-card" href={item.href}>
+            <strong>{item.label}</strong>
+            <span>{item.href}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -1019,6 +1045,7 @@ export function GovernanceControlTower({
                   Explore Asset Registry
                 </button>
               </div>
+              <SelectedUseCaseWorkspaceLinks useCase={selectedUseCase} />
               <SelectedStagePanel
                 node={selectedNode}
                 onOpenAssetRegistry={() => {
