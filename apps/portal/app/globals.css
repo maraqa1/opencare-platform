@@ -11564,6 +11564,83 @@ code {
   width: 100%;
 }
 
+.data-ai-rubric-panel {
+  background: #ffffff;
+  border-radius: 22px;
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.data-ai-rubric-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.data-ai-rubric-header h2 {
+  color: #121a50;
+  margin: 0.2rem 0 0;
+}
+
+.data-ai-rubric-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.data-ai-rubric-grid article {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  min-height: 9.25rem;
+  padding: 0.85rem;
+}
+
+.data-ai-rubric-grid strong {
+  align-items: center;
+  background: #1e5d58;
+  border-radius: 10px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 0.88rem;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.data-ai-rubric-grid h3 {
+  color: #121a50;
+  font-size: 0.98rem;
+  margin: 0.65rem 0 0.35rem;
+}
+
+.data-ai-rubric-grid p,
+.data-ai-evidence-rule span {
+  color: #475467;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.data-ai-evidence-rule {
+  align-items: center;
+  background: #fff8e6;
+  border: 1px solid rgba(180, 83, 9, 0.18);
+  border-radius: 16px;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.data-ai-evidence-rule strong {
+  color: #854a0e;
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
 .data-ai-diagnostic-page .data-ai-question-list {
   gap: 0.75rem;
 }
@@ -11644,6 +11721,37 @@ code {
   padding: 0.75rem;
 }
 
+.data-ai-evidence-strength {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  padding: 0.75rem;
+}
+
+.data-ai-evidence-strength select {
+  margin-top: 0.35rem;
+}
+
+.data-ai-evidence-strength small {
+  color: #667085;
+  display: block;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  margin-top: 0.4rem;
+}
+
+.data-ai-evidence-warning {
+  background: #fff8e6;
+  border: 1px solid rgba(180, 83, 9, 0.2);
+  border-radius: 14px;
+  color: #854a0e !important;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+  padding: 0.7rem 0.8rem;
+}
+
 .data-ai-score-panel > div:first-child {
   align-items: center;
   display: flex;
@@ -11702,6 +11810,7 @@ code {
 
 @media (max-width: 760px) {
   .data-ai-capture-summary,
+  .data-ai-rubric-grid,
   .data-ai-textarea-grid,
   .data-ai-diagnostic-page .data-ai-question-meta {
     grid-template-columns: 1fr;

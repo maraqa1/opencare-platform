@@ -14,10 +14,13 @@ type ActiveTab = "capture" | "dashboard" | "gaps" | "report" | "evidence";
 
 type QuestionState = {
   score: number | null;
+  evidenceStrength: EvidenceStrength;
   evidenceAvailable: string;
   notes: string;
   actionPlan: string;
 };
+
+type EvidenceStrength = "none" | "interview" | "documented" | "system" | "audited";
 
 type DomainSummary = {
   id: number;
@@ -47,13 +50,21 @@ const priorityLabels = {
 } satisfies Record<DomainSummary["priority"], string>;
 
 const scoreOptions = [
-  { value: null, label: "No data", shortLabel: "NA" },
-  { value: 0, label: "0 - absent", shortLabel: "0" },
-  { value: 1, label: "1 - initial", shortLabel: "1" },
-  { value: 2, label: "2 - developing", shortLabel: "2" },
-  { value: 3, label: "3 - managed", shortLabel: "3" },
-  { value: 4, label: "4 - target", shortLabel: "4" },
-] satisfies Array<{ value: number | null; label: string; shortLabel: string }>;
+  { value: null, label: "No data", shortLabel: "NA", description: "No score assigned yet." },
+  { value: 0, label: "0 - absent", shortLabel: "0", description: "No capability exists, or no evidence can be produced." },
+  { value: 1, label: "1 - ad hoc", shortLabel: "1", description: "Informal, person-dependent, or interview-only practice." },
+  { value: 2, label: "2 - defined", shortLabel: "2", description: "Documented or partially implemented, but inconsistent adoption." },
+  { value: 3, label: "3 - managed", shortLabel: "3", description: "Implemented, repeatable, owner-led, and supported by evidence." },
+  { value: 4, label: "4 - optimised", shortLabel: "4", description: "Governed, measured, reviewed, and continuously improved." },
+] satisfies Array<{ value: number | null; label: string; shortLabel: string; description: string }>;
+
+const evidenceStrengthOptions = [
+  { value: "none", label: "No evidence", cap: 1, description: "No artifact or confirmation is available." },
+  { value: "interview", label: "Interview only", cap: 2, description: "Claim or workshop response without an approved artifact." },
+  { value: "documented", label: "Documented", cap: 3, description: "Approved policy, procedure, plan, RACI, or report sample." },
+  { value: "system", label: "System evidence", cap: 4, description: "Dashboard, platform record, lineage, workflow, or telemetry evidence." },
+  { value: "audited", label: "Audited", cap: 4, description: "Evidence has review history, controls, audit trail, or measured outcomes." },
+] satisfies Array<{ value: EvidenceStrength; label: string; cap: number; description: string }>;
 
 function initialState() {
   return Object.fromEntries(
@@ -61,6 +72,7 @@ function initialState() {
       question.id,
       {
         score: question.score,
+        evidenceStrength: "none",
         evidenceAvailable: question.evidenceAvailable,
         notes: question.notes,
         actionPlan: question.actionPlan,
@@ -118,6 +130,24 @@ function buildDomainSummaries(stateByQuestion: Record<string, QuestionState>): D
 
 function statusForQuestion(question: DataAiDiagnosticQuestion, state: QuestionState) {
   return priorityForGap(scoreGap(question, state));
+}
+
+function evidenceCap(strength: EvidenceStrength) {
+  return evidenceStrengthOptions.find((option) => option.value === strength)?.cap ?? 1;
+}
+
+function evidenceWarning(state: QuestionState) {
+  if (state.score === null) {
+    return "";
+  }
+  const cap = evidenceCap(state.evidenceStrength);
+  if (state.score > cap) {
+    return `Evidence strength usually supports a maximum score of ${cap}. Add stronger evidence or lower the score.`;
+  }
+  if (state.score >= 3 && !state.evidenceAvailable.trim()) {
+    return "Scores 3-4 should include the specific evidence artifact, owner confirmation, or system record.";
+  }
+  return "";
 }
 
 export function DataAiDiagnosticWorkspace() {
@@ -260,11 +290,35 @@ export function DataAiDiagnosticWorkspace() {
             </div>
           </section>
 
+          <section className="panel data-ai-rubric-panel" aria-label="Scoring guidance">
+            <div className="data-ai-rubric-header">
+              <div>
+                <p className="eyebrow">Scoring Standard</p>
+                <h2>Use one maturity definition across every interview</h2>
+              </div>
+              <span className="data-ai-mode-chip">Evidence caps score</span>
+            </div>
+            <div className="data-ai-rubric-grid">
+              {scoreOptions.filter((option) => option.value !== null).map((option) => (
+                <article key={option.shortLabel}>
+                  <strong>{option.shortLabel}</strong>
+                  <h3>{option.label.replace(`${option.shortLabel} - `, "")}</h3>
+                  <p>{option.description}</p>
+                </article>
+              ))}
+            </div>
+            <div className="data-ai-evidence-rule">
+              <strong>Evidence rule</strong>
+              <span>No evidence caps at 1. Interview-only usually caps at 2. Scores 3-4 require documented, system, or audited evidence.</span>
+            </div>
+          </section>
+
           <section className="data-ai-question-list">
             {filteredQuestions.map((question) => {
               const state = stateByQuestion[question.id];
               const gap = scoreGap(question, state);
               const priority = statusForQuestion(question, state);
+              const warning = evidenceWarning(state);
               return (
                 <article className="data-ai-question-card" key={question.id}>
                   <div className="data-ai-question-main">
@@ -310,6 +364,23 @@ export function DataAiDiagnosticWorkspace() {
                         ))}
                       </div>
                     </div>
+                    <label className="data-ai-evidence-strength">
+                      <span>Evidence strength</span>
+                      <select
+                        value={state.evidenceStrength}
+                        onChange={(event) => updateQuestion(question.id, { evidenceStrength: event.target.value as EvidenceStrength })}
+                      >
+                        {evidenceStrengthOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label} - caps score at {option.cap}
+                          </option>
+                        ))}
+                      </select>
+                      <small>
+                        {evidenceStrengthOptions.find((option) => option.value === state.evidenceStrength)?.description}
+                      </small>
+                    </label>
+                    {warning ? <p className="data-ai-evidence-warning">{warning}</p> : null}
                     <div className="data-ai-textarea-grid">
                       <label>
                         <span>Evidence available</span>
