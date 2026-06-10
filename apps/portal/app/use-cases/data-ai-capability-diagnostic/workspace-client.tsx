@@ -32,6 +32,13 @@ type GeneratedConsultingReport = {
   risks?: string[];
 };
 
+type DiagnosticReportApiResponse = {
+  status?: string;
+  message?: string;
+  report?: GeneratedConsultingReport;
+  model?: string;
+};
+
 type DomainSummary = {
   id: number;
   nameEn: string;
@@ -179,6 +186,30 @@ function priorityForGap(gap: number | null): DomainSummary["priority"] {
 
 function formatScore(value: number | null) {
   return value === null ? "No data" : value.toFixed(1);
+}
+
+function asText(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function asStringList(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function normaliseGeneratedReport(report: unknown): GeneratedConsultingReport {
+  if (!report || typeof report !== "object") {
+    return {};
+  }
+  const candidate = report as Record<string, unknown>;
+  return {
+    executiveSummary: asText(candidate.executiveSummary),
+    boardMessage: asText(candidate.boardMessage),
+    materialFindings: asStringList(candidate.materialFindings),
+    recommendedDecisions: asStringList(candidate.recommendedDecisions),
+    ninetyDayPlan: asStringList(candidate.ninetyDayPlan),
+    aiReadinessGate: asText(candidate.aiReadinessGate),
+    risks: asStringList(candidate.risks),
+  };
 }
 
 function scoreWidth(value: number | null) {
@@ -417,18 +448,25 @@ export function DataAiDiagnosticWorkspace() {
           })),
         }),
       });
-      const result = await response.json();
-      if (!response.ok || result.status !== "ready") {
-        setReportStatus(result.status === "missing_key" ? "missing_key" : "error");
-        setReportMessage(result.message ?? "AI report generation failed.");
+      let result: DiagnosticReportApiResponse;
+      try {
+        result = (await response.json()) as DiagnosticReportApiResponse;
+      } catch {
+        setReportStatus("error");
+        setReportMessage(`AI report generation returned a non-JSON response (${response.status}).`);
         return;
       }
-      setGeneratedReport(result.report);
+      if (!response.ok || result.status !== "ready") {
+        setReportStatus(result.status === "missing_key" ? "missing_key" : "error");
+        setReportMessage(result.message ?? `AI report generation failed (${response.status}).`);
+        return;
+      }
+      setGeneratedReport(normaliseGeneratedReport(result.report));
       setReportStatus("ready");
       setReportMessage(`Generated with ${result.model ?? "OpenAI"}.`);
-    } catch {
+    } catch (error) {
       setReportStatus("error");
-      setReportMessage("Unable to reach the report generation API.");
+      setReportMessage(error instanceof Error ? error.message : "Unable to reach the report generation API.");
     }
   };
 
