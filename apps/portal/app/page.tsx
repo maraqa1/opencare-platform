@@ -249,6 +249,9 @@ export default async function HomePage() {
           <Link className="secondary-link" href="/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop?demo=1">
             Urban Service Quality Loop
           </Link>
+          <Link className="secondary-link" href="/use-cases/data-ai-capability-diagnostic">
+            Data & AI Diagnostic
+          </Link>
         </div>
         <p>Platform data status: Not connected</p>
         <div className="jazan-status-legend" aria-label="Operating model status legend">
