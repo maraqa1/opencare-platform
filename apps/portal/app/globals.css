@@ -11552,6 +11552,50 @@ code {
   margin-top: 0.35rem;
 }
 
+.data-ai-demo-actions {
+  background: #fbfcfd;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.8rem;
+}
+
+.data-ai-demo-actions p {
+  color: #475467;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin: 0.45rem 0 0;
+}
+
+.data-ai-demo-actions > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.data-ai-demo-actions button {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 999px;
+  color: #121a50;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 900;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.data-ai-demo-actions button:first-child {
+  background: #1e5d58;
+  border-color: #1e5d58;
+  color: #ffffff;
+}
+
+.data-ai-demo-actions button:hover {
+  transform: translateY(-1px);
+}
+
 .data-ai-diagnostic-page .data-ai-filters {
   display: grid;
   gap: 0.65rem;

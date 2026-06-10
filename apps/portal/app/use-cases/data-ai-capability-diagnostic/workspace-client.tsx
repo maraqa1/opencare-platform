@@ -81,6 +81,77 @@ function initialState() {
   ) as Record<string, QuestionState>;
 }
 
+function demoScoreForQuestion(question: DataAiDiagnosticQuestion) {
+  const baseByDomain: Record<number, number> = {
+    1: 2,
+    2: 2,
+    3: 2,
+    4: 1,
+    5: 1,
+    6: 3,
+    7: 1,
+    8: 2,
+    9: 2,
+    10: 2,
+    11: 1,
+    12: 2,
+    13: 1,
+  };
+  const base = baseByDomain[question.domainId] ?? 1;
+  const variation = question.number % 6 === 0 ? 1 : question.number % 5 === 0 ? -1 : 0;
+  return Math.max(0, Math.min(4, base + variation));
+}
+
+function evidenceStrengthForScore(score: number): EvidenceStrength {
+  if (score >= 4) return "audited";
+  if (score >= 3) return "system";
+  if (score >= 2) return "documented";
+  if (score >= 1) return "interview";
+  return "none";
+}
+
+function demoEvidenceForQuestion(question: DataAiDiagnosticQuestion, score: number) {
+  if (score === 0) {
+    return "Demo evidence: no approved artifact was available during the walkthrough.";
+  }
+  const artifact =
+    score >= 3
+      ? "dashboard extract, policy sample, owner confirmation, and implementation record"
+      : score === 2
+        ? "draft procedure, workshop notes, and sample evidence request"
+        : "interview confirmation and open evidence request";
+  return `Demo evidence: ${artifact} for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
+}
+
+function demoActionForQuestion(question: DataAiDiagnosticQuestion, score: number) {
+  const gap = Math.max(question.target - score, 0);
+  if (gap >= 2) {
+    return `Demo action: assign ${question.domainEn} owner, confirm source evidence, and close the gap through a 90-day remediation plan.`;
+  }
+  if (gap === 1) {
+    return `Demo action: strengthen evidence pack and move ${question.domainEn} from defined to managed maturity.`;
+  }
+  return `Demo action: maintain evidence and review ${question.domainEn} in the next assessment cycle.`;
+}
+
+function dummyState() {
+  return Object.fromEntries(
+    dataAiDiagnosticQuestions.map((question) => {
+      const score = demoScoreForQuestion(question);
+      return [
+        question.id,
+        {
+          score,
+          evidenceStrength: evidenceStrengthForScore(score),
+          evidenceAvailable: demoEvidenceForQuestion(question, score),
+          notes: "Seeded dummy response for proposal walkthrough. Replace with real interview notes and evidence links.",
+          actionPlan: demoActionForQuestion(question, score),
+        } satisfies QuestionState,
+      ];
+    }),
+  ) as Record<string, QuestionState>;
+}
+
 function scoreGap(question: DataAiDiagnosticQuestion, state: QuestionState) {
   if (state.score === null) {
     return null;
@@ -150,6 +221,10 @@ function evidenceWarning(state: QuestionState) {
   return "";
 }
 
+function csvCell(value: unknown) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
 export function DataAiDiagnosticWorkspace() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("capture");
   const [selectedDomain, setSelectedDomain] = useState<number | "all">("all");
@@ -204,6 +279,49 @@ export function DataAiDiagnosticWorkspace() {
         ...patch,
       },
     }));
+  };
+
+  const seedDummyData = () => {
+    setStateByQuestion(dummyState());
+  };
+
+  const resetCapture = () => {
+    setStateByQuestion(initialState());
+  };
+
+  const downloadDummyDataFile = () => {
+    const seededState = dummyState();
+    const rows = dataAiDiagnosticQuestions.map((question) => {
+      const state = seededState[question.id];
+      return {
+        question_id: question.id,
+        question_number: question.number,
+        domain_id: question.domainId,
+        domain: question.domainEn,
+        question: question.questionEn,
+        score: state.score,
+        target: question.target,
+        gap: scoreGap(question, state),
+        evidence_strength: state.evidenceStrength,
+        evidence_available: state.evidenceAvailable,
+        action_plan: state.actionPlan,
+        notes: state.notes,
+      };
+    });
+    const headers = Object.keys(rows[0] ?? {});
+    const csv = [
+      headers.join(","),
+      ...rows.map((row) => headers.map((header) => csvCell(row[header as keyof typeof row])).join(",")),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "data-ai-diagnostic-dummy-data.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const topGapDomains = summaries
@@ -269,6 +387,23 @@ export function DataAiDiagnosticWorkspace() {
               <div>
                 <span>High gaps</span>
                 <strong>{criticalItems.length}</strong>
+              </div>
+            </div>
+            <div className="data-ai-demo-actions" aria-label="Demo data actions">
+              <div>
+                <span className="data-ai-mode-chip">Demo seed</span>
+                <p>Populate deterministic dummy scores, evidence notes, and action plans for a walkthrough.</p>
+              </div>
+              <div>
+                <button type="button" onClick={seedDummyData}>
+                  Seed dummy data
+                </button>
+                <button type="button" onClick={downloadDummyDataFile}>
+                  Download dummy data file
+                </button>
+                <button type="button" onClick={resetCapture}>
+                  Reset capture
+                </button>
               </div>
             </div>
             <div className="data-ai-filters">
