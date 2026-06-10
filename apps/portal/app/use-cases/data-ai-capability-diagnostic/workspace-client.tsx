@@ -46,6 +46,15 @@ const priorityLabels = {
   not_scored: "Needs data",
 } satisfies Record<DomainSummary["priority"], string>;
 
+const scoreOptions = [
+  { value: null, label: "No data", shortLabel: "NA" },
+  { value: 0, label: "0 - absent", shortLabel: "0" },
+  { value: 1, label: "1 - initial", shortLabel: "1" },
+  { value: 2, label: "2 - developing", shortLabel: "2" },
+  { value: 3, label: "3 - managed", shortLabel: "3" },
+  { value: 4, label: "4 - target", shortLabel: "4" },
+] satisfies Array<{ value: number | null; label: string; shortLabel: string }>;
+
 function initialState() {
   return Object.fromEntries(
     dataAiDiagnosticQuestions.map((question) => [
@@ -218,6 +227,20 @@ export function DataAiDiagnosticWorkspace() {
               <h2>Data capture workbench</h2>
               <p>Score each question, capture available evidence, and leave action notes for the AI report.</p>
             </div>
+            <div className="data-ai-capture-summary" aria-label="Assessment progress summary">
+              <div>
+                <span>Coverage</span>
+                <strong>{scoredQuestions}/{totalQuestions}</strong>
+              </div>
+              <div>
+                <span>Avg score</span>
+                <strong>{formatScore(overallScore)}</strong>
+              </div>
+              <div>
+                <span>High gaps</span>
+                <strong>{criticalItems.length}</strong>
+              </div>
+            </div>
             <div className="data-ai-filters">
               <label>
                 <span>Domain</span>
@@ -246,8 +269,8 @@ export function DataAiDiagnosticWorkspace() {
                 <article className="data-ai-question-card" key={question.id}>
                   <div className="data-ai-question-main">
                     <div className="data-ai-question-topline">
-                      <span>Q{question.number}</span>
-                      <span>{question.domainEn}</span>
+                      <span className="data-ai-question-number">Q{question.number}</span>
+                      <span className="data-ai-domain-pill">{question.domainEn}</span>
                       <span className={`data-ai-priority ${priority}`}>{priorityLabels[priority]}</span>
                     </div>
                     <h3>{question.questionEn}</h3>
@@ -268,34 +291,43 @@ export function DataAiDiagnosticWorkspace() {
                     </dl>
                   </div>
                   <div className="data-ai-capture-fields">
-                    <label>
-                      <span>Score</span>
-                      <select
-                        value={state.score ?? ""}
-                        onChange={(event) => updateQuestion(question.id, { score: event.target.value === "" ? null : Number(event.target.value) })}
-                      >
-                        <option value="">No data</option>
-                        {[0, 1, 2, 3, 4].map((score) => (
-                          <option key={score} value={score}>{score}</option>
+                    <div className="data-ai-score-panel">
+                      <div>
+                        <span>Score</span>
+                        <strong>{state.score === null ? "No data" : `${state.score} / ${question.target}`}</strong>
+                      </div>
+                      <div className="data-ai-score-buttons" role="group" aria-label={`Score question ${question.number}`}>
+                        {scoreOptions.map((option) => (
+                          <button
+                            className={state.score === option.value ? "active" : ""}
+                            key={option.label}
+                            type="button"
+                            title={option.label}
+                            onClick={() => updateQuestion(question.id, { score: option.value })}
+                          >
+                            {option.shortLabel}
+                          </button>
                         ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span>Evidence available</span>
-                      <textarea
-                        value={state.evidenceAvailable}
-                        onChange={(event) => updateQuestion(question.id, { evidenceAvailable: event.target.value })}
-                        placeholder="Paste document name, link, interview note, owner confirmation..."
-                      />
-                    </label>
-                    <label>
-                      <span>Action plan</span>
-                      <textarea
-                        value={state.actionPlan}
-                        onChange={(event) => updateQuestion(question.id, { actionPlan: event.target.value })}
-                        placeholder="Recommended next action, owner, due date..."
-                      />
-                    </label>
+                      </div>
+                    </div>
+                    <div className="data-ai-textarea-grid">
+                      <label>
+                        <span>Evidence available</span>
+                        <textarea
+                          value={state.evidenceAvailable}
+                          onChange={(event) => updateQuestion(question.id, { evidenceAvailable: event.target.value })}
+                          placeholder="Document, link, interview note, owner confirmation..."
+                        />
+                      </label>
+                      <label>
+                        <span>Action plan</span>
+                        <textarea
+                          value={state.actionPlan}
+                          onChange={(event) => updateQuestion(question.id, { actionPlan: event.target.value })}
+                          placeholder="Next action, owner, due date..."
+                        />
+                      </label>
+                    </div>
                   </div>
                 </article>
               );

@@ -11505,3 +11505,209 @@ code {
     width: 100%;
   }
 }
+
+.data-ai-diagnostic-page .data-ai-tabs {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 3;
+}
+
+.data-ai-diagnostic-page .data-ai-tabs button {
+  box-shadow: none;
+}
+
+.data-ai-diagnostic-page .data-ai-control-panel {
+  align-items: stretch;
+  grid-template-columns: minmax(19rem, 1fr) minmax(16rem, 0.65fr) minmax(18rem, 0.85fr);
+}
+
+.data-ai-capture-summary {
+  align-items: stretch;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-ai-capture-summary div {
+  background: linear-gradient(180deg, #f8fafc, #eef6f4);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  padding: 0.8rem;
+}
+
+.data-ai-capture-summary span,
+.data-ai-score-panel span {
+  color: #667085;
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.data-ai-capture-summary strong {
+  color: #121a50;
+  display: block;
+  font-size: 1.45rem;
+  line-height: 1;
+  margin-top: 0.35rem;
+}
+
+.data-ai-diagnostic-page .data-ai-filters {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 1fr;
+}
+
+.data-ai-diagnostic-page .data-ai-filters input,
+.data-ai-diagnostic-page .data-ai-filters select {
+  min-width: 0;
+  width: 100%;
+}
+
+.data-ai-diagnostic-page .data-ai-question-list {
+  gap: 0.75rem;
+}
+
+.data-ai-diagnostic-page .data-ai-question-card {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  grid-template-columns: minmax(0, 1fr) minmax(28rem, 0.78fr);
+  padding: 0;
+  overflow: hidden;
+}
+
+.data-ai-question-main {
+  padding: 1rem;
+}
+
+.data-ai-diagnostic-page .data-ai-question-topline {
+  gap: 0.45rem;
+}
+
+.data-ai-question-number {
+  background: #1e5d58 !important;
+  color: #ffffff !important;
+  min-width: 2.15rem;
+  justify-content: center;
+}
+
+.data-ai-domain-pill {
+  max-width: 22rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-ai-diagnostic-page .data-ai-question-card h3 {
+  font-size: 1.02rem;
+  margin-top: 0.75rem;
+}
+
+.data-ai-diagnostic-page .arabic-copy {
+  background: #fbfcfd;
+  border-inline-start: 3px solid #d7e8e4;
+  border-radius: 12px;
+  color: #344054;
+  font-size: 0.92rem;
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.75rem;
+}
+
+.data-ai-diagnostic-page .data-ai-question-meta {
+  gap: 0.5rem;
+  grid-template-columns: 0.9fr 1.25fr 0.65fr;
+  margin-top: 0.75rem;
+}
+
+.data-ai-diagnostic-page .data-ai-question-meta div {
+  border-radius: 12px;
+  padding: 0.65rem;
+}
+
+.data-ai-diagnostic-page .data-ai-question-meta dd {
+  font-size: 0.78rem;
+}
+
+.data-ai-diagnostic-page .data-ai-capture-fields {
+  background: #f8fafc;
+  border-left: 1px solid rgba(15, 23, 42, 0.1);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.data-ai-score-panel {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.data-ai-score-panel > div:first-child {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.data-ai-score-panel strong {
+  color: #121a50;
+  font-size: 1rem;
+}
+
+.data-ai-score-buttons {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1.25fr repeat(5, 1fr);
+}
+
+.data-ai-score-buttons button {
+  background: #f2f4f7;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  color: #344054;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  min-height: 2.15rem;
+}
+
+.data-ai-score-buttons button.active {
+  background: #1e5d58;
+  border-color: #1e5d58;
+  color: #ffffff;
+}
+
+.data-ai-textarea-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.data-ai-diagnostic-page .data-ai-textarea-grid textarea {
+  min-height: 6.3rem;
+}
+
+@media (max-width: 1180px) {
+  .data-ai-diagnostic-page .data-ai-control-panel,
+  .data-ai-diagnostic-page .data-ai-question-card {
+    grid-template-columns: 1fr;
+  }
+
+  .data-ai-diagnostic-page .data-ai-capture-fields {
+    border-left: 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
+  }
+}
+
+@media (max-width: 760px) {
+  .data-ai-capture-summary,
+  .data-ai-textarea-grid,
+  .data-ai-diagnostic-page .data-ai-question-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .data-ai-score-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
