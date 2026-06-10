@@ -22,6 +22,16 @@ type QuestionState = {
 
 type EvidenceStrength = "none" | "interview" | "documented" | "system" | "audited";
 
+type GeneratedConsultingReport = {
+  executiveSummary?: string;
+  boardMessage?: string;
+  materialFindings?: string[];
+  recommendedDecisions?: string[];
+  ninetyDayPlan?: string[];
+  aiReadinessGate?: string;
+  risks?: string[];
+};
+
 type DomainSummary = {
   id: number;
   nameEn: string;
@@ -239,6 +249,9 @@ export function DataAiDiagnosticWorkspace() {
   const [selectedDomain, setSelectedDomain] = useState<number | "all">("all");
   const [search, setSearch] = useState("");
   const [stateByQuestion, setStateByQuestion] = useState(initialState);
+  const [generatedReport, setGeneratedReport] = useState<GeneratedConsultingReport | null>(null);
+  const [reportStatus, setReportStatus] = useState<"idle" | "loading" | "ready" | "missing_key" | "error">("idle");
+  const [reportMessage, setReportMessage] = useState("");
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
   const totalQuestions = dataAiDiagnosticQuestions.length;
@@ -351,6 +364,46 @@ export function DataAiDiagnosticWorkspace() {
     return state?.score !== null && state?.evidenceStrength !== "none" && state?.evidenceAvailable.trim();
   }).length;
   const reportDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date());
+
+  const generateConsultingReport = async () => {
+    setReportStatus("loading");
+    setReportMessage("");
+    try {
+      const response = await fetch("/api/data-ai-diagnostic/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          overallScore,
+          overallGap,
+          scoredQuestions,
+          totalQuestions,
+          evidenceBackedItems,
+          topGapDomains,
+          strongestDomains,
+          priorityGaps: rankedGaps.slice(0, 10).map(({ question, state, gap }) => ({
+            question: question.questionEn,
+            domain: question.domainEn,
+            score: state.score,
+            gap,
+            evidenceStrength: state.evidenceStrength,
+            actionPlan: state.actionPlan,
+          })),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.status !== "ready") {
+        setReportStatus(result.status === "missing_key" ? "missing_key" : "error");
+        setReportMessage(result.message ?? "AI report generation failed.");
+        return;
+      }
+      setGeneratedReport(result.report);
+      setReportStatus("ready");
+      setReportMessage(`Generated with ${result.model ?? "OpenAI"}.`);
+    } catch {
+      setReportStatus("error");
+      setReportMessage("Unable to reach the report generation API.");
+    }
+  };
 
   return (
     <main className="page data-ai-diagnostic-page">
@@ -664,10 +717,20 @@ export function DataAiDiagnosticWorkspace() {
               <p>Structured pages suitable for executive review, steering committee discussion, and browser print-to-PDF export.</p>
             </div>
             <div>
+              <button type="button" onClick={generateConsultingReport} disabled={reportStatus === "loading"}>
+                {reportStatus === "loading" ? "Generating..." : "Generate with OpenAI"}
+              </button>
               <button type="button" onClick={printReport}>Print / Save PDF</button>
-              <span className="data-ai-mode-chip">Generated from captured scores</span>
+              <span className="data-ai-mode-chip">
+                {reportStatus === "ready" ? "AI narrative ready" : "Generated from captured scores"}
+              </span>
             </div>
           </div>
+          {reportMessage ? (
+            <div className={`data-ai-report-status ${reportStatus}`}>
+              {reportMessage}
+            </div>
+          ) : null}
 
           <article className="data-ai-report-page data-ai-report-cover">
             <div>
@@ -732,6 +795,55 @@ export function DataAiDiagnosticWorkspace() {
               </section>
             </div>
           </article>
+
+          {generatedReport ? (
+            <article className="data-ai-report-page data-ai-generated-report">
+              <div className="data-ai-report-page-header">
+                <p className="eyebrow">AI-Generated Advisory</p>
+                <h2>Consultant narrative generated from the captured diagnostic</h2>
+              </div>
+              <section className="data-ai-report-callout">
+                <h3>Executive summary</h3>
+                <p>{generatedReport.executiveSummary}</p>
+              </section>
+              <section>
+                <h3>Board message</h3>
+                <p>{generatedReport.boardMessage}</p>
+              </section>
+              <div className="data-ai-report-two-col">
+                <section>
+                  <h3>Material findings</h3>
+                  <ul>
+                    {(generatedReport.materialFindings ?? []).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </section>
+                <section>
+                  <h3>Recommended decisions</h3>
+                  <ul>
+                    {(generatedReport.recommendedDecisions ?? []).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </section>
+              </div>
+              <div className="data-ai-report-two-col">
+                <section>
+                  <h3>90-day plan</h3>
+                  <ol>
+                    {(generatedReport.ninetyDayPlan ?? []).map((item) => <li key={item}>{item}</li>)}
+                  </ol>
+                </section>
+                <section>
+                  <h3>Risks to control</h3>
+                  <ul>
+                    {(generatedReport.risks ?? []).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </section>
+              </div>
+              <section className="data-ai-report-callout">
+                <h3>AI readiness gate</h3>
+                <p>{generatedReport.aiReadinessGate}</p>
+              </section>
+            </article>
+          ) : null}
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">

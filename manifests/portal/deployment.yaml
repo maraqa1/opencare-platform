@@ -53,6 +53,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: opencare-config
+            - secretRef:
+                name: opencare-secrets
+                optional: true
           env:
             - name: PORT
               value: "3000"
