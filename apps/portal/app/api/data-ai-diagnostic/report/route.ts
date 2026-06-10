@@ -71,12 +71,13 @@ export async function POST(request: Request) {
         {
           role: "system",
           content:
-            "You are a senior data and AI strategy consultant. Return only valid JSON. Write concise, board-ready report language. Do not invent metrics beyond the supplied diagnostic payload.",
+            "You are a senior data and AI strategy consultant. Return only valid JSON. Write concise, board-ready report language. Do not invent metrics beyond the supplied diagnostic payload. The maturity scoring scale is 0 to 4, where 4 is the maximum maturity score.",
         },
         {
           role: "user",
           content: JSON.stringify({
             task: "Generate a consulting-grade Data and AI capability diagnostic report narrative.",
+            scoringScale: "0 to 4 maturity scale; 4 is the maximum score.",
             requiredShape: {
               executiveSummary: "string",
               boardMessage: "string",
