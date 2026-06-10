@@ -244,6 +244,27 @@ function maturityLabel(value: number | null) {
   return "Optimised";
 }
 
+function reportRecommendationForPriority(priority: DomainSummary["priority"]) {
+  if (priority === "critical") return "Immediate executive remediation and evidence recovery.";
+  if (priority === "high") return "Assign owner and close control gaps in the 90-day plan.";
+  if (priority === "medium") return "Strengthen evidence and standardise operating cadence.";
+  if (priority === "watch") return "Maintain control evidence and monitor during quarterly review.";
+  return "Capture baseline score and evidence before decision.";
+}
+
+function readinessThesis(value: number | null) {
+  if (value === null) {
+    return "Readiness cannot be confirmed until assessment scores and evidence are captured.";
+  }
+  if (value < 2) {
+    return "The organisation is not yet ready to scale predictive or generative AI beyond tightly controlled advisory use cases.";
+  }
+  if (value < 3) {
+    return "The organisation can proceed with governed reporting and selected diagnostic analytics while closing data quality, evidence, and ownership gaps.";
+  }
+  return "The organisation can progress selected AI use cases through formal model governance, provided risk controls and evidence remain active.";
+}
+
 export function DataAiDiagnosticWorkspace() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("capture");
   const [selectedDomain, setSelectedDomain] = useState<number | "all">("all");
@@ -363,6 +384,12 @@ export function DataAiDiagnosticWorkspace() {
     const state = stateByQuestion[question.id];
     return state?.score !== null && state?.evidenceStrength !== "none" && state?.evidenceAvailable.trim();
   }).length;
+  const maturityPct = overallScore === null ? 0 : Math.round((overallScore / 4) * 100);
+  const evidenceCoveragePct = totalQuestions ? Math.round((evidenceBackedItems / totalQuestions) * 100) : 0;
+  const assessedCoveragePct = totalQuestions ? Math.round((scoredQuestions / totalQuestions) * 100) : 0;
+  const domainsRequiringAction = summaries.filter((summary) => summary.priority === "critical" || summary.priority === "high");
+  const reportDomainRows = [...summaries].sort((a, b) => (b.avgGap ?? -1) - (a.avgGap ?? -1));
+  const topPriorityGaps = rankedGaps.slice(0, 8);
   const reportDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date());
 
   const generateConsultingReport = async () => {
@@ -736,7 +763,7 @@ export function DataAiDiagnosticWorkspace() {
             <div>
               <p className="eyebrow">Justice Training Centre · Data & AI Use Case</p>
               <h2>Data & AI Capability Diagnostic</h2>
-              <p>Consulting-grade readiness report generated from the current assessment capture workspace.</p>
+              <p>Executive readiness assessment, maturity heatmap, remediation roadmap, and AI-governance decision pack.</p>
             </div>
             <div className="data-ai-report-cover-card">
               <span>Current maturity</span>
@@ -751,6 +778,31 @@ export function DataAiDiagnosticWorkspace() {
             </dl>
           </article>
 
+          <article className="data-ai-report-page data-ai-report-contents">
+            <div className="data-ai-report-page-header">
+              <p className="eyebrow">Report Navigation</p>
+              <h2>Contents and decision flow</h2>
+            </div>
+            <div className="data-ai-report-toc">
+              {[
+                ["01", "Executive Summary", "Readiness position, decision asks, and management attention."],
+                ["02", "Board Scorecard", "Maturity, evidence coverage, priority gaps, and readiness thesis."],
+                ["03", "Maturity Heatmap", "Domain-level scores and gap concentration."],
+                ["04", "Domain Action Plan", "Recommended owner focus and remediation route by domain."],
+                ["05", "Priority Gap Register", "Highest-risk questions requiring evidence-backed action."],
+                ["06", "90-Day Roadmap", "Mobilise, remediate, and certify readiness."],
+                ["07", "AI Readiness Gate", "What can proceed now and what should wait."],
+                ["08", "Appendix", "Prompt library and report generation basis."],
+              ].map(([number, title, text]) => (
+                <div key={number}>
+                  <span>{number}</span>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                </div>
+              ))}
+            </div>
+          </article>
+
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
               <p className="eyebrow">01 · Executive Summary</p>
@@ -762,6 +814,8 @@ export function DataAiDiagnosticWorkspace() {
                 ["Coverage", `${scoredQuestions}/${totalQuestions}`, "questions scored"],
                 ["Average gap", overallGap === null ? "No data" : overallGap.toFixed(1), "from target maturity"],
                 ["Priority gaps", String(criticalItems.length), "critical or high items"],
+                ["Evidence coverage", `${evidenceCoveragePct}%`, "responses with evidence"],
+                ["Domains requiring action", String(domainsRequiringAction.length), "critical or high domains"],
               ].map(([label, value, note]) => (
                 <div key={label}>
                   <span>{label}</span>
@@ -793,6 +847,42 @@ export function DataAiDiagnosticWorkspace() {
                   <li>Gate AI use cases until data quality, privacy, lineage, and model-risk evidence are ready.</li>
                 </ul>
               </section>
+            </div>
+            <section className="data-ai-report-thesis">
+              <h3>Readiness thesis</h3>
+              <p>{readinessThesis(overallScore)}</p>
+            </section>
+          </article>
+
+          <article className="data-ai-report-page data-ai-board-page">
+            <div className="data-ai-report-page-header">
+              <p className="eyebrow">02 - Board Scorecard</p>
+              <h2>Readiness signal for steering committee review</h2>
+            </div>
+            <div className="data-ai-board-grid">
+              <section className="data-ai-readiness-gauge">
+                <span>Readiness score</span>
+                <strong>{maturityPct}%</strong>
+                <div><span style={{ width: `${maturityPct}%` }} /></div>
+                <p>{formatScore(overallScore)} / 4 maturity - {maturityLabel(overallScore)}</p>
+              </section>
+              <section>
+                <h3>Decision posture</h3>
+                <p>{readinessThesis(overallScore)}</p>
+              </section>
+              <section>
+                <h3>Evidence posture</h3>
+                <p>{evidenceCoveragePct}% of questions currently have evidence strength and evidence notes. Unsupported high scores remain provisional.</p>
+              </section>
+              <section>
+                <h3>Assessment completeness</h3>
+                <p>{assessedCoveragePct}% of workbook questions have been scored. Unscored items should stay out of the approved baseline.</p>
+              </section>
+            </div>
+            <div className="data-ai-report-decision-strip">
+              <div><span>Board ask</span><strong>Approve baseline</strong><p>Confirm score standard and evidence requirements.</p></div>
+              <div><span>Management ask</span><strong>Assign owners</strong><p>Close priority domains through named remediation owners.</p></div>
+              <div><span>AI ask</span><strong>Gate use cases</strong><p>Proceed only where data, privacy, and model risk controls are ready.</p></div>
             </div>
           </article>
 
@@ -847,7 +937,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">02 · Maturity Heatmap</p>
+              <p className="eyebrow">03 - Maturity Heatmap</p>
               <h2>Domain maturity and gap concentration</h2>
             </div>
             <div className="data-ai-report-domain-grid">
@@ -872,8 +962,8 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">03 · Diagnostic Findings</p>
-              <h2>Strengths, vulnerabilities, and evidence quality</h2>
+              <p className="eyebrow">04 - Domain Action Plan</p>
+              <h2>Strengths, vulnerabilities, and remediation route</h2>
             </div>
             <div className="data-ai-report-two-col">
               <section>
@@ -913,11 +1003,76 @@ export function DataAiDiagnosticWorkspace() {
                 audit trails, or owner confirmations are attached.
               </p>
             </section>
+            <div className="data-ai-report-table-wrap">
+              <table className="data-ai-report-table">
+                <thead>
+                  <tr>
+                    <th>Domain</th>
+                    <th>Score</th>
+                    <th>Gap</th>
+                    <th>Priority</th>
+                    <th>Recommended management action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportDomainRows.map((summary) => (
+                    <tr key={summary.id}>
+                      <td>{summary.nameEn}</td>
+                      <td>{formatScore(summary.avgScore)} / 4</td>
+                      <td>{summary.avgGap === null ? "No data" : summary.avgGap.toFixed(1)}</td>
+                      <td><span className={`data-ai-priority ${summary.priority}`}>{priorityLabels[summary.priority]}</span></td>
+                      <td>{reportRecommendationForPriority(summary.priority)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </article>
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">04 · 90-Day Roadmap</p>
+              <p className="eyebrow">05 - Priority Gap Register</p>
+              <h2>Highest-risk items requiring action</h2>
+            </div>
+            <div className="data-ai-report-table-wrap">
+              <table className="data-ai-report-table">
+                <thead>
+                  <tr>
+                    <th>Question</th>
+                    <th>Domain</th>
+                    <th>Score</th>
+                    <th>Gap</th>
+                    <th>Evidence</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topPriorityGaps.length ? topPriorityGaps.map(({ question, state, gap }) => (
+                    <tr key={question.id}>
+                      <td>{question.questionEn}</td>
+                      <td>{question.domainEn}</td>
+                      <td>{state.score}</td>
+                      <td>{gap}</td>
+                      <td>{state.evidenceStrength}</td>
+                      <td>{state.actionPlan || "Assign owner, evidence, and due date."}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={6}>No scored gaps available. Seed or capture assessment data before issuing the report.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <section className="data-ai-report-callout">
+              <h3>Control principle</h3>
+              <p>Every high-priority gap should have an accountable owner, required evidence artifact, target date, and steering committee escalation path.</p>
+            </section>
+          </article>
+
+          <article className="data-ai-report-page">
+            <div className="data-ai-report-page-header">
+              <p className="eyebrow">06 - 90-Day Roadmap</p>
               <h2>Remediation plan for decision-ready AI</h2>
             </div>
             <div className="data-ai-roadmap">
@@ -946,8 +1101,20 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">05 · AI Readiness Gate</p>
+              <p className="eyebrow">07 - AI Readiness Gate</p>
               <h2>What can proceed now and what should wait</h2>
+            </div>
+            <div className="data-ai-gate-matrix">
+              {[
+                ["Proceed", "Management dashboards, evidence-backed diagnostics, and AI-assisted reporting with human approval."],
+                ["Pilot with controls", "Forecasting, classification, and summarisation where source quality and privacy controls are confirmed."],
+                ["Hold", "Autonomous decisions, sensitive generative AI workflows, and model outputs without audit trail or owner sign-off."],
+              ].map(([label, text]) => (
+                <section key={label}>
+                  <h3>{label}</h3>
+                  <p>{text}</p>
+                </section>
+              ))}
             </div>
             <div className="data-ai-report-two-col">
               <section>
@@ -978,7 +1145,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">06 · Appendix</p>
+              <p className="eyebrow">08 - Appendix</p>
               <h2>Prompt library and report generation basis</h2>
             </div>
             <div className="data-ai-prompt-list">

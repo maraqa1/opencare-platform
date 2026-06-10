@@ -11651,6 +11651,96 @@ code {
   margin: 0.25rem 0 0;
 }
 
+.data-ai-report-toc {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.data-ai-report-toc div,
+.data-ai-report-decision-strip div,
+.data-ai-gate-matrix section,
+.data-ai-board-grid section {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  padding: 0.9rem;
+}
+
+.data-ai-report-toc span,
+.data-ai-report-decision-strip span,
+.data-ai-readiness-gauge span {
+  color: #667085;
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.data-ai-report-toc strong,
+.data-ai-report-decision-strip strong {
+  color: #121a50;
+  display: block;
+  font-size: 1.05rem;
+  margin-top: 0.35rem;
+}
+
+.data-ai-board-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: minmax(18rem, 0.85fr) repeat(3, minmax(0, 1fr));
+}
+
+.data-ai-readiness-gauge {
+  background: linear-gradient(135deg, #121a50, #1e5d58) !important;
+  color: #ffffff;
+}
+
+.data-ai-readiness-gauge strong {
+  color: #ffffff;
+  display: block;
+  font-size: 3.5rem;
+  line-height: 1;
+  margin: 0.6rem 0;
+}
+
+.data-ai-readiness-gauge div {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  height: 0.85rem;
+  overflow: hidden;
+}
+
+.data-ai-readiness-gauge div span {
+  background: #7dd3fc;
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.data-ai-readiness-gauge p,
+.data-ai-readiness-gauge span {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.data-ai-report-decision-strip,
+.data-ai-gate-matrix {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-ai-report-thesis {
+  background: #eef6f4;
+  border: 1px solid rgba(30, 93, 88, 0.18);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.data-ai-report-thesis h3 {
+  margin: 0 0 0.35rem;
+}
+
 .data-ai-report-kpis,
 .data-ai-report-domain-grid,
 .data-ai-roadmap {
@@ -11659,7 +11749,7 @@ code {
 }
 
 .data-ai-report-kpis {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .data-ai-report-kpis strong {
@@ -11765,6 +11855,39 @@ code {
   border-color: rgba(180, 83, 9, 0.18);
 }
 
+.data-ai-report-table-wrap {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.data-ai-report-table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  width: 100%;
+}
+
+.data-ai-report-table th,
+.data-ai-report-table td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-ai-report-table th {
+  background: #f1f5f9;
+  color: #475467;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.data-ai-report-table td:first-child {
+  color: #121a50;
+  font-weight: 800;
+}
+
 @media (max-width: 1100px) {
   .data-ai-hero,
   .data-ai-control-panel,
@@ -11787,7 +11910,11 @@ code {
   .data-ai-report-kpis,
   .data-ai-report-two-col,
   .data-ai-report-domain-grid,
-  .data-ai-roadmap {
+  .data-ai-roadmap,
+  .data-ai-report-toc,
+  .data-ai-board-grid,
+  .data-ai-report-decision-strip,
+  .data-ai-gate-matrix {
     grid-template-columns: 1fr;
   }
 }
@@ -11844,6 +11971,28 @@ code {
   .data-ai-report-cover {
     color: #ffffff !important;
     min-height: 250mm;
+  }
+
+  .data-ai-report-kpis,
+  .data-ai-report-domain-grid,
+  .data-ai-report-toc {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .data-ai-board-grid,
+  .data-ai-report-decision-strip,
+  .data-ai-gate-matrix,
+  .data-ai-roadmap {
+    grid-template-columns: 1fr !important;
+  }
+
+  .data-ai-report-table {
+    font-size: 0.68rem;
+  }
+
+  .data-ai-report-table th,
+  .data-ai-report-table td {
+    padding: 0.45rem;
   }
 
   .data-ai-report-page:last-child {
