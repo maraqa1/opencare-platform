@@ -123,6 +123,56 @@ export const useCases: UseCaseModule[] = [
       actionLabel: "Governance",
     },
   },
+  {
+    id: "data_ai_capability_diagnostic",
+    slug: "data-ai-capability-diagnostic",
+    icon: "AI",
+    name: "Data & AI Capability Diagnostic",
+    description:
+      "A bilingual assessment and AI reporting workspace for capturing data maturity evidence, scoring gaps, and producing executive-ready diagnostic reports.",
+    status: "active",
+    summary:
+      "Data capture, maturity scoring, gap prioritisation, AI readiness narrative, and evidence-backed improvement planning.",
+    defaultHref: "/use-cases/data-ai-capability-diagnostic",
+    ctaLabel: "Open Diagnostic Tool",
+    kpis: [
+      { label: "Workbook Questions", value: "84", note: "Across 13 data and AI maturity domains" },
+      { label: "Target Score", value: "4 / 4", note: "Evidence-backed maturity target per question" },
+      { label: "AI Report", value: "Draft", note: "Executive narrative generated from captured inputs" },
+    ],
+    shell: {
+      label: "Data & AI Assessment",
+      title: "Capability Diagnostic",
+      badge: "Assessment",
+      actionHref: "/use-cases/data-ai-capability-diagnostic",
+      actionLabel: "Open Tool",
+    },
+  },
+  {
+    id: "jazan_urban_service_quality_visual_distortion_loop",
+    slug: "urban-service-quality-visual-distortion-loop",
+    icon: "Loop",
+    name: "Urban Service Quality & Visual Distortion Loop",
+    description:
+      "A native Jazan shell connecting KPI contracts, runtime evidence, decision workflow, outcome recovery, and governance proof.",
+    status: "active",
+    summary:
+      "Strategic landing, KPI contract, runtime intelligence, decision queue, outcome recovery, and governance evidence in one governed shell.",
+    defaultHref: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop?demo=1",
+    ctaLabel: "Open Urban Service Loop",
+    kpis: [
+      { label: "Closure Quality", value: ">= 90%", note: "Visual-distortion complaint closure target" },
+      { label: "Breach Forecast", value: "4-week horizon", note: "Runtime evidence and risk scoring" },
+      { label: "Governance Proof", value: "Required", note: "Lineage, record spec, audit, and evidence pack" },
+    ],
+    shell: {
+      label: "Jazan Use Case",
+      title: "Urban Service Quality Loop",
+      badge: "Golden Shell",
+      actionHref: "/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop/governance-evidence?demo=1",
+      actionLabel: "Evidence",
+    },
+  },
 ];
 
 export const bedPressureTabs = [
@@ -180,6 +230,12 @@ export function getUseCaseByPath(pathname: string): UseCaseModule | null {
 
   if (pathname.startsWith("/occupancy") || pathname.startsWith("/use-cases/bed-pressure")) {
     return useCases.find((item) => item.id === "bed_pressure") ?? null;
+  }
+
+  if (pathname.startsWith("/jazan-performance/use-cases/urban-service-quality-visual-distortion-loop")) {
+    return (
+      useCases.find((item) => item.id === "jazan_urban_service_quality_visual_distortion_loop") ?? null
+    );
   }
 
   const slugMatch = useCases.find((item) => pathname.startsWith(`/use-cases/${item.slug}`));

@@ -95,3 +95,73 @@ use_cases:
         grain: "One row per executive outcome, period, and municipality roll-up."
       - table: "analytics.fct_jazan_leadership_decision"
         grain: "One row per leadership decision and follow-up status."
+  jazan_urban_service_quality_visual_distortion_loop:
+    name: "Urban Service Quality & Visual Distortion Loop"
+    description: "Run the Jazan service-quality shell from KPI contract through runtime evidence, decision workflow, outcome recovery, and governance proof."
+    enabled: true
+    source_tables:
+      - visual_distortion_cases
+      - service_requests
+      - permit_requests
+      - service_coverage_assets
+      - emergency_readiness_checks
+      - citizen_satisfaction_surveys
+      - municipalities
+    portal_pages:
+      - slug: "urban-service-quality-visual-distortion-loop"
+        label: "Urban Service Quality Loop"
+        icon: "activity"
+        tab_order: 1
+    api_prefix: "/api/v1/jazan/service-quality"
+    api_endpoints:
+      - path: "/overview"
+        method: "GET"
+      - path: "/decision-queue"
+        method: "GET"
+      - path: "/runtime-evidence"
+        method: "GET"
+      - path: "/governance-evidence"
+        method: "GET"
+    business_objectives:
+      - "Connect the Jazan service-quality KPI contract to governed runtime outputs, decision actions, and outcome recovery."
+      - "Surface municipality-level risk, breach probability, and corrective-action status in one shell."
+      - "Keep each metric, decision, and action backed by runtime evidence, lineage, record specs, and audit-safe governance proof."
+    record_specs:
+      - table: "analytics.fct_jazan_visual_distortion_performance"
+        grain: "One row per municipality, period, and service-quality KPI measurement."
+      - table: "analytics.fct_jazan_service_quality"
+        grain: "One row per municipality, period, and service-response quality signal."
+      - table: "decision.jazan_generated_service_decisions"
+        grain: "One row per generated service-quality decision candidate and lifecycle state."
+  data_ai_capability_diagnostic:
+    name: "Data & AI Capability Diagnostic"
+    description: "Capture data and AI maturity assessment evidence, score capability gaps, prioritise actions, and produce executive diagnostic reports."
+    enabled: true
+    source_tables:
+      - diagnostic_questions
+      - diagnostic_responses
+      - diagnostic_evidence
+      - diagnostic_action_plan
+      - diagnostic_review_session
+    portal_pages:
+      - slug: "data-ai-capability-diagnostic"
+        label: "Data & AI Diagnostic"
+        icon: "sparkles"
+        tab_order: 1
+    api_prefix: "/api/v1/data-ai-diagnostic"
+    api_endpoints:
+      - path: "/sessions"
+        method: "GET"
+      - path: "/responses"
+        method: "POST"
+      - path: "/report"
+        method: "GET"
+    business_objectives:
+      - "Capture bilingual data and AI maturity evidence against international frameworks."
+      - "Score capability gaps across strategy, governance, architecture, quality, analytics, AI, people, compliance, sources, and impact."
+      - "Generate executive-ready AI readiness reporting and prioritised improvement actions."
+    record_specs:
+      - table: "assessment.fct_data_ai_diagnostic_response"
+        grain: "One row per assessment question, session, score, evidence note, and action plan."
+      - table: "assessment.fct_data_ai_domain_maturity"
+        grain: "One row per assessment domain and diagnostic session."
