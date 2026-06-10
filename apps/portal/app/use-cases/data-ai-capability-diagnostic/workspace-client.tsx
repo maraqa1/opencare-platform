@@ -855,10 +855,16 @@ export function DataAiDiagnosticWorkspace() {
                 <div key={summary.id}>
                   <span>{summary.id.toString().padStart(2, "0")}</span>
                   <strong>{summary.nameEn}</strong>
-                  <div className="data-ai-score-bar" aria-label={`${summary.nameEn} report maturity score`}>
-                    <span style={{ width: scoreWidth(summary.avgScore) }} />
+                  <div className="data-ai-report-score-track" aria-label={`${summary.nameEn} report maturity score`}>
+                    <span
+                      className={`data-ai-report-score-fill ${summary.priority}`}
+                      style={{ width: scoreWidth(summary.avgScore) }}
+                    />
                   </div>
-                  <p>{formatScore(summary.avgScore)} / 4 · {priorityLabels[summary.priority]}</p>
+                  <p>
+                    <b>{formatScore(summary.avgScore)} / 4</b>
+                    <span className={`data-ai-priority ${summary.priority}`}>{priorityLabels[summary.priority]}</span>
+                  </p>
                 </div>
               ))}
             </div>
