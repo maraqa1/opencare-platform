@@ -42,6 +42,50 @@ type OpenAiChatResponse = {
 
 const fallbackModel = "gpt-4o-mini";
 
+function textValue(value: unknown) {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+function stringList(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map((item) => textValue(item)).filter(Boolean);
+}
+
+function normaliseReport(value: unknown) {
+  if (!value || typeof value !== "object") {
+    return {
+      executiveSummary: textValue(value),
+      boardMessage: "",
+      materialFindings: [],
+      recommendedDecisions: [],
+      ninetyDayPlan: [],
+      aiReadinessGate: "",
+      risks: [],
+    };
+  }
+  const report = value as Record<string, unknown>;
+  return {
+    executiveSummary: textValue(report.executiveSummary),
+    boardMessage: textValue(report.boardMessage),
+    materialFindings: stringList(report.materialFindings),
+    recommendedDecisions: stringList(report.recommendedDecisions),
+    ninetyDayPlan: stringList(report.ninetyDayPlan),
+    aiReadinessGate: textValue(report.aiReadinessGate),
+    risks: stringList(report.risks),
+  };
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -143,13 +187,13 @@ export async function POST(request: Request) {
   try {
     return NextResponse.json({
       status: "ready",
-      report: JSON.parse(content),
+      report: normaliseReport(JSON.parse(content)),
       model,
     });
   } catch {
     return NextResponse.json({
       status: "ready",
-      report: {
+      report: normaliseReport({
         executiveSummary: content,
         boardMessage: "Generated as narrative text because the model response was not JSON.",
         materialFindings: [],
@@ -157,7 +201,7 @@ export async function POST(request: Request) {
         ninetyDayPlan: [],
         aiReadinessGate: "",
         risks: [],
-      },
+      }),
       model,
     });
   }
