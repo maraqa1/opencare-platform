@@ -48,6 +48,15 @@ Required repository secret:
 
 - `JAZAN_VM_SSH_KEY`: private SSH key that can log in to the VM.
 
+Create a dedicated VM key and print the secret value:
+
+```bash
+cd /root/opencare-platform
+bash scripts/jazan/setup_github_actions_ssh.sh
+```
+
+Copy the block between `-----BEGIN JAZAN_VM_SSH_KEY-----` and `-----END JAZAN_VM_SSH_KEY-----` into the GitHub repository secret value. Do not include those marker lines.
+
 Optional repository secrets:
 
 - `JAZAN_VM_HOST`: defaults to `78.47.100.139`.

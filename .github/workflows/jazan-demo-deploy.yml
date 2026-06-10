@@ -21,19 +21,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - name: Validate VM SSH configuration
+      - name: Preflight VM SSH configuration
+        id: preflight
         shell: bash
         env:
           JAZAN_VM_SSH_KEY: ${{ secrets.JAZAN_VM_SSH_KEY }}
         run: |
           set -euo pipefail
           if [[ -z "${JAZAN_VM_SSH_KEY}" ]]; then
-            echo "Missing required secret: JAZAN_VM_SSH_KEY" >&2
-            echo "Add an SSH private key with access to the Jazan VM." >&2
-            exit 1
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Jazan deploy skipped"
+              echo ""
+              echo "The workflow is installed, but the VM SSH secret is not configured yet."
+              echo ""
+              echo "Add repository secret \`JAZAN_VM_SSH_KEY\` with a private key that can SSH to the Jazan VM."
+              echo ""
+              echo "Optional secrets:"
+              echo "- \`JAZAN_VM_HOST\` defaults to \`78.47.100.139\`"
+              echo "- \`JAZAN_VM_USER\` defaults to \`root\`"
+              echo "- \`JAZAN_VM_REPO_PATH\` defaults to \`/root/opencare-platform\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Deploy on VM
+        if: steps.preflight.outputs.ready == 'true'
         shell: bash
         env:
           JAZAN_VM_HOST: ${{ secrets.JAZAN_VM_HOST || '78.47.100.139' }}
@@ -52,4 +66,3 @@ jobs:
             -i ~/.ssh/jazan_demo_deploy_key \
             "${JAZAN_VM_USER}@${JAZAN_VM_HOST}" \
             "cd '${JAZAN_VM_REPO_PATH}' && bash scripts/jazan/deploy_portal_vm.sh"
-
