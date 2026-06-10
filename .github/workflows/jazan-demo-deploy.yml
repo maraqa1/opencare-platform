@@ -1,0 +1,55 @@
+name: Deploy Jazan Demo Portal
+
+on:
+  push:
+    branches:
+      - codex/jazan-demo
+    paths:
+      - "apps/portal/**"
+      - "config/use_cases.yaml"
+      - "scripts/jazan/**"
+      - ".github/workflows/jazan-demo-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: jazan-demo-portal-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy portal on Jazan VM
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Validate VM SSH configuration
+        shell: bash
+        env:
+          JAZAN_VM_SSH_KEY: ${{ secrets.JAZAN_VM_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${JAZAN_VM_SSH_KEY}" ]]; then
+            echo "Missing required secret: JAZAN_VM_SSH_KEY" >&2
+            echo "Add an SSH private key with access to the Jazan VM." >&2
+            exit 1
+          fi
+
+      - name: Deploy on VM
+        shell: bash
+        env:
+          JAZAN_VM_HOST: ${{ secrets.JAZAN_VM_HOST || '78.47.100.139' }}
+          JAZAN_VM_USER: ${{ secrets.JAZAN_VM_USER || 'root' }}
+          JAZAN_VM_SSH_KEY: ${{ secrets.JAZAN_VM_SSH_KEY }}
+          JAZAN_VM_REPO_PATH: ${{ secrets.JAZAN_VM_REPO_PATH || '/root/opencare-platform' }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${JAZAN_VM_SSH_KEY}" > ~/.ssh/jazan_demo_deploy_key
+          chmod 600 ~/.ssh/jazan_demo_deploy_key
+
+          ssh -o StrictHostKeyChecking=accept-new \
+            -i ~/.ssh/jazan_demo_deploy_key \
+            "${JAZAN_VM_USER}@${JAZAN_VM_HOST}" \
+            "cd '${JAZAN_VM_REPO_PATH}' && bash scripts/jazan/deploy_portal_vm.sh"
+

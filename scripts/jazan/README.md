@@ -40,3 +40,22 @@ Optional overrides:
 BRANCH=codex/jazan-demo NAMESPACE=opencare DEPLOYMENT=portal CONTAINER=portal bash scripts/jazan/deploy_portal_vm.sh
 ```
 
+## Automatic deploy after push
+
+The GitHub Actions workflow `.github/workflows/jazan-demo-deploy.yml` deploys the portal after pushes to `codex/jazan-demo` when portal/config/Jazan helper files change.
+
+Required repository secret:
+
+- `JAZAN_VM_SSH_KEY`: private SSH key that can log in to the VM.
+
+Optional repository secrets:
+
+- `JAZAN_VM_HOST`: defaults to `78.47.100.139`.
+- `JAZAN_VM_USER`: defaults to `root`.
+- `JAZAN_VM_REPO_PATH`: defaults to `/root/opencare-platform`.
+
+Manual deployment is also available from GitHub Actions:
+
+1. Open **Actions**.
+2. Select **Deploy Jazan Demo Portal**.
+3. Click **Run workflow** on branch `codex/jazan-demo`.
