@@ -11582,7 +11582,7 @@ code {
 .data-ai-report-cover-card span,
 .data-ai-report-kpis span,
 .data-ai-roadmap span,
-.data-ai-report-domain-grid span {
+.data-ai-report-domain-grid > div > span {
   color: #667085;
   display: block;
   font-size: 0.72rem;
@@ -11800,27 +11800,31 @@ code {
   overflow: hidden;
 }
 
-.data-ai-report-score-fill {
+.data-ai-report-score-track .data-ai-report-score-fill {
   background: linear-gradient(90deg, #1e5d58, #3b82f6);
   border-radius: inherit;
   display: block;
+  font-size: 0;
   height: 100%;
+  line-height: 0;
   min-width: 0.35rem;
+  padding: 0;
+  text-transform: none;
 }
 
-.data-ai-report-score-fill.critical {
+.data-ai-report-score-track .data-ai-report-score-fill.critical {
   background: linear-gradient(90deg, #b42318, #f97316);
 }
 
-.data-ai-report-score-fill.high {
+.data-ai-report-score-track .data-ai-report-score-fill.high {
   background: linear-gradient(90deg, #b45309, #f59e0b);
 }
 
-.data-ai-report-score-fill.medium {
+.data-ai-report-score-track .data-ai-report-score-fill.medium {
   background: linear-gradient(90deg, #1d4ed8, #3b82f6);
 }
 
-.data-ai-report-score-fill.watch {
+.data-ai-report-score-track .data-ai-report-score-fill.watch {
   background: linear-gradient(90deg, #166534, #22c55e);
 }
 
