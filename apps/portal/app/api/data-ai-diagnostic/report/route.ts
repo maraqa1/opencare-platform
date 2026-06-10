@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 
 type DiagnosticReportRequest = {
+  customerContext?: {
+    customerName?: string;
+    businessDomain?: string;
+    operatingScope?: string;
+    strategicPriorities?: string;
+    currentPainPoints?: string;
+    targetAudience?: string;
+    reportPurpose?: string;
+  };
   overallScore: number | null;
   overallGap: number | null;
   scoredQuestions: number;
@@ -128,12 +137,14 @@ export async function POST(request: Request) {
           {
             role: "system",
             content:
-              "You are a senior data and AI strategy consultant. Return only valid JSON. Write concise, board-ready report language. Do not invent metrics beyond the supplied diagnostic payload. The maturity scoring scale is 0 to 4, where 4 is the maximum maturity score.",
+              "You are a senior data and AI strategy consultant. Return only valid JSON. Write concise, board-ready report language. Tailor the report to the supplied customer, business domain, operating scope, priorities, pain points, audience, and report purpose. Do not invent customer facts or metrics beyond the supplied diagnostic payload. The maturity scoring scale is 0 to 4, where 4 is the maximum maturity score.",
           },
           {
             role: "user",
             content: JSON.stringify({
               task: "Generate a consulting-grade Data and AI capability diagnostic report narrative.",
+              contextInstructions:
+                "Use the customer context to make the report domain-specific. If a context field is blank, do not guess it. Frame recommendations in the language of the customer domain and intended audience.",
               scoringScale: "0 to 4 maturity scale; 4 is the maximum score.",
               requiredShape: {
                 executiveSummary: "string",

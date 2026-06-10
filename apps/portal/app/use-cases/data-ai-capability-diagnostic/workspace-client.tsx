@@ -22,6 +22,16 @@ type QuestionState = {
 
 type EvidenceStrength = "none" | "interview" | "documented" | "system" | "audited";
 
+type CustomerContext = {
+  customerName: string;
+  businessDomain: string;
+  operatingScope: string;
+  strategicPriorities: string;
+  currentPainPoints: string;
+  targetAudience: string;
+  reportPurpose: string;
+};
+
 type GeneratedConsultingReport = {
   executiveSummary?: string;
   boardMessage?: string;
@@ -82,6 +92,29 @@ const evidenceStrengthOptions = [
   { value: "system", label: "System evidence", cap: 4, description: "Dashboard, platform record, lineage, workflow, or telemetry evidence." },
   { value: "audited", label: "Audited", cap: 4, description: "Evidence has review history, controls, audit trail, or measured outcomes." },
 ] satisfies Array<{ value: EvidenceStrength; label: string; cap: number; description: string }>;
+
+const emptyCustomerContext = {
+  customerName: "",
+  businessDomain: "",
+  operatingScope: "",
+  strategicPriorities: "",
+  currentPainPoints: "",
+  targetAudience: "",
+  reportPurpose: "",
+} satisfies CustomerContext;
+
+const demoCustomerContext = {
+  customerName: "Justice Training Centre",
+  businessDomain: "public-sector justice training, capability development, and institutional learning",
+  operatingScope: "national training centre serving judicial, legal, operational, and administrative teams",
+  strategicPriorities:
+    "improve training effectiveness, strengthen data-driven planning, connect learning outcomes to institutional performance, and prepare governed AI use cases",
+  currentPainPoints:
+    "fragmented training data, inconsistent evidence for impact, limited lineage across learner, course, and outcome data, and unclear AI readiness controls",
+  targetAudience: "executive leadership, data council, training operations, IT, and AI governance stakeholders",
+  reportPurpose:
+    "produce an executive-ready diagnostic that prioritises data and AI capability gaps, governance decisions, and the first 90 days of remediation",
+} satisfies CustomerContext;
 
 function initialState() {
   return Object.fromEntries(
@@ -301,6 +334,7 @@ export function DataAiDiagnosticWorkspace() {
   const [selectedDomain, setSelectedDomain] = useState<number | "all">("all");
   const [search, setSearch] = useState("");
   const [stateByQuestion, setStateByQuestion] = useState(initialState);
+  const [customerContext, setCustomerContext] = useState<CustomerContext>(emptyCustomerContext);
   const [generatedReport, setGeneratedReport] = useState<GeneratedConsultingReport | null>(null);
   const [reportStatus, setReportStatus] = useState<"idle" | "loading" | "ready" | "missing_key" | "error">("idle");
   const [reportMessage, setReportMessage] = useState("");
@@ -357,17 +391,34 @@ export function DataAiDiagnosticWorkspace() {
 
   const seedDummyData = () => {
     setStateByQuestion(dummyState());
+    setCustomerContext(demoCustomerContext);
   };
 
   const resetCapture = () => {
     setStateByQuestion(initialState());
+    setCustomerContext(emptyCustomerContext);
+  };
+
+  const updateCustomerContext = (field: keyof CustomerContext, value: string) => {
+    setCustomerContext((current) => ({
+      ...current,
+      [field]: value,
+    }));
   };
 
   const downloadDummyDataFile = () => {
     const seededState = dummyState();
+    const contextRows = Object.entries(demoCustomerContext).map(([field, value]) => ({
+      record_type: "customer_context",
+      field,
+      value,
+    }));
     const rows = dataAiDiagnosticQuestions.map((question) => {
       const state = seededState[question.id];
       return {
+        record_type: "assessment_question",
+        field: question.id,
+        value: "",
         question_id: question.id,
         question_number: question.number,
         domain_id: question.domainId,
@@ -382,10 +433,12 @@ export function DataAiDiagnosticWorkspace() {
         notes: state.notes,
       };
     });
-    const headers = Object.keys(rows[0] ?? {});
+    const headers = Array.from(new Set([...Object.keys(contextRows[0] ?? {}), ...Object.keys(rows[0] ?? {})]));
     const csv = [
       headers.join(","),
-      ...rows.map((row) => headers.map((header) => csvCell(row[header as keyof typeof row])).join(",")),
+      ...[...contextRows, ...rows].map((row) =>
+        headers.map((header) => csvCell(row[header as keyof typeof row])).join(","),
+      ),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -422,6 +475,8 @@ export function DataAiDiagnosticWorkspace() {
   const reportDomainRows = [...summaries].sort((a, b) => (b.avgGap ?? -1) - (a.avgGap ?? -1));
   const topPriorityGaps = rankedGaps.slice(0, 8);
   const reportDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(new Date());
+  const reportCustomerName = customerContext.customerName.trim() || "Customer organisation";
+  const reportBusinessDomain = customerContext.businessDomain.trim() || "Business domain not specified";
 
   const generateConsultingReport = async () => {
     setReportStatus("loading");
@@ -431,6 +486,7 @@ export function DataAiDiagnosticWorkspace() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          customerContext,
           overallScore,
           overallGap,
           scoredQuestions,
@@ -533,7 +589,7 @@ export function DataAiDiagnosticWorkspace() {
             <div className="data-ai-demo-actions" aria-label="Demo data actions">
               <div>
                 <span className="data-ai-mode-chip">Demo seed</span>
-                <p>Populate deterministic dummy scores, evidence notes, and action plans for a walkthrough.</p>
+                <p>Populate deterministic dummy customer context, scores, evidence notes, and action plans for a walkthrough.</p>
               </div>
               <div>
                 <button type="button" onClick={seedDummyData}>
@@ -545,6 +601,79 @@ export function DataAiDiagnosticWorkspace() {
                 <button type="button" onClick={resetCapture}>
                   Reset capture
                 </button>
+              </div>
+            </div>
+            <div className="data-ai-context-panel" aria-label="Customer and business domain context">
+              <div className="data-ai-context-header">
+                <div>
+                  <p className="eyebrow">Customer Context</p>
+                  <h3>Tell the report what business domain it is assessing</h3>
+                  <p>
+                    These fields shape the AI narrative, report language, priorities, and examples. They are captured as
+                    context, not maturity scores.
+                  </p>
+                </div>
+                <span className="data-ai-mode-chip">
+                  {customerContext.businessDomain.trim() ? "Context captured" : "Needs customer context"}
+                </span>
+              </div>
+              <div className="data-ai-context-grid">
+                <label>
+                  <span>Customer / organisation</span>
+                  <input
+                    value={customerContext.customerName}
+                    onChange={(event) => updateCustomerContext("customerName", event.target.value)}
+                    placeholder="Example: Justice Training Centre"
+                  />
+                </label>
+                <label>
+                  <span>Business domain</span>
+                  <input
+                    value={customerContext.businessDomain}
+                    onChange={(event) => updateCustomerContext("businessDomain", event.target.value)}
+                    placeholder="Example: public-sector justice training"
+                  />
+                </label>
+                <label>
+                  <span>Operating scope</span>
+                  <textarea
+                    value={customerContext.operatingScope}
+                    onChange={(event) => updateCustomerContext("operatingScope", event.target.value)}
+                    placeholder="Geography, entities, functions, services, or user groups in scope..."
+                  />
+                </label>
+                <label>
+                  <span>Strategic priorities</span>
+                  <textarea
+                    value={customerContext.strategicPriorities}
+                    onChange={(event) => updateCustomerContext("strategicPriorities", event.target.value)}
+                    placeholder="What outcomes should data and AI support?"
+                  />
+                </label>
+                <label>
+                  <span>Current pain points</span>
+                  <textarea
+                    value={customerContext.currentPainPoints}
+                    onChange={(event) => updateCustomerContext("currentPainPoints", event.target.value)}
+                    placeholder="Known constraints, risks, data gaps, operating issues..."
+                  />
+                </label>
+                <label>
+                  <span>Report audience</span>
+                  <input
+                    value={customerContext.targetAudience}
+                    onChange={(event) => updateCustomerContext("targetAudience", event.target.value)}
+                    placeholder="Executive committee, data council, PMO, IT..."
+                  />
+                </label>
+                <label className="data-ai-context-wide">
+                  <span>Report purpose</span>
+                  <textarea
+                    value={customerContext.reportPurpose}
+                    onChange={(event) => updateCustomerContext("reportPurpose", event.target.value)}
+                    placeholder="What should this report help the customer decide?"
+                  />
+                </label>
               </div>
             </div>
             <div className="data-ai-filters">
@@ -801,6 +930,8 @@ export function DataAiDiagnosticWorkspace() {
             <div>
               <p className="eyebrow">Justice Training Centre · Data & AI Use Case</p>
               <h2>Data & AI Capability Diagnostic</h2>
+              <p>{reportCustomerName}</p>
+              <p>{reportBusinessDomain}</p>
               <p>Executive readiness assessment, maturity heatmap, remediation roadmap, and AI-governance decision pack.</p>
             </div>
             <div className="data-ai-report-cover-card">
@@ -813,6 +944,7 @@ export function DataAiDiagnosticWorkspace() {
               <div><dt>Assessment coverage</dt><dd>{scoredQuestions} / {totalQuestions} questions</dd></div>
               <div><dt>Domains assessed</dt><dd>{assessedDomains.length} / {summaries.length}</dd></div>
               <div><dt>Evidence-backed responses</dt><dd>{evidenceBackedItems} / {totalQuestions}</dd></div>
+              <div><dt>Report audience</dt><dd>{customerContext.targetAudience.trim() || "Not specified"}</dd></div>
             </dl>
           </article>
 
@@ -866,7 +998,8 @@ export function DataAiDiagnosticWorkspace() {
               <section>
                 <h3>Headline assessment</h3>
                 <p>
-                  The current capture indicates a {maturityLabel(overallScore).toLowerCase()} data and AI capability profile.
+                  The current capture for {reportCustomerName} indicates a {maturityLabel(overallScore).toLowerCase()} data and AI capability profile
+                  for {reportBusinessDomain}.
                   {topGapDomains.length
                     ? ` The most material gaps are concentrated in ${topGapDomains.map((item) => item.nameEn).join(", ")}.`
                     : " No scored domain gap pattern is available yet."}

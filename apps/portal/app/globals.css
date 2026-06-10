@@ -12091,6 +12091,66 @@ code {
   transform: translateY(-1px);
 }
 
+.data-ai-context-panel {
+  background: #fbfcfd;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  display: grid;
+  gap: 0.9rem;
+  grid-column: 1 / -1;
+  padding: 0.95rem;
+}
+
+.data-ai-context-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.data-ai-context-header h3 {
+  color: #121a50;
+  margin: 0.2rem 0;
+}
+
+.data-ai-context-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-ai-context-grid label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.data-ai-context-grid span {
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.data-ai-context-grid input,
+.data-ai-context-grid textarea {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 12px;
+  color: #101828;
+  font: inherit;
+  min-height: 2.45rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.data-ai-context-grid textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.data-ai-context-wide {
+  grid-column: span 3;
+}
+
 .data-ai-diagnostic-page .data-ai-filters {
   display: grid;
   gap: 0.65rem;
@@ -12341,6 +12401,14 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .data-ai-context-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .data-ai-context-wide {
+    grid-column: span 2;
+  }
+
   .data-ai-diagnostic-page .data-ai-capture-fields {
     border-left: 0;
     border-top: 1px solid rgba(15, 23, 42, 0.1);
@@ -12349,10 +12417,19 @@ code {
 
 @media (max-width: 760px) {
   .data-ai-capture-summary,
+  .data-ai-context-grid,
   .data-ai-rubric-grid,
   .data-ai-textarea-grid,
   .data-ai-diagnostic-page .data-ai-question-meta {
     grid-template-columns: 1fr;
+  }
+
+  .data-ai-context-header {
+    display: grid;
+  }
+
+  .data-ai-context-wide {
+    grid-column: auto;
   }
 
   .data-ai-score-buttons {
