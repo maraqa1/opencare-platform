@@ -66,6 +66,9 @@ jobs:
           OPENAI_API_KEY_B64=""
           if [[ -n "${OPENAI_API_KEY:-}" ]]; then
             OPENAI_API_KEY_B64="$(printf '%s' "${OPENAI_API_KEY}" | base64 -w0)"
+            echo "OPENAI_API_KEY secret present for deploy."
+          else
+            echo "OPENAI_API_KEY secret not present for deploy; OpenAI report generation will remain disabled."
           fi
 
           ssh -o StrictHostKeyChecking=accept-new \
