@@ -252,6 +252,9 @@ export default async function HomePage() {
           <Link className="secondary-link" href="/use-cases/data-ai-capability-diagnostic">
             Data & AI Diagnostic
           </Link>
+          <Link className="secondary-link" href="/use-cases/data-management-office-establishment">
+            DMO Establishment
+          </Link>
         </div>
         <p>Platform data status: Not connected</p>
         <div className="jazan-status-legend" aria-label="Operating model status legend">

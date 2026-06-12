@@ -165,3 +165,34 @@ use_cases:
         grain: "One row per assessment question, session, score, evidence note, and action plan."
       - table: "assessment.fct_data_ai_domain_maturity"
         grain: "One row per assessment domain and diagnostic session."
+  data_management_office_establishment:
+    name: "Data Management Office Establishment"
+    description: "Yottalogica advisory landing page for establishing an operational DMO with NDMO P1 control traceability and certification readiness."
+    enabled: true
+    source_tables:
+      - dmo_diagnostic_baseline
+      - dmo_control_matrix
+      - dmo_evidence_register
+      - dmo_remediation_plan
+    portal_pages:
+      - slug: "data-management-office-establishment"
+        label: "DMO Establishment"
+        icon: "landmark"
+        tab_order: 1
+    api_prefix: "/api/v1/data-management-office"
+    api_endpoints:
+      - path: "/diagnostic"
+        method: "GET"
+      - path: "/controls"
+        method: "GET"
+      - path: "/evidence"
+        method: "GET"
+    business_objectives:
+      - "Move a client from data governance baseline diagnostic to an operational Data Management Office."
+      - "Map every deliverable to NDMO P1 controls and certification-ready evidence."
+      - "Provide executive clients with a board-level methodology for control-led DMO establishment."
+    record_specs:
+      - table: "advisory.fct_dmo_establishment_control"
+        grain: "One row per NDMO control, deliverable, owner, evidence status, and remediation action."
+      - table: "advisory.fct_dmo_establishment_stage"
+        grain: "One row per DMO establishment stage, milestone, deliverable, and readiness status."

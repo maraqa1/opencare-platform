@@ -149,6 +149,31 @@ export const useCases: UseCaseModule[] = [
     },
   },
   {
+    id: "data_management_office_establishment",
+    slug: "data-management-office-establishment",
+    icon: "DMO",
+    name: "Data Management Office Establishment",
+    description:
+      "A premium Yottalogica advisory landing page for establishing an operational Data Management Office mapped to NDMO P1 controls.",
+    status: "active",
+    summary:
+      "Five-stage methodology from diagnostic baseline to operating DMO, control traceability, and P1 certification readiness.",
+    defaultHref: "/use-cases/data-management-office-establishment",
+    ctaLabel: "Open DMO Landing Page",
+    kpis: [
+      { label: "NDMO Controls", value: "152", note: "Mapped to advisory deliverables and evidence" },
+      { label: "P1 Controls", value: "68", note: "Addressed through the establishment pathway" },
+      { label: "Certification Path", value: "90 days", note: "From diagnostic to P1 readiness" },
+    ],
+    shell: {
+      label: "Yottalogica Advisory",
+      title: "DMO Establishment",
+      badge: "NDMO P1",
+      actionHref: "/use-cases/data-management-office-establishment",
+      actionLabel: "Open Landing",
+    },
+  },
+  {
     id: "jazan_urban_service_quality_visual_distortion_loop",
     slug: "urban-service-quality-visual-distortion-loop",
     icon: "Loop",
