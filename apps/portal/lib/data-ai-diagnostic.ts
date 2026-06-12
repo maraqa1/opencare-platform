@@ -1611,7 +1611,7 @@ export const dataAiDiagnosticQuestions = [
   }
 ] satisfies DataAiDiagnosticQuestion[];
 
-export const dataAiReportPrompts = [
+const legacyDataAiReportPromptExamples = [
   {
     "title": "Prompt 1: Gap Prioritisation",
     "prompt": "Copy columns A–L into your AI prompt and ask: \"Rank the top 10 gaps by strategic importance. Consider domain criticality, gap size, and the organisation's stated AI ambition.\""
@@ -1631,5 +1631,32 @@ export const dataAiReportPrompts = [
   {
     "title": "Prompt 5: Risk Report",
     "prompt": "Ask: \"For all questions scoring 0 or 1, generate a risk table with: Risk Title, Likelihood, Impact, ISO Control Reference, and Recommended Mitigation.\""
+  }
+] satisfies DataAiReportPrompt[];
+
+export const dataAiReportPrompts = [
+  {
+    "title": "Prompt 1: Board-Pack Report",
+    "prompt": "Create a consulting-grade Data & AI Capability Diagnostic board pack for {{customer_name}} in the {{business_domain}} domain. Use only the captured workbook scores, evidence posture, Gartner 7-pillar roll-up, priority gaps, customer context, operating scope, strategic priorities, pain points, audience, and report purpose. Structure the output as: executive summary, headline assessment, readiness thesis, board asks, maturity heatmap interpretation, domain action plan, priority gap register, 90-day roadmap, AI readiness gate, risks, and immediate next steps. Do not mention any sample customer unless supplied in the customer context."
+  },
+  {
+    "title": "Prompt 2: Gap Prioritisation",
+    "prompt": "Rank the top 10 gaps for {{customer_name}} by strategic importance. Consider domain criticality, gap size, evidence strength, business-domain impact, operating scope, customer priorities, pain points, and AI ambition. For each gap, provide the management consequence, accountable owner type, evidence required, and recommended next action."
+  },
+  {
+    "title": "Prompt 3: Maturity Narrative",
+    "prompt": "Write a board-ready maturity narrative for {{customer_name}}. Explain the overall score, domain spread, evidence confidence, relative strengths, critical weaknesses, Gartner 7-pillar implications, and what this means for the customer's {{business_domain}} operating model. Do not invent facts outside the diagnostic payload."
+  },
+  {
+    "title": "Prompt 4: Roadmap Generation",
+    "prompt": "Generate a phased 90-day and 18-month data capability improvement roadmap for {{customer_name}}. Prioritise critical and high gaps, map actions to evidence requirements, identify governance forums, and align recommendations to ISO/IEC 38505-1, DAMA-DMBOK, NDMO, privacy, AI-risk, and customer-domain priorities."
+  },
+  {
+    "title": "Prompt 5: AI Readiness Gate",
+    "prompt": "Assess AI readiness for {{customer_name}} using the captured Data & AI diagnostic, Gartner 7-pillar view, data quality, source flow, privacy, lineage, governance, and model-risk evidence. Classify use cases into Proceed, Pilot with controls, and Hold. Explain the control conditions required before predictive or generative AI can scale."
+  },
+  {
+    "title": "Prompt 6: Risk Report",
+    "prompt": "For all questions scoring 0 or 1, generate a risk table for {{customer_name}} with: Risk Title, affected domain, evidence posture, likelihood, impact, framework/control reference, business consequence, owner type, and recommended mitigation. Keep language suitable for the stated report audience."
   }
 ] satisfies DataAiReportPrompt[];

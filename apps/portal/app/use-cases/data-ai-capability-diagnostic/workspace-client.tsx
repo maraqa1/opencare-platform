@@ -34,13 +34,23 @@ type CustomerContext = {
 
 type GeneratedConsultingReport = {
   executiveSummary?: string;
+  headlineAssessment?: string;
+  readinessThesis?: string;
   boardMessage?: string;
+  boardAsks?: string[];
   gartnerPillarAssessment?: string[];
   materialFindings?: string[];
+  domainActionPlan?: string[];
+  priorityGapRegister?: string[];
   recommendedDecisions?: string[];
   ninetyDayPlan?: string[];
+  roadmapPhases?: string[];
   aiReadinessGate?: string;
+  aiGateProceed?: string[];
+  aiGatePilotWithControls?: string[];
+  aiGateHold?: string[];
   risks?: string[];
+  nextSteps?: string[];
 };
 
 type DiagnosticReportApiResponse = {
@@ -324,13 +334,23 @@ function normaliseGeneratedReport(report: unknown): GeneratedConsultingReport {
   const candidate = report as Record<string, unknown>;
   return {
     executiveSummary: asText(candidate.executiveSummary),
+    headlineAssessment: asText(candidate.headlineAssessment),
+    readinessThesis: asText(candidate.readinessThesis),
     boardMessage: asText(candidate.boardMessage),
+    boardAsks: asStringList(candidate.boardAsks),
     gartnerPillarAssessment: asStringList(candidate.gartnerPillarAssessment),
     materialFindings: asStringList(candidate.materialFindings),
+    domainActionPlan: asStringList(candidate.domainActionPlan),
+    priorityGapRegister: asStringList(candidate.priorityGapRegister),
     recommendedDecisions: asStringList(candidate.recommendedDecisions),
     ninetyDayPlan: asStringList(candidate.ninetyDayPlan),
+    roadmapPhases: asStringList(candidate.roadmapPhases),
     aiReadinessGate: asText(candidate.aiReadinessGate),
+    aiGateProceed: asStringList(candidate.aiGateProceed),
+    aiGatePilotWithControls: asStringList(candidate.aiGatePilotWithControls),
+    aiGateHold: asStringList(candidate.aiGateHold),
     risks: asStringList(candidate.risks),
+    nextSteps: asStringList(candidate.nextSteps),
   };
 }
 
@@ -1310,16 +1330,44 @@ export function DataAiDiagnosticWorkspace() {
             <article className="data-ai-report-page data-ai-generated-report">
               <div className="data-ai-report-page-header">
                 <p className="eyebrow">AI-Generated Advisory</p>
-                <h2>Consultant narrative generated from the captured diagnostic</h2>
+                <h2>Consulting-grade narrative generated from the captured diagnostic</h2>
               </div>
               <section className="data-ai-report-callout">
                 <h3>Executive summary</h3>
                 <p>{generatedReport.executiveSummary}</p>
               </section>
-              <section>
+              <div className="data-ai-report-two-col">
+                <section>
+                  <h3>Headline assessment</h3>
+                  <p>{generatedReport.headlineAssessment || generatedReport.boardMessage}</p>
+                </section>
+                <section>
+                  <h3>Readiness thesis</h3>
+                  <p>{generatedReport.readinessThesis || generatedReport.aiReadinessGate}</p>
+                </section>
+              </div>
+              <section className="data-ai-report-callout">
                 <h3>Board message</h3>
                 <p>{generatedReport.boardMessage}</p>
               </section>
+              <div className="data-ai-report-decision-strip">
+                {(generatedReport.boardAsks?.length ? generatedReport.boardAsks : [
+                  "Approve baseline - confirm the scoring standard and evidence requirements.",
+                  "Assign owners - name accountable owners for priority domains.",
+                  "Gate use cases - proceed only where data, privacy, and model-risk controls are ready.",
+                ]).slice(0, 3).map((item, index) => {
+                  const separatorIndex = item.indexOf(" - ");
+                  const title = separatorIndex >= 0 ? item.slice(0, separatorIndex) : `Ask ${index + 1}`;
+                  const text = separatorIndex >= 0 ? item.slice(separatorIndex + 3) : item;
+                  return (
+                    <div key={`${title}-${index}`}>
+                      <span>{index === 0 ? "Board ask" : index === 1 ? "Management ask" : "AI ask"}</span>
+                      <strong>{title}</strong>
+                      <p>{text}</p>
+                    </div>
+                  );
+                })}
+              </div>
               <div className="data-ai-report-two-col">
                 <section>
                   <h3>Material findings</h3>
@@ -1331,6 +1379,20 @@ export function DataAiDiagnosticWorkspace() {
                   <h3>Recommended decisions</h3>
                   <ul>
                     {(generatedReport.recommendedDecisions ?? []).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </section>
+              </div>
+              <div className="data-ai-report-two-col">
+                <section>
+                  <h3>Domain action plan</h3>
+                  <ul>
+                    {(generatedReport.domainActionPlan ?? []).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </section>
+                <section>
+                  <h3>Priority gap register</h3>
+                  <ul>
+                    {(generatedReport.priorityGapRegister ?? []).map((item) => <li key={item}>{item}</li>)}
                   </ul>
                 </section>
               </div>
@@ -1348,7 +1410,7 @@ export function DataAiDiagnosticWorkspace() {
                 <section>
                   <h3>90-day plan</h3>
                   <ol>
-                    {(generatedReport.ninetyDayPlan ?? []).map((item) => <li key={item}>{item}</li>)}
+                    {((generatedReport.roadmapPhases?.length ? generatedReport.roadmapPhases : generatedReport.ninetyDayPlan) ?? []).map((item) => <li key={item}>{item}</li>)}
                   </ol>
                 </section>
                 <section>
@@ -1361,6 +1423,26 @@ export function DataAiDiagnosticWorkspace() {
               <section className="data-ai-report-callout">
                 <h3>AI readiness gate</h3>
                 <p>{generatedReport.aiReadinessGate}</p>
+              </section>
+              <div className="data-ai-gate-matrix">
+                <section>
+                  <h3>Proceed</h3>
+                  <ul>{(generatedReport.aiGateProceed ?? []).map((item) => <li key={item}>{item}</li>)}</ul>
+                </section>
+                <section>
+                  <h3>Pilot with controls</h3>
+                  <ul>{(generatedReport.aiGatePilotWithControls ?? []).map((item) => <li key={item}>{item}</li>)}</ul>
+                </section>
+                <section>
+                  <h3>Hold</h3>
+                  <ul>{(generatedReport.aiGateHold ?? []).map((item) => <li key={item}>{item}</li>)}</ul>
+                </section>
+              </div>
+              <section>
+                <h3>Next steps</h3>
+                <ol>
+                  {(generatedReport.nextSteps ?? []).map((item) => <li key={item}>{item}</li>)}
+                </ol>
               </section>
             </article>
           ) : null}
