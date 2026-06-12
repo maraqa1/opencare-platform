@@ -30,22 +30,10 @@ const challengeItems = [
 
 const stages = [
   {
-    number: "0",
-    state: "foundation",
-    status: "Foundation",
-    label: "Stage 0 - Pre-work",
-    title: "Executive mandate & sponsorship",
-    question: "Why are we doing this, and who is accountable?",
-    description:
-      "Confirm the executive mandate, sponsorship model, accountability route, scope, governance sponsor, and decision rights before detailed diagnostic work starts.",
-    output: "Mandate statement, accountable sponsor, scope boundary, steering route",
-    href: "#challenge",
-  },
-  {
     number: "1",
     state: "jtc-done",
-    status: "JTC: done",
-    label: "Stage 1 - Diagnose",
+    status: "Completed",
+    label: "Step 1 - Diagnose",
     title: "Data & AI capability diagnostic",
     question: "Where are we today, honestly?",
     description:
@@ -56,8 +44,8 @@ const stages = [
   {
     number: "2",
     state: "jtc-next",
-    status: "JTC: next",
-    label: "Stage 2 - Strategise",
+    status: "Next",
+    label: "Step 2 - Strategise",
     title: "Data strategy",
     question: "Where are we going, and in what order?",
     description:
@@ -69,7 +57,7 @@ const stages = [
     number: "3",
     state: "future",
     status: "Future",
-    label: "Stage 3 - Design",
+    label: "Step 3 - Design",
     title: "DMO design & operating model",
     question: "What institution do we need to build?",
     description:
@@ -81,7 +69,7 @@ const stages = [
     number: "4",
     state: "future",
     status: "Future",
-    label: "Stage 4 - Establish",
+    label: "Step 4 - Establish",
     title: "DMO establishment",
     question: "Who owns what, starting today?",
     description:
@@ -93,7 +81,7 @@ const stages = [
     number: "5",
     state: "future",
     status: "Future",
-    label: "Stage 5 - Execute",
+    label: "Step 5 - Execute",
     title: "Programme execution & control closure",
     question: "What do we build to close the gaps?",
     description:
@@ -105,7 +93,7 @@ const stages = [
     number: "6",
     state: "future",
     status: "Future",
-    label: "Stage 6 - Certify",
+    label: "Step 6 - Certify",
     title: "P1 certification & DMO operationalisation",
     question: "Are we compliant, and can we prove it?",
     description:
@@ -118,48 +106,40 @@ const stages = [
 const logicItems = [
   [
     "1",
-    "Stage 0 protects the programme from ambiguity",
-    "The mandate and sponsor model make clear why the DMO exists, who is accountable, and what decisions the programme can make.",
-  ],
-  [
-    "2",
-    "Stage 1 creates the honest baseline",
+    "Step 1 creates the honest baseline",
     "The diagnostic gives the board an evidence-backed maturity position before strategy, operating model, or control closure work begins.",
   ],
   [
-    "3",
-    "Stage 2 turns findings into strategic order",
+    "2",
+    "Step 2 turns findings into strategic order",
     "The data strategy decides where the organisation is going, which gaps matter first, and how value will be sequenced.",
   ],
   [
-    "4",
-    "Stages 3 and 4 build the institution",
+    "3",
+    "Steps 3 and 4 build the institution",
     "The DMO is designed, then established with named owners, forums, cadence, evidence routines, and decision rights.",
   ],
   [
-    "5",
-    "Stage 5 closes the control gaps",
+    "4",
+    "Step 5 closes the control gaps",
     "Execution converts strategy and operating model into artefacts, remediation actions, evidence, and measurable closure.",
   ],
   [
-    "6",
-    "Stage 6 proves readiness",
+    "5",
+    "Step 6 proves readiness",
     "Certification is only credible when P1 evidence, owner sign-off, governance cadence, and operating proof are already in place.",
+  ],
+  [
+    "6",
+    "Foundation stays outside the count",
+    "Executive mandate and sponsorship are prerequisites for the six-step programme, not a numbered delivery step.",
   ],
 ] as const;
 
 const deliverables = [
   [
-    "0 - Pre-work",
-    "Foundation",
-    "Executive Mandate & Sponsorship Pack",
-    "Mandate, accountable sponsor, scope boundary, steering committee route, and decision rights.",
-    "Board / Executive sponsor",
-    "Creates the authority needed to run diagnostic, strategy, design, and certification work.",
-  ],
-  [
     "1 - Diagnose",
-    "JTC: done",
+    "Completed",
     "Data & AI Capability Diagnostic Report",
     "Maturity heatmap, gap register, and 90-day roadmap across 13 domains and 84 evidence-backed questions.",
     "Board / Executive team",
@@ -167,7 +147,7 @@ const deliverables = [
   ],
   [
     "2 - Strategise",
-    "JTC: next",
+    "Next",
     "Data Strategy",
     "Target direction, value themes, priority sequence, roadmap, investment logic, and executive decisions.",
     "Executive sponsor / Data council",
@@ -236,11 +216,11 @@ export default function DataManagementOfficeEstablishmentPage() {
       <section className="dmo-wide-hero">
         <p className="dmo-wide-eyebrow">Data Management Office Establishment</p>
         <h1>
-          Seven stages from mandate to <em>certified</em> data governance.
+          Six steps from diagnostic to <em>certified</em> data governance.
         </h1>
         <p>
-          The structured methodology that takes an organisation from executive mandate and honest diagnostic through
-          data strategy, DMO design, establishment, programme execution, and P1-ready operational proof.
+          The structured methodology that takes an organisation from honest diagnostic through data strategy, DMO design,
+          establishment, programme execution, and P1-ready operational proof.
         </p>
         <div className="dmo-wide-actions">
           <Link className="dmo-wide-primary" href="/use-cases/data-ai-capability-diagnostic">
@@ -254,7 +234,7 @@ export default function DataManagementOfficeEstablishmentPage() {
           {[
             ["152", "NDMO controls mapped"],
             ["68", "P1 controls addressed"],
-            ["07", "Stages to operating proof"],
+            ["06", "Steps to operating proof"],
           ].map(([value, label]) => (
             <article key={label}>
               <strong>{value}</strong>
@@ -280,7 +260,7 @@ export default function DataManagementOfficeEstablishmentPage() {
                 and an inspection that surfaces the same gaps the programme was meant to close.
               </p>
               <p>
-                The seven-stage methodology resolves this by establishing a clear dependency chain, so every decision,
+                The six-step methodology resolves this by establishing a clear dependency chain, so every decision,
                 document, and control is built on verified evidence rather than assumption.
               </p>
             </div>
@@ -304,12 +284,17 @@ export default function DataManagementOfficeEstablishmentPage() {
           <div className="dmo-wide-split-heading">
             <div>
               <p className="dmo-wide-section-eye">The methodology</p>
-              <h2>A seven-stage approach to establishing your Data Management Office</h2>
+              <h2>A six-step approach to establishing your Data Management Office</h2>
             </div>
             <p>
-              Each stage answers a different management question, from mandate and diagnostic through strategy,
-              institution design, execution, and certification proof.
+              Each step answers a different management question, from diagnostic through strategy, institution design,
+              execution, and certification proof. Executive mandate and sponsorship sit as the foundation before Step 1.
             </p>
+          </div>
+          <div className="dmo-wide-foundation-note">
+            <span>Foundation prerequisite</span>
+            <strong>Executive mandate & sponsorship</strong>
+            <p>"Why are we doing this, and who is accountable?"</p>
           </div>
 
           <div className="dmo-wide-stage-grid">
@@ -346,9 +331,9 @@ export default function DataManagementOfficeEstablishmentPage() {
       <section className="dmo-wide-logic" id="why">
         <div className="dmo-wide-section-inner">
           <p className="dmo-wide-section-eye">The logic</p>
-          <h2>Why the seven-stage sequence cannot be reordered</h2>
+          <h2>Why the six-step sequence cannot be reordered</h2>
           <p>
-            Each stage produces the input that the next stage requires. The dependency chain is not a consulting
+            Each step produces the input that the next step requires. The dependency chain is not a consulting
             convention; it reflects the evidence requirements of an NDMO P1 inspection.
           </p>
           <div className="dmo-wide-logic-grid">
@@ -419,7 +404,7 @@ export default function DataManagementOfficeEstablishmentPage() {
               ["152", "Total NDMO controls", "Across 12 data domains"],
               ["68", "P1 mandatory controls", "Immediate implementation"],
               ["85%", "P1 coverage target", "Through governance pack delivery"],
-              ["07", "Method stages", "Mandate, diagnose, strategise, design, establish, execute, certify"],
+              ["06", "Method steps", "Diagnose, strategise, design, establish, execute, certify"],
             ].map(([value, label, text]) => (
               <article key={label}>
                 <strong>{value}</strong>
