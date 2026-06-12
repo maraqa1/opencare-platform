@@ -12561,6 +12561,35 @@ code {
   opacity: 0.65;
 }
 
+.data-ai-report-nav {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  position: sticky;
+  top: 4.6rem;
+  z-index: 4;
+}
+
+.data-ai-report-nav a {
+  border-radius: 999px;
+  color: #121a50;
+  font-size: 0.76rem;
+  font-weight: 900;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.data-ai-report-nav a:hover {
+  background: #eef6f4;
+  color: #1e5d58;
+}
+
 .data-ai-report-status {
   border-radius: 16px;
   font-size: 0.88rem;
@@ -12644,6 +12673,23 @@ code {
   font-size: 3.2rem;
   line-height: 1;
   margin: 1rem 0 0.5rem;
+}
+
+.data-ai-report-cover-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.25rem;
+}
+
+.data-ai-report-cover-pills span {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0.45rem 0.65rem;
 }
 
 .data-ai-report-facts {
@@ -12784,6 +12830,47 @@ code {
   margin: 0 0 0.35rem;
 }
 
+.data-ai-report-legend {
+  align-items: center;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.data-ai-report-legend span {
+  align-items: center;
+  color: #475467;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.35rem;
+}
+
+.data-ai-report-legend i {
+  border-radius: 999px;
+  display: inline-block;
+  height: 0.55rem;
+  width: 0.55rem;
+}
+
+.data-ai-report-legend i.critical {
+  background: #f97316;
+}
+
+.data-ai-report-legend i.high {
+  background: #f59e0b;
+}
+
+.data-ai-report-legend i.medium {
+  background: #3b82f6;
+}
+
+.data-ai-report-legend i.watch {
+  background: #22c55e;
+}
+
 .data-ai-report-kpis,
 .data-ai-report-domain-grid,
 .data-ai-roadmap {
@@ -12904,6 +12991,32 @@ code {
   border-color: rgba(180, 83, 9, 0.18);
 }
 
+.data-ai-report-strength-vulnerability {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.data-ai-report-strength-vulnerability section {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-left-width: 0.28rem;
+  border-radius: 16px;
+  padding: 0.9rem;
+}
+
+.data-ai-report-strength-vulnerability section.strength {
+  border-left-color: #166534;
+}
+
+.data-ai-report-strength-vulnerability section.vulnerability {
+  border-left-color: #f97316;
+}
+
+.data-ai-report-strength-vulnerability h3 {
+  margin: 0 0 0.45rem;
+}
+
 .data-ai-report-table-wrap {
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 16px;
@@ -12937,6 +13050,26 @@ code {
   font-weight: 800;
 }
 
+.data-ai-report-table tr.critical-row td {
+  background: #fff8e6;
+}
+
+.data-ai-gate-matrix section {
+  border-left: 0.28rem solid rgba(15, 23, 42, 0.12);
+}
+
+.data-ai-gate-matrix section.proceed {
+  border-left-color: #166534;
+}
+
+.data-ai-gate-matrix section.pilot {
+  border-left-color: #f59e0b;
+}
+
+.data-ai-gate-matrix section.hold {
+  border-left-color: #b42318;
+}
+
 @media (max-width: 1100px) {
   .data-ai-hero,
   .data-ai-control-panel,
@@ -12959,6 +13092,7 @@ code {
   .data-ai-report-facts,
   .data-ai-report-kpis,
   .data-ai-report-two-col,
+  .data-ai-report-strength-vulnerability,
   .data-ai-report-domain-grid,
   .data-ai-roadmap,
   .data-ai-report-toc,
@@ -12992,6 +13126,7 @@ code {
   .main-topbar,
   .data-ai-hero,
   .data-ai-tabs,
+  .data-ai-report-nav,
   .data-ai-report-toolbar {
     display: none !important;
   }
