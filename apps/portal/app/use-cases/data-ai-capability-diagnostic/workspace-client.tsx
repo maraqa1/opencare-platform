@@ -35,6 +35,7 @@ type CustomerContext = {
 type GeneratedConsultingReport = {
   executiveSummary?: string;
   boardMessage?: string;
+  gartnerPillarAssessment?: string[];
   materialFindings?: string[];
   recommendedDecisions?: string[];
   ninetyDayPlan?: string[];
@@ -324,6 +325,7 @@ function normaliseGeneratedReport(report: unknown): GeneratedConsultingReport {
   return {
     executiveSummary: asText(candidate.executiveSummary),
     boardMessage: asText(candidate.boardMessage),
+    gartnerPillarAssessment: asStringList(candidate.gartnerPillarAssessment),
     materialFindings: asStringList(candidate.materialFindings),
     recommendedDecisions: asStringList(candidate.recommendedDecisions),
     ninetyDayPlan: asStringList(candidate.ninetyDayPlan),
@@ -611,6 +613,20 @@ export function DataAiDiagnosticWorkspace() {
           evidenceBackedItems,
           topGapDomains,
           strongestDomains,
+          gartnerPillars: gartnerSummaries.map((pillar) => ({
+            name: pillar.name,
+            score: pillar.avgScore,
+            gap: pillar.avgGap,
+            priority: priorityLabels[pillar.priority],
+            scored: pillar.scored,
+            total: pillar.total,
+            evidenceCoveragePct: pillar.evidenceCoveragePct,
+            mappedDomains: pillar.domainIds
+              .map((domainId) => dataAiDiagnosticDomains.find((domain) => domain.id === domainId)?.nameEn)
+              .filter(Boolean),
+            decisionQuestion: pillar.decisionQuestion,
+            managementAction: pillar.managementAction,
+          })),
           priorityGaps: rankedGaps.slice(0, 10).map(({ question, state, gap }) => ({
             question: question.questionEn,
             domain: question.domainEn,
@@ -1303,6 +1319,16 @@ export function DataAiDiagnosticWorkspace() {
                   </ul>
                 </section>
               </div>
+              <section className="data-ai-report-callout">
+                <h3>Gartner 7-pillar assessment</h3>
+                {(generatedReport.gartnerPillarAssessment ?? []).length ? (
+                  <ul>
+                    {(generatedReport.gartnerPillarAssessment ?? []).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                ) : (
+                  <p>The Gartner pillar narrative will appear here after generation with the current report schema.</p>
+                )}
+              </section>
               <div className="data-ai-report-two-col">
                 <section>
                   <h3>90-day plan</h3>

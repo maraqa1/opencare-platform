@@ -28,6 +28,18 @@ type DiagnosticReportRequest = {
     scored: number;
     total: number;
   }>;
+  gartnerPillars?: Array<{
+    name: string;
+    score: number | null;
+    gap: number | null;
+    priority: string;
+    scored: number;
+    total: number;
+    evidenceCoveragePct: number;
+    mappedDomains: string[];
+    decisionQuestion: string;
+    managementAction: string;
+  }>;
   priorityGaps: Array<{
     question: string;
     domain: string;
@@ -76,6 +88,7 @@ function normaliseReport(value: unknown) {
     return {
       executiveSummary: textValue(value),
       boardMessage: "",
+      gartnerPillarAssessment: [],
       materialFindings: [],
       recommendedDecisions: [],
       ninetyDayPlan: [],
@@ -87,6 +100,7 @@ function normaliseReport(value: unknown) {
   return {
     executiveSummary: textValue(report.executiveSummary),
     boardMessage: textValue(report.boardMessage),
+    gartnerPillarAssessment: stringList(report.gartnerPillarAssessment),
     materialFindings: stringList(report.materialFindings),
     recommendedDecisions: stringList(report.recommendedDecisions),
     ninetyDayPlan: stringList(report.ninetyDayPlan),
@@ -137,7 +151,7 @@ export async function POST(request: Request) {
           {
             role: "system",
             content:
-              "You are a senior data and AI strategy consultant. Return only valid JSON. Write concise, board-ready report language. Tailor the report to the supplied customer, business domain, operating scope, priorities, pain points, audience, and report purpose. Do not invent customer facts or metrics beyond the supplied diagnostic payload. The maturity scoring scale is 0 to 4, where 4 is the maximum maturity score.",
+              "You are a senior data and AI strategy consultant. Return only valid JSON. Write concise, board-ready report language. Tailor the report to the supplied customer, business domain, operating scope, priorities, pain points, audience, and report purpose. Do not invent customer facts or metrics beyond the supplied diagnostic payload. The maturity scoring scale is 0 to 4, where 4 is the maximum maturity score. When Gartner pillar data is supplied, explicitly include a Gartner-aligned 7-pillar assessment that names the weakest pillars and converts them into board-level actions.",
           },
           {
             role: "user",
@@ -149,6 +163,7 @@ export async function POST(request: Request) {
               requiredShape: {
                 executiveSummary: "string",
                 boardMessage: "string",
+                gartnerPillarAssessment: ["string"],
                 materialFindings: ["string"],
                 recommendedDecisions: ["string"],
                 ninetyDayPlan: ["string"],
@@ -207,6 +222,7 @@ export async function POST(request: Request) {
       report: normaliseReport({
         executiveSummary: content,
         boardMessage: "Generated as narrative text because the model response was not JSON.",
+        gartnerPillarAssessment: [],
         materialFindings: [],
         recommendedDecisions: [],
         ninetyDayPlan: [],
