@@ -661,13 +661,28 @@ export function DataAiDiagnosticWorkspace() {
 
   return (
     <main className="page data-ai-diagnostic-page">
+      <header className="data-ai-dmo-header">
+        <Link className="data-ai-dmo-brand" href="/use-cases/data-management-office-establishment">
+          <span aria-hidden="true">Y</span>
+          <span>
+            <strong>Yottalogica</strong>
+            <small>Data Management Advisory</small>
+          </span>
+        </Link>
+        <div className="data-ai-dmo-header-actions">
+          <Link href="/use-cases/data-management-office-establishment">Return to DMO home</Link>
+          <a href="#diagnostic-workbench">Continue assessment</a>
+        </div>
+      </header>
+
       <section className="data-ai-hero">
         <div>
-          <p className="eyebrow">Justice Training Centre · Data & AI Use Case</p>
+          <p className="eyebrow">Module 01 - DMO Establishment Pathway</p>
           <h1>Data & AI Capability Diagnostic</h1>
           <p>
             A bilingual assessment and AI reporting workspace for capturing maturity evidence, scoring capability gaps,
-            prioritising remediation, and producing executive-ready diagnostic outputs.
+            prioritising remediation, and producing executive-ready diagnostic outputs for the wider DMO establishment
+            programme.
           </p>
           <div className="data-ai-chip-row">
             <span>84 workbook questions</span>
@@ -684,7 +699,7 @@ export function DataAiDiagnosticWorkspace() {
         </div>
       </section>
 
-      <nav className="data-ai-tabs" aria-label="Data and AI diagnostic sections">
+      <nav className="data-ai-tabs" id="diagnostic-workbench" aria-label="Data and AI diagnostic sections">
         {tabs.map((tab) => (
           <button
             className={activeTab === tab.id ? "active" : ""}

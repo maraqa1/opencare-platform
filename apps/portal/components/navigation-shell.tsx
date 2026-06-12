@@ -120,7 +120,9 @@ function NavSection({
 
 export function NavigationShell({ pathname, navigation, children }: Props) {
   const topbar = getTopbarContext(pathname);
-  const isFullBleedUseCase = pathname === "/use-cases/data-management-office-establishment";
+  const isFullBleedUseCase =
+    pathname === "/use-cases/data-management-office-establishment" ||
+    pathname === "/use-cases/data-ai-capability-diagnostic";
 
   if (isFullBleedUseCase) {
     return <>{children}</>;
