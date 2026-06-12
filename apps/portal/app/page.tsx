@@ -250,7 +250,7 @@ export default async function HomePage() {
             Urban Service Quality Loop
           </Link>
           <Link className="secondary-link" href="/use-cases/data-ai-capability-diagnostic">
-            Data & AI Diagnostic
+            Module 01 Diagnostic
           </Link>
           <Link className="secondary-link" href="/use-cases/data-management-office-establishment">
             DMO Establishment

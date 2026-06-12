@@ -129,10 +129,10 @@ export const useCases: UseCaseModule[] = [
     icon: "AI",
     name: "Data & AI Capability Diagnostic",
     description:
-      "A bilingual assessment and AI reporting workspace for capturing data maturity evidence, scoring gaps, and producing executive-ready diagnostic reports.",
+      "Module 01 of the DMO Establishment pathway: capture maturity evidence, score gaps, apply the Gartner lens, and generate executive diagnostic reports.",
     status: "active",
     summary:
-      "Data capture, maturity scoring, gap prioritisation, AI readiness narrative, and evidence-backed improvement planning.",
+      "First embedded DMO module for data capture, maturity scoring, gap prioritisation, AI readiness narrative, and evidence-backed planning.",
     defaultHref: "/use-cases/data-ai-capability-diagnostic",
     ctaLabel: "Open Diagnostic Tool",
     kpis: [
@@ -154,10 +154,10 @@ export const useCases: UseCaseModule[] = [
     icon: "DMO",
     name: "Data Management Office Establishment",
     description:
-      "A premium Yottalogica advisory landing page for establishing an operational Data Management Office mapped to NDMO P1 controls.",
+      "The parent Yottalogica advisory use case for establishing an operational Data Management Office, embedding diagnostic, slide, control, operating, and P1 accreditation modules.",
     status: "active",
     summary:
-      "Five-stage methodology from diagnostic baseline to operating DMO, control traceability, and P1 certification readiness.",
+      "Executive landing, consulting-grade slides, vertical establishment modules, embedded diagnostic, control traceability, and P1 accreditation readiness.",
     defaultHref: "/use-cases/data-management-office-establishment",
     ctaLabel: "Open DMO Landing Page",
     kpis: [

@@ -4,52 +4,89 @@ export const metadata: Metadata = {
   title: "Data Management Office Establishment - Yottalogica",
 };
 
-const stages = [
-  ["01", "Capability diagnostic", "Baseline maturity, gaps, evidence quality, and executive decision points."],
-  ["02", "Governance design", "Target operating model, decision rights, policies, committees, and stewardship roles."],
-  ["03", "Control implementation", "NDMO-aligned controls, data quality rules, catalogues, lineage, and evidence packs."],
-  ["04", "DMO activation", "Cadence, reporting, issue management, ownership workflows, and adoption routines."],
-  ["05", "P1 certification readiness", "Control traceability, remediation closure, and certification evidence preparation."],
+const topLevelPages = [
+  [
+    "Page 01",
+    "Executive proposition",
+    "Premium board-level landing page explaining why a DMO is required, what changes, and what executive clients receive.",
+  ],
+  [
+    "Page 02",
+    "Consulting slide pack",
+    "Decision deck covering maturity, Gartner lens, NDMO control gaps, roadmap, risks, investment case, and operating model.",
+  ],
+  [
+    "Page 03",
+    "Modular approach",
+    "A vertical sequence of embedded modules, each with its own outputs, evidence model, and route into the next step.",
+  ],
 ] as const;
 
-const approach = [
-  ["Stage 01", "Diagnose", "Assess current data maturity, evidence availability, control gaps, ownership, and readiness constraints."],
-  ["Stage 02", "Design", "Define the DMO operating model, committees, roles, policies, domains, and governance lifecycle."],
-  ["Stage 03", "Implement", "Build the control library, data quality model, catalogue requirements, issue queue, and reporting cadence."],
-  ["Stage 04", "Operate", "Run governance routines, stewardship forums, remediation reviews, and data-control performance tracking."],
-  ["Stage 05", "Certify", "Prepare the evidence pack, close P1 gaps, and enable leadership review for certification readiness."],
+const establishmentModules = [
+  [
+    "Module 01",
+    "Data & AI Capability Diagnostic",
+    "Live module",
+    "Capture business context, maturity scores, evidence, Gartner 7-pillar lens, gap matrix, and AI-generated executive report.",
+    "/use-cases/data-ai-capability-diagnostic",
+    "Open diagnostic",
+  ],
+  [
+    "Module 02",
+    "DMO Target Operating Model",
+    "Structure pending",
+    "Define DMO mandate, domains, committees, data owner and steward model, decision rights, escalation paths, and operating cadence.",
+    "#slides",
+    "Prepare module",
+  ],
+  [
+    "Module 03",
+    "NDMO Control Mapping",
+    "Structure pending",
+    "Map NDMO controls to deliverables, owners, policies, data quality rules, metadata requirements, lineage, and evidence.",
+    "#p1-accreditation",
+    "View controls",
+  ],
+  [
+    "Module 04",
+    "Implementation Roadmap & Remediation",
+    "Structure pending",
+    "Convert diagnostic and control gaps into a sequenced delivery plan with accountable owners, due dates, and board reporting.",
+    "#deliverables",
+    "View outputs",
+  ],
+  [
+    "Module 05",
+    "DMO Operating Rhythm",
+    "Structure pending",
+    "Run governance forums, decision logs, issue queues, evidence reviews, data quality performance, and monthly executive reporting.",
+    "#approach",
+    "View rhythm",
+  ],
+  [
+    "Module 06",
+    "P1 Accreditation Readiness",
+    "Accreditation module",
+    "Prepare the final P1 evidence pack, control traceability, remediation closure proof, executive sign-off, and certification narrative.",
+    "#p1-accreditation",
+    "View P1 module",
+  ],
 ] as const;
 
-const methodRows = [
-  [
-    "Foundation",
-    "Baseline maturity and evidence assessment",
-    "Capture current state, score maturity, identify gaps, and distinguish claims from evidence.",
-  ],
-  [
-    "Controls",
-    "NDMO P1 control mapping",
-    "Map policies, ownership, metadata, quality, privacy, and reporting artefacts to the control framework.",
-  ],
-  [
-    "Operating model",
-    "DMO roles, cadence, and governance forums",
-    "Define decision rights, escalation paths, stewardship responsibilities, and monthly review routines.",
-  ],
-  [
-    "Activation",
-    "Evidence-backed adoption and remediation",
-    "Convert gaps into an accountable action queue with owners, due dates, proof, and executive reporting.",
-  ],
+const slideOutputs = [
+  ["Deck 01", "Executive diagnostic deck", "Current maturity, strategic narrative, gaps, decisions, and 90-day roadmap."],
+  ["Deck 02", "DMO establishment pack", "Operating model, module sequence, responsibilities, and delivery governance."],
+  ["Deck 03", "P1 accreditation evidence pack", "Control mapping, evidence status, remediation closure, and certification narrative."],
+  ["Output", "PDF / PowerPoint export", "Consulting-grade artefacts generated from captured module data and approved evidence."],
 ] as const;
 
 const deliverables = [
-  ["01", "DMO establishment blueprint", "Target operating model, governance structure, roles, decision rights, and implementation roadmap."],
-  ["02", "NDMO P1 control matrix", "Traceability between required controls, artefacts, owners, evidence, and readiness status."],
-  ["03", "Data governance policy suite", "Governance charter, domain ownership model, stewardship rules, and escalation procedures."],
-  ["04", "Data quality operating model", "Critical data elements, quality rules, issue management, monitoring routines, and accountability."],
-  ["05", "Catalogue and lineage requirements", "Metadata model, business glossary, lineage expectations, and platform implementation requirements."],
-  ["06", "Certification evidence pack", "Executive status, closure evidence, control artefacts, governance minutes, and P1 readiness narrative."],
+  ["01", "Parent use-case structure", "A complete DMO establishment container, not a set of unrelated tools."],
+  ["02", "Embedded diagnostic module", "The Data & AI diagnostic becomes Module 01 and feeds all later DMO establishment work."],
+  ["03", "Consulting-grade board pack", "Slides and PDF outputs become a formal layer of the advisory product."],
+  ["04", "Module evidence model", "Each module will carry evidence, owners, outputs, status, and route to the next module."],
+  ["05", "NDMO control pathway", "Controls move from mapping to remediation to operating proof and readiness evidence."],
+  ["06", "P1 accreditation workspace", "P1 readiness is treated as its own module with control traceability and sign-off logic."],
 ] as const;
 
 export default function DataManagementOfficeEstablishmentPage() {
@@ -65,12 +102,13 @@ export default function DataManagementOfficeEstablishmentPage() {
             </div>
           </a>
           <div className="dmo-nav-links" aria-label="Page sections">
-            <a href="#approach">Approach</a>
-            <a href="#methodology">Methodology</a>
+            <a href="#pages">Pages</a>
+            <a href="#approach">Modules</a>
+            <a href="#slides">Slides</a>
             <a href="#deliverables">Deliverables</a>
-            <a href="#ndmo">NDMO Alignment</a>
+            <a href="#p1-accreditation">P1 Accreditation</a>
           </div>
-          <a className="dmo-nav-cta" href="#diagnostic">Request a diagnostic</a>
+          <a className="dmo-nav-cta" href="/use-cases/data-ai-capability-diagnostic">Open diagnostic</a>
         </nav>
       </header>
 
@@ -78,25 +116,26 @@ export default function DataManagementOfficeEstablishmentPage() {
         <div>
           <p className="dmo-eyebrow">Data Management Office Establishment</p>
           <h1 id="dmo-hero-title">
-            Five stages from diagnosis to <span>certified</span> data governance.
+            A complete DMO programme, from <span>diagnosis</span> to P1 accreditation.
           </h1>
           <p className="dmo-hero-copy">
-            The only structured methodology that takes an organisation from a baseline capability diagnostic to a fully
-            operational Data Management Office, with every deliverable mapped to NDMO P1 controls.
+            The Data & AI diagnostic is the first embedded module in a larger Yottalogica DMO establishment pathway:
+            executive landing, consulting-grade decision slides, modular implementation, operating cadence, and NDMO P1
+            accreditation readiness.
           </p>
           <div className="dmo-hero-actions">
-            <a className="dmo-primary-btn" href="#diagnostic">Request your diagnostic</a>
-            <a className="dmo-text-link" href="#approach">See the approach ↓</a>
+            <a className="dmo-primary-btn" href="/use-cases/data-ai-capability-diagnostic">Start with Module 01</a>
+            <a className="dmo-text-link" href="#approach">See the modular approach</a>
           </div>
         </div>
 
-        <aside className="dmo-executive-card" aria-label="Five-stage DMO establishment overview">
+        <aside className="dmo-executive-card" aria-label="DMO establishment architecture">
           <div>
-            <p className="dmo-card-kicker">Establishment Pathway</p>
+            <p className="dmo-card-kicker">Use-case architecture</p>
             <div className="dmo-stage-list">
-              {stages.map(([number, title, text]) => (
+              {topLevelPages.map(([number, title, text]) => (
                 <div className="dmo-stage-item" key={number}>
-                  <div className="dmo-stage-number">{number}</div>
+                  <div className="dmo-stage-number">{number.replace("Page ", "")}</div>
                   <div>
                     <strong>{title}</strong>
                     <span>{text}</span>
@@ -106,17 +145,17 @@ export default function DataManagementOfficeEstablishmentPage() {
             </div>
           </div>
           <div className="dmo-certification-note">
-            <span>Executive Outcome</span>
-            <strong>Operational DMO with certification-ready evidence.</strong>
+            <span>Design direction</span>
+            <strong>Parent use case with embedded modules, slides, and P1 readiness.</strong>
           </div>
         </aside>
       </section>
 
       <section className="dmo-metrics" aria-label="Programme metrics">
         {[
-          ["152", "NDMO controls mapped"],
-          ["68", "P1 controls addressed"],
-          ["90", "Days to P1 certification"],
+          ["03", "High-level executive pages"],
+          ["06", "Embedded DMO modules"],
+          ["01", "Live diagnostic module"],
         ].map(([value, label]) => (
           <article className="dmo-metric-card" key={label}>
             <strong>{value}</strong>
@@ -125,19 +164,19 @@ export default function DataManagementOfficeEstablishmentPage() {
         ))}
       </section>
 
-      <section className="dmo-section" id="approach">
+      <section className="dmo-section" id="pages">
         <div className="dmo-section-header">
           <div>
-            <p className="dmo-eyebrow">Approach</p>
-            <h2>A staged route from advisory assessment to operating capability.</h2>
+            <p className="dmo-eyebrow">High-level Experience</p>
+            <h2>Three executive pages before the detailed modules begin.</h2>
           </div>
           <p>
-            Yottalogica establishes the DMO as an operating function, not a documentation exercise. Every stage produces
-            executive evidence, governance artefacts, operating routines, and control traceability aligned to NDMO P1.
+            The use case is being repositioned as a complete advisory product. The top level tells the board-level
+            story; the approach section then embeds the working modules that carry the client toward accreditation.
           </p>
         </div>
-        <div className="dmo-approach-grid">
-          {approach.map(([stage, title, text]) => (
+        <div className="dmo-approach-grid dmo-approach-grid-three">
+          {topLevelPages.map(([stage, title, text]) => (
             <article className="dmo-approach-card" key={stage}>
               <span>{stage}</span>
               <strong>{title}</strong>
@@ -147,18 +186,49 @@ export default function DataManagementOfficeEstablishmentPage() {
         </div>
       </section>
 
-      <section className="dmo-section" id="methodology">
+      <section className="dmo-section" id="approach">
+        <div className="dmo-section-header">
+          <div>
+            <p className="dmo-eyebrow">Approach Architecture</p>
+            <h2>The DMO pathway becomes a vertical sequence of embedded modules.</h2>
+          </div>
+          <p>
+            Each module should become its own workspace inside this use case. Module 01 is already live as the Data & AI
+            Capability Diagnostic; the remaining modules are prepared as structure so we can add detail, tools, and
+            outputs progressively.
+          </p>
+        </div>
+        <div className="dmo-module-timeline">
+          {establishmentModules.map(([number, title, status, text, href, action]) => (
+            <article className="dmo-module-card" key={number}>
+              <div className="dmo-module-index">{number}</div>
+              <div className="dmo-module-body">
+                <div className="dmo-module-head">
+                  <div>
+                    <span>{status}</span>
+                    <strong>{title}</strong>
+                  </div>
+                  <a href={href}>{action}</a>
+                </div>
+                <p>{text}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="dmo-section" id="slides">
         <div className="dmo-methodology">
           <div className="dmo-methodology-panel">
-            <p className="dmo-eyebrow">Methodology</p>
-            <h2>Control-led establishment for regulated, executive environments.</h2>
+            <p className="dmo-eyebrow">Consulting Grade Slides</p>
+            <h2>The slide deck becomes a formal module of the DMO use case.</h2>
             <p>
-              The methodology combines maturity assessment, NDMO control mapping, operating-model design, evidence
-              management, and adoption routines into one board-level programme.
+              The board deck will sit above the tools: diagnostic scorecard, Gartner lens, NDMO control gaps, roadmap,
+              P1 readiness, risks, and executive decisions.
             </p>
           </div>
           <div className="dmo-method-list">
-            {methodRows.map(([label, title, text]) => (
+            {slideOutputs.map(([label, title, text]) => (
               <div className="dmo-method-row" key={label}>
                 <span>{label}</span>
                 <div>
@@ -174,12 +244,12 @@ export default function DataManagementOfficeEstablishmentPage() {
       <section className="dmo-section" id="deliverables">
         <div className="dmo-section-header">
           <div>
-            <p className="dmo-eyebrow">Deliverables</p>
-            <h2>Board-ready outputs that can be reviewed, operated, and audited.</h2>
+            <p className="dmo-eyebrow">Structure Prepared</p>
+            <h2>The old standalone pages are now organised into one parent programme.</h2>
           </div>
           <p>
-            Each deliverable is designed for practical use by leadership, the DMO, data owners, technology teams, and
-            assurance stakeholders.
+            This prepares the product shape: parent landing page, board slides, vertical modules, module-level outputs,
+            evidence, and P1 accreditation. The next step is to enrich each module with its own workspace.
           </p>
         </div>
         <div className="dmo-deliverables-grid">
@@ -193,15 +263,15 @@ export default function DataManagementOfficeEstablishmentPage() {
         </div>
       </section>
 
-      <section className="dmo-section" id="ndmo">
+      <section className="dmo-section" id="p1-accreditation">
         <div className="dmo-section-header">
           <div>
-            <p className="dmo-eyebrow">NDMO Alignment</p>
-            <h2>Mapped to P1 governance maturity from day one.</h2>
+            <p className="dmo-eyebrow">P1 Accreditation Module</p>
+            <h2>P1 is not the end of the page. It becomes its own module.</h2>
           </div>
           <p>
-            The engagement is structured around certification readiness, with every workstream linked to NDMO controls,
-            ownership evidence, operating cadence, and measurable closure.
+            P1 accreditation readiness needs its own workspace: control traceability, evidence packs, gap closure,
+            sign-offs, audit status, and a leadership readiness narrative.
           </p>
         </div>
         <div className="dmo-ndmo-layout">
@@ -218,15 +288,15 @@ export default function DataManagementOfficeEstablishmentPage() {
             </ul>
           </article>
           <article className="dmo-ndmo-card">
-            <strong>Operational adoption</strong>
+            <strong>Accreditation evidence</strong>
             <p>
-              The DMO is activated through recurring governance routines, decision logs, action queues, and leadership
-              reporting that prove the model is operating.
+              The P1 module should prove that the DMO is operating, not just designed, through review cadence, signed
+              artefacts, issue closure, and leadership-ready certification packs.
             </p>
             <ul>
-              <li>Monthly data governance review cadence.</li>
-              <li>Data owner and steward accountability model.</li>
               <li>P1 evidence pack and certification readiness dashboard.</li>
+              <li>Control owner sign-off and remediation closure proof.</li>
+              <li>Executive narrative for accreditation review.</li>
             </ul>
           </article>
         </div>
@@ -234,14 +304,15 @@ export default function DataManagementOfficeEstablishmentPage() {
 
       <section className="dmo-final-cta" id="diagnostic" aria-labelledby="dmo-diagnostic-title">
         <div>
-          <h2 id="dmo-diagnostic-title">Start with a diagnostic. Finish with an operating DMO.</h2>
+          <h2 id="dmo-diagnostic-title">Start with the diagnostic module. Build toward the DMO operating system.</h2>
           <p>
-            Request a focused executive diagnostic to assess your current data governance maturity, NDMO P1 readiness,
-            evidence gaps, and 90-day establishment pathway.
+            The first live module captures maturity, evidence, Gartner 7-pillar positioning, and AI-generated executive
+            reporting. The next modules will expand the same pattern into DMO design, NDMO controls, operating cadence,
+            and P1 accreditation.
           </p>
         </div>
-        <a className="dmo-primary-btn" href="mailto:advisory@yottalogica.com?subject=DMO%20Establishment%20Diagnostic">
-          Request your diagnostic
+        <a className="dmo-primary-btn" href="/use-cases/data-ai-capability-diagnostic">
+          Open Module 01
         </a>
       </section>
     </main>
