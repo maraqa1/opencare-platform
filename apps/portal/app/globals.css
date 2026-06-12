@@ -13195,7 +13195,9 @@ code {
   .data-ai-tabs,
   .data-ai-report-status,
   .data-ai-report-nav,
-  .data-ai-report-toolbar {
+  .data-ai-report-toolbar,
+  .data-ai-report-pack .regen-btn,
+  .data-ai-report-pack button[onclick*="regen"] {
     display: none !important;
   }
 
@@ -13349,6 +13351,19 @@ code {
   .data-ai-report-page:last-child {
     break-after: auto;
     page-break-after: auto;
+  }
+
+  .data-ai-report-pack .skeleton,
+  .data-ai-report-pack .skeleton-line,
+  .data-ai-report-pack [class*="skeleton"] {
+    display: none !important;
+  }
+
+  .data-ai-report-pack .ai-content:empty::before {
+    color: #475467;
+    content: "Narrative pending. Generate the report narrative before exporting this section.";
+    display: block;
+    font-style: italic;
   }
 }
 
