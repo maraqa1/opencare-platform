@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
 import {
@@ -1234,9 +1235,14 @@ export function DataAiDiagnosticWorkspace() {
               </div>
             </div>
             <div className="data-ai-report-cover-card">
-              <span>Current maturity</span>
-              <strong>{formatScore(overallScore)} / 4</strong>
-              <p>{maturityLabel(overallScore)}</p>
+              <div className="data-ai-report-cover-gauge" style={{ "--score-pct": `${maturityPct}%` } as CSSProperties}>
+                <div>
+                  <strong>{formatScore(overallScore)}</strong>
+                  <span>out of 4.0</span>
+                  <small>{maturityLabel(overallScore)}</small>
+                </div>
+              </div>
+              <p>{reportDate} - {assessedDomains.length} domains</p>
             </div>
             <dl className="data-ai-report-facts">
               <div><dt>Report date</dt><dd>{reportDate}</dd></div>

@@ -12621,10 +12621,14 @@ code {
 
 .data-ai-report-cover {
   background:
-    linear-gradient(135deg, rgba(18, 26, 80, 0.96), rgba(30, 93, 88, 0.92)),
-    #121a50;
+    radial-gradient(circle at 73% 46%, rgba(255, 255, 255, 0.08), transparent 18rem),
+    linear-gradient(135deg, #101a2a 0%, #121a2b 50%, #16223a 100%);
   color: #ffffff;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.34fr);
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.42fr);
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4.4rem);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 
 .data-ai-report-cover .eyebrow,
@@ -12636,19 +12640,22 @@ code {
 
 .data-ai-report-cover h2 {
   color: #ffffff;
-  font-size: clamp(2.5rem, 5vw, 5.2rem);
+  font-size: clamp(3.2rem, 6.4vw, 6rem);
+  font-weight: 500;
   letter-spacing: 0;
-  line-height: 0.95;
+  line-height: 1.04;
   margin: 0.35rem 0 1rem;
   max-width: 14ch;
 }
 
 .data-ai-report-cover-card {
-  align-self: start;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 22px;
-  padding: 1rem;
+  align-self: center;
+  background: transparent;
+  border: 0;
+  display: grid;
+  justify-items: center;
+  padding: 0;
+  text-align: center;
 }
 
 .data-ai-report-cover-card span,
@@ -12672,24 +12679,78 @@ code {
   display: block;
   font-size: 3.2rem;
   line-height: 1;
-  margin: 1rem 0 0.5rem;
+  margin: 0;
+}
+
+.data-ai-report-cover-card p {
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  margin: 1.4rem 0 0;
+  text-transform: uppercase;
+}
+
+.data-ai-report-cover-gauge {
+  align-items: center;
+  background:
+    radial-gradient(circle at center, #111b2d 0 58%, transparent 59%),
+    conic-gradient(#f8fafc var(--score-pct), rgba(255, 255, 255, 0.12) 0);
+  border-radius: 50%;
+  display: flex;
+  height: 15.8rem;
+  justify-content: center;
+  position: relative;
+  width: 15.8rem;
+}
+
+.data-ai-report-cover-gauge::before {
+  border: 0.75rem solid rgba(255, 255, 255, 0.06);
+  border-radius: inherit;
+  content: "";
+  inset: 1.2rem;
+  position: absolute;
+}
+
+.data-ai-report-cover-gauge div {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  position: relative;
+  z-index: 1;
+}
+
+.data-ai-report-cover-gauge span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.data-ai-report-cover-gauge small {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
 }
 
 .data-ai-report-cover-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin-top: 1.25rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 2.4rem;
+  max-width: 36rem;
 }
 
 .data-ai-report-cover-pills span {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
+  border-radius: 6px;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 0.78rem;
-  font-weight: 900;
-  padding: 0.45rem 0.65rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.8rem 0.95rem;
 }
 
 .data-ai-report-facts {
@@ -13150,6 +13211,8 @@ code {
   .data-ai-report-pack {
     display: block;
     font-size: 9pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .data-ai-report-page {
@@ -13163,19 +13226,44 @@ code {
   }
 
   .data-ai-report-cover {
+    background:
+      radial-gradient(circle at 73% 46%, rgba(255, 255, 255, 0.08), transparent 100mm),
+      linear-gradient(135deg, #101a2a 0%, #121a2b 50%, #16223a 100%) !important;
     color: #ffffff !important;
     grid-template-columns: minmax(0, 1fr) 82mm !important;
     min-height: 170mm;
+    padding: 22mm 24mm !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .data-ai-report-cover h2 {
-    font-size: 34pt;
-    line-height: 0.95;
+    font-size: 42pt;
+    font-weight: 500;
+    line-height: 1.04;
     max-width: 13ch;
   }
 
-  .data-ai-report-cover-card strong {
-    font-size: 28pt;
+  .data-ai-report-cover-card {
+    align-self: center;
+  }
+
+  .data-ai-report-cover-gauge {
+    height: 72mm;
+    width: 72mm;
+  }
+
+  .data-ai-report-cover-gauge strong {
+    font-size: 30pt;
+  }
+
+  .data-ai-report-cover-pills {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    max-width: 150mm;
+  }
+
+  .data-ai-report-cover .data-ai-report-facts {
+    display: none !important;
   }
 
   .data-ai-report-kpis,
