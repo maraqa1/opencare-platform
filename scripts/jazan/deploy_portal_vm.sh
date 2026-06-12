@@ -13,9 +13,12 @@ KUBECTL=(sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl -n "$NAMESPACE")
 
 dump_portal_state() {
   echo "Portal deployment diagnostics:"
+  sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl get nodes -o wide || true
+  sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl describe nodes || true
   "${KUBECTL[@]}" get deployment "$DEPLOYMENT" -o wide || true
   "${KUBECTL[@]}" get rs -l "app=$DEPLOYMENT" -o wide || true
   "${KUBECTL[@]}" get pods -l "app=$DEPLOYMENT" -o wide || true
+  "${KUBECTL[@]}" describe pods -l "app=$DEPLOYMENT" || true
   "${KUBECTL[@]}" describe "deployment/$DEPLOYMENT" || true
   "${KUBECTL[@]}" logs -l "app=$DEPLOYMENT" --tail=120 --all-containers=true || true
 }
@@ -46,6 +49,10 @@ git pull --ff-only "$REMOTE" "$BRANCH"
 
 commit="$(git rev-parse --short HEAD)"
 image="${IMAGE_PREFIX}-${commit}"
+
+echo "Pruning unused local build and runtime images before portal build"
+docker system prune -af || true
+sudo k3s crictl rmi --prune || true
 
 echo "Building portal image: $image"
 timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" docker build --no-cache -t "$image" apps/portal
