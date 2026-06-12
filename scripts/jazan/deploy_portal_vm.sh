@@ -67,7 +67,9 @@ echo "Updating deployment/$DEPLOYMENT in namespace $NAMESPACE"
   -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$CONTAINER\",\"imagePullPolicy\":\"Never\"}]}}}}"
 
 echo "Clearing existing $DEPLOYMENT pods to avoid single-node rollout stalls"
-"${KUBECTL[@]}" delete pod -l "app=$DEPLOYMENT" --grace-period=0 --force --wait=false >/dev/null 2>&1 || true
+"${KUBECTL[@]}" scale "deployment/$DEPLOYMENT" --replicas=0
+timeout 180 "${KUBECTL[@]}" wait --for=delete pod -l "app=$DEPLOYMENT" --timeout=180s >/dev/null 2>&1 || true
+"${KUBECTL[@]}" scale "deployment/$DEPLOYMENT" --replicas=1
 
 echo "Waiting for deployment/$DEPLOYMENT to become available"
 if ! timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" "${KUBECTL[@]}" wait --for=condition=available "deployment/$DEPLOYMENT" --timeout=10m; then

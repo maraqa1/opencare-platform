@@ -74,4 +74,4 @@ jobs:
           ssh -o StrictHostKeyChecking=accept-new \
             -i ~/.ssh/jazan_demo_deploy_key \
             "${JAZAN_VM_USER}@${JAZAN_VM_HOST}" \
-            "cd '${JAZAN_VM_REPO_PATH}' && OPENAI_API_KEY_B64='${OPENAI_API_KEY_B64}' bash scripts/jazan/deploy_portal_vm.sh"
+            "cd '${JAZAN_VM_REPO_PATH}' && git fetch origin codex/jazan-demo && git checkout codex/jazan-demo && git pull --ff-only origin codex/jazan-demo && OPENAI_API_KEY_B64='${OPENAI_API_KEY_B64}' bash scripts/jazan/deploy_portal_vm.sh"
