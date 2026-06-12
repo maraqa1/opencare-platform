@@ -120,6 +120,11 @@ function NavSection({
 
 export function NavigationShell({ pathname, navigation, children }: Props) {
   const topbar = getTopbarContext(pathname);
+  const isFullBleedUseCase = pathname === "/use-cases/data-management-office-establishment";
+
+  if (isFullBleedUseCase) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="portal-shell">
