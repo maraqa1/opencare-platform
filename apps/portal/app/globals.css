@@ -12608,6 +12608,14 @@ code {
   color: #854a0e;
 }
 
+.data-ai-report-pack .regen-btn,
+.data-ai-report-pack button[onclick*="regen"],
+.data-ai-report-pack .skeleton,
+.data-ai-report-pack .skeleton-line,
+.data-ai-report-pack [class*="skeleton"] {
+  display: none !important;
+}
+
 .data-ai-report-page {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.1);
@@ -12839,6 +12847,82 @@ code {
   display: grid;
   gap: 0.8rem;
   grid-template-columns: minmax(18rem, 0.85fr) repeat(3, minmax(0, 1fr));
+}
+
+.data-ai-board-scorecard-hero {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  display: grid;
+  justify-items: center;
+  padding: 1.2rem 0 1.6rem;
+  text-align: center;
+}
+
+.data-ai-board-scorecard-hero span {
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.data-ai-board-scorecard-hero strong {
+  color: #101828;
+  display: block;
+  font-size: clamp(4rem, 8vw, 6.4rem);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1;
+  margin-top: 0.75rem;
+}
+
+.data-ai-board-scorecard-hero p {
+  color: #667085;
+  font-weight: 700;
+  margin: 0.55rem 0 0;
+}
+
+.data-ai-board-postures {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  display: grid;
+  overflow: hidden;
+}
+
+.data-ai-board-postures section {
+  background: #f8fafc;
+  border-left: 0.28rem solid rgba(15, 23, 42, 0.14);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(10rem, 0.32fr) 1fr;
+  padding: 1rem 1.15rem;
+}
+
+.data-ai-board-postures section + section {
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.data-ai-board-postures section.decision {
+  border-left-color: #f97316;
+}
+
+.data-ai-board-postures section.evidence {
+  border-left-color: #3b6cb7;
+}
+
+.data-ai-board-postures section.assessment {
+  border-left-color: #166534;
+}
+
+.data-ai-board-postures span {
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.data-ai-board-postures p {
+  margin: 0;
 }
 
 .data-ai-readiness-gauge {
@@ -13282,6 +13366,11 @@ code {
     grid-template-columns: minmax(56mm, 0.85fr) repeat(3, minmax(0, 1fr)) !important;
   }
 
+  .data-ai-board-postures section {
+    grid-template-columns: 42mm 1fr !important;
+    padding: 5mm !important;
+  }
+
   .data-ai-report-two-col,
   .data-ai-report-strength-vulnerability {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -13310,6 +13399,14 @@ code {
   .data-ai-report-kpis strong,
   .data-ai-readiness-gauge strong {
     font-size: 22pt;
+  }
+
+  .data-ai-board-scorecard-hero {
+    padding: 8mm 0 10mm;
+  }
+
+  .data-ai-board-scorecard-hero strong {
+    font-size: 46pt;
   }
 
   .data-ai-report-facts div,

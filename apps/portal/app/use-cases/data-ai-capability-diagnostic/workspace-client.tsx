@@ -1336,25 +1336,22 @@ export function DataAiDiagnosticWorkspace() {
               <p className="eyebrow">02 - Board Scorecard</p>
               <h2>Readiness signal for steering committee review</h2>
             </div>
-            <div className="data-ai-board-grid">
-              <section className="data-ai-readiness-gauge">
-                <span>Readiness score</span>
-                <strong>{maturityPct}%</strong>
-                <div><span style={{ width: `${maturityPct}%` }} /></div>
-                <p>{formatScore(overallScore)} / 4 maturity - {maturityLabel(overallScore)}</p>
-              </section>
-              <section>
-                <h3>Decision posture</h3>
-                <p>{readinessThesis(overallScore)}</p>
-              </section>
-              <section>
-                <h3>Evidence posture</h3>
-                <p>{evidenceCoveragePct}% of questions currently have evidence strength and evidence notes. Unsupported high scores remain provisional.</p>
-              </section>
-              <section>
-                <h3>Assessment completeness</h3>
-                <p>{assessedCoveragePct}% of workbook questions have been scored. Unscored items should stay out of the approved baseline.</p>
-              </section>
+            <section className="data-ai-board-scorecard-hero">
+              <span>Readiness score</span>
+              <strong>{maturityPct}%</strong>
+              <p>{formatScore(overallScore)} / 4 maturity - {maturityLabel(overallScore)}</p>
+            </section>
+            <div className="data-ai-board-postures">
+              {[
+                ["decision", "Decision posture", readinessThesis(overallScore)],
+                ["evidence", "Evidence posture", `${evidenceCoveragePct}% of questions currently have evidence strength and evidence notes. Unsupported high scores remain provisional until documents, system records, audit trails, or owner confirmations are attached.`],
+                ["assessment", "Assessment completeness", `${assessedCoveragePct}% of workbook questions have been scored. Unscored items should remain outside the approved baseline and be tracked as evidence gaps.`],
+              ].map(([tone, title, text]) => (
+                <section className={tone} key={title}>
+                  <span>{title}</span>
+                  <p>{text}</p>
+                </section>
+              ))}
             </div>
             <div className="data-ai-report-decision-strip">
               <div><span>Board ask</span><strong>Approve baseline</strong><p>Confirm score standard and evidence requirements.</p></div>
