@@ -11,6 +11,15 @@ KUBECONFIG_PATH="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 DEPLOY_STEP_TIMEOUT_SECONDS="${DEPLOY_STEP_TIMEOUT_SECONDS:-1200}"
 KUBECTL=(sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl -n "$NAMESPACE")
 
+dump_portal_state() {
+  echo "Portal deployment diagnostics:"
+  "${KUBECTL[@]}" get deployment "$DEPLOYMENT" -o wide || true
+  "${KUBECTL[@]}" get rs -l "app=$DEPLOYMENT" -o wide || true
+  "${KUBECTL[@]}" get pods -l "app=$DEPLOYMENT" -o wide || true
+  "${KUBECTL[@]}" describe "deployment/$DEPLOYMENT" || true
+  "${KUBECTL[@]}" logs -l "app=$DEPLOYMENT" --tail=120 --all-containers=true || true
+}
+
 if ! command -v git >/dev/null 2>&1; then
   echo "ERROR: git is required." >&2
   exit 1
@@ -68,14 +77,25 @@ echo "Updating deployment/$DEPLOYMENT in namespace $NAMESPACE"
 
 echo "Clearing existing $DEPLOYMENT pods to avoid single-node rollout stalls"
 "${KUBECTL[@]}" scale "deployment/$DEPLOYMENT" --replicas=0
-timeout 180 "${KUBECTL[@]}" wait --for=delete pod -l "app=$DEPLOYMENT" --timeout=180s >/dev/null 2>&1 || true
+"${KUBECTL[@]}" delete pod -l "app=$DEPLOYMENT" --grace-period=0 --force --wait=false >/dev/null 2>&1 || true
+sleep 10
 "${KUBECTL[@]}" scale "deployment/$DEPLOYMENT" --replicas=1
 
 echo "Waiting for deployment/$DEPLOYMENT to become available"
-if ! timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" "${KUBECTL[@]}" wait --for=condition=available "deployment/$DEPLOYMENT" --timeout=10m; then
-  echo "ERROR: deployment/$DEPLOYMENT did not become available. Current pods:" >&2
-  "${KUBECTL[@]}" get pods -l "app=$DEPLOYMENT" -o wide >&2 || true
-  "${KUBECTL[@]}" describe "deployment/$DEPLOYMENT" >&2 || true
+deadline=$((SECONDS + 600))
+available=false
+while (( SECONDS < deadline )); do
+  if "${KUBECTL[@]}" wait --for=condition=available "deployment/$DEPLOYMENT" --timeout=20s; then
+    available=true
+    break
+  fi
+  echo "Still waiting for deployment/$DEPLOYMENT; current pods:"
+  "${KUBECTL[@]}" get pods -l "app=$DEPLOYMENT" -o wide || true
+done
+
+if [[ "$available" != true ]]; then
+  echo "ERROR: deployment/$DEPLOYMENT did not become available." >&2
+  dump_portal_state >&2
   exit 1
 fi
 
