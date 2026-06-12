@@ -65,8 +65,17 @@ echo "Updating deployment/$DEPLOYMENT in namespace $NAMESPACE"
   -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$CONTAINER\",\"envFrom\":[{\"configMapRef\":{\"name\":\"opencare-config\"}},{\"secretRef\":{\"name\":\"opencare-secrets\",\"optional\":true}}],\"env\":[{\"name\":\"PORT\",\"value\":\"3000\"}]}]}}}}"
 "${KUBECTL[@]}" patch "deployment/$DEPLOYMENT" \
   -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$CONTAINER\",\"imagePullPolicy\":\"Never\"}]}}}}"
-"${KUBECTL[@]}" rollout restart "deployment/$DEPLOYMENT"
-timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" "${KUBECTL[@]}" rollout status "deployment/$DEPLOYMENT" --timeout=10m
+
+echo "Clearing existing $DEPLOYMENT pods to avoid single-node rollout stalls"
+"${KUBECTL[@]}" delete pod -l "app=$DEPLOYMENT" --grace-period=0 --force --wait=false >/dev/null 2>&1 || true
+
+echo "Waiting for deployment/$DEPLOYMENT to become available"
+if ! timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" "${KUBECTL[@]}" wait --for=condition=available "deployment/$DEPLOYMENT" --timeout=10m; then
+  echo "ERROR: deployment/$DEPLOYMENT did not become available. Current pods:" >&2
+  "${KUBECTL[@]}" get pods -l "app=$DEPLOYMENT" -o wide >&2 || true
+  "${KUBECTL[@]}" describe "deployment/$DEPLOYMENT" >&2 || true
+  exit 1
+fi
 
 echo "Portal deployed from $BRANCH @ $commit"
 echo "Image: $image"
