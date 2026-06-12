@@ -10,7 +10,7 @@ import {
   type DataAiDiagnosticQuestion,
 } from "@/lib/data-ai-diagnostic";
 
-type ActiveTab = "capture" | "dashboard" | "gaps" | "report" | "evidence";
+type ActiveTab = "capture" | "dashboard" | "gartner" | "gaps" | "report" | "evidence";
 
 type QuestionState = {
   score: number | null;
@@ -60,13 +60,100 @@ type DomainSummary = {
   priority: "critical" | "high" | "medium" | "watch" | "not_scored";
 };
 
+type GartnerPillar = {
+  id: number;
+  name: string;
+  shortName: string;
+  description: string;
+  domainIds: number[];
+  decisionQuestion: string;
+  managementAction: string;
+};
+
+type GartnerPillarSummary = GartnerPillar & {
+  total: number;
+  scored: number;
+  avgScore: number | null;
+  avgGap: number | null;
+  evidenceBacked: number;
+  evidenceCoveragePct: number;
+  priority: DomainSummary["priority"];
+};
+
 const tabs: Array<{ id: ActiveTab; label: string }> = [
   { id: "capture", label: "Data capture" },
   { id: "dashboard", label: "Maturity dashboard" },
+  { id: "gartner", label: "Gartner 7 pillars" },
   { id: "gaps", label: "Gap matrix" },
   { id: "report", label: "AI report" },
   { id: "evidence", label: "Evidence model" },
 ];
+
+const gartnerPillars = [
+  {
+    id: 1,
+    name: "Strategy & Business Outcomes",
+    shortName: "Strategy",
+    description: "Connect data, analytics, and AI work to measurable business outcomes, funded priorities, and executive decisions.",
+    domainIds: [1, 13],
+    decisionQuestion: "Are data and AI initiatives tied to value, ownership, roadmap, and benefits measurement?",
+    managementAction: "Confirm executive sponsorship, value cases, funding route, and benefits tracking.",
+  },
+  {
+    id: 2,
+    name: "Governance & Operating Model",
+    shortName: "Governance",
+    description: "Define decision rights, policy, ownership, stewardship, risk controls, and accountable operating cadence.",
+    domainIds: [2, 10],
+    decisionQuestion: "Are ownership, policy, privacy, security, and decision rights clear enough to scale safely?",
+    managementAction: "Stand up data council cadence, RACI, policy controls, and approval workflows.",
+  },
+  {
+    id: 3,
+    name: "Data Management & Quality",
+    shortName: "Data quality",
+    description: "Control critical data, quality, master data, metadata, lineage, source flows, and evidence of trust.",
+    domainIds: [4, 5, 11],
+    decisionQuestion: "Can the organisation prove the data is complete, understood, traceable, and fit for use?",
+    managementAction: "Prioritise critical data elements, DQ rules, lineage, catalogue, and issue management.",
+  },
+  {
+    id: 4,
+    name: "Architecture & Platforms",
+    shortName: "Architecture",
+    description: "Provide scalable architecture, integration, platforms, tooling, and runtime foundations for analytics and AI.",
+    domainIds: [3, 8],
+    decisionQuestion: "Can the platform support governed ingestion, modelling, analytics, AI runtime, and operational scale?",
+    managementAction: "Confirm target architecture, integration pattern, tooling standards, and platform roadmap.",
+  },
+  {
+    id: 5,
+    name: "Analytics, AI & Decisioning",
+    shortName: "Analytics & AI",
+    description: "Turn governed data into dashboards, diagnostics, predictions, AI use cases, and human-approved decisions.",
+    domainIds: [6, 7],
+    decisionQuestion: "Which dashboards, models, and AI use cases can proceed now, pilot with controls, or hold?",
+    managementAction: "Create the AI use-case gate, model-risk controls, dashboard certification, and decision logs.",
+  },
+  {
+    id: 6,
+    name: "People, Skills & Adoption",
+    shortName: "People",
+    description: "Build data literacy, operating roles, change adoption, training impact, and sustained behavioural change.",
+    domainIds: [9, 12],
+    decisionQuestion: "Do teams have the roles, skills, incentives, and training evidence needed to operate the model?",
+    managementAction: "Map roles, training needs, champions, adoption plan, and capability transfer evidence.",
+  },
+  {
+    id: 7,
+    name: "Execution, Risk & Continuous Improvement",
+    shortName: "Execution",
+    description: "Manage delivery, risk, remediation, audit evidence, value realisation, and continuous improvement loops.",
+    domainIds: [13, 2, 10],
+    decisionQuestion: "Is there a repeatable mechanism to close gaps, escalate risks, and prove value improvement?",
+    managementAction: "Create action queue, risk escalation, benefits review, and quarterly maturity refresh.",
+  },
+] satisfies GartnerPillar[];
 
 const priorityLabels = {
   critical: "Critical",
@@ -273,6 +360,35 @@ function buildDomainSummaries(stateByQuestion: Record<string, QuestionState>): D
   });
 }
 
+function buildGartnerPillarSummaries(stateByQuestion: Record<string, QuestionState>): GartnerPillarSummary[] {
+  return gartnerPillars.map((pillar) => {
+    const questions = dataAiDiagnosticQuestions.filter((question) => pillar.domainIds.includes(question.domainId));
+    const scored = questions.filter((question) => stateByQuestion[question.id]?.score !== null);
+    const avgScore =
+      scored.length > 0
+        ? scored.reduce((sum, question) => sum + (stateByQuestion[question.id]?.score ?? 0), 0) / scored.length
+        : null;
+    const avgGap =
+      scored.length > 0
+        ? scored.reduce((sum, question) => sum + (scoreGap(question, stateByQuestion[question.id]) ?? 0), 0) / scored.length
+        : null;
+    const evidenceBacked = questions.filter((question) => {
+      const state = stateByQuestion[question.id];
+      return state?.score !== null && state.evidenceStrength !== "none" && state.evidenceAvailable.trim();
+    }).length;
+    return {
+      ...pillar,
+      total: questions.length,
+      scored: scored.length,
+      avgScore,
+      avgGap,
+      evidenceBacked,
+      evidenceCoveragePct: questions.length ? Math.round((evidenceBacked / questions.length) * 100) : 0,
+      priority: priorityForGap(avgGap),
+    };
+  });
+}
+
 function statusForQuestion(question: DataAiDiagnosticQuestion, state: QuestionState) {
   return priorityForGap(scoreGap(question, state));
 }
@@ -340,6 +456,7 @@ export function DataAiDiagnosticWorkspace() {
   const [reportMessage, setReportMessage] = useState("");
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
+  const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion), [stateByQuestion]);
   const totalQuestions = dataAiDiagnosticQuestions.length;
   const scoredQuestions = dataAiDiagnosticQuestions.filter((question) => stateByQuestion[question.id]?.score !== null).length;
   const overallScore =
@@ -858,6 +975,106 @@ export function DataAiDiagnosticWorkspace() {
         </>
       ) : null}
 
+      {activeTab === "gartner" ? (
+        <>
+          <section className="panel data-ai-section">
+            <div className="data-ai-section-header">
+              <div>
+                <p className="eyebrow">Gartner-Aligned Framework</p>
+                <h2>7-pillar executive maturity lens</h2>
+                <p>
+                  This view complements the 13-domain workbook by grouping the captured evidence into seven executive
+                  pillars for strategy, governance, data quality, architecture, analytics and AI, people, and execution.
+                </p>
+              </div>
+              <span className="data-ai-mode-chip">Mapped from workbook scores</span>
+            </div>
+            <div className="data-ai-gartner-grid">
+              {gartnerSummaries.map((pillar) => (
+                <article className="data-ai-gartner-card" key={pillar.id}>
+                  <div className="data-ai-gartner-card-header">
+                    <span>{pillar.id.toString().padStart(2, "0")}</span>
+                    <span className={`data-ai-priority ${pillar.priority}`}>{priorityLabels[pillar.priority]}</span>
+                  </div>
+                  <h3>{pillar.name}</h3>
+                  <p>{pillar.description}</p>
+                  <div className="data-ai-score-bar" aria-label={`${pillar.name} Gartner pillar maturity score`}>
+                    <span style={{ width: scoreWidth(pillar.avgScore) }} />
+                  </div>
+                  <dl className="data-ai-gartner-metrics">
+                    <div>
+                      <dt>Score</dt>
+                      <dd>{formatScore(pillar.avgScore)} / 4</dd>
+                    </div>
+                    <div>
+                      <dt>Coverage</dt>
+                      <dd>{pillar.scored}/{pillar.total}</dd>
+                    </div>
+                    <div>
+                      <dt>Evidence</dt>
+                      <dd>{pillar.evidenceCoveragePct}%</dd>
+                    </div>
+                  </dl>
+                  <div className="data-ai-gartner-domain-list">
+                    {pillar.domainIds.map((domainId) => {
+                      const domain = dataAiDiagnosticDomains.find((item) => item.id === domainId);
+                      return domain ? <span key={domain.id}>{domain.nameEn}</span> : null;
+                    })}
+                  </div>
+                  <section>
+                    <strong>Decision question</strong>
+                    <p>{pillar.decisionQuestion}</p>
+                  </section>
+                  <section>
+                    <strong>Management action</strong>
+                    <p>{pillar.managementAction}</p>
+                  </section>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel data-ai-section">
+            <div className="data-ai-section-header">
+              <div>
+                <p className="eyebrow">Framework Crosswalk</p>
+                <h2>How the 13 domains roll into the 7 pillars</h2>
+              </div>
+              <span className="data-ai-mode-chip">{dataAiDiagnosticDomains.length} domains mapped</span>
+            </div>
+            <div className="data-ai-table-wrap">
+              <table className="table data-ai-table">
+                <thead>
+                  <tr>
+                    <th>Gartner pillar</th>
+                    <th>Mapped workbook domains</th>
+                    <th>Score</th>
+                    <th>Evidence</th>
+                    <th>Primary management action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gartnerSummaries.map((pillar) => (
+                    <tr key={pillar.id}>
+                      <td>{pillar.name}</td>
+                      <td>
+                        {pillar.domainIds
+                          .map((domainId) => dataAiDiagnosticDomains.find((domain) => domain.id === domainId)?.nameEn)
+                          .filter(Boolean)
+                          .join("; ")}
+                      </td>
+                      <td>{formatScore(pillar.avgScore)} / 4</td>
+                      <td>{pillar.evidenceBacked}/{pillar.total} evidence-backed</td>
+                      <td>{pillar.managementAction}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      ) : null}
+
       {activeTab === "gaps" ? (
         <section className="panel data-ai-section">
           <div className="data-ai-section-header">
@@ -958,11 +1175,12 @@ export function DataAiDiagnosticWorkspace() {
                 ["01", "Executive Summary", "Readiness position, decision asks, and management attention."],
                 ["02", "Board Scorecard", "Maturity, evidence coverage, priority gaps, and readiness thesis."],
                 ["03", "Maturity Heatmap", "Domain-level scores and gap concentration."],
-                ["04", "Domain Action Plan", "Recommended owner focus and remediation route by domain."],
-                ["05", "Priority Gap Register", "Highest-risk questions requiring evidence-backed action."],
-                ["06", "90-Day Roadmap", "Mobilise, remediate, and certify readiness."],
-                ["07", "AI Readiness Gate", "What can proceed now and what should wait."],
-                ["08", "Appendix", "Prompt library and report generation basis."],
+                ["04", "Gartner 7-Pillar Lens", "Executive framework roll-up mapped from the 13 workbook domains."],
+                ["05", "Domain Action Plan", "Recommended owner focus and remediation route by domain."],
+                ["06", "Priority Gap Register", "Highest-risk questions requiring evidence-backed action."],
+                ["07", "90-Day Roadmap", "Mobilise, remediate, and certify readiness."],
+                ["08", "AI Readiness Gate", "What can proceed now and what should wait."],
+                ["09", "Appendix", "Prompt library and report generation basis."],
               ].map(([number, title, text]) => (
                 <div key={number}>
                   <span>{number}</span>
@@ -1133,7 +1351,64 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">04 - Domain Action Plan</p>
+              <p className="eyebrow">04 - Gartner 7-Pillar Lens</p>
+              <h2>Executive maturity framework roll-up</h2>
+            </div>
+            <p>
+              The seven-pillar view translates the detailed diagnostic into an executive framework for deciding where to
+              invest first, where governance must tighten, and which AI ambitions should proceed, pilot, or wait.
+            </p>
+            <div className="data-ai-report-domain-grid">
+              {gartnerSummaries.map((pillar) => (
+                <div key={pillar.id}>
+                  <span>{pillar.id.toString().padStart(2, "0")} - {pillar.shortName}</span>
+                  <strong>{pillar.name}</strong>
+                  <div className="data-ai-report-score-track" aria-label={`${pillar.name} report pillar score`}>
+                    <span
+                      className={`data-ai-report-score-fill ${pillar.priority}`}
+                      style={{ width: scoreWidth(pillar.avgScore) }}
+                    />
+                  </div>
+                  <p>
+                    <b>{formatScore(pillar.avgScore)} / 4</b>
+                    <span className={`data-ai-priority ${pillar.priority}`}>{priorityLabels[pillar.priority]}</span>
+                  </p>
+                  <p>{pillar.scored}/{pillar.total} questions scored - {pillar.evidenceCoveragePct}% evidence-backed</p>
+                </div>
+              ))}
+            </div>
+            <div className="data-ai-report-table-wrap">
+              <table className="data-ai-report-table">
+                <thead>
+                  <tr>
+                    <th>Pillar</th>
+                    <th>Mapped domains</th>
+                    <th>Decision question</th>
+                    <th>Management action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gartnerSummaries.map((pillar) => (
+                    <tr key={pillar.id}>
+                      <td>{pillar.name}</td>
+                      <td>
+                        {pillar.domainIds
+                          .map((domainId) => dataAiDiagnosticDomains.find((domain) => domain.id === domainId)?.nameEn)
+                          .filter(Boolean)
+                          .join("; ")}
+                      </td>
+                      <td>{pillar.decisionQuestion}</td>
+                      <td>{pillar.managementAction}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article className="data-ai-report-page">
+            <div className="data-ai-report-page-header">
+              <p className="eyebrow">05 - Domain Action Plan</p>
               <h2>Strengths, vulnerabilities, and remediation route</h2>
             </div>
             <div className="data-ai-report-two-col">
@@ -1202,7 +1477,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">05 - Priority Gap Register</p>
+              <p className="eyebrow">06 - Priority Gap Register</p>
               <h2>Highest-risk items requiring action</h2>
             </div>
             <div className="data-ai-report-table-wrap">
@@ -1243,7 +1518,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">06 - 90-Day Roadmap</p>
+              <p className="eyebrow">07 - 90-Day Roadmap</p>
               <h2>Remediation plan for decision-ready AI</h2>
             </div>
             <div className="data-ai-roadmap">
@@ -1272,7 +1547,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">07 - AI Readiness Gate</p>
+              <p className="eyebrow">08 - AI Readiness Gate</p>
               <h2>What can proceed now and what should wait</h2>
             </div>
             <div className="data-ai-gate-matrix">
@@ -1316,7 +1591,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">08 - Appendix</p>
+              <p className="eyebrow">09 - Appendix</p>
               <h2>Prompt library and report generation basis</h2>
             </div>
             <div className="data-ai-prompt-list">
@@ -1345,6 +1620,7 @@ export function DataAiDiagnosticWorkspace() {
               ["Sources", "Assessment workbook, interviews, policies, architecture diagrams, report inventory, data catalogue, model records."],
               ["Capture tables", "diagnostic.questions, diagnostic.responses, diagnostic.evidence, diagnostic.action_plan, diagnostic.review_session."],
               ["Analytics marts", "domain maturity summary, gap priority matrix, AI readiness score, roadmap backlog, evidence completeness."],
+              ["Gartner lens", "Seven executive pillars mapped from the 13-domain workbook: strategy, governance, data quality, architecture, analytics and AI, people, and execution."],
               ["AI reporting", "Executive narrative, top gap ranking, 90-day actions, risk register, AI feasibility assessment."],
               ["Governance controls", "Human-reviewed scores, evidence required per question, source trace, owner assignment, approval status."],
               ["Backend status", "This page is a front-end capture shell. API persistence and model orchestration are pending wiring."],

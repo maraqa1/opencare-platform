@@ -11414,6 +11414,90 @@ code {
   display: block;
 }
 
+.data-ai-gartner-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-ai-gartner-card {
+  background: #fbfcfe;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.data-ai-gartner-card-header,
+.data-ai-gartner-metrics,
+.data-ai-gartner-domain-list {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.data-ai-gartner-card-header {
+  justify-content: space-between;
+}
+
+.data-ai-gartner-card-header > span:first-child {
+  background: #e7f5f0;
+  border-radius: 999px;
+  color: #155e53;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.35rem 0.55rem;
+}
+
+.data-ai-gartner-card h3 {
+  color: #121a50;
+  font-size: 1.08rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.data-ai-gartner-card p {
+  font-size: 0.88rem;
+}
+
+.data-ai-gartner-metrics {
+  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-ai-gartner-metrics div {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  padding: 0.55rem;
+}
+
+.data-ai-gartner-metrics dt,
+.data-ai-gartner-card section strong {
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.data-ai-gartner-metrics dd {
+  color: #121a50;
+  font-weight: 900;
+  margin: 0.2rem 0 0;
+}
+
+.data-ai-gartner-domain-list span {
+  background: #f2f4f7;
+  border-radius: 999px;
+  color: #344054;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.35rem 0.5rem;
+}
+
 .data-ai-table-wrap {
   overflow-x: auto;
 }
@@ -11903,7 +11987,8 @@ code {
   }
 
   .data-ai-kpi-grid,
-  .data-ai-evidence-grid {
+  .data-ai-evidence-grid,
+  .data-ai-gartner-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -11932,6 +12017,7 @@ code {
 
   .data-ai-kpi-grid,
   .data-ai-evidence-grid,
+  .data-ai-gartner-grid,
   .data-ai-question-meta {
     grid-template-columns: 1fr;
   }
