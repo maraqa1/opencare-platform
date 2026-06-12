@@ -8,6 +8,7 @@ DEPLOYMENT="${DEPLOYMENT:-portal}"
 CONTAINER="${CONTAINER:-portal}"
 IMAGE_PREFIX="${IMAGE_PREFIX:-opencare-portal:jazan}"
 KUBECONFIG_PATH="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
+DEPLOY_STEP_TIMEOUT_SECONDS="${DEPLOY_STEP_TIMEOUT_SECONDS:-1200}"
 KUBECTL=(sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl -n "$NAMESPACE")
 
 if ! command -v git >/dev/null 2>&1; then
@@ -38,10 +39,10 @@ commit="$(git rev-parse --short HEAD)"
 image="${IMAGE_PREFIX}-${commit}"
 
 echo "Building portal image: $image"
-docker build --no-cache -t "$image" apps/portal
+timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" docker build --no-cache -t "$image" apps/portal
 
 echo "Importing image into K3s: $image"
-docker save "$image" | sudo k3s ctr images import -
+timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" bash -c 'docker save "$1" | sudo k3s ctr images import -' _ "$image"
 
 if [[ -n "${OPENAI_API_KEY_B64:-}" ]]; then
   echo "Syncing OPENAI_API_KEY into secret/opencare-secrets"
@@ -65,7 +66,7 @@ echo "Updating deployment/$DEPLOYMENT in namespace $NAMESPACE"
 "${KUBECTL[@]}" patch "deployment/$DEPLOYMENT" \
   -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$CONTAINER\",\"imagePullPolicy\":\"Never\"}]}}}}"
 "${KUBECTL[@]}" rollout restart "deployment/$DEPLOYMENT"
-"${KUBECTL[@]}" rollout status "deployment/$DEPLOYMENT"
+timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" "${KUBECTL[@]}" rollout status "deployment/$DEPLOYMENT" --timeout=10m
 
 echo "Portal deployed from $BRANCH @ $commit"
 echo "Image: $image"
