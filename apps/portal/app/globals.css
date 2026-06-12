@@ -368,7 +368,7 @@
 .dmo-wide-stage summary {
   position: relative;
   display: grid;
-  grid-template-columns: 3rem 1fr auto;
+  grid-template-columns: 3rem minmax(0, 1fr) auto auto;
   gap: 1rem;
   align-items: center;
   padding: 1.25rem 1.5rem;
@@ -394,16 +394,28 @@
   font-weight: 800;
 }
 
-.dmo-wide-stage.done .dmo-wide-stage-circle {
-  border-color: var(--dmo-wide-gold);
-  background: var(--dmo-wide-gold-soft);
-  color: var(--dmo-wide-navy);
+.dmo-wide-stage.foundation .dmo-wide-stage-circle {
+  border-color: #8b7cf6;
+  background: #f3f0ff;
+  color: #4338ca;
 }
 
-.dmo-wide-stage.active .dmo-wide-stage-circle {
-  border-color: var(--dmo-wide-navy);
-  background: var(--dmo-wide-navy);
-  color: #ffffff;
+.dmo-wide-stage.jtc-done .dmo-wide-stage-circle {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.dmo-wide-stage.jtc-next .dmo-wide-stage-circle {
+  border-color: var(--dmo-wide-gold);
+  background: var(--dmo-wide-gold-soft);
+  color: #8a5a00;
+}
+
+.dmo-wide-stage.future .dmo-wide-stage-circle {
+  border-color: #86efac;
+  background: #effdf4;
+  color: #15803d;
 }
 
 .dmo-wide-stage-content {
@@ -417,6 +429,44 @@
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.dmo-wide-stage-content em {
+  color: #31343b;
+  font-size: 0.88rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.dmo-wide-stage-status {
+  width: max-content;
+  border-radius: 999px;
+  padding: 0.28rem 0.55rem;
+  background: #f1f3f6;
+  color: #555b66;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.dmo-wide-stage-status.foundation {
+  background: #e9f5dc;
+  color: #3f6212;
+}
+
+.dmo-wide-stage-status.jtc-done {
+  background: #eaf2ff;
+  color: #1d4ed8;
+}
+
+.dmo-wide-stage-status.jtc-next {
+  background: #f8eed9;
+  color: #8a5a00;
+}
+
+.dmo-wide-stage-status.future {
+  background: #f0eee8;
+  color: #5f5b4f;
 }
 
 .dmo-wide-stage-ghost {
@@ -717,7 +767,7 @@
   }
 
   .dmo-wide-stage summary {
-    grid-template-columns: 2.7rem 1fr;
+    grid-template-columns: 2.7rem minmax(0, 1fr) auto;
   }
 
   .dmo-wide-stage-ghost {
