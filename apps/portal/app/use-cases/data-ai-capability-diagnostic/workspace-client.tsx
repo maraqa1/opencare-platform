@@ -192,14 +192,14 @@ const emptyCustomerContext = {
 } satisfies CustomerContext;
 
 const demoCustomerContext = {
-  customerName: "Justice Training Centre",
-  businessDomain: "public-sector justice training, capability development, and institutional learning",
-  operatingScope: "national training centre serving judicial, legal, operational, and administrative teams",
+  customerName: "Sample Client Organisation",
+  businessDomain: "public-sector services, operations, and institutional performance",
+  operatingScope: "multi-entity operating model covering leadership, operations, service teams, technology, and governance functions",
   strategicPriorities:
-    "improve training effectiveness, strengthen data-driven planning, connect learning outcomes to institutional performance, and prepare governed AI use cases",
+    "improve service effectiveness, strengthen data-driven planning, connect operational outcomes to institutional performance, and prepare governed AI use cases",
   currentPainPoints:
-    "fragmented training data, inconsistent evidence for impact, limited lineage across learner, course, and outcome data, and unclear AI readiness controls",
-  targetAudience: "executive leadership, data council, training operations, IT, and AI governance stakeholders",
+    "fragmented source data, inconsistent evidence for impact, limited lineage across operational datasets, and unclear AI readiness controls",
+  targetAudience: "executive leadership, data council, business operations, IT, and AI governance stakeholders",
   reportPurpose:
     "produce an executive-ready diagnostic that prioritises data and AI capability gaps, governance decisions, and the first 90 days of remediation",
 } satisfies CustomerContext;
@@ -771,7 +771,7 @@ export function DataAiDiagnosticWorkspace() {
                   <input
                     value={customerContext.customerName}
                     onChange={(event) => updateCustomerContext("customerName", event.target.value)}
-                    placeholder="Example: Justice Training Centre"
+                    placeholder="Example: Sample Client Organisation"
                   />
                 </label>
                 <label>
@@ -779,7 +779,7 @@ export function DataAiDiagnosticWorkspace() {
                   <input
                     value={customerContext.businessDomain}
                     onChange={(event) => updateCustomerContext("businessDomain", event.target.value)}
-                    placeholder="Example: public-sector justice training"
+                    placeholder="Example: public-sector services and operations"
                   />
                 </label>
                 <label>
@@ -1176,7 +1176,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page data-ai-report-cover">
             <div>
-              <p className="eyebrow">Justice Training Centre · Data & AI Use Case</p>
+              <p className="eyebrow">Data & AI Capability Diagnostic</p>
               <h2>Data & AI Capability Diagnostic</h2>
               <p>{reportCustomerName}</p>
               <p>{reportBusinessDomain}</p>
