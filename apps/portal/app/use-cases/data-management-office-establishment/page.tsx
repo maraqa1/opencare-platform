@@ -31,26 +31,32 @@ const challengeItems = [
 const stages = [
   {
     number: "1",
-    state: "jtc-done",
+    state: "completed",
     status: "Completed",
     label: "Step 1 - Diagnose",
     title: "Data & AI capability diagnostic",
-    question: "Where are we today, honestly?",
-    description:
-      "Run the baseline maturity diagnostic, capture evidence, score gaps, map Gartner pillars, and produce the executive readiness narrative.",
-    output: "Scored diagnostic report, evidence-backed gap register, AI readiness report",
+    question: "Where are we today, honestly, and with evidence?",
+    what:
+      "Produces a scored, evidence-backed baseline across data capability domains on a 0-4 maturity scale. Every gap is quantified, every domain has a priority level, and every score is tied to evidence.",
+    why:
+      "A data strategy written without a baseline is aspirational but not grounded. The diagnostic becomes the evidence base for everything that follows.",
+    output: "Scored maturity report, priority gap register, AI readiness gate, 90-day readiness roadmap",
+    feeds: "Feeds Step 2 data strategy, Step 3 control mapping, and Step 4 DMO scope.",
     href: "/use-cases/data-ai-capability-diagnostic",
   },
   {
     number: "2",
-    state: "jtc-next",
+    state: "next",
     status: "Next",
     label: "Step 2 - Strategise",
     title: "Data strategy",
-    question: "Where are we going, and in what order?",
-    description:
-      "Translate the diagnostic into a sequenced data strategy, value themes, operating priorities, roadmap, investment logic, and executive decisions.",
-    output: "Data strategy, value themes, prioritised roadmap, decision backlog",
+    question: "Where are we going, and in what order of priority?",
+    what:
+      "Defines the target state, strategic pillars, domain maturity targets, three-horizon roadmap, data principles, and success metrics grounded in the Step 1 diagnostic.",
+    why:
+      "The DMO cannot be designed until the organisation knows what it needs to govern, which domains matter first, and which use cases justify investment.",
+    output: "Data strategy, value themes, domain targets, three-horizon roadmap, success KPIs",
+    feeds: "Feeds Step 3 DMO design, Step 4 charter scope, and Step 5 control priorities.",
     href: "#deliverables",
   },
   {
@@ -59,10 +65,13 @@ const stages = [
     status: "Future",
     label: "Step 3 - Design",
     title: "DMO design & operating model",
-    question: "What institution do we need to build?",
-    description:
-      "Design the DMO mandate, domains, councils, roles, decision rights, data ownership model, policy structure, and operating cadence.",
-    output: "DMO target operating model, governance forums, RACI, role catalogue",
+    question: "What institution do we need to build to execute the strategy?",
+    what:
+      "Designs the Data Management Office as a governance institution: structure, role definitions, decision rights, escalation paths, governance calendar, and reporting lines.",
+    why:
+      "Design and establishment are different activities. The office must be specified before it is launched with real people and real governance cadence.",
+    output: "DMO operating model, role definitions, decision rights matrix, governance calendar blueprint",
+    feeds: "Feeds Step 4 charter drafting, RACI matrix, and domain-owner appointment briefs.",
     href: "#deliverables",
   },
   {
@@ -72,9 +81,12 @@ const stages = [
     label: "Step 4 - Establish",
     title: "DMO establishment",
     question: "Who owns what, starting today?",
-    description:
-      "Stand up the DMO operating structure, assign owners, launch governance cadence, create evidence routines, and begin formal control ownership.",
-    output: "Operating cadence, named owners, evidence routines, issue and decision logs",
+    what:
+      "Stands up the DMO as a live operating function with approved governance charter, published RACI, named owners, data council cadence, and evidence routines.",
+    why:
+      "Every implementation deliverable needs a named owner, evidence standard, and approval path before execution begins, not retrospectively.",
+    output: "Governance charter, RACI matrix, named owners, data council live, evidence routines",
+    feeds: "Closes governance ownership gaps and gives Step 5 named owners for every deliverable.",
     href: "#deliverables",
   },
   {
@@ -83,10 +95,13 @@ const stages = [
     status: "Future",
     label: "Step 5 - Execute",
     title: "Programme execution & control closure",
-    question: "What do we build to close the gaps?",
-    description:
-      "Execute remediation work packages, close control gaps, build lifecycle artefacts, manage risks, track evidence, and report progress through governance forums.",
-    output: "Control closure plan, remediation tracker, evidence artefacts, executive progress pack",
+    question: "What do we build to close the gaps, and how do we evidence it?",
+    what:
+      "Builds remediation work packages, control artefacts, lifecycle evidence, issue logs, decision logs, dashboards, and executive progress reporting.",
+    why:
+      "Execution converts diagnostic gaps, strategy, and operating model decisions into auditable evidence and measurable control closure.",
+    output: "Control closure plan, remediation tracker, evidence artefacts, risk log, executive progress pack",
+    feeds: "Produces the evidence pack submitted in Step 6 for P1 certification and DMO operational proof.",
     href: "#deliverables",
   },
   {
@@ -96,52 +111,63 @@ const stages = [
     label: "Step 6 - Certify",
     title: "P1 certification & DMO operationalisation",
     question: "Are we compliant, and can we prove it?",
-    description:
-      "Validate P1 readiness, assemble the evidence pack, confirm sign-offs, prove the DMO is operating, and transition from programme delivery into a standing function.",
+    what:
+      "Validates that mandatory controls carry approved evidence, confirms owner sign-off, assembles the evidence pack, and transitions the DMO into business-as-usual operation.",
+    why:
+      "Certification is credible only when control evidence, governance cadence, and accountable ownership already exist and can be operated repeatedly.",
     output: "Validated P1 scorecard, NDMO evidence pack, operating DMO, board certification report",
+    feeds: "The programme closes, the DMO runs, and the next maturity horizon begins.",
     href: "#contact",
   },
 ] as const;
 
 const logicItems = [
   [
-    "1",
-    "Step 1 creates the honest baseline",
-    "The diagnostic gives the board an evidence-backed maturity position before strategy, operating model, or control closure work begins.",
+    "01",
+    "Diagnosis before strategy",
+    "A strategy written without a baseline is aspirational. The diagnostic score is the only honest foundation for targets, sequencing, and resourcing.",
   ],
   [
-    "2",
-    "Step 2 turns findings into strategic order",
-    "The data strategy decides where the organisation is going, which gaps matter first, and how value will be sequenced.",
+    "02",
+    "Strategy before DMO design",
+    "The DMO is the institution that executes the strategy. Design the job before designing the office that will do it.",
   ],
   [
-    "3",
-    "Steps 3 and 4 build the institution",
-    "The DMO is designed, then established with named owners, forums, cadence, evidence routines, and decision rights.",
+    "03",
+    "DMO design before establishment",
+    "The operating model, decision rights, and role definitions must be agreed before the charter is launched and domain owners are appointed.",
   ],
   [
-    "4",
-    "Step 5 closes the control gaps",
-    "Execution converts strategy and operating model into artefacts, remediation actions, evidence, and measurable closure.",
+    "04",
+    "Establishment before execution",
+    "Every execution deliverable needs a named owner, approval path, and evidence standard before work begins.",
   ],
   [
-    "5",
-    "Step 6 proves readiness",
-    "Certification is only credible when P1 evidence, owner sign-off, governance cadence, and operating proof are already in place.",
+    "05",
+    "Each step has a different decision-maker",
+    "The sequence moves from board baseline to sponsor strategy, DMO design, owner activation, delivery execution, and certification proof.",
   ],
   [
-    "6",
-    "Foundation stays outside the count",
-    "Executive mandate and sponsorship are prerequisites for the six-step programme, not a numbered delivery step.",
+    "06",
+    "Evidence is produced in sequence",
+    "The methodology avoids retroactive evidence creation by making each step produce the proof required by the next.",
   ],
 ] as const;
 
 const deliverables = [
   [
+    "Foundation",
+    "Pre-work",
+    "Executive mandate & interim steering committee",
+    "Signed mandate, nominated data lead, confirmed scope, budget envelope, and first steering committee date.",
+    "CEO / Board",
+    "Establishes the governance authority that all subsequent compliance work reports to.",
+  ],
+  [
     "1 - Diagnose",
     "Completed",
     "Data & AI Capability Diagnostic Report",
-    "Maturity heatmap, gap register, and 90-day roadmap across 13 domains and 84 evidence-backed questions.",
+    "Maturity heatmap, gap register, evidence model, AI readiness gate, and 90-day mobilisation roadmap.",
     "Board / Executive team",
     "Establishes the compliance baseline all subsequent control closures are measured against.",
   ],
@@ -149,7 +175,7 @@ const deliverables = [
     "2 - Strategise",
     "Next",
     "Data Strategy",
-    "Target direction, value themes, priority sequence, roadmap, investment logic, and executive decisions.",
+    "Target direction, value themes, priority sequence, domain maturity targets, roadmap, investment logic, and executive decisions.",
     "Executive sponsor / Data council",
     "Turns the diagnostic baseline into a sequenced programme of work.",
   ],
@@ -157,7 +183,7 @@ const deliverables = [
     "3 - Design",
     "Future",
     "DMO Design & Operating Model",
-    "DMO mandate, governance forums, data ownership, RACI, policy model, and operating cadence.",
+    "DMO mandate, governance forums, data ownership, RACI, role catalogue, policy model, and operating cadence.",
     "CDO / Data office lead",
     "Defines the institution required to operate governance beyond the project.",
   ],
@@ -216,25 +242,26 @@ export default function DataManagementOfficeEstablishmentPage() {
       <section className="dmo-wide-hero">
         <p className="dmo-wide-eyebrow">Data Management Office Establishment</p>
         <h1>
-          Six steps from diagnostic to <em>certified</em> data governance.
+          Six steps from diagnostic to <em>operational</em> data governance.
         </h1>
         <p>
-          The structured methodology that takes an organisation from honest diagnostic through data strategy, DMO design,
-          establishment, programme execution, and P1-ready operational proof.
+          A structured methodology that takes an organisation from executive mandate through diagnosis, strategy, DMO
+          design, establishment, programme execution, and P1-ready operational proof.
         </p>
         <div className="dmo-wide-actions">
           <Link className="dmo-wide-primary" href="/use-cases/data-ai-capability-diagnostic">
             Request your diagnostic
           </Link>
           <a className="dmo-wide-ghost" href="#approach">
-            See the approach
+            See the six steps
           </a>
         </div>
         <div className="dmo-wide-stats" aria-label="Methodology metrics">
           {[
+            ["6", "Sequential steps"],
             ["152", "NDMO controls mapped"],
             ["68", "P1 controls addressed"],
-            ["06", "Steps to operating proof"],
+            ["90", "Days to P1 readiness"],
           ].map(([value, label]) => (
             <article key={label}>
               <strong>{value}</strong>
@@ -291,10 +318,21 @@ export default function DataManagementOfficeEstablishmentPage() {
               execution, and certification proof. Executive mandate and sponsorship sit as the foundation before Step 1.
             </p>
           </div>
+
           <div className="dmo-wide-foundation-note">
             <span>Foundation prerequisite</span>
             <strong>Executive mandate & sponsorship</strong>
             <p>"Why are we doing this, and who is accountable?"</p>
+            <div className="dmo-wide-foundation-pills">
+              {[
+                "Signed executive mandate",
+                "Interim steering committee",
+                "Budget and scope confirmed",
+                "CDO or data lead nominated",
+              ].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
           </div>
 
           <div className="dmo-wide-stage-grid">
@@ -313,11 +351,21 @@ export default function DataManagementOfficeEstablishmentPage() {
                   </span>
                 </summary>
                 <div className="dmo-wide-stage-body">
-                  <p>{stage.description}</p>
-                  <div>
+                  <div className="dmo-wide-stage-detail-grid">
+                    <article>
+                      <strong>What it does</strong>
+                      <p>{stage.what}</p>
+                    </article>
+                    <article>
+                      <strong>Why it comes here</strong>
+                      <p>{stage.why}</p>
+                    </article>
+                  </div>
+                  <p className="dmo-wide-output">
                     <span aria-hidden="true" />
                     <strong>Deliverable:</strong> {stage.output}
-                  </div>
+                  </p>
+                  <p className="dmo-wide-feeds">{stage.feeds}</p>
                   <a href={stage.href}>
                     {stage.number === "1" ? "Open live diagnostic module" : "Review stage dependency"}
                   </a>
@@ -333,8 +381,8 @@ export default function DataManagementOfficeEstablishmentPage() {
           <p className="dmo-wide-section-eye">The logic</p>
           <h2>Why the six-step sequence cannot be reordered</h2>
           <p>
-            Each step produces the input that the next step requires. The dependency chain is not a consulting
-            convention; it reflects the evidence requirements of an NDMO P1 inspection.
+            Each step produces the exact input the next step requires. The dependency chain is not a consulting
+            convention; it reflects the evidence requirements of a real NDMO P1 inspection.
           </p>
           <div className="dmo-wide-logic-grid">
             {logicItems.map(([number, title, text]) => (
@@ -351,7 +399,7 @@ export default function DataManagementOfficeEstablishmentPage() {
       <section className="dmo-wide-section dmo-wide-deliverables" id="deliverables">
         <div className="dmo-wide-section-inner">
           <p className="dmo-wide-section-eye">What you receive</p>
-          <h2>Deliverables at every stage</h2>
+          <h2>Deliverables at every step</h2>
           <p className="dmo-wide-section-copy">
             Every output is both a governance artefact and an NDMO evidence document. Nothing is produced that does not
             serve a dual purpose.
@@ -360,10 +408,10 @@ export default function DataManagementOfficeEstablishmentPage() {
             <table className="dmo-wide-table">
               <thead>
                 <tr>
-                  <th>Stage</th>
+                  <th>Step</th>
                   <th>Primary output</th>
                   <th>What it contains</th>
-                  <th>Answers for</th>
+                  <th>Decision-maker</th>
                   <th>NDMO value</th>
                 </tr>
               </thead>
@@ -372,9 +420,7 @@ export default function DataManagementOfficeEstablishmentPage() {
                   <tr key={stage}>
                     <td>
                       <strong>{stage}</strong>
-                      <span className={`dmo-wide-status ${status.toLowerCase().replaceAll(":", "").replaceAll(" ", "-")}`}>
-                        {status}
-                      </span>
+                      <span className={`dmo-wide-status ${status.toLowerCase().replaceAll(" ", "-")}`}>{status}</span>
                     </td>
                     <td>{output}</td>
                     <td>{contains}</td>
@@ -404,7 +450,7 @@ export default function DataManagementOfficeEstablishmentPage() {
               ["152", "Total NDMO controls", "Across 12 data domains"],
               ["68", "P1 mandatory controls", "Immediate implementation"],
               ["85%", "P1 coverage target", "Through governance pack delivery"],
-              ["06", "Method steps", "Diagnose, strategise, design, establish, execute, certify"],
+              ["6", "Method steps", "Diagnose, strategise, design, establish, execute, certify"],
             ].map(([value, label, text]) => (
               <article key={label}>
                 <strong>{value}</strong>
@@ -417,7 +463,7 @@ export default function DataManagementOfficeEstablishmentPage() {
       </section>
 
       <section className="dmo-wide-contact" id="contact">
-        <p className="dmo-wide-section-eye">Start your diagnostic</p>
+        <p className="dmo-wide-section-eye">Start at Step 1</p>
         <h2>Your Data Management Office begins with an honest baseline.</h2>
         <p>
           Start with Module 01 to capture maturity, evidence, gaps, Gartner positioning, and AI-generated executive
@@ -428,7 +474,7 @@ export default function DataManagementOfficeEstablishmentPage() {
             Open Module 01 Diagnostic
           </Link>
           <a className="dmo-wide-ghost" href="#approach">
-            Review the methodology
+            Review the six steps
           </a>
         </div>
       </section>
