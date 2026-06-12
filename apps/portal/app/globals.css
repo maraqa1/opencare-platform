@@ -13122,10 +13122,17 @@ code {
 }
 
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
   .sidebar,
   .main-topbar,
+  .data-ai-dmo-header,
   .data-ai-hero,
   .data-ai-tabs,
+  .data-ai-report-status,
   .data-ai-report-nav,
   .data-ai-report-toolbar {
     display: none !important;
@@ -13142,43 +13149,113 @@ code {
 
   .data-ai-report-pack {
     display: block;
+    font-size: 9pt;
   }
 
   .data-ai-report-page {
-    border: 0;
+    border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 0;
     box-shadow: none;
     break-after: page;
     min-height: auto;
     page-break-after: always;
-    padding: 18mm;
+    padding: 10mm;
   }
 
   .data-ai-report-cover {
     color: #ffffff !important;
-    min-height: 250mm;
+    grid-template-columns: minmax(0, 1fr) 82mm !important;
+    min-height: 170mm;
+  }
+
+  .data-ai-report-cover h2 {
+    font-size: 34pt;
+    line-height: 0.95;
+    max-width: 13ch;
+  }
+
+  .data-ai-report-cover-card strong {
+    font-size: 28pt;
   }
 
   .data-ai-report-kpis,
   .data-ai-report-domain-grid,
   .data-ai-report-toc {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .data-ai-report-facts {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+
+  .data-ai-board-grid {
+    grid-template-columns: minmax(56mm, 0.85fr) repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .data-ai-report-two-col,
+  .data-ai-report-strength-vulnerability {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .data-ai-board-grid,
   .data-ai-report-decision-strip,
   .data-ai-gate-matrix,
   .data-ai-roadmap {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .data-ai-generated-report .data-ai-report-two-col,
+  .data-ai-generated-report .data-ai-gate-matrix {
     grid-template-columns: 1fr !important;
   }
 
+  .data-ai-report-page-header {
+    margin-bottom: 2mm;
+    padding-bottom: 2.5mm;
+  }
+
+  .data-ai-report-page-header h2 {
+    font-size: 17pt;
+  }
+
+  .data-ai-report-kpis strong,
+  .data-ai-readiness-gauge strong {
+    font-size: 22pt;
+  }
+
+  .data-ai-report-facts div,
+  .data-ai-report-kpis div,
+  .data-ai-report-domain-grid > div,
+  .data-ai-roadmap div,
+  .data-ai-report-two-col section,
+  .data-ai-report-callout,
+  .data-ai-gate-matrix section,
+  .data-ai-board-grid section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding: 7mm;
+  }
+
+  .data-ai-report-domain-grid > div {
+    min-height: 34mm;
+  }
+
   .data-ai-report-table {
-    font-size: 0.68rem;
+    font-size: 7.2pt;
   }
 
   .data-ai-report-table th,
   .data-ai-report-table td {
-    padding: 0.45rem;
+    padding: 2.2mm;
+  }
+
+  .data-ai-report-table-wrap,
+  .data-ai-report-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .data-ai-report-columns {
+    columns: 3;
   }
 
   .data-ai-report-page:last-child {
