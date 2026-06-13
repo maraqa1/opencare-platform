@@ -6,13 +6,19 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=install/helpers.sh
 source "$ROOT_DIR/install/helpers.sh"
 
-LOCAL_AI_MODEL="${LOCAL_AI_MODEL:-llama3.2:3b}"
+LOCAL_AI_MODEL="${LOCAL_AI_MODEL:-llama3.1:8b}"
 LOCAL_AI_KEEP_ALIVE="${LOCAL_AI_KEEP_ALIVE:-24h}"
 LOCAL_AI_WARM_MAX_SECONDS="${LOCAL_AI_WARM_MAX_SECONDS:-600}"
+OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://168.119.156.124:11434/v1}"
 AI_GATEWAY_INTERNAL_URL="${AI_GATEWAY_INTERNAL_URL:-http://local-ai-gateway:8080/v1}"
 AI_GATEWAY_PUBLIC_URL="${AI_GATEWAY_PUBLIC_URL:-https://${AI_HOST:-ai.opendatalake.com}/v1}"
-SKIP_LOCAL_AI_MODEL_PULL="${SKIP_LOCAL_AI_MODEL_PULL:-false}"
-SKIP_LOCAL_AI_MODEL_WARM="${SKIP_LOCAL_AI_MODEL_WARM:-false}"
+if [[ "$OLLAMA_BASE_URL" == "http://ollama:11434/v1" || "$OLLAMA_BASE_URL" == "http://ollama:11434" ]]; then
+  SKIP_LOCAL_AI_MODEL_PULL="${SKIP_LOCAL_AI_MODEL_PULL:-false}"
+  SKIP_LOCAL_AI_MODEL_WARM="${SKIP_LOCAL_AI_MODEL_WARM:-false}"
+else
+  SKIP_LOCAL_AI_MODEL_PULL="${SKIP_LOCAL_AI_MODEL_PULL:-true}"
+  SKIP_LOCAL_AI_MODEL_WARM="${SKIP_LOCAL_AI_MODEL_WARM:-true}"
+fi
 MODEL_PULL_JOB_TIMEOUT_SECONDS="${MODEL_PULL_JOB_TIMEOUT_SECONDS:-7200}"
 MODEL_WARM_JOB_TIMEOUT_SECONDS="${MODEL_WARM_JOB_TIMEOUT_SECONDS:-900}"
 
@@ -23,7 +29,7 @@ kubectl -n "$NAMESPACE" rollout status deployment/ollama --timeout="${LOCAL_AI_O
 
 log "Configuring local AI runtime settings"
 kubectl -n "$NAMESPACE" patch configmap opencare-config --type merge \
-  -p "{\"data\":{\"ENABLE_LOCAL_AI\":\"true\",\"ENABLE_OPENAI\":\"false\",\"AI_PROVIDER\":\"local\",\"AI_PROVIDER_FALLBACK\":\"none\",\"LOCAL_AI_MODEL\":\"${LOCAL_AI_MODEL}\",\"LOCAL_AI_KEEP_ALIVE\":\"${LOCAL_AI_KEEP_ALIVE}\",\"LOCAL_AI_WARM_MAX_SECONDS\":\"${LOCAL_AI_WARM_MAX_SECONDS}\",\"OLLAMA_BASE_URL\":\"http://ollama:11434/v1\",\"AI_GATEWAY_BASE_URL\":\"${AI_GATEWAY_INTERNAL_URL}\",\"AI_GATEWAY_PUBLIC_URL\":\"${AI_GATEWAY_PUBLIC_URL}\",\"AI_HOST\":\"${AI_HOST:-ai.opendatalake.com}\"}}" >/dev/null
+  -p "{\"data\":{\"ENABLE_LOCAL_AI\":\"true\",\"ENABLE_OPENAI\":\"false\",\"AI_PROVIDER\":\"local\",\"AI_PROVIDER_FALLBACK\":\"none\",\"LOCAL_AI_MODEL\":\"${LOCAL_AI_MODEL}\",\"LOCAL_AI_KEEP_ALIVE\":\"${LOCAL_AI_KEEP_ALIVE}\",\"LOCAL_AI_WARM_MAX_SECONDS\":\"${LOCAL_AI_WARM_MAX_SECONDS}\",\"OLLAMA_BASE_URL\":\"${OLLAMA_BASE_URL}\",\"AI_GATEWAY_BASE_URL\":\"${AI_GATEWAY_INTERNAL_URL}\",\"AI_GATEWAY_PUBLIC_URL\":\"${AI_GATEWAY_PUBLIC_URL}\",\"AI_HOST\":\"${AI_HOST:-ai.opendatalake.com}\"}}" >/dev/null
 
 if [[ "$SKIP_LOCAL_AI_MODEL_PULL" != "true" ]]; then
   log "Pulling local AI model into Ollama: ${LOCAL_AI_MODEL}"

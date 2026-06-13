@@ -42,7 +42,11 @@ spec:
                 optional: true
           env:
             - name: OLLAMA_BASE_URL
-              value: http://ollama:11434/v1
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: OLLAMA_BASE_URL
+                  optional: true
             - name: LOCAL_AI_KEEP_ALIVE
               valueFrom:
                 configMapKeyRef:

@@ -7,9 +7,9 @@ from fastapi.responses import JSONResponse
 
 
 SERVICE_NAME = "local-ai-gateway"
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434/v1").rstrip("/")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://168.119.156.124:11434/v1").rstrip("/")
 OLLAMA_ROOT_URL = OLLAMA_BASE_URL.removesuffix("/v1").rstrip("/")
-LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3.2:3b")
+LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3.1:8b")
 LOCAL_AI_API_KEY = os.getenv("LOCAL_AI_API_KEY", "")
 LOCAL_AI_KEEP_ALIVE = os.getenv("LOCAL_AI_KEEP_ALIVE", "24h")
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("LOCAL_AI_REQUEST_TIMEOUT_SECONDS", "180"))

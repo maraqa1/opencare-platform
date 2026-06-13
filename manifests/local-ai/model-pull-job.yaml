@@ -21,7 +21,7 @@ spec:
             - -lc
             - |
               set -eu
-              model="${LOCAL_AI_MODEL:-llama3.2:3b}"
+              model="${LOCAL_AI_MODEL:-llama3.1:8b}"
               echo "Pulling local AI model: ${model}"
               curl -fsS --max-time 7200 \
                 -X POST http://ollama:11434/api/pull \

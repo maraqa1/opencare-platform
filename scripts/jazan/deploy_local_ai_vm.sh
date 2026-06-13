@@ -8,7 +8,8 @@ IMAGE_PREFIX="${IMAGE_PREFIX:-opencare-local-ai-gateway:jazan}"
 KUBECONFIG_PATH="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 DEPLOY_STEP_TIMEOUT_SECONDS="${DEPLOY_STEP_TIMEOUT_SECONDS:-1200}"
 AI_HOST="${AI_HOST:-ai.opendatalake.com}"
-LOCAL_AI_MODEL="${LOCAL_AI_MODEL:-llama3.2:3b}"
+LOCAL_AI_MODEL="${LOCAL_AI_MODEL:-llama3.1:8b}"
+OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://168.119.156.124:11434/v1}"
 KUBECTL=(sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl -n "$NAMESPACE")
 
 if ! command -v git >/dev/null 2>&1; then
@@ -69,6 +70,7 @@ sudo env \
   NAMESPACE="$NAMESPACE" \
   AI_HOST="$AI_HOST" \
   LOCAL_AI_MODEL="$LOCAL_AI_MODEL" \
+  OLLAMA_BASE_URL="$OLLAMA_BASE_URL" \
   LOCAL_AI_GATEWAY_IMAGE="$image" \
   bash scripts/local-ai/apply_local_ai.sh
 
