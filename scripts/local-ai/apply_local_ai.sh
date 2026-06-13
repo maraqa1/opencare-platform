@@ -7,7 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT_DIR/install/helpers.sh"
 
 LOCAL_AI_MODEL="${LOCAL_AI_MODEL:-llama3.2:3b}"
-LOCAL_AI_KEEP_ALIVE="${LOCAL_AI_KEEP_ALIVE:--1}"
+LOCAL_AI_KEEP_ALIVE="${LOCAL_AI_KEEP_ALIVE:-24h}"
 LOCAL_AI_WARM_MAX_SECONDS="${LOCAL_AI_WARM_MAX_SECONDS:-600}"
 AI_GATEWAY_INTERNAL_URL="${AI_GATEWAY_INTERNAL_URL:-http://local-ai-gateway:8080/v1}"
 AI_GATEWAY_PUBLIC_URL="${AI_GATEWAY_PUBLIC_URL:-https://${AI_HOST:-ai.opendatalake.com}/v1}"

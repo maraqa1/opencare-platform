@@ -11,7 +11,7 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434/v1").rstrip(
 OLLAMA_ROOT_URL = OLLAMA_BASE_URL.removesuffix("/v1").rstrip("/")
 LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3.2:3b")
 LOCAL_AI_API_KEY = os.getenv("LOCAL_AI_API_KEY", "")
-LOCAL_AI_KEEP_ALIVE = os.getenv("LOCAL_AI_KEEP_ALIVE", "-1")
+LOCAL_AI_KEEP_ALIVE = os.getenv("LOCAL_AI_KEEP_ALIVE", "24h")
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("LOCAL_AI_REQUEST_TIMEOUT_SECONDS", "180"))
 
 app = FastAPI(
@@ -44,7 +44,7 @@ async def warm_model() -> httpx.Response:
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
         return await client.post(
             f"{OLLAMA_ROOT_URL}/api/generate",
-            json={"model": LOCAL_AI_MODEL, "prompt": "", "stream": False, "keep_alive": LOCAL_AI_KEEP_ALIVE},
+            json={"model": LOCAL_AI_MODEL, "prompt": "warm", "stream": False, "keep_alive": LOCAL_AI_KEEP_ALIVE},
         )
 
 
