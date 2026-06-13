@@ -66,6 +66,13 @@ type LocalAiChatResponse = {
 const fallbackModel = "llama3.2:3b";
 const defaultGatewayTimeoutMs = 55000;
 
+class LocalAiTimeoutError extends Error {
+  constructor() {
+    super("Local AI gateway timed out.");
+    this.name = "LocalAiTimeoutError";
+  }
+}
+
 function textValue(value: unknown) {
   if (typeof value === "string") {
     return value;
@@ -142,7 +149,7 @@ function localAiErrorMessage(body: LocalAiChatResponse, status: number) {
 }
 
 function isAbortError(error: unknown) {
-  return error instanceof DOMException && error.name === "AbortError";
+  return error instanceof LocalAiTimeoutError || (error instanceof DOMException && error.name === "AbortError");
 }
 
 function localAiTimeoutResponse(model: string, gateway: string, gatewayTimeoutMs: number) {
@@ -182,13 +189,17 @@ export async function POST(request: Request) {
     ? configuredTimeoutMs
     : defaultGatewayTimeoutMs;
   const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), gatewayTimeoutMs);
-  let timeoutCleared = false;
+  let rejectOnTimeout: ((reason?: unknown) => void) | null = null;
+  const gatewayDeadline = new Promise<never>((_, reject) => {
+    rejectOnTimeout = reject;
+  });
+  const timeout = setTimeout(() => {
+    abortController.abort();
+    rejectOnTimeout?.(new LocalAiTimeoutError());
+  }, gatewayTimeoutMs);
   const clearGatewayTimeout = () => {
-    if (!timeoutCleared) {
-      clearTimeout(timeout);
-      timeoutCleared = true;
-    }
+    clearTimeout(timeout);
+    rejectOnTimeout = null;
   };
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -206,70 +217,73 @@ export async function POST(request: Request) {
 
   let response: Response;
   try {
-    response = await fetch(`${gatewayBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers,
-      signal: abortController.signal,
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        max_tokens: 900,
-        messages: [
-          {
-            role: "system",
-            content:
-              [
-                "You are a senior data and AI strategy consultant preparing a consulting-grade executive diagnostic report.",
-                "Return only valid JSON. Do not include Markdown fences.",
-                "Tailor every paragraph to the supplied customer name, business domain, operating scope, priorities, pain points, report audience, and report purpose.",
-                "Never mention fixed sample customers, sample acronyms, or advisory-firm names unless those exact words are supplied in customerContext.",
-                "Do not invent customer facts, dates, evidence counts, domain scores, or metrics beyond the supplied diagnostic payload.",
-                "The maturity scoring scale is 0 to 4, where 4 is maximum maturity.",
-                "Use a board-ready tone: direct, evidence-led, action-oriented, and specific enough for a steering committee.",
-                "Keep the response concise enough for a first-pass executive report. Prefer short paragraphs and compact bullets.",
-                "When Gartner pillar data is supplied, include the weakest pillars and convert them into management actions.",
-                "Use evidence language carefully: if evidence is weak or missing, call the score provisional.",
-                "AI readiness rule: proceed only with governed descriptive diagnostics and human-approved AI reporting unless data quality, privacy, lineage, and model-risk controls are sufficient.",
-              ].join(" "),
-          },
-          {
-            role: "user",
-            content: JSON.stringify({
-              task: "Generate a concise consulting-grade Data and AI capability diagnostic report narrative for a board-pack page.",
-              contextInstructions:
-                "Use customerContext.customerName as the client name. Use customerContext.businessDomain and operatingScope to make the recommendations domain-specific. If a context field is blank, state that the report needs that context rather than guessing it. Frame recommendations in the language of the intended audience and report purpose.",
-              scoringScale: "0 to 4 maturity scale; 4 is the maximum score.",
-              requiredShape: {
-                executiveSummary: "One concise paragraph stating maturity, evidence posture, and executive implication.",
-                headlineAssessment: "One short board-ready paragraph explaining the maturity profile.",
-                readinessThesis: "One short AI readiness thesis: proceed, pilot with controls, and hold.",
-                boardMessage: "One sentence suitable for a steering committee slide.",
-                boardAsks: [
-                  "Approve baseline - one sentence",
-                  "Assign owners - one sentence",
-                  "Gate use cases - one sentence",
-                ],
-                gartnerPillarAssessment: ["3-4 bullets; pillar | implication | management action"],
-                materialFindings: ["3-4 bullets; highest-signal findings only"],
-                domainActionPlan: ["3-5 bullets; domain | signal | action"],
-                priorityGapRegister: ["3-5 bullets; gap | domain | evidence | action"],
-                recommendedDecisions: ["3-4 decisions required from leadership"],
-                ninetyDayPlan: ["3 bullets: Days 0-30, Days 31-60, Days 61-90"],
-                roadmapPhases: ["3 short phase statements"],
-                aiReadinessGate: "One short paragraph summarising proceed / pilot / hold posture.",
-                aiGateProceed: ["2 use-case categories that can proceed with human approval"],
-                aiGatePilotWithControls: ["2 use-case categories that require controls before pilot"],
-                aiGateHold: ["2 use-case categories that should not proceed yet"],
-                risks: ["3-4 risks with management consequence and mitigation"],
-                nextSteps: ["3 immediate next steps for the next steering session"],
-              },
-              diagnostic: reportDiagnostic,
-            }),
-          },
-        ],
+    response = await Promise.race([
+      fetch(`${gatewayBaseUrl}/chat/completions`, {
+        method: "POST",
+        headers,
+        signal: abortController.signal,
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          max_tokens: 900,
+          messages: [
+            {
+              role: "system",
+              content:
+                [
+                  "You are a senior data and AI strategy consultant preparing a consulting-grade executive diagnostic report.",
+                  "Return only valid JSON. Do not include Markdown fences.",
+                  "Tailor every paragraph to the supplied customer name, business domain, operating scope, priorities, pain points, report audience, and report purpose.",
+                  "Never mention fixed sample customers, sample acronyms, or advisory-firm names unless those exact words are supplied in customerContext.",
+                  "Do not invent customer facts, dates, evidence counts, domain scores, or metrics beyond the supplied diagnostic payload.",
+                  "The maturity scoring scale is 0 to 4, where 4 is maximum maturity.",
+                  "Use a board-ready tone: direct, evidence-led, action-oriented, and specific enough for a steering committee.",
+                  "Keep the response concise enough for a first-pass executive report. Prefer short paragraphs and compact bullets.",
+                  "When Gartner pillar data is supplied, include the weakest pillars and convert them into management actions.",
+                  "Use evidence language carefully: if evidence is weak or missing, call the score provisional.",
+                  "AI readiness rule: proceed only with governed descriptive diagnostics and human-approved AI reporting unless data quality, privacy, lineage, and model-risk controls are sufficient.",
+                ].join(" "),
+            },
+            {
+              role: "user",
+              content: JSON.stringify({
+                task: "Generate a concise consulting-grade Data and AI capability diagnostic report narrative for a board-pack page.",
+                contextInstructions:
+                  "Use customerContext.customerName as the client name. Use customerContext.businessDomain and operatingScope to make the recommendations domain-specific. If a context field is blank, state that the report needs that context rather than guessing it. Frame recommendations in the language of the intended audience and report purpose.",
+                scoringScale: "0 to 4 maturity scale; 4 is the maximum score.",
+                requiredShape: {
+                  executiveSummary: "One concise paragraph stating maturity, evidence posture, and executive implication.",
+                  headlineAssessment: "One short board-ready paragraph explaining the maturity profile.",
+                  readinessThesis: "One short AI readiness thesis: proceed, pilot with controls, and hold.",
+                  boardMessage: "One sentence suitable for a steering committee slide.",
+                  boardAsks: [
+                    "Approve baseline - one sentence",
+                    "Assign owners - one sentence",
+                    "Gate use cases - one sentence",
+                  ],
+                  gartnerPillarAssessment: ["3-4 bullets; pillar | implication | management action"],
+                  materialFindings: ["3-4 bullets; highest-signal findings only"],
+                  domainActionPlan: ["3-5 bullets; domain | signal | action"],
+                  priorityGapRegister: ["3-5 bullets; gap | domain | evidence | action"],
+                  recommendedDecisions: ["3-4 decisions required from leadership"],
+                  ninetyDayPlan: ["3 bullets: Days 0-30, Days 31-60, Days 61-90"],
+                  roadmapPhases: ["3 short phase statements"],
+                  aiReadinessGate: "One short paragraph summarising proceed / pilot / hold posture.",
+                  aiGateProceed: ["2 use-case categories that can proceed with human approval"],
+                  aiGatePilotWithControls: ["2 use-case categories that require controls before pilot"],
+                  aiGateHold: ["2 use-case categories that should not proceed yet"],
+                  risks: ["3-4 risks with management consequence and mitigation"],
+                  nextSteps: ["3 immediate next steps for the next steering session"],
+                },
+                diagnostic: reportDiagnostic,
+              }),
+            },
+          ],
+        }),
+        cache: "no-store",
       }),
-      cache: "no-store",
-    });
+      gatewayDeadline,
+    ]);
   } catch (error) {
     clearGatewayTimeout();
     if (isAbortError(error)) {
@@ -289,7 +303,7 @@ export async function POST(request: Request) {
 
   let body: LocalAiChatResponse;
   try {
-    body = (await response.json()) as LocalAiChatResponse;
+    body = (await Promise.race([response.json(), gatewayDeadline])) as LocalAiChatResponse;
     clearGatewayTimeout();
   } catch (error) {
     clearGatewayTimeout();
