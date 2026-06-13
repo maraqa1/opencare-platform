@@ -12767,6 +12767,100 @@ code {
   text-decoration: none;
 }
 
+.data-ai-failure-log {
+  background: #fff8e6;
+  border: 1px solid rgba(232, 135, 10, 0.32);
+  border-left: 0.35rem solid #e8870a;
+  border-radius: 18px;
+  box-shadow: 0 16px 36px rgba(13, 27, 42, 0.06);
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.data-ai-failure-log h3 {
+  color: #121a50;
+  margin: 0.1rem 0 0;
+}
+
+.data-ai-failure-log dl {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+}
+
+.data-ai-failure-log dl div {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(13, 27, 42, 0.08);
+  border-radius: 12px;
+  padding: 0.65rem;
+}
+
+.data-ai-failure-log dt {
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.data-ai-failure-log dd {
+  color: #121a50;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.data-ai-failure-log strong {
+  color: #854a0e;
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.data-ai-failure-log p {
+  margin: 0;
+}
+
+.data-ai-failure-log details {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(13, 27, 42, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.data-ai-failure-log summary {
+  color: #121a50;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.data-ai-failure-log pre {
+  background: #0d1b2a;
+  border-radius: 10px;
+  color: #f8fafc;
+  font-size: 0.75rem;
+  margin: 0.75rem 0 0;
+  max-height: 18rem;
+  overflow: auto;
+  padding: 0.85rem;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1000px) {
+  .data-ai-failure-log dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .data-ai-failure-log dl {
+    grid-template-columns: 1fr;
+  }
+}
+
 .data-ai-report-pack .regen-btn,
 .data-ai-report-pack button[onclick*="regen"],
 .data-ai-report-pack .skeleton,
@@ -13438,6 +13532,7 @@ code {
   .data-ai-tabs,
   .data-ai-report-status,
   .data-ai-generation-progress,
+  .data-ai-failure-log,
   .data-ai-report-nav,
   .data-ai-report-toolbar,
   .data-ai-report-pack .regen-btn,

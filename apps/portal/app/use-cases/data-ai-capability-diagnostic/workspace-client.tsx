@@ -483,6 +483,15 @@ export function DataAiDiagnosticWorkspace() {
   const [reportStatus, setReportStatus] = useState<"idle" | "loading" | "ready" | "missing_key" | "error">("idle");
   const [reportMessage, setReportMessage] = useState("");
   const [reportStageIndex, setReportStageIndex] = useState(0);
+  const [reportFailureLog, setReportFailureLog] = useState<{
+    timestamp: string;
+    stage: string;
+    status: string;
+    message: string;
+    model: string;
+    endpoint: string;
+    details: string[];
+  } | null>(null);
   const [handoffMessage, setHandoffMessage] = useState("");
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
@@ -549,6 +558,7 @@ export function DataAiDiagnosticWorkspace() {
     setReportStatus("idle");
     setReportMessage("");
     setReportStageIndex(0);
+    setReportFailureLog(null);
     clearLatestDiagnosticStrategyHandoff();
     setHandoffMessage("Strategy handoff cleared locally.");
   };
@@ -664,8 +674,27 @@ export function DataAiDiagnosticWorkspace() {
     setReportStatus("loading");
     setReportMessage("");
     setReportStageIndex(0);
+    setReportFailureLog(null);
     setHandoffMessage("");
     let generationTimer: ReturnType<typeof setTimeout> | null = null;
+    const startedAt = Date.now();
+    const captureFailure = (status: string, message: string, details: string[] = [], stageIndex = reportStageIndex) => {
+      setReportFailureLog({
+        timestamp: new Date().toISOString(),
+        stage: reportGenerationStages[Math.min(stageIndex, reportGenerationStages.length - 1)] ?? "Unknown stage",
+        status,
+        message,
+        model: "llama3.1:8b via ai.opendatalake.com",
+        endpoint: "/api/data-ai-diagnostic/report",
+        details: [
+          `Elapsed: ${Math.round((Date.now() - startedAt) / 1000)}s`,
+          `Questions scored: ${scoredQuestions}/${totalQuestions}`,
+          `Evidence-backed items: ${evidenceBackedItems}/${totalQuestions}`,
+          `Top gap domains: ${topGapDomains.map((domain) => domain.nameEn).join(", ") || "none"}`,
+          ...details,
+        ],
+      });
+    };
     try {
       setReportStageIndex(1);
       generationTimer = setTimeout(() => {
@@ -716,12 +745,22 @@ export function DataAiDiagnosticWorkspace() {
         result = (await response.json()) as DiagnosticReportApiResponse;
       } catch {
         setReportStatus("error");
-        setReportMessage(`AI report generation returned a non-JSON response (${response.status}).`);
+        const message = `AI report generation returned a non-JSON response (${response.status}).`;
+        setReportMessage(message);
+        captureFailure(String(response.status), message, [
+          "The portal API response could not be parsed as JSON.",
+          "Check portal logs for the upstream gateway response body.",
+        ], 3);
         return;
       }
       if (!response.ok || result.status !== "ready") {
         setReportStatus(result.status === "missing_key" ? "missing_key" : "error");
-        setReportMessage(result.message ?? `AI report generation failed (${response.status}).`);
+        const message = result.message ?? `AI report generation failed (${response.status}).`;
+        setReportMessage(message);
+        captureFailure(String(response.status), message, [
+          `API status: ${result.status ?? "unknown"}`,
+          "If this is a timeout, reduce the prompt size or generate the report section by section.",
+        ], 3);
         return;
       }
       setReportStageIndex(4);
@@ -773,7 +812,12 @@ export function DataAiDiagnosticWorkspace() {
         clearTimeout(generationTimer);
       }
       setReportStatus("error");
-      setReportMessage(error instanceof Error ? error.message : "Unable to reach the report generation API.");
+      const message = error instanceof Error ? error.message : "Unable to reach the report generation API.";
+      setReportMessage(message);
+      captureFailure("client_exception", message, [
+        "The browser could not complete the request to the portal report API.",
+        "Check browser network details and portal logs.",
+      ], reportStageIndex);
     }
   };
 
@@ -1332,6 +1376,44 @@ export function DataAiDiagnosticWorkspace() {
               <span>{handoffMessage}</span>
               <Link href="/use-cases/data-strategy-builder">Open Data Strategy Builder</Link>
             </div>
+          ) : null}
+          {reportFailureLog ? (
+            <section className="data-ai-failure-log" aria-label="Local AI failure log">
+              <div>
+                <p className="eyebrow">Failure diagnostics</p>
+                <h3>Local AI report generation log</h3>
+              </div>
+              <dl>
+                <div>
+                  <dt>Timestamp</dt>
+                  <dd>{reportFailureLog.timestamp}</dd>
+                </div>
+                <div>
+                  <dt>Stage</dt>
+                  <dd>{reportFailureLog.stage}</dd>
+                </div>
+                <div>
+                  <dt>Status</dt>
+                  <dd>{reportFailureLog.status}</dd>
+                </div>
+                <div>
+                  <dt>Model path</dt>
+                  <dd>{reportFailureLog.model}</dd>
+                </div>
+                <div>
+                  <dt>Endpoint</dt>
+                  <dd>{reportFailureLog.endpoint}</dd>
+                </div>
+              </dl>
+              <div>
+                <strong>Error message</strong>
+                <p>{reportFailureLog.message}</p>
+              </div>
+              <details>
+                <summary>Diagnostic details</summary>
+                <pre>{JSON.stringify(reportFailureLog, null, 2)}</pre>
+              </details>
+            </section>
           ) : null}
 
           <article className="data-ai-report-page data-ai-report-cover" id="data-ai-report-cover">
