@@ -69,6 +69,12 @@ fi
 echo "Applying local AI module"
 echo "Local AI model: $LOCAL_AI_MODEL"
 echo "Local AI chat API: $LOCAL_AI_CHAT_API_URL"
+if "${KUBECTL[@]}" get deployment/local-ai-gateway >/dev/null 2>&1; then
+  "${KUBECTL[@]}" set env deployment/local-ai-gateway \
+    LOCAL_AI_MODEL- \
+    LOCAL_AI_CHAT_API_URL- \
+    LOCAL_AI_HEALTH_URL- >/dev/null || true
+fi
 sudo env \
   KUBECONFIG="$KUBECONFIG_PATH" \
   NAMESPACE="$NAMESPACE" \
