@@ -161,7 +161,7 @@ export const useCases: UseCaseModule[] = [
     defaultHref: "/use-cases/data-strategy-builder",
     ctaLabel: "Open Strategy Builder",
     kpis: [
-      { label: "Strategy Agents", value: "8", note: "Diagnostic, outcomes, sources, governance, architecture, use cases, roadmap, narrative" },
+      { label: "Strategy Agents", value: "9", note: "Survey quality control plus eight configurable strategy agents" },
       { label: "Primary Input", value: "Module 01", note: "Maturity baseline, evidence gaps, Gartner lens, and AI readiness gate" },
       { label: "Primary Output", value: "Strategy", note: "Data initiatives, source priorities, use-case portfolio, and roadmap" },
     ],

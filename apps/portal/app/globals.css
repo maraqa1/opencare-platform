@@ -14829,11 +14829,14 @@ code {
 }
 
 .data-strategy-nav nav a,
-.data-strategy-actions a {
+.data-strategy-actions a,
+.data-strategy-actions button {
   border: 1px solid rgba(16, 24, 39, 0.1);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
   color: #111827;
+  cursor: pointer;
+  font: inherit;
   font-weight: 800;
   text-decoration: none;
   transition:
@@ -14848,7 +14851,8 @@ code {
 }
 
 .data-strategy-nav nav a:hover,
-.data-strategy-actions a:hover {
+.data-strategy-actions a:hover,
+.data-strategy-actions button:hover {
   border-color: rgba(207, 183, 118, 0.72);
   transform: translateY(-1px);
 }
@@ -14905,13 +14909,32 @@ code {
   margin-top: 1.5rem;
 }
 
-.data-strategy-actions a {
+.data-strategy-actions a,
+.data-strategy-actions button {
   padding: 0.85rem 1.1rem;
 }
 
-.data-strategy-actions a:first-child {
+.data-strategy-actions a:first-child,
+.data-strategy-actions button:first-child {
   background: #111827;
   color: #fff;
+}
+
+.data-strategy-actions.compact {
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.data-strategy-actions.compact span,
+.data-strategy-notice,
+.data-strategy-runtime-note {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.data-strategy-notice {
+  margin: 1rem 0 0;
 }
 
 .data-strategy-hero aside {
@@ -15002,6 +15025,307 @@ code {
 .data-strategy-handoff-panel.ready span {
   background: rgba(220, 252, 231, 0.12);
   color: #c8f3dc;
+}
+
+.data-strategy-context-meter,
+.data-strategy-source-label,
+.data-strategy-proceed {
+  border-radius: 999px;
+  background: #eef6f2;
+  color: #225e54;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0.45rem 0.7rem;
+}
+
+.data-strategy-proceed.do-not-proceed {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.data-strategy-proceed.proceed-with-assumptions {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.data-strategy-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.data-strategy-context-grid label,
+.data-strategy-settings-body label {
+  display: grid;
+  gap: 0.45rem;
+  color: #111a44;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.data-strategy-context-grid textarea,
+.data-strategy-settings-body textarea,
+.data-strategy-settings-body input,
+.data-strategy-settings-body select {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 0.8rem;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  padding: 0.8rem 0.9rem;
+}
+
+.data-strategy-context-grid textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.data-strategy-agent-sequence {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.data-strategy-agent-sequence article,
+.data-strategy-four-col article,
+.data-strategy-handoff-grid article {
+  border: 1px solid rgba(16, 24, 39, 0.09);
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1rem;
+}
+
+.data-strategy-agent-sequence article.quality {
+  border-color: rgba(207, 183, 118, 0.52);
+  background: #fffaf0;
+}
+
+.data-strategy-agent-sequence article > span,
+.data-strategy-output-grid.expanded article > span {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #eef6f2;
+  color: #225e54;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.35rem 0.55rem;
+}
+
+.data-strategy-agent-sequence h3,
+.data-strategy-four-col h3,
+.data-strategy-handoff-grid h3 {
+  margin: 0.7rem 0 0.45rem;
+  color: #111a44;
+}
+
+.data-strategy-agent-sequence dl {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.9rem 0 0;
+}
+
+.data-strategy-agent-sequence dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 0.45rem;
+}
+
+.data-strategy-agent-sequence dt {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.data-strategy-agent-sequence dd {
+  margin: 0;
+  color: #111827;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-align: right;
+}
+
+.data-strategy-four-col,
+.data-strategy-handoff-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.data-strategy-four-col ul,
+.data-strategy-settings-columns ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.data-strategy-output-grid.expanded {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-strategy-output-grid.expanded article {
+  min-height: 13rem;
+}
+
+.data-strategy-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+}
+
+.data-strategy-label-row em {
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 850;
+  padding: 0.35rem 0.55rem;
+}
+
+.data-strategy-handoff-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.data-strategy-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.52);
+  padding: 1rem;
+}
+
+.data-strategy-modal-panel {
+  width: min(1100px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 1.25rem;
+  background: #f8fafc;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.32);
+}
+
+.data-strategy-modal-panel > header,
+.data-strategy-modal-panel > footer {
+  position: sticky;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(248, 250, 252, 0.96);
+  padding: 1rem;
+}
+
+.data-strategy-modal-panel > header {
+  top: 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.data-strategy-modal-panel > footer {
+  bottom: 0;
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.data-strategy-modal-panel button,
+.data-strategy-settings-body button {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+  padding: 0.65rem 0.9rem;
+}
+
+.data-strategy-settings-list {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.data-strategy-settings-list article {
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.data-strategy-settings-list article > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  padding: 1rem;
+  text-align: left;
+}
+
+.data-strategy-settings-list article > button em {
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.74rem;
+  font-style: normal;
+  padding: 0.35rem 0.55rem;
+}
+
+.data-strategy-settings-body {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1rem;
+}
+
+.data-strategy-settings-body .full {
+  grid-column: 1 / -1;
+}
+
+.data-strategy-settings-body label:has(input[type="checkbox"]) {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.data-strategy-focus-editor > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.6rem 0;
+}
+
+.data-strategy-focus-editor span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  background: #eef6f2;
+  color: #225e54;
+  font-size: 0.78rem;
+  font-weight: 850;
+  padding: 0.35rem 0.4rem 0.35rem 0.65rem;
+}
+
+.data-strategy-focus-editor span button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0 0.25rem;
+}
+
+.data-strategy-settings-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 .data-strategy-flow {
@@ -15236,7 +15560,12 @@ code {
 
   .data-strategy-agent-grid,
   .data-strategy-output-grid,
-  .data-strategy-card-list {
+  .data-strategy-card-list,
+  .data-strategy-agent-sequence,
+  .data-strategy-four-col,
+  .data-strategy-handoff-grid,
+  .data-strategy-output-grid.expanded,
+  .data-strategy-settings-body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -15253,7 +15582,14 @@ code {
 
   .data-strategy-agent-grid,
   .data-strategy-output-grid,
-  .data-strategy-card-list {
+  .data-strategy-card-list,
+  .data-strategy-agent-sequence,
+  .data-strategy-four-col,
+  .data-strategy-handoff-grid,
+  .data-strategy-output-grid.expanded,
+  .data-strategy-context-grid,
+  .data-strategy-settings-body,
+  .data-strategy-settings-columns {
     grid-template-columns: 1fr;
   }
 

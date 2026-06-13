@@ -48,9 +48,9 @@ const stages = [
     number: "2",
     state: "next",
     status: "Next",
-    label: "Step 2 - Strategise",
-    title: "Data strategy",
-    question: "Where are we going, and in what order of priority?",
+    label: "STEP 2 — STRATEGISE",
+    title: "Data Strategy Builder",
+    question: "Where are we going, what matters most, and in what order?",
     what:
       "Defines the target state, strategic pillars, domain maturity targets, three-horizon roadmap, data principles, and success metrics grounded in the Step 1 diagnostic.",
     why:

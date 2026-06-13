@@ -137,6 +137,6 @@ const strategyPageSource = readFileSync(
   "utf8",
 );
 assert(!strategyPageSource.toLowerCase().includes("pdf"));
-assert(strategyPageSource.includes("DiagnosticHandoffPanel"));
+assert(strategyPageSource.includes("DataStrategyBuilderClient"));
 
 console.log("data-ai-diagnostic-handoff tests passed");
