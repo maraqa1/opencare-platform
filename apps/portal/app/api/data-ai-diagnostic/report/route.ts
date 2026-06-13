@@ -139,6 +139,129 @@ function normaliseReport(value: unknown) {
   };
 }
 
+function contextLabel(payload: DiagnosticReportRequest, key: keyof NonNullable<DiagnosticReportRequest["customerContext"]>, fallback: string) {
+  const value = payload.customerContext?.[key]?.trim();
+  return value || fallback;
+}
+
+function formatScore(value: number | null) {
+  return value === null ? "not scored" : value.toFixed(1);
+}
+
+function gapDomainNames(payload: DiagnosticReportRequest) {
+  return payload.topGapDomains
+    .slice(0, 4)
+    .map((domain) => domain.nameEn)
+    .filter(Boolean);
+}
+
+function buildDeterministicReport(payload: DiagnosticReportRequest, reason: string) {
+  const client = contextLabel(payload, "customerName", "the organisation");
+  const domain = contextLabel(payload, "businessDomain", "the stated business domain");
+  const scope = contextLabel(payload, "operatingScope", "the assessed operating scope");
+  const audience = contextLabel(payload, "targetAudience", "the executive audience");
+  const priorities = contextLabel(payload, "strategicPriorities", "the stated strategic priorities");
+  const painPoints = contextLabel(payload, "currentPainPoints", "the stated operating pain points");
+  const score = formatScore(payload.overallScore);
+  const evidencePct = payload.totalQuestions > 0
+    ? Math.round((payload.evidenceBackedItems / payload.totalQuestions) * 100)
+    : null;
+  const readinessPct = payload.overallScore === null ? null : Math.round((payload.overallScore / 4) * 100);
+  const gaps = gapDomainNames(payload);
+  const weakest = gaps.length > 0 ? gaps.join(", ") : "the lowest-scoring domains";
+  const gartnerActions = (payload.gartnerPillars ?? [])
+    .slice()
+    .sort((left, right) => (right.gap ?? -1) - (left.gap ?? -1))
+    .slice(0, 4)
+    .map((pillar) => `${pillar.name}: ${pillar.priority} priority - ${pillar.managementAction}`);
+  const priorityGapActions = payload.priorityGaps
+    .slice(0, 5)
+    .map((gap) => `${gap.domain}: ${gap.question} - ${gap.actionPlan || "assign an owner and remediation action"}`);
+
+  return {
+    executiveSummary:
+      `${client} is assessed at ${score} / 4 maturity across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions for ${domain}. The evidence posture is ${evidencePct === null ? "not calculated" : `${evidencePct}% evidence-backed`}, with material gaps concentrated in ${weakest}. The immediate executive implication is to treat the baseline as decision-useful but provisional where evidence is incomplete, then move quickly from assessment to owned remediation.`,
+    headlineAssessment:
+      `The diagnostic indicates an early-stage capability profile for ${scope}. Current priorities are ${priorities}, but the operating pain points - ${painPoints} - show that governance, ownership, evidence quality, and roadmap discipline need to be strengthened before advanced AI use cases are scaled.`,
+    readinessThesis:
+      `Proceed with governed descriptive diagnostics, dashboard rationalisation, and human-approved AI reporting. Pilot predictive or generative use cases only where source quality, privacy, lineage, ownership, and model-risk controls are evidenced. Hold autonomous decisioning and sensitive AI workflows until the control environment is certified.`,
+    boardMessage:
+      `${audience} should approve the diagnostic baseline, assign accountable owners for the highest gaps, and gate AI use cases through evidence-backed readiness controls.`,
+    boardAsks: [
+      "Approve baseline: confirm the diagnostic as the working baseline for data and AI capability improvement.",
+      "Assign owners: nominate accountable owners for the priority domains and unresolved evidence gaps.",
+      "Gate use cases: require every AI candidate to show data quality, privacy, lineage, and owner sign-off before pilot approval.",
+    ],
+    gartnerPillarAssessment: gartnerActions.length > 0 ? gartnerActions : [
+      "Strategy and value: confirm the data ambition and business outcomes before prioritising initiatives.",
+      "Governance and operating model: assign decision rights, data owners, and issue escalation routes.",
+      "Data management foundations: certify definitions, lineage, quality controls, and evidence before AI scaling.",
+    ],
+    materialFindings: [
+      `Overall maturity is ${score} / 4, indicating that the organisation is not yet operating at a controlled, repeatable data capability level.`,
+      `Evidence coverage is ${evidencePct === null ? "not available" : `${evidencePct}%`}; unevidenced responses should be validated before board approval.`,
+      `Priority gaps are concentrated in ${weakest}, which should drive the first remediation backlog.`,
+      `The current readiness score is ${readinessPct === null ? "not available" : `${readinessPct}%`}, so AI adoption should be gated rather than broad-based.`,
+    ],
+    domainActionPlan: payload.topGapDomains.slice(0, 5).map((gap) =>
+      `${gap.nameEn}: score ${formatScore(gap.avgScore)} / 4 - assign owner, confirm evidence, define target state, and add remediation milestones.`,
+    ),
+    priorityGapRegister: priorityGapActions,
+    recommendedDecisions: [
+      "Confirm the diagnostic baseline and evidence exceptions in the next steering session.",
+      "Approve a 90-day remediation backlog focused on ownership, data quality, metadata, lineage, and roadmap controls.",
+      "Nominate a data governance sponsor and working group to certify definitions, sources, and reports.",
+      "Gate AI pilots until each candidate has an owner, approved data source, privacy review, and measurable success criteria.",
+    ],
+    ninetyDayPlan: [
+      "Days 0-30: mobilise governance, validate evidence, confirm owners, and lock the priority gap register.",
+      "Days 31-60: close critical data quality, metadata, lineage, and reporting control gaps.",
+      "Days 61-90: certify AI-ready use cases, approve the roadmap, and prepare the DMO operating model inputs.",
+    ],
+    roadmapPhases: [
+      "Mobilise and validate: turn the diagnostic into an approved baseline and owner map.",
+      "Remediate and certify: close critical evidence, quality, and governance gaps.",
+      "Scale with controls: sequence initiatives and AI use cases through readiness gates.",
+    ],
+    aiReadinessGate:
+      "AI should be handled through a controlled gate. Descriptive reporting and AI-assisted report drafting may proceed with human approval; forecasting, classification, and summarisation require confirmed controls; autonomous decisions and sensitive generative workflows should be held.",
+    aiGateProceed: [
+      "Management dashboards and evidence-backed diagnostic reporting with accountable owners.",
+      "AI-assisted report drafting where outputs are reviewed and approved by humans.",
+    ],
+    aiGatePilotWithControls: [
+      "Forecasting and classification where data quality, privacy, and lineage are confirmed.",
+      "Summarisation of approved evidence packs with audit trail and owner sign-off.",
+    ],
+    aiGateHold: [
+      "Autonomous decisions affecting services, finance, compliance, or people.",
+      "Sensitive generative AI workflows without source controls, audit trail, or accountable approval.",
+    ],
+    risks: [
+      "Evidence risk: provisional scores may be challenged unless supporting evidence is captured and certified.",
+      "Ownership risk: gaps will persist if data owners and remediation owners are not formally assigned.",
+      "AI risk: premature use-case scaling could create unreliable outputs if quality and privacy controls are weak.",
+      "Delivery risk: roadmap benefits may not materialise without sequencing, funding, and governance cadence.",
+    ],
+    nextSteps: [
+      "Review and approve the diagnostic baseline with the steering group.",
+      "Convert the top gaps into a prioritised 90-day action backlog.",
+      "Use the diagnostic handoff as the evidence input for the Data Strategy Builder module.",
+    ],
+    fallbackReason: reason,
+  };
+}
+
+function deterministicReportResponse(payload: DiagnosticReportRequest, model: string, reason: string) {
+  return NextResponse.json({
+    status: "ready",
+    report: normaliseReport(buildDeterministicReport(payload, reason)),
+    model: `${model} timeout - deterministic advisory fallback`,
+    fallback: true,
+    message: reason,
+  });
+}
+
 function localAiErrorMessage(body: LocalAiChatResponse, status: number) {
   return (
     body.error?.message ||
@@ -150,22 +273,6 @@ function localAiErrorMessage(body: LocalAiChatResponse, status: number) {
 
 function isAbortError(error: unknown) {
   return error instanceof LocalAiTimeoutError || (error instanceof DOMException && error.name === "AbortError");
-}
-
-function localAiTimeoutResponse(model: string, gateway: string, gatewayTimeoutMs: number) {
-  return NextResponse.json(
-    {
-      status: "local_ai_timeout",
-      message: `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds.`,
-      details: [
-        "The portal reached the local AI gateway, but the model did not complete the report response within the configured timeout.",
-        "Try again after the model is warm, reduce report prompt size, or generate the report in smaller sections.",
-      ],
-      model,
-      gateway,
-    },
-    { status: 504 },
-  );
 }
 
 export async function POST(request: Request) {
@@ -287,7 +394,11 @@ export async function POST(request: Request) {
   } catch (error) {
     clearGatewayTimeout();
     if (isAbortError(error)) {
-      return localAiTimeoutResponse(model, gatewayBaseUrl, gatewayTimeoutMs);
+      return deterministicReportResponse(
+        reportDiagnostic,
+        model,
+        `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds. A deterministic advisory fallback was generated from the captured diagnostic evidence.`,
+      );
     }
     return NextResponse.json(
       {
@@ -308,7 +419,11 @@ export async function POST(request: Request) {
   } catch (error) {
     clearGatewayTimeout();
     if (isAbortError(error)) {
-      return localAiTimeoutResponse(model, gatewayBaseUrl, gatewayTimeoutMs);
+      return deterministicReportResponse(
+        reportDiagnostic,
+        model,
+        `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds while reading the model response. A deterministic advisory fallback was generated from the captured diagnostic evidence.`,
+      );
     }
     return NextResponse.json(
       {

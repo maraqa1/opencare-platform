@@ -66,6 +66,7 @@ type DiagnosticReportApiResponse = {
   model?: string;
   gateway?: string;
   details?: string[];
+  fallback?: boolean;
 };
 
 type DomainSummary = {
@@ -810,7 +811,9 @@ export function DataAiDiagnosticWorkspace() {
       setGeneratedReport(normalisedReport);
       setReportStageIndex(5);
       setReportStatus("ready");
-      setReportMessage(`Generated with local model ${result.model ?? "configured runtime"}. Strategy handoff saved locally.`);
+      setReportMessage(result.fallback
+        ? `${result.message ?? "Local AI timed out; generated deterministic advisory fallback."} Strategy handoff saved locally.`
+        : `Generated with local model ${result.model ?? "configured runtime"}. Strategy handoff saved locally.`);
       setHandoffMessage("Diagnostic completed — available to Data Strategy Builder");
     } catch (error) {
       if (generationTimer) {
