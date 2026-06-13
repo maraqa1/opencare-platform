@@ -482,6 +482,7 @@ export function DataAiDiagnosticWorkspace() {
   const [generatedReport, setGeneratedReport] = useState<GeneratedConsultingReport | null>(null);
   const [reportStatus, setReportStatus] = useState<"idle" | "loading" | "ready" | "missing_key" | "error">("idle");
   const [reportMessage, setReportMessage] = useState("");
+  const [reportStageIndex, setReportStageIndex] = useState(0);
   const [handoffMessage, setHandoffMessage] = useState("");
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
@@ -547,6 +548,7 @@ export function DataAiDiagnosticWorkspace() {
     setGeneratedReport(null);
     setReportStatus("idle");
     setReportMessage("");
+    setReportStageIndex(0);
     clearLatestDiagnosticStrategyHandoff();
     setHandoffMessage("Strategy handoff cleared locally.");
   };
@@ -649,12 +651,26 @@ export function DataAiDiagnosticWorkspace() {
     "AI risk, privacy, and model governance",
     "Use-case prioritisation and benefits tracking",
   ];
+  const reportGenerationStages = [
+    "Preparing diagnostic payload",
+    "Sending request to local AI gateway",
+    "Generating consulting narrative with local model",
+    "Parsing advisory sections",
+    "Saving Module 02 strategy handoff",
+    "Report ready",
+  ];
 
   const generateConsultingReport = async () => {
     setReportStatus("loading");
     setReportMessage("");
+    setReportStageIndex(0);
     setHandoffMessage("");
+    let generationTimer: ReturnType<typeof setTimeout> | null = null;
     try {
+      setReportStageIndex(1);
+      generationTimer = setTimeout(() => {
+        setReportStageIndex(2);
+      }, 1200);
       const response = await fetch("/api/data-ai-diagnostic/report", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -691,6 +707,10 @@ export function DataAiDiagnosticWorkspace() {
           })),
         }),
       });
+      if (generationTimer) {
+        clearTimeout(generationTimer);
+      }
+      setReportStageIndex(3);
       let result: DiagnosticReportApiResponse;
       try {
         result = (await response.json()) as DiagnosticReportApiResponse;
@@ -704,6 +724,7 @@ export function DataAiDiagnosticWorkspace() {
         setReportMessage(result.message ?? `AI report generation failed (${response.status}).`);
         return;
       }
+      setReportStageIndex(4);
       const normalisedReport = normaliseGeneratedReport(result.report);
       const handoff = buildDiagnosticStrategyHandoff({
         customerContext,
@@ -743,10 +764,14 @@ export function DataAiDiagnosticWorkspace() {
       });
       saveLatestDiagnosticStrategyHandoff(handoff);
       setGeneratedReport(normalisedReport);
+      setReportStageIndex(5);
       setReportStatus("ready");
       setReportMessage(`Generated with local model ${result.model ?? "configured runtime"}. Strategy handoff saved locally.`);
       setHandoffMessage("Diagnostic completed — available to Data Strategy Builder");
     } catch (error) {
+      if (generationTimer) {
+        clearTimeout(generationTimer);
+      }
       setReportStatus("error");
       setReportMessage(error instanceof Error ? error.message : "Unable to reach the report generation API.");
     }
@@ -1266,6 +1291,37 @@ export function DataAiDiagnosticWorkspace() {
               <a href={`#data-ai-report-${id}`} key={id}>{label}</a>
             ))}
           </nav>
+          {reportStatus === "loading" || reportStatus === "ready" || reportStatus === "error" || reportStatus === "missing_key" ? (
+            <div className={`data-ai-generation-progress ${reportStatus}`} aria-live="polite">
+              <div className="data-ai-generation-progress-top">
+                <span>Local AI generation pipeline</span>
+                <strong>{reportGenerationStages[Math.min(reportStageIndex, reportGenerationStages.length - 1)]}</strong>
+              </div>
+              <div className="data-ai-generation-bar" aria-hidden="true">
+                <span style={{ width: `${((Math.min(reportStageIndex, reportGenerationStages.length - 1) + 1) / reportGenerationStages.length) * 100}%` }} />
+              </div>
+              <ol>
+                {reportGenerationStages.map((stage, index) => {
+                  const isComplete = reportStatus === "ready" || index < reportStageIndex;
+                  const isCurrent = reportStatus === "loading" && index === reportStageIndex;
+                  const isFailed = (reportStatus === "error" || reportStatus === "missing_key") && index === reportStageIndex;
+                  return (
+                    <li
+                      className={[
+                        isComplete ? "complete" : "",
+                        isCurrent ? "current" : "",
+                        isFailed ? "failed" : "",
+                      ].filter(Boolean).join(" ")}
+                      key={stage}
+                    >
+                      <span>{index + 1}</span>
+                      <p>{stage}</p>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ) : null}
           {reportMessage ? (
             <div className={`data-ai-report-status ${reportStatus}`}>
               {reportMessage}
