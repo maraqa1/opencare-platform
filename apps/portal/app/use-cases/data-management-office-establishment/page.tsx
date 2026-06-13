@@ -57,7 +57,7 @@ const stages = [
       "The DMO cannot be designed until the organisation knows what it needs to govern, which domains matter first, and which use cases justify investment.",
     output: "Data strategy, value themes, domain targets, three-horizon roadmap, success KPIs",
     feeds: "Feeds Step 3 DMO design, Step 4 charter scope, and Step 5 control priorities.",
-    href: "#deliverables",
+    href: "/use-cases/data-strategy-builder",
   },
   {
     number: "3",
@@ -367,7 +367,11 @@ export default function DataManagementOfficeEstablishmentPage() {
                   </p>
                   <p className="dmo-wide-feeds">{stage.feeds}</p>
                   <a href={stage.href}>
-                    {stage.number === "1" ? "Open live diagnostic module" : "Review stage dependency"}
+                    {stage.number === "1"
+                      ? "Open live diagnostic module"
+                      : stage.number === "2"
+                        ? "Open data strategy module"
+                        : "Review stage dependency"}
                   </a>
                 </div>
               </details>

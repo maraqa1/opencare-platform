@@ -122,7 +122,8 @@ export function NavigationShell({ pathname, navigation, children }: Props) {
   const topbar = getTopbarContext(pathname);
   const isFullBleedUseCase =
     pathname === "/use-cases/data-management-office-establishment" ||
-    pathname === "/use-cases/data-ai-capability-diagnostic";
+    pathname === "/use-cases/data-ai-capability-diagnostic" ||
+    pathname === "/use-cases/data-strategy-builder";
 
   if (isFullBleedUseCase) {
     return <>{children}</>;

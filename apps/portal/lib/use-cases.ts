@@ -149,6 +149,31 @@ export const useCases: UseCaseModule[] = [
     },
   },
   {
+    id: "data_strategy_builder",
+    slug: "data-strategy-builder",
+    icon: "STR",
+    name: "Data Strategy Builder",
+    description:
+      "Module 02 of the DMO Establishment pathway: convert the diagnostic baseline into a data strategy, initiatives, use-case portfolio, source priorities, and roadmap.",
+    status: "active",
+    summary:
+      "Eight-agent strategy workspace using Module 01 outputs plus customer strategy inputs to produce clear data strategy decisions.",
+    defaultHref: "/use-cases/data-strategy-builder",
+    ctaLabel: "Open Strategy Builder",
+    kpis: [
+      { label: "Strategy Agents", value: "8", note: "Diagnostic, outcomes, sources, governance, architecture, use cases, roadmap, narrative" },
+      { label: "Primary Input", value: "Module 01", note: "Maturity baseline, evidence gaps, Gartner lens, and AI readiness gate" },
+      { label: "Primary Output", value: "Strategy", note: "Data initiatives, source priorities, use-case portfolio, and roadmap" },
+    ],
+    shell: {
+      label: "Yottalogica Advisory",
+      title: "Data Strategy Builder",
+      badge: "Module 02",
+      actionHref: "/use-cases/data-strategy-builder",
+      actionLabel: "Strategy",
+    },
+  },
+  {
     id: "data_management_office_establishment",
     slug: "data-management-office-establishment",
     icon: "DMO",
