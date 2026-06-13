@@ -25,6 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Preflight VM SSH configuration
         id: preflight
         shell: bash
@@ -61,6 +64,16 @@ jobs:
         run: |
           set -euo pipefail
 
+          deploy_portal=true
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" || true)"
+            if ! grep -Eq '^(apps/portal/|manifests/portal/|config/use_cases\.yaml|scripts/jazan/deploy_portal_vm\.sh)$' <<<"${changed_files}"; then
+              deploy_portal=false
+            fi
+          fi
+
+          echo "Deploy portal: ${deploy_portal}"
+
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "${JAZAN_VM_SSH_KEY}" > ~/.ssh/jazan_demo_deploy_key
@@ -70,4 +83,4 @@ jobs:
             -o ServerAliveCountMax=120 \
             -i ~/.ssh/jazan_demo_deploy_key \
             "${JAZAN_VM_USER}@${JAZAN_VM_HOST}" \
-            "cd '${JAZAN_VM_REPO_PATH}' && git fetch origin codex/jazan-demo && git checkout codex/jazan-demo && git pull --ff-only origin codex/jazan-demo && bash scripts/jazan/deploy_portal_vm.sh && bash scripts/jazan/deploy_local_ai_vm.sh"
+            "cd '${JAZAN_VM_REPO_PATH}' && git fetch origin codex/jazan-demo && git checkout codex/jazan-demo && git pull --ff-only origin codex/jazan-demo && if [[ '${deploy_portal}' == 'true' ]]; then bash scripts/jazan/deploy_portal_vm.sh; else echo 'Skipping portal rebuild for AI-only change'; fi && bash scripts/jazan/deploy_local_ai_vm.sh"
