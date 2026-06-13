@@ -70,8 +70,16 @@ type DiagnosticReportApiResponse = {
   repaired?: boolean;
   sectionFallbacks?: string[];
   repairedSections?: string[];
+  fieldFallbacks?: string[];
+  enrichedFields?: string[];
   generationMetadata?: {
     mode?: string;
+    fields?: Record<string, {
+      status?: string;
+      model?: string;
+      durationMs?: number;
+      rejectionReason?: string;
+    }>;
     sections?: Record<string, {
       source?: string;
       attempts?: number;
@@ -826,9 +834,15 @@ export function DataAiDiagnosticWorkspace() {
       setReportStatus("ready");
       const fallbackSections = result.sectionFallbacks ?? [];
       const repairedSections = result.repairedSections ?? [];
+      const fallbackFields = result.fieldFallbacks ?? [];
+      const enrichedFields = result.enrichedFields ?? [];
       setReportMessage(result.fallback
-        ? `${result.message ?? "Local AI did not return valid structured sections; generated deterministic advisory fallback."} Strategy handoff saved locally.`
-        : fallbackSections.length > 0
+        ? `${result.message ?? "Report JSON was built deterministically without local model enrichment."} Strategy handoff saved locally.`
+        : fallbackFields.length > 0
+          ? `Report JSON was built deterministically. ${fallbackFields.length} optional narrative field${fallbackFields.length === 1 ? "" : "s"} used fallback: ${fallbackFields.join(", ")}. Strategy handoff saved locally.`
+          : enrichedFields.length > 0
+            ? `Report JSON was built deterministically and ${enrichedFields.length} narrative field${enrichedFields.length === 1 ? "" : "s"} were safely enriched by ${result.model ?? "configured local model"}. Strategy handoff saved locally.`
+            : fallbackSections.length > 0
           ? `Generated with local model ${result.model ?? "configured runtime"} using section-by-section validation. ${fallbackSections.length} section${fallbackSections.length === 1 ? "" : "s"} used deterministic fallback: ${fallbackSections.join(", ")}. Strategy handoff saved locally.`
           : repairedSections.length > 0
             ? `Generated with local model ${result.model ?? "configured runtime"} using section-by-section validation. ${repairedSections.length} section${repairedSections.length === 1 ? "" : "s"} required JSON repair. Strategy handoff saved locally.`
