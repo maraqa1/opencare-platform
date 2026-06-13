@@ -289,7 +289,10 @@ export async function POST(request: Request) {
     );
   }
   const model = process.env.LOCAL_AI_MODEL ?? fallbackModel;
-  const gatewayBaseUrl = (process.env.AI_GATEWAY_BASE_URL ?? "http://local-ai-gateway:8080/v1").replace(/\/+$/, "");
+  const configuredGatewayBaseUrl = (process.env.AI_GATEWAY_BASE_URL ?? "http://local-ai-gateway:8080/v1").replace(/\/+$/, "");
+  const gatewayBaseUrl = configuredGatewayBaseUrl.endsWith("/v1")
+    ? configuredGatewayBaseUrl
+    : `${configuredGatewayBaseUrl}/v1`;
   const apiKey = process.env.LOCAL_AI_API_KEY ?? "";
   const configuredTimeoutMs = Number(process.env.LOCAL_AI_REPORT_TIMEOUT_MS ?? defaultGatewayTimeoutMs);
   const gatewayTimeoutMs = Number.isFinite(configuredTimeoutMs) && configuredTimeoutMs > 0
@@ -438,6 +441,12 @@ export async function POST(request: Request) {
       {
         status: "error",
         message: localAiErrorMessage(body, response.status),
+        details: [
+          `Gateway: ${gatewayBaseUrl}`,
+          `Chat completions URL: ${gatewayBaseUrl}/chat/completions`,
+          `Model: ${model}`,
+          `Gateway status: ${response.status}`,
+        ],
       },
       { status: response.status },
     );
