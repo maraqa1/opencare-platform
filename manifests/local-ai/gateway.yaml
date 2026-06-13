@@ -53,6 +53,18 @@ spec:
                   name: opencare-config
                   key: LOCAL_AI_KEEP_ALIVE
                   optional: true
+            - name: LOCAL_AI_CHAT_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: LOCAL_AI_CHAT_API_URL
+                  optional: true
+            - name: LOCAL_AI_HEALTH_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: LOCAL_AI_HEALTH_URL
+                  optional: true
           resources:
             requests:
               cpu: 50m

@@ -10,9 +10,11 @@ LOCAL_AI_MODEL="${LOCAL_AI_MODEL:-llama3.1:8b}"
 LOCAL_AI_KEEP_ALIVE="${LOCAL_AI_KEEP_ALIVE:-24h}"
 LOCAL_AI_WARM_MAX_SECONDS="${LOCAL_AI_WARM_MAX_SECONDS:-600}"
 OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://168.119.156.124:11434/v1}"
+LOCAL_AI_CHAT_API_URL="${LOCAL_AI_CHAT_API_URL:-}"
+LOCAL_AI_HEALTH_URL="${LOCAL_AI_HEALTH_URL:-}"
 AI_GATEWAY_INTERNAL_URL="${AI_GATEWAY_INTERNAL_URL:-http://local-ai-gateway:8080/v1}"
 AI_GATEWAY_PUBLIC_URL="${AI_GATEWAY_PUBLIC_URL:-https://${AI_HOST:-ai.opendatalake.com}/v1}"
-if [[ "$OLLAMA_BASE_URL" == "http://ollama:11434/v1" || "$OLLAMA_BASE_URL" == "http://ollama:11434" ]]; then
+if [[ -z "$LOCAL_AI_CHAT_API_URL" && ("$OLLAMA_BASE_URL" == "http://ollama:11434/v1" || "$OLLAMA_BASE_URL" == "http://ollama:11434") ]]; then
   SKIP_LOCAL_AI_MODEL_PULL="${SKIP_LOCAL_AI_MODEL_PULL:-false}"
   SKIP_LOCAL_AI_MODEL_WARM="${SKIP_LOCAL_AI_MODEL_WARM:-false}"
 else
@@ -29,7 +31,7 @@ kubectl -n "$NAMESPACE" rollout status deployment/ollama --timeout="${LOCAL_AI_O
 
 log "Configuring local AI runtime settings"
 kubectl -n "$NAMESPACE" patch configmap opencare-config --type merge \
-  -p "{\"data\":{\"ENABLE_LOCAL_AI\":\"true\",\"ENABLE_OPENAI\":\"false\",\"AI_PROVIDER\":\"local\",\"AI_PROVIDER_FALLBACK\":\"none\",\"LOCAL_AI_MODEL\":\"${LOCAL_AI_MODEL}\",\"LOCAL_AI_KEEP_ALIVE\":\"${LOCAL_AI_KEEP_ALIVE}\",\"LOCAL_AI_WARM_MAX_SECONDS\":\"${LOCAL_AI_WARM_MAX_SECONDS}\",\"OLLAMA_BASE_URL\":\"${OLLAMA_BASE_URL}\",\"AI_GATEWAY_BASE_URL\":\"${AI_GATEWAY_INTERNAL_URL}\",\"AI_GATEWAY_PUBLIC_URL\":\"${AI_GATEWAY_PUBLIC_URL}\",\"AI_HOST\":\"${AI_HOST:-ai.opendatalake.com}\"}}" >/dev/null
+  -p "{\"data\":{\"ENABLE_LOCAL_AI\":\"true\",\"ENABLE_OPENAI\":\"false\",\"AI_PROVIDER\":\"local\",\"AI_PROVIDER_FALLBACK\":\"none\",\"LOCAL_AI_MODEL\":\"${LOCAL_AI_MODEL}\",\"LOCAL_AI_KEEP_ALIVE\":\"${LOCAL_AI_KEEP_ALIVE}\",\"LOCAL_AI_WARM_MAX_SECONDS\":\"${LOCAL_AI_WARM_MAX_SECONDS}\",\"OLLAMA_BASE_URL\":\"${OLLAMA_BASE_URL}\",\"LOCAL_AI_CHAT_API_URL\":\"${LOCAL_AI_CHAT_API_URL}\",\"LOCAL_AI_HEALTH_URL\":\"${LOCAL_AI_HEALTH_URL}\",\"AI_GATEWAY_BASE_URL\":\"${AI_GATEWAY_INTERNAL_URL}\",\"AI_GATEWAY_PUBLIC_URL\":\"${AI_GATEWAY_PUBLIC_URL}\",\"AI_HOST\":\"${AI_HOST:-ai.opendatalake.com}\"}}" >/dev/null
 
 if [[ "$SKIP_LOCAL_AI_MODEL_PULL" != "true" ]]; then
   log "Pulling local AI model into Ollama: ${LOCAL_AI_MODEL}"

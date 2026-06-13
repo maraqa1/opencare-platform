@@ -12,6 +12,8 @@ OLLAMA_ROOT_URL = OLLAMA_BASE_URL.removesuffix("/v1").rstrip("/")
 LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3.1:8b")
 LOCAL_AI_API_KEY = os.getenv("LOCAL_AI_API_KEY", "")
 LOCAL_AI_KEEP_ALIVE = os.getenv("LOCAL_AI_KEEP_ALIVE", "24h")
+LOCAL_AI_CHAT_API_URL = os.getenv("LOCAL_AI_CHAT_API_URL", "").rstrip("/")
+LOCAL_AI_HEALTH_URL = os.getenv("LOCAL_AI_HEALTH_URL", "").rstrip("/")
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("LOCAL_AI_REQUEST_TIMEOUT_SECONDS", "180"))
 
 app = FastAPI(
@@ -35,6 +37,11 @@ async def post_ollama(path: str, payload: dict[str, Any]) -> httpx.Response:
         return await client.post(f"{OLLAMA_BASE_URL}{path}", json=payload)
 
 
+async def post_chat_app(payload: dict[str, Any]) -> httpx.Response:
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+        return await client.post(LOCAL_AI_CHAT_API_URL, json=payload)
+
+
 async def get_ollama(path: str) -> httpx.Response:
     async with httpx.AsyncClient(timeout=30) as client:
         return await client.get(f"{OLLAMA_BASE_URL}{path}")
@@ -42,6 +49,14 @@ async def get_ollama(path: str) -> httpx.Response:
 
 async def warm_model() -> httpx.Response:
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+        if LOCAL_AI_CHAT_API_URL:
+            return await client.post(
+                LOCAL_AI_CHAT_API_URL,
+                json={
+                    "model": LOCAL_AI_MODEL,
+                    "messages": [{"role": "user", "content": "warm"}],
+                },
+            )
         return await client.post(
             f"{OLLAMA_ROOT_URL}/api/generate",
             json={"model": LOCAL_AI_MODEL, "prompt": "warm", "stream": False, "keep_alive": LOCAL_AI_KEEP_ALIVE},
@@ -52,7 +67,7 @@ async def warm_model() -> httpx.Response:
 def root() -> dict[str, str]:
     return {
         "service": SERVICE_NAME,
-        "provider": "ollama",
+        "provider": "chat-api" if LOCAL_AI_CHAT_API_URL else "ollama",
         "model": LOCAL_AI_MODEL,
         "docs": "/docs",
     }
@@ -62,15 +77,16 @@ def root() -> dict[str, str]:
 async def health() -> JSONResponse:
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(f"{OLLAMA_ROOT_URL}/api/tags")
+            response = await client.get(LOCAL_AI_HEALTH_URL or f"{OLLAMA_ROOT_URL}/api/tags")
         return JSONResponse(
             {
                 "status": "ok" if response.is_success else "degraded",
                 "service": SERVICE_NAME,
-                "provider": "ollama",
+                "provider": "chat-api" if LOCAL_AI_CHAT_API_URL else "ollama",
                 "model": LOCAL_AI_MODEL,
                 "keep_alive": LOCAL_AI_KEEP_ALIVE,
-                "ollama_status": response.status_code,
+                "runtime_status": response.status_code,
+                "chat_api_url": LOCAL_AI_CHAT_API_URL or None,
             },
             status_code=200 if response.is_success else 503,
         )
@@ -79,7 +95,7 @@ async def health() -> JSONResponse:
             {
                 "status": "degraded",
                 "service": SERVICE_NAME,
-                "provider": "ollama",
+                "provider": "chat-api" if LOCAL_AI_CHAT_API_URL else "ollama",
                 "model": LOCAL_AI_MODEL,
                 "keep_alive": LOCAL_AI_KEEP_ALIVE,
                 "message": str(exc),
@@ -91,6 +107,19 @@ async def health() -> JSONResponse:
 @app.get("/v1/models")
 async def list_models(authorization: str | None = Header(default=None)) -> JSONResponse:
     require_api_key(authorization)
+    if LOCAL_AI_CHAT_API_URL:
+        return JSONResponse(
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "id": LOCAL_AI_MODEL,
+                        "object": "model",
+                        "owned_by": "local-chat-api",
+                    }
+                ],
+            }
+        )
     try:
         response = await get_ollama("/models")
     except httpx.HTTPError as exc:
@@ -111,10 +140,10 @@ async def warm(authorization: str | None = Header(default=None)) -> JSONResponse
         {
             "status": "ready" if response.is_success else "degraded",
             "service": SERVICE_NAME,
-            "provider": "ollama",
+            "provider": "chat-api" if LOCAL_AI_CHAT_API_URL else "ollama",
             "model": LOCAL_AI_MODEL,
             "keep_alive": LOCAL_AI_KEEP_ALIVE,
-            "ollama_status": response.status_code,
+            "runtime_status": response.status_code,
         },
         status_code=200 if response.is_success else 503,
     )
@@ -142,14 +171,39 @@ async def chat_completions(request: Request, authorization: str | None = Header(
     }
 
     try:
-        response = await post_ollama("/chat/completions", payload)
+        if LOCAL_AI_CHAT_API_URL:
+            response = await post_chat_app(
+                {
+                    "model": payload.get("model") or LOCAL_AI_MODEL,
+                    "messages": payload.get("messages") or [],
+                }
+            )
+        else:
+            response = await post_ollama("/chat/completions", payload)
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=503, detail=f"Local model runtime is unavailable: {exc}") from exc
 
-    try:
-        body = response.json()
-    except ValueError:
-        body = {"error": {"message": response.text or "Local model runtime returned a non-JSON response."}}
+    if LOCAL_AI_CHAT_API_URL:
+        body = {
+            "id": "local-chat-api",
+            "object": "chat.completion",
+            "model": payload.get("model") or LOCAL_AI_MODEL,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": response.text,
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+    else:
+        try:
+            body = response.json()
+        except ValueError:
+            body = {"error": {"message": response.text or "Local model runtime returned a non-JSON response."}}
 
     return JSONResponse(body, status_code=response.status_code)
 
