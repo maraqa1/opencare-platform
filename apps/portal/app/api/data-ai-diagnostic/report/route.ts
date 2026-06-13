@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 
+import {
+  generateReportSection,
+  type ReportSectionMetadata,
+  type ReportSectionResult,
+  type ReportSectionSchema,
+} from "@/lib/ai-report-section-generator";
+
 type DiagnosticReportRequest = {
   customerContext?: {
     customerName?: string;
@@ -50,28 +57,10 @@ type DiagnosticReportRequest = {
   }>;
 };
 
-type LocalAiChatResponse = {
-  choices?: Array<{
-    message?: {
-      content?: string;
-    };
-  }>;
-  error?: {
-    message?: string;
-  };
-  detail?: string;
-  message?: string;
-};
-
 const fallbackModel = "llama3.2:3b";
 const defaultGatewayTimeoutMs = 180000;
-
-class LocalAiTimeoutError extends Error {
-  constructor() {
-    super("Local AI gateway timed out.");
-    this.name = "LocalAiTimeoutError";
-  }
-}
+const defaultSectionTimeoutMs = 25000;
+const defaultSectionConcurrency = 2;
 
 function textValue(value: unknown) {
   if (typeof value === "string") {
@@ -150,24 +139,6 @@ function normaliseReport(value: unknown) {
   };
 }
 
-function isCompleteReport(report: ReturnType<typeof normaliseReport>) {
-  return Boolean(
-    report.executiveSummary &&
-    report.headlineAssessment &&
-    report.readinessThesis &&
-    report.boardMessage &&
-    report.boardAsks.length >= 3 &&
-    report.materialFindings.length >= 3 &&
-    report.domainActionPlan.length >= 3 &&
-    report.recommendedDecisions.length >= 3 &&
-    report.ninetyDayPlan.length >= 3 &&
-    report.aiGateProceed.length >= 2 &&
-    report.aiGatePilotWithControls.length >= 2 &&
-    report.aiGateHold.length >= 2 &&
-    report.nextSteps.length >= 3
-  );
-}
-
 function completeReport(value: unknown, payload: DiagnosticReportRequest, reason: string) {
   const deterministic = normaliseReport(buildDeterministicReport(payload, reason));
   const generated = normaliseReport(value);
@@ -197,22 +168,6 @@ function completeReport(value: unknown, payload: DiagnosticReportRequest, reason
     risks: pickList(generated.risks, deterministic.risks, 3),
     nextSteps: pickList(generated.nextSteps, deterministic.nextSteps, 3),
   };
-}
-
-function extractJsonPayload(content: string) {
-  const trimmed = content.trim();
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced?.[1]?.trim() ?? trimmed;
-  try {
-    return JSON.parse(candidate);
-  } catch {
-    const start = candidate.indexOf("{");
-    const end = candidate.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      return JSON.parse(candidate.slice(start, end + 1));
-    }
-    throw new SyntaxError("Model response did not contain valid report JSON.");
-  }
 }
 
 function contextLabel(payload: DiagnosticReportRequest, key: keyof NonNullable<DiagnosticReportRequest["customerContext"]>, fallback: string) {
@@ -328,27 +283,261 @@ function buildDeterministicReport(payload: DiagnosticReportRequest, reason: stri
   };
 }
 
-function deterministicReportResponse(payload: DiagnosticReportRequest, model: string, reason: string) {
-  return NextResponse.json({
-    status: "ready",
-    report: normaliseReport(buildDeterministicReport(payload, reason)),
-    model: `${model} - deterministic advisory fallback`,
-    fallback: true,
-    message: reason,
-  });
+type NormalisedReport = ReturnType<typeof normaliseReport>;
+
+type ReportSectionConfig = {
+  sectionName: string;
+  sectionSchema: ReportSectionSchema;
+  maxTokens: number;
+  fallback: (report: NormalisedReport) => Record<string, unknown>;
+  diagnosticData: (payload: DiagnosticReportRequest) => unknown;
+};
+
+type GenerationMetadata = {
+  model: string;
+  mode: "section_by_section";
+  sections: Record<string, ReportSectionMetadata>;
+};
+
+const reportSectionConfigs: ReportSectionConfig[] = [
+  {
+    sectionName: "executiveSummary",
+    maxTokens: 420,
+    sectionSchema: {
+      executiveSummary: "string",
+      headlineAssessment: "string",
+      readinessThesis: "string",
+      boardMessage: "string",
+    },
+    fallback: (report) => ({
+      executiveSummary: report.executiveSummary,
+      headlineAssessment: report.headlineAssessment,
+      readinessThesis: report.readinessThesis,
+      boardMessage: report.boardMessage,
+    }),
+    diagnosticData: (payload) => ({
+      overallScore: payload.overallScore,
+      overallGap: payload.overallGap,
+      scoredQuestions: payload.scoredQuestions,
+      totalQuestions: payload.totalQuestions,
+      evidenceBackedItems: payload.evidenceBackedItems,
+      topGapDomains: payload.topGapDomains.slice(0, 4),
+      strongestDomains: payload.strongestDomains.slice(0, 3),
+    }),
+  },
+  {
+    sectionName: "boardAsks",
+    maxTokens: 360,
+    sectionSchema: {
+      boardAsks: "string[]",
+      recommendedDecisions: "string[]",
+    },
+    fallback: (report) => ({
+      boardAsks: report.boardAsks,
+      recommendedDecisions: report.recommendedDecisions,
+    }),
+    diagnosticData: (payload) => ({
+      topGapDomains: payload.topGapDomains.slice(0, 5),
+      priorityGaps: payload.priorityGaps.slice(0, 5),
+      gartnerPillars: payload.gartnerPillars?.slice(0, 7) ?? [],
+    }),
+  },
+  {
+    sectionName: "aiReadinessGate",
+    maxTokens: 420,
+    sectionSchema: {
+      aiReadinessGate: "string",
+      aiGateProceed: "string[]",
+      aiGatePilotWithControls: "string[]",
+      aiGateHold: "string[]",
+    },
+    fallback: (report) => ({
+      aiReadinessGate: report.aiReadinessGate,
+      aiGateProceed: report.aiGateProceed,
+      aiGatePilotWithControls: report.aiGatePilotWithControls,
+      aiGateHold: report.aiGateHold,
+    }),
+    diagnosticData: (payload) => ({
+      overallScore: payload.overallScore,
+      evidenceBackedItems: payload.evidenceBackedItems,
+      totalQuestions: payload.totalQuestions,
+      priorityGaps: payload.priorityGaps.slice(0, 6),
+      topGapDomains: payload.topGapDomains.slice(0, 5),
+    }),
+  },
+  {
+    sectionName: "ndmoAlignment",
+    maxTokens: 340,
+    sectionSchema: {
+      gartnerPillarAssessment: "string[]",
+      materialFindings: "string[]",
+    },
+    fallback: (report) => ({
+      gartnerPillarAssessment: report.gartnerPillarAssessment,
+      materialFindings: report.materialFindings,
+    }),
+    diagnosticData: (payload) => ({
+      gartnerPillars: payload.gartnerPillars?.slice(0, 7) ?? [],
+      topGapDomains: payload.topGapDomains.slice(0, 5),
+    }),
+  },
+  {
+    sectionName: "capabilityDiagnosis",
+    maxTokens: 380,
+    sectionSchema: {
+      materialFindings: "string[]",
+      domainActionPlan: "string[]",
+    },
+    fallback: (report) => ({
+      materialFindings: report.materialFindings,
+      domainActionPlan: report.domainActionPlan,
+    }),
+    diagnosticData: (payload) => ({
+      topGapDomains: payload.topGapDomains.slice(0, 6),
+      strongestDomains: payload.strongestDomains.slice(0, 3),
+      priorityGaps: payload.priorityGaps.slice(0, 5),
+    }),
+  },
+  {
+    sectionName: "dataSourceFindings",
+    maxTokens: 340,
+    sectionSchema: {
+      priorityGapRegister: "string[]",
+      risks: "string[]",
+    },
+    fallback: (report) => ({
+      priorityGapRegister: report.priorityGapRegister,
+      risks: report.risks,
+    }),
+    diagnosticData: (payload) => ({
+      priorityGaps: payload.priorityGaps.slice(0, 8),
+      topGapDomains: payload.topGapDomains.slice(0, 4),
+      evidenceBackedItems: payload.evidenceBackedItems,
+      totalQuestions: payload.totalQuestions,
+    }),
+  },
+  {
+    sectionName: "useCasePortfolio",
+    maxTokens: 340,
+    sectionSchema: {
+      aiGateProceed: "string[]",
+      aiGatePilotWithControls: "string[]",
+      aiGateHold: "string[]",
+    },
+    fallback: (report) => ({
+      aiGateProceed: report.aiGateProceed,
+      aiGatePilotWithControls: report.aiGatePilotWithControls,
+      aiGateHold: report.aiGateHold,
+    }),
+    diagnosticData: (payload) => ({
+      overallScore: payload.overallScore,
+      topGapDomains: payload.topGapDomains.slice(0, 5),
+      priorityGaps: payload.priorityGaps.slice(0, 6),
+    }),
+  },
+  {
+    sectionName: "priorityRoadmap",
+    maxTokens: 360,
+    sectionSchema: {
+      ninetyDayPlan: "string[]",
+      roadmapPhases: "string[]",
+    },
+    fallback: (report) => ({
+      ninetyDayPlan: report.ninetyDayPlan,
+      roadmapPhases: report.roadmapPhases,
+    }),
+    diagnosticData: (payload) => ({
+      topGapDomains: payload.topGapDomains.slice(0, 6),
+      priorityGaps: payload.priorityGaps.slice(0, 8),
+      gartnerPillars: payload.gartnerPillars?.slice(0, 7) ?? [],
+    }),
+  },
+  {
+    sectionName: "risksAndDependencies",
+    maxTokens: 320,
+    sectionSchema: {
+      risks: "string[]",
+    },
+    fallback: (report) => ({
+      risks: report.risks,
+    }),
+    diagnosticData: (payload) => ({
+      overallScore: payload.overallScore,
+      evidenceBackedItems: payload.evidenceBackedItems,
+      totalQuestions: payload.totalQuestions,
+      topGapDomains: payload.topGapDomains.slice(0, 5),
+      priorityGaps: payload.priorityGaps.slice(0, 6),
+    }),
+  },
+  {
+    sectionName: "recommendedNextSteps",
+    maxTokens: 300,
+    sectionSchema: {
+      nextSteps: "string[]",
+    },
+    fallback: (report) => ({
+      nextSteps: report.nextSteps,
+    }),
+    diagnosticData: (payload) => ({
+      topGapDomains: payload.topGapDomains.slice(0, 4),
+      priorityGaps: payload.priorityGaps.slice(0, 5),
+      gartnerPillars: payload.gartnerPillars?.slice(0, 4) ?? [],
+    }),
+  },
+];
+
+async function runWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<R>,
+) {
+  const results: R[] = [];
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await worker(items[currentIndex]);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()),
+  );
+
+  return results;
 }
 
-function localAiErrorMessage(body: LocalAiChatResponse, status: number) {
-  return (
-    body.error?.message ||
-    body.detail ||
-    body.message ||
-    `Local AI report generation failed at the gateway (${status}).`
+function mergeReportSections(
+  deterministic: NormalisedReport,
+  sectionResults: ReportSectionResult[],
+  payload: DiagnosticReportRequest,
+) {
+  const generated = sectionResults.reduce<Record<string, unknown>>((merged, section) => ({
+    ...merged,
+    ...section.content,
+  }), {});
+
+  return completeReport(
+    {
+      ...deterministic,
+      ...generated,
+    },
+    payload,
+    "Local AI generated report sections independently. Evidence-critical sections were normalised against the captured diagnostic payload.",
   );
 }
 
-function isAbortError(error: unknown) {
-  return error instanceof LocalAiTimeoutError || (error instanceof DOMException && error.name === "AbortError");
+function buildGenerationMetadata(model: string, sectionResults: ReportSectionResult[]): GenerationMetadata {
+  return {
+    model,
+    mode: "section_by_section",
+    sections: sectionResults.reduce<Record<string, ReportSectionMetadata>>((sections, section) => ({
+      ...sections,
+      [section.sectionName]: section.metadata,
+    }), {}),
+  };
 }
 
 export async function POST(request: Request) {
@@ -374,19 +563,14 @@ export async function POST(request: Request) {
   const gatewayTimeoutMs = Number.isFinite(configuredTimeoutMs) && configuredTimeoutMs > 0
     ? configuredTimeoutMs
     : defaultGatewayTimeoutMs;
-  const abortController = new AbortController();
-  let rejectOnTimeout: ((reason?: unknown) => void) | null = null;
-  const gatewayDeadline = new Promise<never>((_, reject) => {
-    rejectOnTimeout = reject;
-  });
-  const timeout = setTimeout(() => {
-    abortController.abort();
-    rejectOnTimeout?.(new LocalAiTimeoutError());
-  }, gatewayTimeoutMs);
-  const clearGatewayTimeout = () => {
-    clearTimeout(timeout);
-    rejectOnTimeout = null;
-  };
+  const configuredSectionTimeoutMs = Number(process.env.LOCAL_AI_REPORT_SECTION_TIMEOUT_MS ?? defaultSectionTimeoutMs);
+  const sectionTimeoutMs = Number.isFinite(configuredSectionTimeoutMs) && configuredSectionTimeoutMs > 0
+    ? configuredSectionTimeoutMs
+    : defaultSectionTimeoutMs;
+  const configuredSectionConcurrency = Number(process.env.LOCAL_AI_REPORT_SECTION_CONCURRENCY ?? defaultSectionConcurrency);
+  const sectionConcurrency = Number.isFinite(configuredSectionConcurrency) && configuredSectionConcurrency > 0
+    ? Math.max(1, Math.min(Math.floor(configuredSectionConcurrency), reportSectionConfigs.length))
+    : defaultSectionConcurrency;
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
@@ -401,84 +585,37 @@ export async function POST(request: Request) {
     priorityGaps: payload.priorityGaps.slice(0, 6),
   };
 
-  let response: Response;
+  const deterministic = normaliseReport(buildDeterministicReport(
+    reportDiagnostic,
+    "Section-level deterministic fallback generated from captured diagnostic evidence.",
+  ));
+  let sectionResults: ReportSectionResult[];
   try {
-    response = await Promise.race([
-      fetch(`${gatewayBaseUrl}/chat/completions`, {
-        method: "POST",
-        headers,
-        signal: abortController.signal,
-        body: JSON.stringify({
+    sectionResults = await runWithConcurrency(
+      reportSectionConfigs,
+      sectionConcurrency,
+      (section) => generateReportSection({
+        sectionName: section.sectionName,
+        sectionSchema: section.sectionSchema,
+        customerContext: reportDiagnostic.customerContext ?? {},
+        diagnosticData: section.diagnosticData(reportDiagnostic),
+        previousSections: {
+          executiveSummary: deterministic.executiveSummary,
+          headlineAssessment: deterministic.headlineAssessment,
+        },
+        fallback: section.fallback(deterministic),
+        modelConfig: {
+          gatewayBaseUrl,
+          headers,
           model,
-          temperature: 0.2,
-          max_tokens: 900,
-          messages: [
-            {
-              role: "system",
-              content:
-                [
-                  "You are a senior data and AI strategy consultant preparing a consulting-grade executive diagnostic report.",
-                  "Return only valid JSON. Do not include Markdown fences.",
-                  "Tailor every paragraph to the supplied customer name, business domain, operating scope, priorities, pain points, report audience, and report purpose.",
-                  "Never mention fixed sample customers, sample acronyms, or advisory-firm names unless those exact words are supplied in customerContext.",
-                  "Do not invent customer facts, dates, evidence counts, domain scores, or metrics beyond the supplied diagnostic payload.",
-                  "The maturity scoring scale is 0 to 4, where 4 is maximum maturity.",
-                  "Use a board-ready tone: direct, evidence-led, action-oriented, and specific enough for a steering committee.",
-                  "Keep the response concise enough for a first-pass executive report. Prefer short paragraphs and compact bullets.",
-                  "When Gartner pillar data is supplied, include the weakest pillars and convert them into management actions.",
-                  "Use evidence language carefully: if evidence is weak or missing, call the score provisional.",
-                  "AI readiness rule: proceed only with governed descriptive diagnostics and human-approved AI reporting unless data quality, privacy, lineage, and model-risk controls are sufficient.",
-                ].join(" "),
-            },
-            {
-              role: "user",
-              content: JSON.stringify({
-                task: "Generate a concise consulting-grade Data and AI capability diagnostic report narrative for a board-pack page.",
-                contextInstructions:
-                  "Use customerContext.customerName as the client name. Use customerContext.businessDomain and operatingScope to make the recommendations domain-specific. If a context field is blank, state that the report needs that context rather than guessing it. Frame recommendations in the language of the intended audience and report purpose.",
-                scoringScale: "0 to 4 maturity scale; 4 is the maximum score.",
-                requiredShape: {
-                  executiveSummary: "One concise paragraph stating maturity, evidence posture, and executive implication.",
-                  headlineAssessment: "One short board-ready paragraph explaining the maturity profile.",
-                  readinessThesis: "One short AI readiness thesis: proceed, pilot with controls, and hold.",
-                  boardMessage: "One sentence suitable for a steering committee slide.",
-                  boardAsks: [
-                    "Approve baseline - one sentence",
-                    "Assign owners - one sentence",
-                    "Gate use cases - one sentence",
-                  ],
-                  gartnerPillarAssessment: ["3-4 bullets; pillar | implication | management action"],
-                  materialFindings: ["3-4 bullets; highest-signal findings only"],
-                  domainActionPlan: ["3-5 bullets; domain | signal | action"],
-                  priorityGapRegister: ["3-5 bullets; gap | domain | evidence | action"],
-                  recommendedDecisions: ["3-4 decisions required from leadership"],
-                  ninetyDayPlan: ["3 bullets: Days 0-30, Days 31-60, Days 61-90"],
-                  roadmapPhases: ["3 short phase statements"],
-                  aiReadinessGate: "One short paragraph summarising proceed / pilot / hold posture.",
-                  aiGateProceed: ["2 use-case categories that can proceed with human approval"],
-                  aiGatePilotWithControls: ["2 use-case categories that require controls before pilot"],
-                  aiGateHold: ["2 use-case categories that should not proceed yet"],
-                  risks: ["3-4 risks with management consequence and mitigation"],
-                  nextSteps: ["3 immediate next steps for the next steering session"],
-                },
-                diagnostic: reportDiagnostic,
-              }),
-            },
-          ],
-        }),
-        cache: "no-store",
+          timeoutMs: Math.min(sectionTimeoutMs, gatewayTimeoutMs),
+          temperature: 0.1,
+          topP: 0.9,
+          maxTokens: section.maxTokens,
+        },
       }),
-      gatewayDeadline,
-    ]);
+    );
   } catch (error) {
-    clearGatewayTimeout();
-    if (isAbortError(error)) {
-      return deterministicReportResponse(
-        reportDiagnostic,
-        model,
-        `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds. A deterministic advisory fallback was generated from the captured diagnostic evidence.`,
-      );
-    }
     return NextResponse.json(
       {
         status: "error",
@@ -491,66 +628,26 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: LocalAiChatResponse;
-  try {
-    body = (await Promise.race([response.json(), gatewayDeadline])) as LocalAiChatResponse;
-    clearGatewayTimeout();
-  } catch (error) {
-    clearGatewayTimeout();
-    if (isAbortError(error)) {
-      return deterministicReportResponse(
-        reportDiagnostic,
-        model,
-        `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds while reading the model response. A deterministic advisory fallback was generated from the captured diagnostic evidence.`,
-      );
-    }
-    return NextResponse.json(
-      {
-        status: "error",
-        message: `Local AI gateway returned a non-JSON response (${response.status}).`,
-      },
-      { status: response.status },
-    );
-  }
-  if (!response.ok) {
-    return NextResponse.json(
-      {
-        status: "error",
-        message: localAiErrorMessage(body, response.status),
-        details: [
-          `Gateway: ${gatewayBaseUrl}`,
-          `Chat completions URL: ${gatewayBaseUrl}/chat/completions`,
-          `Model: ${model}`,
-          `Gateway status: ${response.status}`,
-        ],
-      },
-      { status: response.status },
-    );
-  }
+  const report = mergeReportSections(deterministic, sectionResults, reportDiagnostic);
+  const generationMetadata = buildGenerationMetadata(model, sectionResults);
+  const fallbackSections = sectionResults
+    .filter((section) => section.metadata.source === "fallback")
+    .map((section) => section.sectionName);
+  const repairedSections = sectionResults
+    .filter((section) => section.metadata.repaired)
+    .map((section) => section.sectionName);
 
-  const content = body.choices?.[0]?.message?.content ?? "{}";
-  try {
-    const parsedReport = extractJsonPayload(content);
-    const report = completeReport(
-      parsedReport,
-      reportDiagnostic,
-      "Local AI generated a structured advisory report. Evidence-critical sections were normalised against the captured diagnostic payload.",
-    );
-    return NextResponse.json({
-      status: "ready",
-      report,
-      model,
-      repaired: !isCompleteReport(normaliseReport(parsedReport)),
-    });
-  } catch (error) {
-    return deterministicReportResponse(
-      reportDiagnostic,
-      model,
-      [
-        "Local AI returned narrative text instead of the required JSON report schema.",
-        "A complete deterministic advisory report was generated from the captured diagnostic evidence.",
-        error instanceof Error ? error.message : "Invalid local AI report payload.",
-      ].join(" "),
-    );
-  }
+  return NextResponse.json({
+    status: "ready",
+    report,
+    model,
+    repaired: fallbackSections.length > 0 || repairedSections.length > 0,
+    fallback: fallbackSections.length === sectionResults.length,
+    sectionFallbacks: fallbackSections,
+    repairedSections,
+    generationMetadata,
+    message: fallbackSections.length > 0
+      ? "Some report sections used deterministic fallback because the local model did not return valid JSON."
+      : "Report generated section-by-section with validated local AI JSON.",
+  });
 }

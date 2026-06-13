@@ -68,6 +68,18 @@ type DiagnosticReportApiResponse = {
   details?: string[];
   fallback?: boolean;
   repaired?: boolean;
+  sectionFallbacks?: string[];
+  repairedSections?: string[];
+  generationMetadata?: {
+    mode?: string;
+    sections?: Record<string, {
+      source?: string;
+      attempts?: number;
+      validJson?: boolean;
+      repaired?: boolean;
+      error?: string;
+    }>;
+  };
 };
 
 type DomainSummary = {
@@ -812,11 +824,15 @@ export function DataAiDiagnosticWorkspace() {
       setGeneratedReport(normalisedReport);
       setReportStageIndex(5);
       setReportStatus("ready");
+      const fallbackSections = result.sectionFallbacks ?? [];
+      const repairedSections = result.repairedSections ?? [];
       setReportMessage(result.fallback
-        ? `${result.message ?? "Local AI did not return a valid structured report; generated deterministic advisory fallback."} Strategy handoff saved locally.`
-        : result.repaired
-          ? `Generated with local model ${result.model ?? "configured runtime"} and normalised into the complete report schema. Strategy handoff saved locally.`
-          : `Generated with local model ${result.model ?? "configured runtime"}. Strategy handoff saved locally.`);
+        ? `${result.message ?? "Local AI did not return valid structured sections; generated deterministic advisory fallback."} Strategy handoff saved locally.`
+        : fallbackSections.length > 0
+          ? `Generated with local model ${result.model ?? "configured runtime"} using section-by-section validation. ${fallbackSections.length} section${fallbackSections.length === 1 ? "" : "s"} used deterministic fallback: ${fallbackSections.join(", ")}. Strategy handoff saved locally.`
+          : repairedSections.length > 0
+            ? `Generated with local model ${result.model ?? "configured runtime"} using section-by-section validation. ${repairedSections.length} section${repairedSections.length === 1 ? "" : "s"} required JSON repair. Strategy handoff saved locally.`
+            : `Generated with local model ${result.model ?? "configured runtime"} using section-by-section validated JSON. Strategy handoff saved locally.`);
       setHandoffMessage("Diagnostic completed — available to Data Strategy Builder");
     } catch (error) {
       if (generationTimer) {

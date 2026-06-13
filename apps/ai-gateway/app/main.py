@@ -172,12 +172,14 @@ async def chat_completions(request: Request, authorization: str | None = Header(
 
     try:
         if LOCAL_AI_CHAT_API_URL:
-            response = await post_chat_app(
-                {
-                    "model": payload.get("model") or LOCAL_AI_MODEL,
-                    "messages": payload.get("messages") or [],
-                }
-            )
+            chat_payload: dict[str, Any] = {
+                "model": payload.get("model") or LOCAL_AI_MODEL,
+                "messages": payload.get("messages") or [],
+            }
+            for key in ("format", "response_format", "temperature", "top_p", "max_tokens", "num_predict", "options"):
+                if key in payload:
+                    chat_payload[key] = payload[key]
+            response = await post_chat_app(chat_payload)
         else:
             response = await post_ollama("/chat/completions", payload)
     except httpx.HTTPError as exc:
