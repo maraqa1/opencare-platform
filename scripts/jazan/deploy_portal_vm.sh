@@ -62,21 +62,6 @@ timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" docker build --no-cache -t "$image" apps/
 echo "Importing image into K3s: $image"
 timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" bash -c 'docker save "$1" | sudo k3s ctr images import -' _ "$image"
 
-if [[ -n "${OPENAI_API_KEY_B64:-}" ]]; then
-  echo "Syncing OPENAI_API_KEY into secret/opencare-secrets"
-  if ! printf '%s' "$OPENAI_API_KEY_B64" | base64 -d >/dev/null 2>&1; then
-    echo "ERROR: OPENAI_API_KEY_B64 is not valid base64." >&2
-    exit 1
-  fi
-  if ! "${KUBECTL[@]}" get secret opencare-secrets >/dev/null 2>&1; then
-    "${KUBECTL[@]}" create secret generic opencare-secrets >/dev/null
-  fi
-  "${KUBECTL[@]}" patch secret opencare-secrets --type merge \
-    -p "{\"data\":{\"OPENAI_API_KEY\":\"$OPENAI_API_KEY_B64\"}}" >/dev/null
-else
-  echo "OPENAI_API_KEY secret was not provided to this deploy; existing cluster secret, if any, is unchanged."
-fi
-
 echo "Ensuring public portal host is configured: $PUBLIC_PORTAL_HOST"
 if "${KUBECTL[@]}" get configmap opencare-config >/dev/null 2>&1; then
   "${KUBECTL[@]}" patch configmap opencare-config --type merge \

@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: local-ai-gateway
+  namespace: opencare
+spec:
+  selector:
+    app: local-ai-gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: local-ai-gateway
+  namespace: opencare
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: local-ai-gateway
+  template:
+    metadata:
+      labels:
+        app: local-ai-gateway
+    spec:
+      containers:
+        - name: local-ai-gateway
+          image: opencare-local-ai-gateway:dev
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: opencare-config
+            - secretRef:
+                name: opencare-secrets
+                optional: true
+          env:
+            - name: OLLAMA_BASE_URL
+              value: http://ollama:11434/v1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 4

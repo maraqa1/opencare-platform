@@ -51,6 +51,14 @@ data:
   KEYCLOAK_REALM: opencare
   FORECAST_RUNTIME_URL: http://bed-forecast:8000
   ANOMALY_RUNTIME_URL: http://anomaly:8000
+  ENABLE_LOCAL_AI: "true"
+  ENABLE_OPENAI: "false"
+  AI_PROVIDER: local
+  AI_PROVIDER_FALLBACK: none
+  LOCAL_AI_MODEL: llama3.2:3b
+  OLLAMA_BASE_URL: http://ollama:11434/v1
+  AI_GATEWAY_BASE_URL: http://local-ai-gateway:8080/v1
+  AI_GATEWAY_PUBLIC_URL: https://ai.opendatalake.com/v1
   SUPERSET_EMBED_URL: https://analytics.dmo.opendatalake.com
   AIRBYTE_URL: http://airbyte-airbyte-server-svc:8001
   REPORTS_PREFIX: reports
@@ -74,6 +82,7 @@ data:
   API_HOST: api.dmo.opendatalake.com
   AUTH_HOST: auth.dmo.opendatalake.com
   ANALYTICS_HOST: analytics.dmo.opendatalake.com
+  AI_HOST: ai.opendatalake.com
   TLS_EMAIL: admin@opendatalake.com
   CERT_MANAGER_NAMESPACE: cert-manager
   CERT_MANAGER_RELEASE_NAME: cert-manager

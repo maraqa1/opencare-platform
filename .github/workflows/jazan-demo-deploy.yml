@@ -6,9 +6,12 @@ on:
       - codex/jazan-demo
     paths:
       - "apps/portal/**"
+      - "apps/ai-gateway/**"
       - "config/use_cases.yaml"
       - "manifests/portal/**"
+      - "manifests/local-ai/**"
       - "scripts/jazan/**"
+      - "scripts/local-ai/**"
       - ".github/workflows/jazan-demo-deploy.yml"
   workflow_dispatch:
 
@@ -20,7 +23,7 @@ jobs:
   deploy:
     name: Deploy portal on Jazan VM
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     steps:
       - name: Preflight VM SSH configuration
         id: preflight
@@ -55,7 +58,6 @@ jobs:
           JAZAN_VM_USER: ${{ secrets.JAZAN_VM_USER || 'root' }}
           JAZAN_VM_SSH_KEY: ${{ secrets.JAZAN_VM_SSH_KEY }}
           JAZAN_VM_REPO_PATH: ${{ secrets.JAZAN_VM_REPO_PATH || '/root/opencare-platform' }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -euo pipefail
 
@@ -63,17 +65,9 @@ jobs:
           chmod 700 ~/.ssh
           printf '%s\n' "${JAZAN_VM_SSH_KEY}" > ~/.ssh/jazan_demo_deploy_key
           chmod 600 ~/.ssh/jazan_demo_deploy_key
-          OPENAI_API_KEY_B64=""
-          if [[ -n "${OPENAI_API_KEY:-}" ]]; then
-            OPENAI_API_KEY_B64="$(printf '%s' "${OPENAI_API_KEY}" | base64 -w0)"
-            echo "OPENAI_API_KEY secret present for deploy."
-          else
-            echo "OPENAI_API_KEY secret not present for deploy; OpenAI report generation will remain disabled."
-          fi
-
           ssh -o StrictHostKeyChecking=accept-new \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=120 \
             -i ~/.ssh/jazan_demo_deploy_key \
             "${JAZAN_VM_USER}@${JAZAN_VM_HOST}" \
-            "cd '${JAZAN_VM_REPO_PATH}' && git fetch origin codex/jazan-demo && git checkout codex/jazan-demo && git pull --ff-only origin codex/jazan-demo && OPENAI_API_KEY_B64='${OPENAI_API_KEY_B64}' bash scripts/jazan/deploy_portal_vm.sh"
+            "cd '${JAZAN_VM_REPO_PATH}' && git fetch origin codex/jazan-demo && git checkout codex/jazan-demo && git pull --ff-only origin codex/jazan-demo && bash scripts/jazan/deploy_portal_vm.sh && bash scripts/jazan/deploy_local_ai_vm.sh"

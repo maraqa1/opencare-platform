@@ -44,6 +44,16 @@ BRANCH=codex/jazan-demo NAMESPACE=opencare DEPLOYMENT=portal CONTAINER=portal ba
 
 The GitHub Actions workflow `.github/workflows/jazan-demo-deploy.yml` deploys the portal after pushes to `codex/jazan-demo` when portal/config/Jazan helper files change.
 
+## Deploy the shared local AI gateway
+
+`scripts/jazan/deploy_local_ai_vm.sh` builds the standalone local AI gateway, deploys Ollama, pulls the configured local model, and exposes the gateway at `https://ai.opendatalake.com/v1`.
+
+```bash
+bash scripts/jazan/deploy_local_ai_vm.sh
+```
+
+The gateway is protected by `LOCAL_AI_API_KEY` in `secret/opencare-secrets` and is reusable by other projects such as the ASE site builder.
+
 Required repository secret:
 
 - `JAZAN_VM_SSH_KEY`: private SSH key that can log in to the VM.

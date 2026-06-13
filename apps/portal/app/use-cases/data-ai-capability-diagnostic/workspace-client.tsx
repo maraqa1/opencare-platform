@@ -744,7 +744,7 @@ export function DataAiDiagnosticWorkspace() {
       saveLatestDiagnosticStrategyHandoff(handoff);
       setGeneratedReport(normalisedReport);
       setReportStatus("ready");
-      setReportMessage(`Generated with ${result.model ?? "OpenAI"}. Strategy handoff saved locally.`);
+      setReportMessage(`Generated with local model ${result.model ?? "configured runtime"}. Strategy handoff saved locally.`);
       setHandoffMessage("Diagnostic completed — available to Data Strategy Builder");
     } catch (error) {
       setReportStatus("error");
@@ -1253,7 +1253,7 @@ export function DataAiDiagnosticWorkspace() {
             </div>
             <div>
               <button type="button" onClick={generateConsultingReport} disabled={reportStatus === "loading"}>
-                {reportStatus === "loading" ? "Generating..." : "Generate with OpenAI"}
+                {reportStatus === "loading" ? "Generating..." : "Generate with local AI"}
               </button>
               <button type="button" onClick={printReport}>Print / Save PDF</button>
               <span className="data-ai-mode-chip">
@@ -1797,10 +1797,10 @@ export function DataAiDiagnosticWorkspace() {
               </section>
             </div>
             <section className="data-ai-report-callout">
-              <h3>OpenAI integration note</h3>
+              <h3>Local AI gateway note</h3>
               <p>
-                Narrative generation should be wired through a server-side API route using an environment variable such as
-                OPENAI_API_KEY. The key must never be stored in client-side code or exposed in browser requests.
+                Narrative generation is wired through the server-side local AI gateway using environment variables such as
+                AI_GATEWAY_BASE_URL and LOCAL_AI_API_KEY. The gateway key must never be stored in client-side code or exposed in browser requests.
               </p>
             </section>
           </article>

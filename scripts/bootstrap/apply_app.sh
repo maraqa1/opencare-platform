@@ -57,6 +57,11 @@ EOF
         - ${AUTH_HOST}
 EOF
     fi
+    if [[ "$ENABLE_LOCAL_AI" == "true" && -n "$AI_HOST" && "$AI_HOST" != "$PORTAL_HOST" && "$AI_HOST" != "$API_HOST" && "$AI_HOST" != "$ANALYTICS_HOST" && "$AI_HOST" != "$AUTH_HOST" ]]; then
+      cat >>"$output_file" <<EOF
+        - ${AI_HOST}
+EOF
+    fi
     if [[ -z "$PORTAL_HOST" && -z "$API_HOST" && -n "$EXTERNAL_HOST" ]]; then
       cat >>"$output_file" <<EOF
         - ${EXTERNAL_HOST}
@@ -204,6 +209,21 @@ EOF
             backend:
               service:
                 name: keycloak
+                port:
+                  number: 8080
+EOF
+  fi
+
+  if [[ "$ENABLE_LOCAL_AI" == "true" && -n "$AI_HOST" ]]; then
+    cat >>"$output_file" <<EOF
+    - host: ${AI_HOST}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: local-ai-gateway
                 port:
                   number: 8080
 EOF

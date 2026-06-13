@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: local-ai-model-pull
+  namespace: opencare
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 7200
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pull-model
+          image: curlimages/curl:8.12.1
+          envFrom:
+            - configMapRef:
+                name: opencare-config
+          command:
+            - sh
+            - -lc
+            - |
+              set -eu
+              model="${LOCAL_AI_MODEL:-llama3.2:3b}"
+              echo "Pulling local AI model: ${model}"
+              curl -fsS --max-time 7200 \
+                -X POST http://ollama:11434/api/pull \
+                -H 'content-type: application/json' \
+                -d "{\"name\":\"${model}\"}"

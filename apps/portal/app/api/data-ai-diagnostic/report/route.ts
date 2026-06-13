@@ -50,7 +50,7 @@ type DiagnosticReportRequest = {
   }>;
 };
 
-type OpenAiChatResponse = {
+type LocalAiChatResponse = {
   choices?: Array<{
     message?: {
       content?: string;
@@ -61,7 +61,7 @@ type OpenAiChatResponse = {
   };
 };
 
-const fallbackModel = "gpt-4o-mini";
+const fallbackModel = "llama3.2:3b";
 
 function textValue(value: unknown) {
   if (typeof value === "string") {
@@ -130,17 +130,6 @@ function normaliseReport(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        status: "missing_key",
-        message: "OPENAI_API_KEY is not configured for the portal server runtime.",
-      },
-      { status: 503 },
-    );
-  }
-
   let payload: DiagnosticReportRequest;
   try {
     payload = (await request.json()) as DiagnosticReportRequest;
@@ -153,16 +142,21 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const model = process.env.OPENAI_MODEL ?? fallbackModel;
+  const model = process.env.LOCAL_AI_MODEL ?? fallbackModel;
+  const gatewayBaseUrl = (process.env.AI_GATEWAY_BASE_URL ?? "http://local-ai-gateway:8080/v1").replace(/\/+$/, "");
+  const apiKey = process.env.LOCAL_AI_API_KEY ?? "";
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (apiKey) {
+    headers.authorization = `Bearer ${apiKey}`;
+  }
 
   let response: Response;
   try {
-    response = await fetch("https://api.openai.com/v1/chat/completions", {
+    response = await fetch(`${gatewayBaseUrl}/chat/completions`, {
       method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
         model,
         temperature: 0.2,
@@ -227,20 +221,20 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "error",
-        message: "Unable to reach OpenAI from the portal server.",
+        message: "Unable to reach the local AI gateway from the portal server.",
       },
       { status: 502 },
     );
   }
 
-  let body: OpenAiChatResponse;
+  let body: LocalAiChatResponse;
   try {
-    body = (await response.json()) as OpenAiChatResponse;
+    body = (await response.json()) as LocalAiChatResponse;
   } catch {
     return NextResponse.json(
       {
         status: "error",
-        message: `OpenAI returned a non-JSON response (${response.status}).`,
+        message: `Local AI gateway returned a non-JSON response (${response.status}).`,
       },
       { status: response.status },
     );
@@ -249,7 +243,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "error",
-        message: body.error?.message ?? "OpenAI report generation failed.",
+        message: body.error?.message ?? "Local AI report generation failed.",
       },
       { status: response.status },
     );
