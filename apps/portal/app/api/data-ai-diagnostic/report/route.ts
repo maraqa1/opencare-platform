@@ -90,7 +90,18 @@ function stringList(value: unknown) {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value.map((item) => textValue(item)).filter(Boolean);
+  return value.map((item) => cleanReportText(textValue(item))).filter(Boolean);
+}
+
+function cleanReportText(value: string) {
+  return value
+    .replace(/```(?:json)?/gi, "")
+    .replace(/```/g, "")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function normaliseReport(value: unknown) {
@@ -118,10 +129,10 @@ function normaliseReport(value: unknown) {
   }
   const report = value as Record<string, unknown>;
   return {
-    executiveSummary: textValue(report.executiveSummary),
-    headlineAssessment: textValue(report.headlineAssessment),
-    readinessThesis: textValue(report.readinessThesis),
-    boardMessage: textValue(report.boardMessage),
+    executiveSummary: cleanReportText(textValue(report.executiveSummary)),
+    headlineAssessment: cleanReportText(textValue(report.headlineAssessment)),
+    readinessThesis: cleanReportText(textValue(report.readinessThesis)),
+    boardMessage: cleanReportText(textValue(report.boardMessage)),
     boardAsks: stringList(report.boardAsks),
     gartnerPillarAssessment: stringList(report.gartnerPillarAssessment),
     materialFindings: stringList(report.materialFindings),
@@ -130,13 +141,78 @@ function normaliseReport(value: unknown) {
     recommendedDecisions: stringList(report.recommendedDecisions),
     ninetyDayPlan: stringList(report.ninetyDayPlan),
     roadmapPhases: stringList(report.roadmapPhases),
-    aiReadinessGate: textValue(report.aiReadinessGate),
+    aiReadinessGate: cleanReportText(textValue(report.aiReadinessGate)),
     aiGateProceed: stringList(report.aiGateProceed),
     aiGatePilotWithControls: stringList(report.aiGatePilotWithControls),
     aiGateHold: stringList(report.aiGateHold),
     risks: stringList(report.risks),
     nextSteps: stringList(report.nextSteps),
   };
+}
+
+function isCompleteReport(report: ReturnType<typeof normaliseReport>) {
+  return Boolean(
+    report.executiveSummary &&
+    report.headlineAssessment &&
+    report.readinessThesis &&
+    report.boardMessage &&
+    report.boardAsks.length >= 3 &&
+    report.materialFindings.length >= 3 &&
+    report.domainActionPlan.length >= 3 &&
+    report.recommendedDecisions.length >= 3 &&
+    report.ninetyDayPlan.length >= 3 &&
+    report.aiGateProceed.length >= 2 &&
+    report.aiGatePilotWithControls.length >= 2 &&
+    report.aiGateHold.length >= 2 &&
+    report.nextSteps.length >= 3
+  );
+}
+
+function completeReport(value: unknown, payload: DiagnosticReportRequest, reason: string) {
+  const deterministic = normaliseReport(buildDeterministicReport(payload, reason));
+  const generated = normaliseReport(value);
+  const pickList = (
+    generatedList: string[],
+    deterministicList: string[],
+    minimumLength: number,
+  ) => generatedList.length >= minimumLength ? generatedList : deterministicList;
+
+  return {
+    executiveSummary: deterministic.executiveSummary,
+    headlineAssessment: generated.headlineAssessment || deterministic.headlineAssessment,
+    readinessThesis: deterministic.readinessThesis,
+    boardMessage: generated.boardMessage || deterministic.boardMessage,
+    boardAsks: pickList(generated.boardAsks, deterministic.boardAsks, 3),
+    gartnerPillarAssessment: pickList(generated.gartnerPillarAssessment, deterministic.gartnerPillarAssessment, 3),
+    materialFindings: pickList(generated.materialFindings, deterministic.materialFindings, 3),
+    domainActionPlan: pickList(generated.domainActionPlan, deterministic.domainActionPlan, 3),
+    priorityGapRegister: pickList(generated.priorityGapRegister, deterministic.priorityGapRegister, 3),
+    recommendedDecisions: pickList(generated.recommendedDecisions, deterministic.recommendedDecisions, 3),
+    ninetyDayPlan: pickList(generated.ninetyDayPlan, deterministic.ninetyDayPlan, 3),
+    roadmapPhases: pickList(generated.roadmapPhases, deterministic.roadmapPhases, 3),
+    aiReadinessGate: deterministic.aiReadinessGate,
+    aiGateProceed: pickList(generated.aiGateProceed, deterministic.aiGateProceed, 2),
+    aiGatePilotWithControls: pickList(generated.aiGatePilotWithControls, deterministic.aiGatePilotWithControls, 2),
+    aiGateHold: pickList(generated.aiGateHold, deterministic.aiGateHold, 2),
+    risks: pickList(generated.risks, deterministic.risks, 3),
+    nextSteps: pickList(generated.nextSteps, deterministic.nextSteps, 3),
+  };
+}
+
+function extractJsonPayload(content: string) {
+  const trimmed = content.trim();
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1]?.trim() ?? trimmed;
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    const start = candidate.indexOf("{");
+    const end = candidate.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(candidate.slice(start, end + 1));
+    }
+    throw new SyntaxError("Model response did not contain valid report JSON.");
+  }
 }
 
 function contextLabel(payload: DiagnosticReportRequest, key: keyof NonNullable<DiagnosticReportRequest["customerContext"]>, fallback: string) {
@@ -256,7 +332,7 @@ function deterministicReportResponse(payload: DiagnosticReportRequest, model: st
   return NextResponse.json({
     status: "ready",
     report: normaliseReport(buildDeterministicReport(payload, reason)),
-    model: `${model} timeout - deterministic advisory fallback`,
+    model: `${model} - deterministic advisory fallback`,
     fallback: true,
     message: reason,
   });
@@ -454,35 +530,27 @@ export async function POST(request: Request) {
 
   const content = body.choices?.[0]?.message?.content ?? "{}";
   try {
+    const parsedReport = extractJsonPayload(content);
+    const report = completeReport(
+      parsedReport,
+      reportDiagnostic,
+      "Local AI generated a structured advisory report. Evidence-critical sections were normalised against the captured diagnostic payload.",
+    );
     return NextResponse.json({
       status: "ready",
-      report: normaliseReport(JSON.parse(content)),
+      report,
       model,
+      repaired: !isCompleteReport(normaliseReport(parsedReport)),
     });
-  } catch {
-    return NextResponse.json({
-      status: "ready",
-      report: normaliseReport({
-        executiveSummary: content,
-        boardMessage: "Generated as narrative text because the model response was not JSON.",
-        headlineAssessment: "",
-        readinessThesis: "",
-        boardAsks: [],
-        gartnerPillarAssessment: [],
-        materialFindings: [],
-        domainActionPlan: [],
-        priorityGapRegister: [],
-        recommendedDecisions: [],
-        ninetyDayPlan: [],
-        roadmapPhases: [],
-        aiReadinessGate: "",
-        aiGateProceed: [],
-        aiGatePilotWithControls: [],
-        aiGateHold: [],
-        risks: [],
-        nextSteps: [],
-      }),
+  } catch (error) {
+    return deterministicReportResponse(
+      reportDiagnostic,
       model,
-    });
+      [
+        "Local AI returned narrative text instead of the required JSON report schema.",
+        "A complete deterministic advisory report was generated from the captured diagnostic evidence.",
+        error instanceof Error ? error.message : "Invalid local AI report payload.",
+      ].join(" "),
+    );
   }
 }
