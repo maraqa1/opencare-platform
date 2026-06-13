@@ -9,10 +9,10 @@ Scripts here should print useful endpoints and verify service health with clear 
 For the Jazan deployment target, point these DNS `A` records to `78.47.100.139` before running the installer:
 
 ```text
-jazan.opendatalake.com
-api.jazan.opendatalake.com
-auth.jazan.opendatalake.com
-analytics.jazan.opendatalake.com
+dmo.opendatalake.com
+api.dmo.opendatalake.com
+auth.dmo.opendatalake.com
+analytics.dmo.opendatalake.com
 ```
 
 For a brand-new Ubuntu VM, run the host bootstrap first:

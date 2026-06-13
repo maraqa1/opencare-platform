@@ -9,6 +9,8 @@ CONTAINER="${CONTAINER:-portal}"
 IMAGE_PREFIX="${IMAGE_PREFIX:-opencare-portal:jazan}"
 KUBECONFIG_PATH="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 DEPLOY_STEP_TIMEOUT_SECONDS="${DEPLOY_STEP_TIMEOUT_SECONDS:-1200}"
+PUBLIC_PORTAL_HOST="${PUBLIC_PORTAL_HOST:-dmo.opendatalake.com}"
+PUBLIC_PORTAL_URL="${PUBLIC_PORTAL_URL:-https://${PUBLIC_PORTAL_HOST}}"
 KUBECTL=(sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl -n "$NAMESPACE")
 
 dump_portal_state() {
@@ -73,6 +75,30 @@ if [[ -n "${OPENAI_API_KEY_B64:-}" ]]; then
     -p "{\"data\":{\"OPENAI_API_KEY\":\"$OPENAI_API_KEY_B64\"}}" >/dev/null
 else
   echo "OPENAI_API_KEY secret was not provided to this deploy; existing cluster secret, if any, is unchanged."
+fi
+
+echo "Ensuring public portal host is configured: $PUBLIC_PORTAL_HOST"
+if "${KUBECTL[@]}" get configmap opencare-config >/dev/null 2>&1; then
+  "${KUBECTL[@]}" patch configmap opencare-config --type merge \
+    -p "{\"data\":{\"PORTAL_HOST\":\"${PUBLIC_PORTAL_HOST}\",\"PORTAL_URL\":\"${PUBLIC_PORTAL_URL}\",\"BASE_DOMAIN\":\"${PUBLIC_PORTAL_HOST}\"}}" >/dev/null
+else
+  echo "WARN: configmap/opencare-config not found; skipping public host config patch." >&2
+fi
+
+if "${KUBECTL[@]}" get ingress opencare-app >/dev/null 2>&1; then
+  if ! "${KUBECTL[@]}" get ingress opencare-app -o jsonpath='{range .spec.rules[*]}{.host}{"\n"}{end}' | grep -Fx "$PUBLIC_PORTAL_HOST" >/dev/null; then
+    portal_rule="{\"host\":\"${PUBLIC_PORTAL_HOST}\",\"http\":{\"paths\":[{\"path\":\"/\",\"pathType\":\"Prefix\",\"backend\":{\"service\":{\"name\":\"portal\",\"port\":{\"number\":3000}}}}]}}"
+    "${KUBECTL[@]}" patch ingress opencare-app --type=json \
+      -p "[{\"op\":\"add\",\"path\":\"/spec/rules/0\",\"value\":${portal_rule}}]" >/dev/null
+  fi
+  if "${KUBECTL[@]}" get ingress opencare-app -o jsonpath='{.spec.tls[0].hosts[0]}' >/dev/null 2>&1; then
+    if ! "${KUBECTL[@]}" get ingress opencare-app -o jsonpath='{range .spec.tls[*].hosts[*]}{.}{"\n"}{end}' | grep -Fx "$PUBLIC_PORTAL_HOST" >/dev/null; then
+      "${KUBECTL[@]}" patch ingress opencare-app --type=json \
+        -p "[{\"op\":\"add\",\"path\":\"/spec/tls/0/hosts/-\",\"value\":\"${PUBLIC_PORTAL_HOST}\"}]" >/dev/null
+    fi
+  fi
+else
+  echo "WARN: ingress/opencare-app not found; skipping public host ingress patch." >&2
 fi
 
 echo "Updating deployment/$DEPLOYMENT in namespace $NAMESPACE"
