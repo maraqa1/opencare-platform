@@ -162,6 +162,13 @@ export async function POST(request: Request) {
   if (apiKey) {
     headers.authorization = `Bearer ${apiKey}`;
   }
+  const reportDiagnostic = {
+    ...payload,
+    topGapDomains: payload.topGapDomains.slice(0, 6),
+    strongestDomains: payload.strongestDomains.slice(0, 3),
+    gartnerPillars: payload.gartnerPillars?.slice(0, 7) ?? [],
+    priorityGaps: payload.priorityGaps.slice(0, 6),
+  };
 
   let response: Response;
   try {
@@ -171,7 +178,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         temperature: 0.2,
-        max_tokens: 1800,
+        max_tokens: 900,
         messages: [
           {
             role: "system",
@@ -184,8 +191,8 @@ export async function POST(request: Request) {
                 "Do not invent customer facts, dates, evidence counts, domain scores, or metrics beyond the supplied diagnostic payload.",
                 "The maturity scoring scale is 0 to 4, where 4 is maximum maturity.",
                 "Use a board-ready tone: direct, evidence-led, action-oriented, and specific enough for a steering committee.",
-                "Structure the narrative like an executive deck: cover message, KPI scorecard interpretation, headline assessment, board asks, heatmap interpretation, action plan, gap register, 90-day roadmap, AI readiness gate, and next steps.",
-                "When Gartner pillar data is supplied, include a Gartner-aligned 7-pillar assessment that names the weakest pillars and converts them into board-level actions.",
+                "Keep the response concise enough for a first-pass executive report. Prefer short paragraphs and compact bullets.",
+                "When Gartner pillar data is supplied, include the weakest pillars and convert them into management actions.",
                 "Use evidence language carefully: if evidence is weak or missing, call the score provisional.",
                 "AI readiness rule: proceed only with governed descriptive diagnostics and human-approved AI reporting unless data quality, privacy, lineage, and model-risk controls are sufficient.",
               ].join(" "),
@@ -193,35 +200,35 @@ export async function POST(request: Request) {
           {
             role: "user",
             content: JSON.stringify({
-              task: "Generate a consulting-grade Data and AI capability diagnostic report narrative that can populate a board-pack style report page.",
+              task: "Generate a concise consulting-grade Data and AI capability diagnostic report narrative for a board-pack page.",
               contextInstructions:
                 "Use customerContext.customerName as the client name. Use customerContext.businessDomain and operatingScope to make the recommendations domain-specific. If a context field is blank, state that the report needs that context rather than guessing it. Frame recommendations in the language of the intended audience and report purpose.",
               scoringScale: "0 to 4 maturity scale; 4 is the maximum score.",
               requiredShape: {
-                executiveSummary: "One concise paragraph stating overall maturity, confidence/evidence posture, and executive implication.",
-                headlineAssessment: "One board-ready paragraph explaining what the maturity profile means for the customer's business domain.",
-                readinessThesis: "One clear AI readiness thesis: what can proceed, what must be gated, and why.",
+                executiveSummary: "One concise paragraph stating maturity, evidence posture, and executive implication.",
+                headlineAssessment: "One short board-ready paragraph explaining the maturity profile.",
+                readinessThesis: "One short AI readiness thesis: proceed, pilot with controls, and hold.",
                 boardMessage: "One sentence suitable for a steering committee slide.",
                 boardAsks: [
                   "Approve baseline - one sentence",
                   "Assign owners - one sentence",
                   "Gate use cases - one sentence",
                 ],
-                gartnerPillarAssessment: ["5-7 bullets; each names a Gartner pillar, score pattern, implication, and management action"],
-                materialFindings: ["5-7 bullets; highest-signal findings only"],
-                domainActionPlan: ["5-8 bullets; domain | score/gap signal | recommended action"],
-                priorityGapRegister: ["5-8 bullets; gap | domain | evidence posture | required action"],
-                recommendedDecisions: ["4-6 decisions required from leadership"],
+                gartnerPillarAssessment: ["3-4 bullets; pillar | implication | management action"],
+                materialFindings: ["3-4 bullets; highest-signal findings only"],
+                domainActionPlan: ["3-5 bullets; domain | signal | action"],
+                priorityGapRegister: ["3-5 bullets; gap | domain | evidence | action"],
+                recommendedDecisions: ["3-4 decisions required from leadership"],
                 ninetyDayPlan: ["3 bullets: Days 0-30, Days 31-60, Days 61-90"],
-                roadmapPhases: ["3 phase statements with accountable management intent"],
-                aiReadinessGate: "One paragraph summarising proceed / pilot with controls / hold posture.",
-                aiGateProceed: ["2-4 use-case categories that can proceed with human approval"],
-                aiGatePilotWithControls: ["2-4 use-case categories that require controls before pilot"],
-                aiGateHold: ["2-4 use-case categories that should not proceed yet"],
-                risks: ["5-7 risks with management consequence and mitigation"],
+                roadmapPhases: ["3 short phase statements"],
+                aiReadinessGate: "One short paragraph summarising proceed / pilot / hold posture.",
+                aiGateProceed: ["2 use-case categories that can proceed with human approval"],
+                aiGatePilotWithControls: ["2 use-case categories that require controls before pilot"],
+                aiGateHold: ["2 use-case categories that should not proceed yet"],
+                risks: ["3-4 risks with management consequence and mitigation"],
                 nextSteps: ["3 immediate next steps for the next steering session"],
               },
-              diagnostic: payload,
+              diagnostic: reportDiagnostic,
             }),
           },
         ],
