@@ -64,6 +64,8 @@ type DiagnosticReportApiResponse = {
   message?: string;
   report?: GeneratedConsultingReport;
   model?: string;
+  gateway?: string;
+  details?: string[];
 };
 
 type DomainSummary = {
@@ -759,6 +761,9 @@ export function DataAiDiagnosticWorkspace() {
         setReportMessage(message);
         captureFailure(String(response.status), message, [
           `API status: ${result.status ?? "unknown"}`,
+          `Gateway: ${result.gateway ?? "not returned"}`,
+          `Model: ${result.model ?? "not returned"}`,
+          ...(Array.isArray(result.details) ? result.details : []),
           "If this is a timeout, reduce the prompt size or generate the report section by section.",
         ], 3);
         return;

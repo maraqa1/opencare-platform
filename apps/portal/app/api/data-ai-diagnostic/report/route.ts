@@ -64,6 +64,7 @@ type LocalAiChatResponse = {
 };
 
 const fallbackModel = "llama3.2:3b";
+const defaultGatewayTimeoutMs = 55000;
 
 function textValue(value: unknown) {
   if (typeof value === "string") {
@@ -156,6 +157,12 @@ export async function POST(request: Request) {
   const model = process.env.LOCAL_AI_MODEL ?? fallbackModel;
   const gatewayBaseUrl = (process.env.AI_GATEWAY_BASE_URL ?? "http://local-ai-gateway:8080/v1").replace(/\/+$/, "");
   const apiKey = process.env.LOCAL_AI_API_KEY ?? "";
+  const configuredTimeoutMs = Number(process.env.LOCAL_AI_REPORT_TIMEOUT_MS ?? defaultGatewayTimeoutMs);
+  const gatewayTimeoutMs = Number.isFinite(configuredTimeoutMs) && configuredTimeoutMs > 0
+    ? configuredTimeoutMs
+    : defaultGatewayTimeoutMs;
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), gatewayTimeoutMs);
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
@@ -175,6 +182,7 @@ export async function POST(request: Request) {
     response = await fetch(`${gatewayBaseUrl}/chat/completions`, {
       method: "POST",
       headers,
+      signal: abortController.signal,
       body: JSON.stringify({
         model,
         temperature: 0.2,
@@ -235,14 +243,34 @@ export async function POST(request: Request) {
       }),
       cache: "no-store",
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return NextResponse.json(
+        {
+          status: "local_ai_timeout",
+          message: `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds.`,
+          details: [
+            "The portal reached the local AI gateway, but the model did not complete the report response within the configured timeout.",
+            "Try again after the model is warm, reduce report prompt size, or generate the report in smaller sections.",
+          ],
+          model,
+          gateway: gatewayBaseUrl,
+        },
+        { status: 504 },
+      );
+    }
     return NextResponse.json(
       {
         status: "error",
         message: "Unable to reach the local AI gateway from the portal server.",
+        details: [error instanceof Error ? error.message : "Unknown local AI gateway connection error."],
+        model,
+        gateway: gatewayBaseUrl,
       },
       { status: 502 },
     );
+  } finally {
+    clearTimeout(timeout);
   }
 
   let body: LocalAiChatResponse;
