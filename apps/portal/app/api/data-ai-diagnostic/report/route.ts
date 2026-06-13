@@ -64,7 +64,7 @@ type LocalAiChatResponse = {
 };
 
 const fallbackModel = "llama3.2:3b";
-const defaultGatewayTimeoutMs = 55000;
+const defaultGatewayTimeoutMs = 180000;
 
 class LocalAiTimeoutError extends Error {
   constructor() {
