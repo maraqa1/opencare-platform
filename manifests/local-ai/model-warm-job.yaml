@@ -23,8 +23,9 @@ spec:
               set -eu
               model="${LOCAL_AI_MODEL:-llama3.2:3b}"
               keep_alive="${LOCAL_AI_KEEP_ALIVE:--1}"
+              max_seconds="${LOCAL_AI_WARM_MAX_SECONDS:-600}"
               echo "Warming local AI model: ${model} with keep_alive=${keep_alive}"
-              curl --fail --show-error --silent \
+              curl --fail --show-error --silent --max-time "${max_seconds}" \
                 http://ollama:11434/api/generate \
                 -H 'Content-Type: application/json' \
                 -d "{\"model\":\"${model}\",\"prompt\":\"\",\"stream\":false,\"keep_alive\":\"${keep_alive}\"}"
