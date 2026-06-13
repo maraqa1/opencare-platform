@@ -41,6 +41,12 @@ spec:
                 name: opencare-secrets
                 optional: true
           env:
+            - name: LOCAL_AI_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: LOCAL_AI_MODEL
+                  optional: true
             - name: OLLAMA_BASE_URL
               valueFrom:
                 configMapKeyRef:

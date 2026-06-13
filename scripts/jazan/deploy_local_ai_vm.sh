@@ -82,6 +82,10 @@ sudo env \
 
 echo "Pinning deployment/local-ai-gateway to local image: $image"
 "${KUBECTL[@]}" set image deployment/local-ai-gateway "local-ai-gateway=$image" >/dev/null
+"${KUBECTL[@]}" set env deployment/local-ai-gateway \
+  "LOCAL_AI_MODEL=$LOCAL_AI_MODEL" \
+  "LOCAL_AI_CHAT_API_URL=$LOCAL_AI_CHAT_API_URL" \
+  "LOCAL_AI_HEALTH_URL=$LOCAL_AI_HEALTH_URL" >/dev/null
 "${KUBECTL[@]}" patch deployment/local-ai-gateway \
   -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"local-ai-gateway\",\"imagePullPolicy\":\"Never\"}]}}}}" >/dev/null
 
