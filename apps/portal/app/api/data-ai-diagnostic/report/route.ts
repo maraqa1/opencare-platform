@@ -59,6 +59,8 @@ type LocalAiChatResponse = {
   error?: {
     message?: string;
   };
+  detail?: string;
+  message?: string;
 };
 
 const fallbackModel = "llama3.2:3b";
@@ -129,6 +131,15 @@ function normaliseReport(value: unknown) {
   };
 }
 
+function localAiErrorMessage(body: LocalAiChatResponse, status: number) {
+  return (
+    body.error?.message ||
+    body.detail ||
+    body.message ||
+    `Local AI report generation failed at the gateway (${status}).`
+  );
+}
+
 export async function POST(request: Request) {
   let payload: DiagnosticReportRequest;
   try {
@@ -160,7 +171,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         temperature: 0.2,
-        response_format: { type: "json_object" },
+        max_tokens: 1800,
         messages: [
           {
             role: "system",
@@ -243,7 +254,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: "error",
-        message: body.error?.message ?? "Local AI report generation failed.",
+        message: localAiErrorMessage(body, response.status),
       },
       { status: response.status },
     );
