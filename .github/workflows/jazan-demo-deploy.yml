@@ -66,12 +66,14 @@ jobs:
 
           deploy_portal=true
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" || true)"
-            if ! grep -Eq '^(apps/portal/|manifests/portal/|config/use_cases\.yaml|scripts/jazan/deploy_portal_vm\.sh)$' <<<"${changed_files}"; then
+            changed_files="$(git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" || true)"
+            if ! grep -Eq '^(apps/portal/|manifests/portal/|config/use_cases\.yaml|scripts/jazan/deploy_portal_vm\.sh|\.github/workflows/jazan-demo-deploy\.yml)$' <<<"${changed_files}"; then
               deploy_portal=false
             fi
           fi
 
+          echo "Changed files:"
+          printf '%s\n' "${changed_files:-workflow_dispatch}"
           echo "Deploy portal: ${deploy_portal}"
 
           mkdir -p ~/.ssh
