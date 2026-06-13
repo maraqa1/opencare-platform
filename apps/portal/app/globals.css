@@ -15027,6 +15027,38 @@ code {
   color: #c8f3dc;
 }
 
+.data-strategy-demo-action {
+  align-self: flex-start;
+  margin: 1rem 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
+  padding: 0.55rem 0.8rem;
+}
+
+.data-strategy-demo-label,
+.data-strategy-demo-context-label {
+  border-radius: 0.85rem;
+  background: #fff7ed;
+  color: #9a3412 !important;
+  font-size: 0.82rem !important;
+  font-weight: 850;
+  padding: 0.65rem 0.75rem;
+}
+
+.data-strategy-demo-label {
+  margin-top: 0.75rem !important;
+}
+
+.data-strategy-demo-context-label {
+  margin: 0 0 1rem;
+}
+
 .data-strategy-context-meter,
 .data-strategy-source-label,
 .data-strategy-proceed {

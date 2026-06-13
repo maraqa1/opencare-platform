@@ -7,6 +7,8 @@ import {
   type DiagnosticStrategyHandoff,
   loadLatestDiagnosticStrategyHandoff,
 } from "@/lib/data-ai-diagnostic-handoff";
+import { seedLatestDiagnosticStrategyHandoff } from "@/lib/fixtures/data-ai-diagnostic-handoff.seed";
+import { seedOrganisationContext } from "@/lib/fixtures/data-strategy-context.seed";
 
 type ContextKey =
   | "organisationOverview"
@@ -16,11 +18,11 @@ type ContextKey =
   | "regulatoryContext"
   | "executiveExpectations"
   | "knownConstraints"
-  | "technologyLandscape"
+  | "existingTechnologyLandscape"
   | "dataAmbition"
-  | "priorityFunctions"
+  | "priorityDepartments"
   | "knownCandidateUseCases"
-  | "exclusions"
+  | "exclusionsAndBoundaries"
   | "successDefinition"
   | "consultantNotes";
 
@@ -64,11 +66,11 @@ const contextFields: Array<{ key: ContextKey; label: string; hint: string }> = [
   { key: "regulatoryContext", label: "Regulatory / compliance context", hint: "Policy, privacy, control, and evidence expectations." },
   { key: "executiveExpectations", label: "Executive expectations", hint: "Board, committee, or leadership asks." },
   { key: "knownConstraints", label: "Known constraints", hint: "Budget, timeline, ownership, sourcing, or delivery constraints." },
-  { key: "technologyLandscape", label: "Existing technology landscape", hint: "Current platforms, source groups, integration patterns, and constraints." },
+  { key: "existingTechnologyLandscape", label: "Existing technology landscape", hint: "Current platforms, source groups, integration patterns, and constraints." },
   { key: "dataAmbition", label: "Data ambition", hint: "Target decision capability and data-driven operating ambition." },
-  { key: "priorityFunctions", label: "Priority departments / functions", hint: "Functions, departments, entities, or teams in scope." },
+  { key: "priorityDepartments", label: "Priority departments / functions", hint: "Functions, departments, entities, or teams in scope." },
   { key: "knownCandidateUseCases", label: "Candidate use cases already known", hint: "Known ideas, data products, decision workflows, or reporting needs." },
-  { key: "exclusions", label: "Exclusions / boundaries", hint: "What the strategy should not cover in this cycle." },
+  { key: "exclusionsAndBoundaries", label: "Exclusions / boundaries", hint: "What the strategy should not cover in this cycle." },
   { key: "successDefinition", label: "Success definition", hint: "How the client will decide the strategy worked." },
   { key: "consultantNotes", label: "Consultant notes", hint: "Working notes, unresolved questions, and advisory observations." },
 ];
@@ -332,9 +334,19 @@ function handoffState(handoff: DiagnosticStrategyHandoff | null) {
   return "Diagnostic evidence loaded";
 }
 
+function demoHandoffNoticeFrom(handoff: DiagnosticStrategyHandoff | null) {
+  const rawReport = handoff?.rawGeneratedReport;
+  if (!rawReport || typeof rawReport !== "object" || !("seedNotice" in rawReport)) {
+    return "";
+  }
+  const seedNotice = (rawReport as { seedNotice?: unknown }).seedNotice;
+  return typeof seedNotice === "string" ? seedNotice : "";
+}
+
 function deriveSurveyGapFindings(
   handoff: DiagnosticStrategyHandoff | null,
   context: OrganisationContext,
+  demoSeedLoaded = false,
 ): {
   proceedCondition: ProceedCondition;
   missingAreas: string[];
@@ -370,16 +382,18 @@ function deriveSurveyGapFindings(
   ];
 
   return {
-    proceedCondition: completed < 8 ? "Proceed with assumptions" : "Proceed",
+    proceedCondition: completed < 8 || demoSeedLoaded ? "Proceed with assumptions" : "Proceed",
     missingAreas: missingFields.length ? missingFields : ["No material context gaps identified"],
     weakEvidenceAreas: weakEvidenceAreas.length ? weakEvidenceAreas : ["No material weak evidence areas identified"],
     followUpQuestions: followUpQuestions.length
       ? followUpQuestions
       : ["Confirm the strategy scope and approval route with accountable decision owners."],
     riskFlags:
-      completed < 8
-        ? ["Downstream strategy outputs must label assumptions until user-provided context is completed."]
-        : ["Strategy outputs can proceed with current evidence labels."],
+      demoSeedLoaded
+        ? ["Demo seed data is suitable for local testing and walkthroughs only; downstream strategy outputs must remain assumption-labelled."]
+        : completed < 8
+          ? ["Downstream strategy outputs must label assumptions until user-provided context is completed."]
+          : ["Strategy outputs can proceed with current evidence labels."],
   };
 }
 
@@ -407,15 +421,22 @@ export default function DataStrategyBuilderClient() {
   const [expandedAgentId, setExpandedAgentId] = useState("0");
   const [focusDrafts, setFocusDrafts] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
+  const [demoHandoffNotice, setDemoHandoffNotice] = useState("");
+  const [demoContextNotice, setDemoContextNotice] = useState("");
 
   useEffect(() => {
-    setHandoff(loadLatestDiagnosticStrategyHandoff());
+    const latestHandoff = loadLatestDiagnosticStrategyHandoff();
+    setHandoff(latestHandoff);
+    setDemoHandoffNotice(demoHandoffNoticeFrom(latestHandoff));
     setContext(loadJson(contextStorageKey, emptyContext));
     setAgents(loadJson(agentSettingsStorageKey, defaultAgents));
   }, []);
 
   const completedContext = contextCompleted(context);
-  const surveyGap = useMemo(() => deriveSurveyGapFindings(handoff, context), [handoff, context]);
+  const surveyGap = useMemo(
+    () => deriveSurveyGapFindings(handoff, context, Boolean(demoHandoffNotice || demoContextNotice)),
+    [handoff, context, demoHandoffNotice, demoContextNotice],
+  );
   const labels = sourceLabels(surveyGap.proceedCondition);
 
   const updateContext = (key: ContextKey, value: string) => {
@@ -427,6 +448,13 @@ export default function DataStrategyBuilderClient() {
     setNotice("User-provided context saved locally.");
   };
 
+  const loadDemoContext = () => {
+    setContext(seedOrganisationContext);
+    saveJson(contextStorageKey, seedOrganisationContext);
+    setDemoContextNotice("Demo organisation context loaded — user-provided context, not diagnostic evidence");
+    setNotice("Demo organisation context loaded — user-provided context, not diagnostic evidence");
+  };
+
   const resetContext = () => {
     setContext(emptyContext);
     setNotice("Context reset in the current browser session.");
@@ -435,6 +463,8 @@ export default function DataStrategyBuilderClient() {
   const clearLocalDraft = () => {
     setContext(emptyContext);
     setAgents(defaultAgents);
+    setDemoHandoffNotice("");
+    setDemoContextNotice("");
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(contextStorageKey);
       window.localStorage.removeItem(agentSettingsStorageKey);
@@ -443,8 +473,17 @@ export default function DataStrategyBuilderClient() {
   };
 
   const reloadHandoff = () => {
-    setHandoff(loadLatestDiagnosticStrategyHandoff());
+    const latestHandoff = loadLatestDiagnosticStrategyHandoff();
+    setHandoff(latestHandoff);
+    setDemoHandoffNotice(demoHandoffNoticeFrom(latestHandoff));
     setNotice("Diagnostic handoff reloaded from local storage.");
+  };
+
+  const loadDemoDiagnosticHandoff = () => {
+    const seededHandoff = seedLatestDiagnosticStrategyHandoff();
+    setHandoff(seededHandoff);
+    setDemoHandoffNotice("Demo diagnostic handoff loaded — not production evidence");
+    setNotice("Demo diagnostic handoff loaded — not production evidence");
   };
 
   const saveAgentSettings = () => {
@@ -523,6 +562,12 @@ export default function DataStrategyBuilderClient() {
               ? handoff.customerContext.organisationName ?? "Organisation name not supplied"
               : "Run Module 01 first. Strategy can be drafted manually but cannot be evidence-backed yet."}
           </p>
+          {!handoff ? (
+            <button className="data-strategy-demo-action" type="button" onClick={loadDemoDiagnosticHandoff}>
+              Load demo diagnostic handoff
+            </button>
+          ) : null}
+          {demoHandoffNotice ? <p className="data-strategy-demo-label">{demoHandoffNotice}</p> : null}
           <dl>
             <div><dt>Source</dt><dd>{handoff ? "Module 01" : "Missing"}</dd></div>
             <div><dt>Generated</dt><dd>{handoff ? new Date(handoff.generatedAt).toLocaleString() : "No data"}</dd></div>
@@ -530,6 +575,7 @@ export default function DataStrategyBuilderClient() {
             <div><dt>Evidence</dt><dd>{handoff ? percentText(handoff.assessmentSummary.evidenceCoveragePct) : "No data"}</dd></div>
             <div><dt>Questions</dt><dd>{handoff ? `${handoff.assessmentSummary.questionsScored} / ${handoff.assessmentSummary.totalQuestions}` : "No data"}</dd></div>
             <div><dt>Domains</dt><dd>{handoff ? `${handoff.assessmentSummary.domainsAssessed} / ${handoff.assessmentSummary.totalDomains}` : "No data"}</dd></div>
+            <div><dt>Gartner pillars</dt><dd>{handoff ? handoff.gartnerSummaries.length : "No data"}</dd></div>
             <div><dt>Priority gaps</dt><dd>{handoff ? handoff.priorityGaps.length : "No data"}</dd></div>
           </dl>
           <small>AI readiness gate summary</small>
@@ -545,6 +591,7 @@ export default function DataStrategyBuilderClient() {
           </div>
           <span className="data-strategy-context-meter">{completedContext} of {contextFields.length} context fields completed</span>
         </div>
+        {demoContextNotice ? <p className="data-strategy-demo-context-label">{demoContextNotice}</p> : null}
         <div className="data-strategy-context-grid">
           {contextFields.map((field) => (
             <label key={field.key}>
@@ -559,6 +606,7 @@ export default function DataStrategyBuilderClient() {
         </div>
         <div className="data-strategy-actions compact">
           <button type="button" onClick={saveContext}>Save context</button>
+          <button type="button" onClick={loadDemoContext}>Load demo context</button>
           <button type="button" onClick={resetContext}>Reset</button>
           <button type="button" onClick={clearLocalDraft}>Clear local-only draft</button>
           <span>Local-only until backend persistence is enabled.</span>
