@@ -11,7 +11,8 @@ KUBECONFIG_PATH="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 DEPLOY_STEP_TIMEOUT_SECONDS="${DEPLOY_STEP_TIMEOUT_SECONDS:-1200}"
 PUBLIC_PORTAL_HOST="${PUBLIC_PORTAL_HOST:-dmo.opendatalake.com}"
 PUBLIC_PORTAL_URL="${PUBLIC_PORTAL_URL:-https://${PUBLIC_PORTAL_HOST}}"
-AI_GATEWAY_BASE_URL="${AI_GATEWAY_BASE_URL:-http://local-ai-gateway:8080/v1}"
+AI_GATEWAY_BASE_URL="${AI_GATEWAY_BASE_URL:-https://ai.opendatalake.com/v1}"
+LOCAL_AI_MODEL="${LOCAL_AI_MODEL:-mistral-nemo:12b}"
 KUBECTL=(sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl -n "$NAMESPACE")
 
 dump_portal_state() {
@@ -66,7 +67,7 @@ timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" bash -c 'docker save "$1" | sudo k3s ctr 
 echo "Ensuring public portal host is configured: $PUBLIC_PORTAL_HOST"
 if "${KUBECTL[@]}" get configmap opencare-config >/dev/null 2>&1; then
   "${KUBECTL[@]}" patch configmap opencare-config --type merge \
-    -p "{\"data\":{\"PORTAL_HOST\":\"${PUBLIC_PORTAL_HOST}\",\"PORTAL_URL\":\"${PUBLIC_PORTAL_URL}\",\"BASE_DOMAIN\":\"${PUBLIC_PORTAL_HOST}\",\"AI_GATEWAY_BASE_URL\":\"${AI_GATEWAY_BASE_URL}\"}}" >/dev/null
+    -p "{\"data\":{\"PORTAL_HOST\":\"${PUBLIC_PORTAL_HOST}\",\"PORTAL_URL\":\"${PUBLIC_PORTAL_URL}\",\"BASE_DOMAIN\":\"${PUBLIC_PORTAL_HOST}\",\"AI_GATEWAY_BASE_URL\":\"${AI_GATEWAY_BASE_URL}\",\"LOCAL_AI_MODEL\":\"${LOCAL_AI_MODEL}\"}}" >/dev/null
 else
   echo "WARN: configmap/opencare-config not found; skipping public host config patch." >&2
 fi
@@ -91,7 +92,7 @@ echo "Updating deployment/$DEPLOYMENT in namespace $NAMESPACE"
 "${KUBECTL[@]}" set image "deployment/$DEPLOYMENT" "$CONTAINER=$image"
 "${KUBECTL[@]}" patch "deployment/$DEPLOYMENT" \
   -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$CONTAINER\",\"envFrom\":[{\"configMapRef\":{\"name\":\"opencare-config\"}},{\"secretRef\":{\"name\":\"opencare-secrets\",\"optional\":true}}],\"env\":[{\"name\":\"PORT\",\"value\":\"3000\"}]}]}}}}"
-"${KUBECTL[@]}" set env "deployment/$DEPLOYMENT" "AI_GATEWAY_BASE_URL=${AI_GATEWAY_BASE_URL}" >/dev/null
+"${KUBECTL[@]}" set env "deployment/$DEPLOYMENT" "AI_GATEWAY_BASE_URL=${AI_GATEWAY_BASE_URL}" "LOCAL_AI_MODEL=${LOCAL_AI_MODEL}" >/dev/null
 "${KUBECTL[@]}" patch "deployment/$DEPLOYMENT" \
   -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"$CONTAINER\",\"imagePullPolicy\":\"Never\"}]}}}}"
 
