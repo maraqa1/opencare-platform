@@ -141,6 +141,26 @@ function localAiErrorMessage(body: LocalAiChatResponse, status: number) {
   );
 }
 
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function localAiTimeoutResponse(model: string, gateway: string, gatewayTimeoutMs: number) {
+  return NextResponse.json(
+    {
+      status: "local_ai_timeout",
+      message: `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds.`,
+      details: [
+        "The portal reached the local AI gateway, but the model did not complete the report response within the configured timeout.",
+        "Try again after the model is warm, reduce report prompt size, or generate the report in smaller sections.",
+      ],
+      model,
+      gateway,
+    },
+    { status: 504 },
+  );
+}
+
 export async function POST(request: Request) {
   let payload: DiagnosticReportRequest;
   try {
@@ -163,6 +183,13 @@ export async function POST(request: Request) {
     : defaultGatewayTimeoutMs;
   const abortController = new AbortController();
   const timeout = setTimeout(() => abortController.abort(), gatewayTimeoutMs);
+  let timeoutCleared = false;
+  const clearGatewayTimeout = () => {
+    if (!timeoutCleared) {
+      clearTimeout(timeout);
+      timeoutCleared = true;
+    }
+  };
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
@@ -244,20 +271,9 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      return NextResponse.json(
-        {
-          status: "local_ai_timeout",
-          message: `Local AI report generation timed out after ${Math.round(gatewayTimeoutMs / 1000)} seconds.`,
-          details: [
-            "The portal reached the local AI gateway, but the model did not complete the report response within the configured timeout.",
-            "Try again after the model is warm, reduce report prompt size, or generate the report in smaller sections.",
-          ],
-          model,
-          gateway: gatewayBaseUrl,
-        },
-        { status: 504 },
-      );
+    clearGatewayTimeout();
+    if (isAbortError(error)) {
+      return localAiTimeoutResponse(model, gatewayBaseUrl, gatewayTimeoutMs);
     }
     return NextResponse.json(
       {
@@ -269,14 +285,17 @@ export async function POST(request: Request) {
       },
       { status: 502 },
     );
-  } finally {
-    clearTimeout(timeout);
   }
 
   let body: LocalAiChatResponse;
   try {
     body = (await response.json()) as LocalAiChatResponse;
-  } catch {
+    clearGatewayTimeout();
+  } catch (error) {
+    clearGatewayTimeout();
+    if (isAbortError(error)) {
+      return localAiTimeoutResponse(model, gatewayBaseUrl, gatewayTimeoutMs);
+    }
     return NextResponse.json(
       {
         status: "error",
