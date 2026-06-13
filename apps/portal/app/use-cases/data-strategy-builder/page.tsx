@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import DiagnosticHandoffPanel from "./diagnostic-handoff-panel";
+
 export const metadata: Metadata = {
   title: "Data Strategy Builder - Yottalogica",
 };
@@ -119,11 +121,7 @@ export default function DataStrategyBuilderPage() {
             <Link href="/use-cases/data-ai-capability-diagnostic">Review Module 01 diagnostic</Link>
           </div>
         </div>
-        <aside aria-label="Module status">
-          <span>Strategy module</span>
-          <strong>Needs diagnostic input</strong>
-          <p>No live strategy run connected. Use Module 01 outputs and customer strategy inputs to produce the first draft.</p>
-        </aside>
+        <DiagnosticHandoffPanel />
       </section>
 
       <section className="data-strategy-flow" aria-label="Module 1 to Module 2 flow">

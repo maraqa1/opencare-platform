@@ -10,6 +10,11 @@ import {
   dataAiReportPrompts,
   type DataAiDiagnosticQuestion,
 } from "@/lib/data-ai-diagnostic";
+import {
+  buildDiagnosticStrategyHandoff,
+  clearLatestDiagnosticStrategyHandoff,
+  saveLatestDiagnosticStrategyHandoff,
+} from "@/lib/data-ai-diagnostic-handoff";
 
 type ActiveTab = "capture" | "dashboard" | "gartner" | "gaps" | "report" | "evidence";
 
@@ -477,6 +482,7 @@ export function DataAiDiagnosticWorkspace() {
   const [generatedReport, setGeneratedReport] = useState<GeneratedConsultingReport | null>(null);
   const [reportStatus, setReportStatus] = useState<"idle" | "loading" | "ready" | "missing_key" | "error">("idle");
   const [reportMessage, setReportMessage] = useState("");
+  const [handoffMessage, setHandoffMessage] = useState("");
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
   const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion), [stateByQuestion]);
@@ -532,11 +538,17 @@ export function DataAiDiagnosticWorkspace() {
   const seedDummyData = () => {
     setStateByQuestion(dummyState());
     setCustomerContext(demoCustomerContext);
+    setHandoffMessage("");
   };
 
   const resetCapture = () => {
     setStateByQuestion(initialState());
     setCustomerContext(emptyCustomerContext);
+    setGeneratedReport(null);
+    setReportStatus("idle");
+    setReportMessage("");
+    clearLatestDiagnosticStrategyHandoff();
+    setHandoffMessage("Strategy handoff cleared locally.");
   };
 
   const updateCustomerContext = (field: keyof CustomerContext, value: string) => {
@@ -641,6 +653,7 @@ export function DataAiDiagnosticWorkspace() {
   const generateConsultingReport = async () => {
     setReportStatus("loading");
     setReportMessage("");
+    setHandoffMessage("");
     try {
       const response = await fetch("/api/data-ai-diagnostic/report", {
         method: "POST",
@@ -691,9 +704,48 @@ export function DataAiDiagnosticWorkspace() {
         setReportMessage(result.message ?? `AI report generation failed (${response.status}).`);
         return;
       }
-      setGeneratedReport(normaliseGeneratedReport(result.report));
+      const normalisedReport = normaliseGeneratedReport(result.report);
+      const handoff = buildDiagnosticStrategyHandoff({
+        customerContext,
+        overallScore,
+        overallGap,
+        maturityLabel: maturityLabel(overallScore),
+        readinessScorePct: overallScore === null ? null : Math.round((overallScore / 4) * 100),
+        questionsScored: scoredQuestions,
+        totalQuestions,
+        domainsAssessed: assessedDomains.length,
+        totalDomains: summaries.length,
+        evidenceBackedResponses: evidenceBackedItems,
+        totalResponses: totalQuestions,
+        evidenceCoveragePct,
+        domainSummaries: summaries,
+        gartnerSummaries: gartnerSummaries.map((pillar) => ({
+          pillarName: pillar.name,
+          score: pillar.avgScore,
+          gap: pillar.avgGap,
+          priority: priorityLabels[pillar.priority],
+          decisionQuestion: pillar.decisionQuestion,
+          managementAction: pillar.managementAction,
+          mappedDomains: pillar.domainIds
+            .map((domainId) => dataAiDiagnosticDomains.find((domain) => domain.id === domainId)?.nameEn)
+            .filter((domainName): domainName is string => Boolean(domainName)),
+        })),
+        priorityGaps: rankedGaps.slice(0, 10).map(({ question, state, gap, priority }) => ({
+          question: question.questionEn,
+          domain: question.domainEn,
+          score: state.score,
+          gap,
+          evidence: state.evidenceAvailable || state.evidenceStrength,
+          action: state.actionPlan,
+          severity: priorityLabels[priority],
+        })),
+        generatedReport: normalisedReport,
+      });
+      saveLatestDiagnosticStrategyHandoff(handoff);
+      setGeneratedReport(normalisedReport);
       setReportStatus("ready");
-      setReportMessage(`Generated with ${result.model ?? "OpenAI"}.`);
+      setReportMessage(`Generated with ${result.model ?? "OpenAI"}. Strategy handoff saved locally.`);
+      setHandoffMessage("Diagnostic completed — available to Data Strategy Builder");
     } catch (error) {
       setReportStatus("error");
       setReportMessage(error instanceof Error ? error.message : "Unable to reach the report generation API.");
@@ -1217,6 +1269,12 @@ export function DataAiDiagnosticWorkspace() {
           {reportMessage ? (
             <div className={`data-ai-report-status ${reportStatus}`}>
               {reportMessage}
+            </div>
+          ) : null}
+          {handoffMessage ? (
+            <div className="data-ai-handoff-status">
+              <span>{handoffMessage}</span>
+              <Link href="/use-cases/data-strategy-builder">Open Data Strategy Builder</Link>
             </div>
           ) : null}
 

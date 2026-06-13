@@ -12609,6 +12609,30 @@ code {
   color: #854a0e;
 }
 
+.data-ai-handoff-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid rgba(34, 94, 84, 0.18);
+  border-radius: 16px;
+  background: #eef8f4;
+  color: #154f45;
+  font-size: 0.9rem;
+  font-weight: 850;
+  padding: 0.85rem 1rem;
+}
+
+.data-ai-handoff-status a {
+  border: 1px solid rgba(34, 94, 84, 0.22);
+  border-radius: 999px;
+  background: #fff;
+  color: #154f45;
+  padding: 0.55rem 0.85rem;
+  text-decoration: none;
+}
+
 .data-ai-report-pack .regen-btn,
 .data-ai-report-pack button[onclick*="regen"],
 .data-ai-report-pack .skeleton,
@@ -14926,6 +14950,58 @@ code {
   color: rgba(255, 255, 255, 0.78);
   font-size: 0.95rem;
   line-height: 1.6;
+}
+
+.data-strategy-handoff-panel dl {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+
+.data-strategy-handoff-panel dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  padding-top: 0.65rem;
+}
+
+.data-strategy-handoff-panel dt,
+.data-strategy-handoff-panel small {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.data-strategy-handoff-panel dd {
+  margin: 0;
+  color: #fff;
+  font-weight: 900;
+}
+
+.data-strategy-handoff-panel ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.data-strategy-handoff-panel li {
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  padding: 0.55rem 0.65rem;
+}
+
+.data-strategy-handoff-panel.ready span {
+  background: rgba(220, 252, 231, 0.12);
+  color: #c8f3dc;
 }
 
 .data-strategy-flow {
