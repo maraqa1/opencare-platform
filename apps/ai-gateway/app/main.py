@@ -11,6 +11,7 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434/v1").rstrip(
 OLLAMA_ROOT_URL = OLLAMA_BASE_URL.removesuffix("/v1").rstrip("/")
 LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3.2:3b")
 LOCAL_AI_API_KEY = os.getenv("LOCAL_AI_API_KEY", "")
+LOCAL_AI_KEEP_ALIVE = os.getenv("LOCAL_AI_KEEP_ALIVE", "-1")
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("LOCAL_AI_REQUEST_TIMEOUT_SECONDS", "180"))
 
 app = FastAPI(
@@ -39,6 +40,14 @@ async def get_ollama(path: str) -> httpx.Response:
         return await client.get(f"{OLLAMA_BASE_URL}{path}")
 
 
+async def warm_model() -> httpx.Response:
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
+        return await client.post(
+            f"{OLLAMA_ROOT_URL}/api/generate",
+            json={"model": LOCAL_AI_MODEL, "prompt": "", "stream": False, "keep_alive": LOCAL_AI_KEEP_ALIVE},
+        )
+
+
 @app.get("/")
 def root() -> dict[str, str]:
     return {
@@ -60,6 +69,7 @@ async def health() -> JSONResponse:
                 "service": SERVICE_NAME,
                 "provider": "ollama",
                 "model": LOCAL_AI_MODEL,
+                "keep_alive": LOCAL_AI_KEEP_ALIVE,
                 "ollama_status": response.status_code,
             },
             status_code=200 if response.is_success else 503,
@@ -71,6 +81,7 @@ async def health() -> JSONResponse:
                 "service": SERVICE_NAME,
                 "provider": "ollama",
                 "model": LOCAL_AI_MODEL,
+                "keep_alive": LOCAL_AI_KEEP_ALIVE,
                 "message": str(exc),
             },
             status_code=503,
@@ -88,6 +99,27 @@ async def list_models(authorization: str | None = Header(default=None)) -> JSONR
     return JSONResponse(response.json(), status_code=response.status_code)
 
 
+@app.post("/v1/warm")
+async def warm(authorization: str | None = Header(default=None)) -> JSONResponse:
+    require_api_key(authorization)
+    try:
+        response = await warm_model()
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=503, detail=f"Local model runtime is unavailable: {exc}") from exc
+
+    return JSONResponse(
+        {
+            "status": "ready" if response.is_success else "degraded",
+            "service": SERVICE_NAME,
+            "provider": "ollama",
+            "model": LOCAL_AI_MODEL,
+            "keep_alive": LOCAL_AI_KEEP_ALIVE,
+            "ollama_status": response.status_code,
+        },
+        status_code=200 if response.is_success else 503,
+    )
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
     require_api_key(authorization)
@@ -103,7 +135,11 @@ async def chat_completions(request: Request, authorization: str | None = Header(
     if payload.get("stream"):
         raise HTTPException(status_code=400, detail="Streaming responses are not enabled on this gateway yet.")
 
-    payload = {**payload, "model": payload.get("model") or LOCAL_AI_MODEL}
+    payload = {
+        **payload,
+        "model": payload.get("model") or LOCAL_AI_MODEL,
+        "keep_alive": payload.get("keep_alive") or LOCAL_AI_KEEP_ALIVE,
+    }
 
     try:
         response = await post_ollama("/chat/completions", payload)

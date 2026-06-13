@@ -43,6 +43,12 @@ spec:
           env:
             - name: OLLAMA_BASE_URL
               value: http://ollama:11434/v1
+            - name: LOCAL_AI_KEEP_ALIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: opencare-config
+                  key: LOCAL_AI_KEEP_ALIVE
+                  optional: true
           resources:
             requests:
               cpu: 50m

@@ -1,0 +1,31 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: local-ai-model-warm
+  namespace: opencare
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: warm-model
+          image: curlimages/curl:8.10.1
+          envFrom:
+            - configMapRef:
+                name: opencare-config
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              model="${LOCAL_AI_MODEL:-llama3.2:3b}"
+              keep_alive="${LOCAL_AI_KEEP_ALIVE:--1}"
+              echo "Warming local AI model: ${model} with keep_alive=${keep_alive}"
+              curl --fail --show-error --silent \
+                http://ollama:11434/api/generate \
+                -H 'Content-Type: application/json' \
+                -d "{\"model\":\"${model}\",\"prompt\":\"\",\"stream\":false,\"keep_alive\":\"${keep_alive}\"}"
+              echo
