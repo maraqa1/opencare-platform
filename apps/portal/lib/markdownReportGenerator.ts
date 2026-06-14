@@ -149,9 +149,8 @@ function sanitizeMarkdown(raw: string) {
   if (markdown.includes("{") && markdown.includes("}")) {
     throw new Error("Markdown report contains JSON-like output.");
   }
-  const normalised = markdown.toLowerCase();
-  if (!normalised.includes("## executive summary") || !normalised.includes("## ai readiness gate")) {
-    throw new Error("Markdown report is missing required sections.");
+  if (markdown.length < 700) {
+    throw new Error("Markdown report is too short to use as an executive report.");
   }
 
   return markdown;
