@@ -37,6 +37,84 @@ function reportModeEnv() {
   return "narrative_enrichment";
 }
 
+function finiteNumber(value: unknown, fallback = 0) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function nullableNumber(value: unknown) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function textValue(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function normaliseReportPayload(raw: unknown): DiagnosticReportRequest {
+  const payload = (raw ?? {}) as Record<string, unknown>;
+  const topGapDomains = Array.isArray(payload.topGapDomains) ? payload.topGapDomains : [];
+  const strongestDomains = Array.isArray(payload.strongestDomains) ? payload.strongestDomains : [];
+  const gartnerPillars = Array.isArray(payload.gartnerPillars) ? payload.gartnerPillars : [];
+  const priorityGaps = Array.isArray(payload.priorityGaps) ? payload.priorityGaps : [];
+
+  return {
+    customerContext: payload.customerContext as DiagnosticReportRequest["customerContext"],
+    overallScore: nullableNumber(payload.overallScore),
+    overallGap: nullableNumber(payload.overallGap),
+    scoredQuestions: finiteNumber(payload.scoredQuestions),
+    totalQuestions: finiteNumber(payload.totalQuestions),
+    evidenceBackedItems: finiteNumber(payload.evidenceBackedItems),
+    topGapDomains: topGapDomains.map((entry) => {
+      const domain = (entry ?? {}) as Record<string, unknown>;
+      return {
+        nameEn: textValue(domain.nameEn, textValue(domain.domain, "Unnamed domain")),
+        avgScore: nullableNumber(domain.avgScore ?? domain.score),
+        avgGap: nullableNumber(domain.avgGap ?? domain.gap),
+        scored: finiteNumber(domain.scored),
+        total: finiteNumber(domain.total),
+      };
+    }),
+    strongestDomains: strongestDomains.map((entry) => {
+      const domain = (entry ?? {}) as Record<string, unknown>;
+      return {
+        nameEn: textValue(domain.nameEn, textValue(domain.domain, "Unnamed domain")),
+        avgScore: nullableNumber(domain.avgScore ?? domain.score),
+        scored: finiteNumber(domain.scored),
+        total: finiteNumber(domain.total),
+      };
+    }),
+    gartnerPillars: gartnerPillars.map((entry) => {
+      const pillar = (entry ?? {}) as Record<string, unknown>;
+      return {
+        name: textValue(pillar.name, textValue(pillar.pillar, "Unnamed pillar")),
+        score: nullableNumber(pillar.score),
+        gap: nullableNumber(pillar.gap),
+        priority: textValue(pillar.priority, "Needs review"),
+        scored: finiteNumber(pillar.scored),
+        total: finiteNumber(pillar.total),
+        evidenceCoveragePct: finiteNumber(pillar.evidenceCoveragePct),
+        mappedDomains: Array.isArray(pillar.mappedDomains)
+          ? pillar.mappedDomains.filter((item): item is string => typeof item === "string")
+          : [],
+        decisionQuestion: textValue(pillar.decisionQuestion, "What decision is required?"),
+        managementAction: textValue(pillar.managementAction, textValue(pillar.action, "Assign owner and confirm remediation action.")),
+      };
+    }),
+    priorityGaps: priorityGaps.map((entry) => {
+      const gap = (entry ?? {}) as Record<string, unknown>;
+      return {
+        question: textValue(gap.question, "Unspecified gap question"),
+        domain: textValue(gap.domain, "Unspecified domain"),
+        score: nullableNumber(gap.score),
+        gap: nullableNumber(gap.gap),
+        evidenceStrength: textValue(gap.evidenceStrength, textValue(gap.evidence, "Not supplied")),
+        actionPlan: textValue(gap.actionPlan, textValue(gap.action, "Assign owner and confirm remediation action.")),
+      };
+    }),
+  };
+}
+
 function trimPayload(payload: DiagnosticReportRequest): DiagnosticReportRequest {
   return {
     ...payload,
@@ -50,7 +128,7 @@ function trimPayload(payload: DiagnosticReportRequest): DiagnosticReportRequest 
 export async function POST(request: Request) {
   let payload: DiagnosticReportRequest;
   try {
-    payload = (await request.json()) as DiagnosticReportRequest;
+    payload = normaliseReportPayload(await request.json());
   } catch {
     return NextResponse.json(
       {
