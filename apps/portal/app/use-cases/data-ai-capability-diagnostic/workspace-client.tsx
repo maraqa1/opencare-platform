@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import {
@@ -535,6 +535,25 @@ function parseMarkdownReport(markdown: string): MarkdownBlock[] {
       return;
     }
 
+    if (line.startsWith("|")) {
+      if (/^\|?[\s:|-]+\|?$/.test(line)) {
+        return;
+      }
+      if (pendingList?.type !== "ul") {
+        flushList();
+        pendingList = { type: "ul", items: [] };
+      }
+      const tableText = line
+        .split("|")
+        .map((cell) => cell.trim())
+        .filter(Boolean)
+        .join(" - ");
+      if (tableText) {
+        pendingList.items.push(tableText);
+      }
+      return;
+    }
+
     const orderedMatch = line.match(/^\d+\.\s+(.+)$/);
     if (orderedMatch) {
       if (pendingList?.type !== "ol") {
@@ -569,6 +588,16 @@ function parseMarkdownReport(markdown: string): MarkdownBlock[] {
   return blocks;
 }
 
+function renderInlineMarkdown(text: string): ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
 function MarkdownReport({ markdown, source }: { markdown: string; source: "llm" | "fallback" | null }) {
   const blocks = parseMarkdownReport(markdown);
   return (
@@ -585,26 +614,30 @@ function MarkdownReport({ markdown, source }: { markdown: string; source: "llm" 
           const key = `${block.type}-${index}`;
           switch (block.type) {
             case "h1":
-              return <h2 key={key}>{block.text}</h2>;
+              return <h2 key={key}>{renderInlineMarkdown(block.text)}</h2>;
             case "h2":
-              return <h3 key={key}>{block.text}</h3>;
+              return <h3 key={key}>{renderInlineMarkdown(block.text)}</h3>;
             case "h3":
-              return <h4 key={key}>{block.text}</h4>;
+              return <h4 key={key}>{renderInlineMarkdown(block.text)}</h4>;
             case "ul":
               return (
                 <ul key={key}>
-                  {block.items.map((item, itemIndex) => <li key={`${key}-${itemIndex}`}>{item}</li>)}
+                  {block.items.map((item, itemIndex) => (
+                    <li key={`${key}-${itemIndex}`}>{renderInlineMarkdown(item)}</li>
+                  ))}
                 </ul>
               );
             case "ol":
               return (
                 <ol key={key}>
-                  {block.items.map((item, itemIndex) => <li key={`${key}-${itemIndex}`}>{item}</li>)}
+                  {block.items.map((item, itemIndex) => (
+                    <li key={`${key}-${itemIndex}`}>{renderInlineMarkdown(item)}</li>
+                  ))}
                 </ol>
               );
             case "p":
             default:
-              return <p key={key}>{block.text}</p>;
+              return <p key={key}>{renderInlineMarkdown(block.text)}</p>;
           }
         })}
       </div>
