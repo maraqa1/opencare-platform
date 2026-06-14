@@ -14,6 +14,11 @@ const routeSource = readFileSync(
 const assemblerSource = readFileSync(join(here, "reportAssembler.ts"), "utf8");
 const deterministicSource = readFileSync(join(here, "deterministicReportBuilders.ts"), "utf8");
 const markdownSource = readFileSync(join(here, "markdownReportGenerator.ts"), "utf8");
+const workspaceSource = readFileSync(
+  join(here, "..", "app", "use-cases", "data-ai-capability-diagnostic", "workspace-client.tsx"),
+  "utf8",
+);
+const globalCssSource = readFileSync(join(here, "..", "app", "globals.css"), "utf8");
 
 assert(policySource.includes("forbidden_json_section"));
 assert(policySource.includes("forbidden_full_report"));
@@ -62,5 +67,10 @@ assert(markdownSource.includes("source: \"llm\""));
 assert(markdownSource.includes("source: \"fallback\""));
 assert(deterministicSource.includes("domainRemediationFocus"));
 assert(deterministicSource.includes("Evidence required:"));
+assert(workspaceSource.includes("seededActionByDomain"));
+assert(workspaceSource.includes("domainActionForSummary"));
+assert(!workspaceSource.includes("Demo action:"));
+assert(globalCssSource.includes(".data-ai-markdown-report"));
+assert(globalCssSource.includes("display: none !important;"));
 
 console.log("local LLM report policy tests passed");

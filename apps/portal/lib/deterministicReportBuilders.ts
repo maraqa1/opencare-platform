@@ -173,7 +173,16 @@ function domainRemediationFocus(domainName: string) {
       outcome: "Trusted source-to-report traceability for the priority decision flows.",
     };
   }
-  if (name.includes("execution") || name.includes("roadmap") || name.includes("value")) {
+  if (name.includes("strategy") || name.includes("business value")) {
+    return {
+      decision: "Confirm the data strategy outcomes and investment choices before sequencing initiatives.",
+      owner: "Executive sponsor with Data Strategy Lead",
+      action: "Define strategic outcomes, value cases, prioritisation criteria, funding route, and decision cadence.",
+      evidence: "Strategy-on-a-page, value case register, prioritisation criteria, funding decision log, and initiative shortlist.",
+      outcome: "A value-led data strategy that can feed the DMO design and delivery roadmap.",
+    };
+  }
+  if (name.includes("execution") || name.includes("roadmap") || name.includes("value measurement")) {
     return {
       decision: "Convert the diagnostic gaps into an approved benefits-led delivery backlog.",
       owner: "Transformation PMO with Data Council sponsorship",
@@ -182,7 +191,16 @@ function domainRemediationFocus(domainName: string) {
       outcome: "A sequenced 90-day and 12-month plan that can be governed and measured.",
     };
   }
-  if (name.includes("governance") || name.includes("operating")) {
+  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
+    return {
+      decision: "Approve a role-based capability plan for owners, stewards, analysts, and AI users.",
+      owner: "Capability Lead with HR and Data Governance Office",
+      action: "Map capability gaps, define role-based learning paths, and link training to operating responsibilities.",
+      evidence: "Capability matrix, training plan, attendance records, role descriptions, and adoption measures.",
+      outcome: "Sustainable operation of the data governance and AI-readiness model.",
+    };
+  }
+  if (name.includes("governance") || name.includes("operating model")) {
     return {
       decision: "Confirm decision rights, data-owner accountability, and escalation routes for the highest-risk domains.",
       owner: "Executive sponsor and Data Governance Office",
@@ -200,7 +218,7 @@ function domainRemediationFocus(domainName: string) {
       outcome: "Evidence-backed definitions and lineage for management and AI-readiness decisions.",
     };
   }
-  if (name.includes("artificial intelligence") || name.includes("ai")) {
+  if (name.includes("artificial intelligence") || name.includes("use cases")) {
     return {
       decision: "Gate AI use cases until data quality, privacy, lineage, owner approval, and model-risk controls are evidenced.",
       owner: "AI Governance Lead with Data Council approval",
@@ -234,15 +252,6 @@ function domainRemediationFocus(domainName: string) {
       action: "Review sensitive data handling, access controls, retention, audit trail, and AI-use restrictions.",
       evidence: "Control assessment, access review, privacy impact review, retention rules, and audit log evidence.",
       outcome: "Reduced regulatory and operational risk before scaling data products or AI workflows.",
-    };
-  }
-  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
-    return {
-      decision: "Approve a role-based capability plan for owners, stewards, analysts, and AI users.",
-      owner: "Capability Lead with HR and Data Governance Office",
-      action: "Map capability gaps, define role-based learning paths, and link training to operating responsibilities.",
-      evidence: "Capability matrix, training plan, attendance records, role descriptions, and adoption measures.",
-      outcome: "Sustainable operation of the data governance and AI-readiness model.",
     };
   }
   return {

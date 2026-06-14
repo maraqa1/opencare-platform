@@ -13609,6 +13609,10 @@ code {
     display: none !important;
   }
 
+  .data-ai-markdown-report {
+    display: none !important;
+  }
+
   .portal-shell,
   .main,
   .page,

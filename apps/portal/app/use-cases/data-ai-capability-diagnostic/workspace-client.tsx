@@ -321,15 +321,53 @@ function demoEvidenceForQuestion(question: DataAiDiagnosticQuestion, score: numb
   return `Demo evidence: ${artifact} for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
 }
 
+function seededActionByDomain(domainName: string) {
+  const name = domainName.toLowerCase();
+  if (name.includes("quality") || name.includes("master")) {
+    return "Assign a data-quality owner, define critical data elements, publish validation rules, and track defect remediation through monthly governance.";
+  }
+  if (name.includes("source") || name.includes("flow")) {
+    return "Create the critical-source inventory, confirm system owners, document refresh cadence, and map source-to-report lineage for priority decisions.";
+  }
+  if (name.includes("execution") || name.includes("roadmap") || name.includes("value measurement")) {
+    return "Convert the gap into a benefits-led roadmap with initiative owners, dependency log, funding route, milestones, and steering review cadence.";
+  }
+  if (name.includes("strategy") || name.includes("business value")) {
+    return "Confirm strategic data outcomes, value cases, prioritisation criteria, and the decision route for funding and sequencing initiatives.";
+  }
+  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
+    return "Define role-based capability paths for owners, stewards, analysts, and AI users, then link training evidence to operating responsibilities.";
+  }
+  if (name.includes("governance") || name.includes("operating model")) {
+    return "Approve data-council decision rights, RACI, policy ownership, issue escalation, and evidence approval workflow.";
+  }
+  if (name.includes("metadata") || name.includes("catalogue") || name.includes("lineage")) {
+    return "Create glossary entries, catalogue priority datasets, map lineage, and certify ownership for high-value reports and data products.";
+  }
+  if (name.includes("artificial intelligence") || name.includes("use cases")) {
+    return "Gate AI candidates by data quality, privacy, lineage, owner approval, model-risk controls, and human review requirements.";
+  }
+  if (name.includes("architecture") || name.includes("infrastructure") || name.includes("tools") || name.includes("platform")) {
+    return "Document current platforms, integration patterns, target architecture, control gaps, and enabling investments for governed analytics.";
+  }
+  if (name.includes("report") || name.includes("dashboard") || name.includes("analytics")) {
+    return "Rationalise dashboards around certified KPI definitions, report owners, release controls, and executive usage evidence.";
+  }
+  if (name.includes("privacy") || name.includes("security") || name.includes("compliance")) {
+    return "Embed privacy, access, retention, auditability, and AI-use restrictions into the data and AI delivery gate.";
+  }
+  return "Assign an accountable owner, confirm required evidence, define target state, and track closure through the governance cadence.";
+}
+
 function demoActionForQuestion(question: DataAiDiagnosticQuestion, score: number) {
   const gap = Math.max(question.target - score, 0);
   if (gap >= 2) {
-    return `Demo action: assign ${question.domainEn} owner, confirm source evidence, and close the gap through a 90-day remediation plan.`;
+    return `Seeded action: ${seededActionByDomain(question.domainEn)}`;
   }
   if (gap === 1) {
-    return `Demo action: strengthen evidence pack and move ${question.domainEn} from defined to managed maturity.`;
+    return `Seeded action: strengthen the evidence pack for ${question.domainEn}, confirm accountable owner sign-off, and move the control from defined to managed maturity.`;
   }
-  return `Demo action: maintain evidence and review ${question.domainEn} in the next assessment cycle.`;
+  return `Seeded action: maintain evidence and review ${question.domainEn} in the next assessment cycle.`;
 }
 
 function dummyState() {
@@ -496,6 +534,14 @@ function maturityLabel(value: number | null) {
   return "Optimised";
 }
 
+function maturityProfilePhrase(value: number | null) {
+  const label = maturityLabel(value).toLowerCase();
+  if (label === "ad hoc" || label === "absent" || label === "optimised") {
+    return `an ${label}`;
+  }
+  return `a ${label}`;
+}
+
 function domainActionForSummary(summary: DomainSummary) {
   const name = summary.nameEn.toLowerCase();
   const gap = summary.avgGap === null ? "unknown gap" : `${summary.avgGap.toFixed(1)} gap`;
@@ -510,16 +556,22 @@ function domainActionForSummary(summary: DomainSummary) {
   if (name.includes("source") || name.includes("flow")) {
     return `${prefix} certify critical source inventory, system owners, refresh cadence, lineage, and unsupported manual exchanges before approving new reporting or AI use cases.`;
   }
-  if (name.includes("execution") || name.includes("roadmap") || name.includes("value")) {
+  if (name.includes("strategy") || name.includes("business value")) {
+    return `${prefix} confirm strategic data outcomes, value cases, prioritisation criteria, and the decision route for funding and sequencing initiatives.`;
+  }
+  if (name.includes("execution") || name.includes("roadmap") || name.includes("value measurement")) {
     return `${prefix} convert gaps into a benefits-led roadmap with initiative owners, dependencies, milestones, funding route, and steering committee cadence.`;
   }
-  if (name.includes("governance") || name.includes("operating")) {
+  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
+    return `${prefix} define role-based capability paths for owners, stewards, analysts, and AI users, tied to operating responsibilities.`;
+  }
+  if (name.includes("governance") || name.includes("operating model")) {
     return `${prefix} approve data-council decision rights, RACI, policy ownership, issue escalation, and evidence approval workflow.`;
   }
   if (name.includes("metadata") || name.includes("catalogue") || name.includes("lineage")) {
     return `${prefix} create glossary entries, catalogue priority datasets, map source-to-report lineage, and certify ownership for high-value reports.`;
   }
-  if (name.includes("artificial intelligence") || name.includes("ai")) {
+  if (name.includes("artificial intelligence") || name.includes("use cases")) {
     return `${prefix} gate AI candidates by data quality, privacy, lineage, owner approval, model-risk controls, and human review requirements.`;
   }
   if (name.includes("architecture") || name.includes("infrastructure") || name.includes("tools") || name.includes("platform")) {
@@ -530,9 +582,6 @@ function domainActionForSummary(summary: DomainSummary) {
   }
   if (name.includes("privacy") || name.includes("security") || name.includes("compliance")) {
     return `${prefix} embed privacy, access, retention, auditability, and AI-use restrictions into the delivery gate.`;
-  }
-  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
-    return `${prefix} define role-based capability paths for owners, stewards, analysts, and AI users, tied to operating responsibilities.`;
   }
   if (summary.priority === "critical") {
     return `${prefix} secure executive owner, recover evidence, define target state, and track weekly closure until the domain exits critical status.`;
@@ -1047,7 +1096,7 @@ export function DataAiDiagnosticWorkspace() {
           : repairedSections.length > 0
             ? `Generated with local model ${result.model ?? "configured runtime"} using section-by-section validation. ${repairedSections.length} section${repairedSections.length === 1 ? "" : "s"} required JSON repair. Strategy handoff saved locally.`
             : `Generated with local model ${result.model ?? "configured runtime"} using section-by-section validated JSON. Strategy handoff saved locally.`);
-      setHandoffMessage("Diagnostic completed — available to Data Strategy Builder");
+      setHandoffMessage("Diagnostic completed - available to Data Strategy Builder");
     } catch (error) {
       if (generationTimer) {
         clearTimeout(generationTimer);
@@ -1091,7 +1140,7 @@ export function DataAiDiagnosticWorkspace() {
             <span>84 workbook questions</span>
             <span>13 maturity domains</span>
             <span>AI report draft</span>
-            <span>Capture first · connect APIs later</span>
+            <span>Capture first - connect APIs later</span>
           </div>
         </div>
         <div className="data-ai-hero-panel">
@@ -1718,7 +1767,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page" id="data-ai-report-summary">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">01 · Executive Summary</p>
+              <p className="eyebrow">01 - Executive Summary</p>
               <h2>Readiness position and management attention</h2>
             </div>
             <div className="data-ai-report-kpis">
@@ -1741,7 +1790,7 @@ export function DataAiDiagnosticWorkspace() {
               <section className="strength">
                 <h3>Headline assessment</h3>
                 <p>
-                  The current capture for {reportCustomerName} indicates a {maturityLabel(overallScore).toLowerCase()} data and AI capability profile
+                  The current capture for {reportCustomerName} indicates {maturityProfilePhrase(overallScore)} data and AI capability profile
                   for {reportBusinessDomain}.
                   {topGapDomains.length
                     ? ` The most material gaps are concentrated in ${topGapDomains.map((item) => item.nameEn).join(", ")}.`
@@ -2020,7 +2069,7 @@ export function DataAiDiagnosticWorkspace() {
                   <ol>
                     {strongestDomains.map((summary) => (
                       <li key={summary.id}>
-                        <strong>{summary.nameEn}</strong> · {formatScore(summary.avgScore)} / 4, with {summary.scored}/{summary.total} questions scored.
+                        <strong>{summary.nameEn}</strong> - {formatScore(summary.avgScore)} / 4, with {summary.scored}/{summary.total} questions scored.
                       </li>
                     ))}
                   </ol>
@@ -2034,7 +2083,7 @@ export function DataAiDiagnosticWorkspace() {
                   <ol>
                     {topGapDomains.map((summary) => (
                       <li key={summary.id}>
-                        <strong>{summary.nameEn}</strong> · average gap {summary.avgGap?.toFixed(1)} from target maturity.
+                        <strong>{summary.nameEn}</strong> - average gap {summary.avgGap?.toFixed(1)} from target maturity.
                       </li>
                     ))}
                   </ol>
