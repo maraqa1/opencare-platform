@@ -46,6 +46,9 @@ assert(deterministicSource.includes("dataSourceStatus"));
 
 assert(markdownSource.includes("Return Markdown only."));
 assert(markdownSource.includes("Do not return JSON."));
+assert(markdownSource.includes("response_format: \"markdown\""));
+assert(markdownSource.includes("strict_json: false"));
+assert(markdownSource.includes("readMarkdownResponse"));
 assert(markdownSource.includes("buildDeterministicMarkdown"));
 assert(markdownSource.includes("source: \"llm\""));
 assert(markdownSource.includes("source: \"fallback\""));

@@ -156,6 +156,25 @@ function sanitizeMarkdown(raw: string) {
   return markdown;
 }
 
+async function readMarkdownResponse(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const body = await response.json() as {
+      choices?: Array<{ message?: { content?: string }; text?: string }>;
+      answer?: string;
+      content?: string;
+      message?: string;
+    };
+    return body.choices?.[0]?.message?.content
+      ?? body.choices?.[0]?.text
+      ?? body.answer
+      ?? body.content
+      ?? body.message
+      ?? "";
+  }
+  return response.text();
+}
+
 export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): Promise<MarkdownReportGeneration> {
   const prompt = buildMarkdownPrompt(args.payload);
   const inputTokenEstimate = estimateTokens(prompt);
@@ -171,6 +190,8 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
       signal: abortController.signal,
       body: JSON.stringify({
         model: args.modelConfig.model,
+        response_format: "markdown",
+        strict_json: false,
         temperature: 0.2,
         top_p: 0.75,
         max_tokens: 1600,
@@ -197,8 +218,7 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
       throw new Error(`Local AI markdown report failed at the gateway (${response.status}).`);
     }
 
-    const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const markdown = sanitizeMarkdown(body.choices?.[0]?.message?.content ?? "");
+    const markdown = sanitizeMarkdown(await readMarkdownResponse(response));
     return {
       markdown,
       source: "llm",
