@@ -143,7 +143,71 @@ function buildMarkdownPrompt(payload: DiagnosticReportRequest) {
   ].join("\n");
 }
 
-function sanitizeMarkdown(raw: string) {
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function removeInventedCustomerAcronym(markdown: string, payload: DiagnosticReportRequest) {
+  const customerName = contextLabel(payload, "customerName", "").trim();
+  if (!customerName || customerName.length < 5) {
+    return markdown;
+  }
+
+  const customerPattern = new RegExp(`${escapeRegExp(customerName)}\\s*\\(([A-Z]{2,8})\\)`, "g");
+  const acronyms = new Set<string>();
+  let cleaned = markdown.replace(customerPattern, (_match, acronym: string) => {
+    acronyms.add(acronym);
+    return customerName;
+  });
+
+  acronyms.forEach((acronym) => {
+    cleaned = cleaned.replace(new RegExp(`\\b${escapeRegExp(acronym)}\\b`, "g"), customerName);
+  });
+
+  return cleaned;
+}
+
+function convertMarkdownTables(markdown: string) {
+  const lines = markdown.split("\n");
+  const converted: string[] = [];
+  let inTable = false;
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("|")) {
+      if (inTable && converted.at(-1) !== "") {
+        converted.push("");
+      }
+      inTable = false;
+      converted.push(line);
+      return;
+    }
+
+    inTable = true;
+    if (/^\|?[\s:|-]+\|?$/.test(trimmed)) {
+      return;
+    }
+
+    const cells = trimmed
+      .split("|")
+      .map((cell) => cell.trim())
+      .filter(Boolean);
+
+    if (cells.length === 0) {
+      return;
+    }
+
+    if (cells.some((cell) => /^(question|domain|score|gap|evidence|action)$/i.test(cell))) {
+      return;
+    }
+
+    converted.push(`- ${cells.join(" - ")}`);
+  });
+
+  return converted.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   let markdown = raw
     .replace(/```(?:markdown|md)?/gi, "")
     .replace(/```/g, "")
@@ -158,6 +222,8 @@ function sanitizeMarkdown(raw: string) {
   if (!markdown.startsWith("#")) {
     throw new Error("Markdown report did not start with a report heading.");
   }
+  markdown = removeInventedCustomerAcronym(markdown, payload);
+  markdown = convertMarkdownTables(markdown);
   if (markdown.includes("{") && markdown.includes("}")) {
     throw new Error("Markdown report contains JSON-like output.");
   }
@@ -230,7 +296,7 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
       throw new Error(`Local AI markdown report failed at the gateway (${response.status}).`);
     }
 
-    const markdown = sanitizeMarkdown(await readMarkdownResponse(response));
+    const markdown = sanitizeMarkdown(await readMarkdownResponse(response), args.payload);
     return {
       markdown,
       source: "llm",

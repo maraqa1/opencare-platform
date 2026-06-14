@@ -51,6 +51,8 @@ assert(markdownSource.includes("Synthesize the implications."));
 assert(markdownSource.includes("response_format: \"markdown\""));
 assert(markdownSource.includes("strict_json: false"));
 assert(markdownSource.includes("readMarkdownResponse"));
+assert(markdownSource.includes("removeInventedCustomerAcronym"));
+assert(markdownSource.includes("convertMarkdownTables"));
 assert(markdownSource.includes("buildDeterministicMarkdown"));
 assert(markdownSource.includes("source: \"llm\""));
 assert(markdownSource.includes("source: \"fallback\""));
