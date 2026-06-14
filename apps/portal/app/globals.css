@@ -13062,6 +13062,75 @@ code {
   margin: 0.25rem 0 0;
 }
 
+.data-ai-report-source {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  margin-top: 0.75rem;
+  padding: 0.35rem 0.65rem;
+  text-transform: uppercase;
+}
+
+.data-ai-report-source.llm {
+  background: #e7f6ef;
+  color: #27664f;
+}
+
+.data-ai-report-source.fallback {
+  background: #fff3df;
+  color: #8a4c00;
+}
+
+.data-ai-markdown-report {
+  align-content: start;
+}
+
+.data-ai-markdown-body {
+  display: grid;
+  gap: 0.95rem;
+  line-height: 1.72;
+  max-width: 72rem;
+}
+
+.data-ai-markdown-body h2 {
+  color: #101828;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.04;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.data-ai-markdown-body h3 {
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+  color: #121a50;
+  font-size: 1.45rem;
+  margin: 0.65rem 0 0;
+  padding-top: 1rem;
+}
+
+.data-ai-markdown-body h4 {
+  color: #24345d;
+  font-size: 1.05rem;
+  margin: 0.35rem 0 0;
+}
+
+.data-ai-markdown-body p,
+.data-ai-markdown-body li {
+  color: #475467;
+  font-size: 0.98rem;
+}
+
+.data-ai-markdown-body ul,
+.data-ai-markdown-body ol {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 16px;
+  margin: 0;
+  padding: 0.95rem 1.15rem 0.95rem 2rem;
+}
+
 .data-ai-report-toc {
   display: grid;
   gap: 0.7rem;

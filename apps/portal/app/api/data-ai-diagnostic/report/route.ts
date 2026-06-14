@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 
 import { assembleDiagnosticReport } from "@/lib/reportAssembler";
 import type { DiagnosticReportRequest } from "@/lib/deterministicReportBuilders";
+import { generateMarkdownReport } from "@/lib/markdownReportGenerator";
 
 const fallbackModel = "mistral-nemo:12b";
 const defaultGatewayTimeoutMs = 180000;
 const defaultFieldTimeoutMs = 30000;
+const defaultMarkdownReportTimeoutMs = 180000;
 const defaultEnrichmentConcurrency = 1;
 const defaultMaxFieldWords = 120;
 
@@ -71,13 +73,17 @@ export async function POST(request: Request) {
 
   const gatewayTimeoutMs = numberEnv("LOCAL_AI_REPORT_TIMEOUT_MS", defaultGatewayTimeoutMs);
   const fieldTimeoutMs = Math.min(numberEnv("LOCAL_LLM_FIELD_TIMEOUT_MS", defaultFieldTimeoutMs), gatewayTimeoutMs);
+  const markdownTimeoutMs = Math.min(
+    numberEnv("LOCAL_LLM_MARKDOWN_REPORT_TIMEOUT_MS", defaultMarkdownReportTimeoutMs),
+    Math.max(gatewayTimeoutMs, defaultMarkdownReportTimeoutMs),
+  );
   const concurrency = Math.max(
     1,
     Math.min(numberEnv("LOCAL_LLM_ENRICHMENT_CONCURRENCY", defaultEnrichmentConcurrency), 2),
   );
   const maxFieldWords = Math.max(40, Math.min(numberEnv("LOCAL_LLM_MAX_FIELD_WORDS", defaultMaxFieldWords), 180));
   const reportMode = reportModeEnv();
-  const enableFieldEnrichment = booleanEnv("LOCAL_LLM_ENABLE_FIELD_ENRICHMENT", true);
+  const enableFieldEnrichment = booleanEnv("LOCAL_LLM_ENABLE_FIELD_ENRICHMENT", false);
 
   if (reportMode === "json_section") {
     return NextResponse.json(
@@ -90,7 +96,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const assembled = await assembleDiagnosticReport(trimPayload(payload), {
+    const trimmedPayload = trimPayload(payload);
+    const assembled = await assembleDiagnosticReport(trimmedPayload, {
       gatewayBaseUrl,
       headers,
       model,
@@ -100,22 +107,47 @@ export async function POST(request: Request) {
       maxFieldWords,
       concurrency,
     });
+    const markdownReport = await generateMarkdownReport({
+      payload: trimmedPayload,
+      deterministicReport: assembled.report,
+      modelConfig: {
+        gatewayBaseUrl,
+        headers,
+        model,
+        timeoutMs: markdownTimeoutMs,
+      },
+    });
+    const generationMetadata = {
+      ...assembled.generationMetadata,
+      markdownReport: {
+        source: markdownReport.source,
+        model: markdownReport.model,
+        durationMs: markdownReport.durationMs,
+        error: markdownReport.error,
+        inputTokenEstimate: markdownReport.inputTokenEstimate,
+      },
+    };
 
     return NextResponse.json({
       status: "ready",
       report: assembled.report,
       structuredReport: assembled.structuredReport,
+      markdownReport: markdownReport.markdown,
+      markdownReportSource: markdownReport.source,
+      markdownReportMetadata: generationMetadata.markdownReport,
       model,
-      repaired: assembled.fallbackFields.length > 0,
-      fallback: assembled.generationMetadata.mode === "deterministic",
+      repaired: assembled.fallbackFields.length > 0 || markdownReport.source === "fallback",
+      fallback: markdownReport.source === "fallback",
       fieldFallbacks: assembled.fallbackFields,
       enrichedFields: assembled.enrichedFields,
-      generationMetadata: assembled.generationMetadata,
-      message: assembled.fallbackFields.length > 0
+      generationMetadata,
+      message: markdownReport.source === "llm"
+        ? "AI2 generated the Markdown consulting report. Deterministic JSON was retained for validation and Module 02 handoff."
+        : assembled.fallbackFields.length > 0
         ? "Report JSON was built deterministically. Some optional narrative fields used deterministic fallback because local LLM enrichment was unavailable or invalid."
         : assembled.enrichedFields.length > 0
           ? "Report JSON was built deterministically and selected narrative fields were safely enriched by the local model."
-          : "Report JSON was built deterministically without local model enrichment.",
+          : `AI2 Markdown generation did not complete, so the portal used deterministic Markdown fallback. ${markdownReport.error ?? ""}`.trim(),
     });
   } catch (error) {
     return NextResponse.json(

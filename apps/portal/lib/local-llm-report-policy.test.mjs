@@ -13,6 +13,7 @@ const routeSource = readFileSync(
 );
 const assemblerSource = readFileSync(join(here, "reportAssembler.ts"), "utf8");
 const deterministicSource = readFileSync(join(here, "deterministicReportBuilders.ts"), "utf8");
+const markdownSource = readFileSync(join(here, "markdownReportGenerator.ts"), "utf8");
 
 assert(policySource.includes("forbidden_json_section"));
 assert(policySource.includes("forbidden_full_report"));
@@ -26,6 +27,8 @@ assert(sanitizerSource.includes("markdown_report_structure"));
 assert(sanitizerSource.includes("unsafe_preface"));
 
 assert(routeSource.includes("LOCAL_LLM_REPORT_MODE"));
+assert(routeSource.includes("generateMarkdownReport"));
+assert(routeSource.includes("markdownReport"));
 assert(routeSource.includes("json_section mode is disabled"));
 assert(routeSource.includes("assembleDiagnosticReport"));
 assert(!routeSource.includes("requiredShape"));
@@ -40,5 +43,11 @@ assert(deterministicSource.includes("analyticsType"));
 assert(deterministicSource.includes("\"descriptive\""));
 assert(deterministicSource.includes("\"generative\""));
 assert(deterministicSource.includes("dataSourceStatus"));
+
+assert(markdownSource.includes("Return Markdown only."));
+assert(markdownSource.includes("Do not return JSON."));
+assert(markdownSource.includes("buildDeterministicMarkdown"));
+assert(markdownSource.includes("source: \"llm\""));
+assert(markdownSource.includes("source: \"fallback\""));
 
 console.log("local LLM report policy tests passed");

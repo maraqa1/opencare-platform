@@ -63,6 +63,15 @@ type DiagnosticReportApiResponse = {
   status?: string;
   message?: string;
   report?: GeneratedConsultingReport;
+  markdownReport?: string;
+  markdownReportSource?: "llm" | "fallback";
+  markdownReportMetadata?: {
+    source?: "llm" | "fallback";
+    model?: string;
+    durationMs?: number;
+    error?: string;
+    inputTokenEstimate?: number;
+  };
   model?: string;
   gateway?: string;
   details?: string[];
@@ -80,6 +89,13 @@ type DiagnosticReportApiResponse = {
       durationMs?: number;
       rejectionReason?: string;
     }>;
+    markdownReport?: {
+      source?: "llm" | "fallback";
+      model?: string;
+      durationMs?: number;
+      error?: string;
+      inputTokenEstimate?: number;
+    };
     sections?: Record<string, {
       source?: string;
       attempts?: number;
@@ -89,6 +105,10 @@ type DiagnosticReportApiResponse = {
     }>;
   };
 };
+
+type MarkdownBlock =
+  | { type: "h1" | "h2" | "h3" | "p"; text: string }
+  | { type: "ul" | "ol"; items: string[] };
 
 type DomainSummary = {
   id: number;
@@ -497,6 +517,101 @@ function readinessThesis(value: number | null) {
   return "The organisation can progress selected AI use cases through formal model governance, provided risk controls and evidence remain active.";
 }
 
+function parseMarkdownReport(markdown: string): MarkdownBlock[] {
+  const blocks: MarkdownBlock[] = [];
+  let pendingList: { type: "ul" | "ol"; items: string[] } | null = null;
+
+  const flushList = () => {
+    if (pendingList?.items.length) {
+      blocks.push(pendingList);
+    }
+    pendingList = null;
+  };
+
+  markdown.split(/\r?\n/).forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) {
+      flushList();
+      return;
+    }
+
+    const orderedMatch = line.match(/^\d+\.\s+(.+)$/);
+    if (orderedMatch) {
+      if (pendingList?.type !== "ol") {
+        flushList();
+        pendingList = { type: "ol", items: [] };
+      }
+      pendingList.items.push(orderedMatch[1]);
+      return;
+    }
+
+    if (line.startsWith("- ")) {
+      if (pendingList?.type !== "ul") {
+        flushList();
+        pendingList = { type: "ul", items: [] };
+      }
+      pendingList.items.push(line.slice(2));
+      return;
+    }
+
+    flushList();
+    if (line.startsWith("### ")) {
+      blocks.push({ type: "h3", text: line.slice(4) });
+    } else if (line.startsWith("## ")) {
+      blocks.push({ type: "h2", text: line.slice(3) });
+    } else if (line.startsWith("# ")) {
+      blocks.push({ type: "h1", text: line.slice(2) });
+    } else {
+      blocks.push({ type: "p", text: line });
+    }
+  });
+  flushList();
+  return blocks;
+}
+
+function MarkdownReport({ markdown, source }: { markdown: string; source: "llm" | "fallback" | null }) {
+  const blocks = parseMarkdownReport(markdown);
+  return (
+    <article className="data-ai-report-page data-ai-generated-report data-ai-markdown-report">
+      <div className="data-ai-report-page-header">
+        <p className="eyebrow">AI-Authored Advisory</p>
+        <h2>Consulting report generated as Markdown</h2>
+        <span className={`data-ai-report-source ${source === "fallback" ? "fallback" : "llm"}`}>
+          {source === "fallback" ? "Deterministic fallback" : "AI2 model authored"}
+        </span>
+      </div>
+      <div className="data-ai-markdown-body">
+        {blocks.map((block, index) => {
+          const key = `${block.type}-${index}`;
+          switch (block.type) {
+            case "h1":
+              return <h2 key={key}>{block.text}</h2>;
+            case "h2":
+              return <h3 key={key}>{block.text}</h3>;
+            case "h3":
+              return <h4 key={key}>{block.text}</h4>;
+            case "ul":
+              return (
+                <ul key={key}>
+                  {block.items.map((item, itemIndex) => <li key={`${key}-${itemIndex}`}>{item}</li>)}
+                </ul>
+              );
+            case "ol":
+              return (
+                <ol key={key}>
+                  {block.items.map((item, itemIndex) => <li key={`${key}-${itemIndex}`}>{item}</li>)}
+                </ol>
+              );
+            case "p":
+            default:
+              return <p key={key}>{block.text}</p>;
+          }
+        })}
+      </div>
+    </article>
+  );
+}
+
 export function DataAiDiagnosticWorkspace() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("capture");
   const [selectedDomain, setSelectedDomain] = useState<number | "all">("all");
@@ -504,6 +619,8 @@ export function DataAiDiagnosticWorkspace() {
   const [stateByQuestion, setStateByQuestion] = useState(initialState);
   const [customerContext, setCustomerContext] = useState<CustomerContext>(emptyCustomerContext);
   const [generatedReport, setGeneratedReport] = useState<GeneratedConsultingReport | null>(null);
+  const [generatedMarkdownReport, setGeneratedMarkdownReport] = useState<string | null>(null);
+  const [generatedMarkdownReportSource, setGeneratedMarkdownReportSource] = useState<"llm" | "fallback" | null>(null);
   const [reportStatus, setReportStatus] = useState<"idle" | "loading" | "ready" | "missing_key" | "error">("idle");
   const [reportMessage, setReportMessage] = useState("");
   const [reportStageIndex, setReportStageIndex] = useState(0);
@@ -579,6 +696,8 @@ export function DataAiDiagnosticWorkspace() {
     setStateByQuestion(initialState());
     setCustomerContext(emptyCustomerContext);
     setGeneratedReport(null);
+    setGeneratedMarkdownReport(null);
+    setGeneratedMarkdownReportSource(null);
     setReportStatus("idle");
     setReportMessage("");
     setReportStageIndex(0);
@@ -830,14 +949,20 @@ export function DataAiDiagnosticWorkspace() {
       });
       saveLatestDiagnosticStrategyHandoff(handoff);
       setGeneratedReport(normalisedReport);
+      setGeneratedMarkdownReport(typeof result.markdownReport === "string" && result.markdownReport.trim()
+        ? result.markdownReport
+        : null);
+      setGeneratedMarkdownReportSource(result.markdownReportSource ?? null);
       setReportStageIndex(5);
       setReportStatus("ready");
       const fallbackSections = result.sectionFallbacks ?? [];
       const repairedSections = result.repairedSections ?? [];
       const fallbackFields = result.fieldFallbacks ?? [];
       const enrichedFields = result.enrichedFields ?? [];
-      setReportMessage(result.fallback
-        ? `${result.message ?? "Report JSON was built deterministically without local model enrichment."} Strategy handoff saved locally.`
+      setReportMessage(result.markdownReportSource === "llm"
+        ? `${result.message ?? "AI2 generated the Markdown consulting report."} Strategy handoff saved locally.`
+        : result.fallback
+          ? `${result.message ?? "AI2 Markdown generation did not complete; deterministic report fallback was used."} Strategy handoff saved locally.`
         : fallbackFields.length > 0
           ? `Report JSON was built deterministically. ${fallbackFields.length} optional narrative field${fallbackFields.length === 1 ? "" : "s"} used fallback: ${fallbackFields.join(", ")}. Strategy handoff saved locally.`
           : enrichedFields.length > 0
@@ -1597,7 +1722,9 @@ export function DataAiDiagnosticWorkspace() {
             </div>
           </article>
 
-          {generatedReport ? (
+          {generatedMarkdownReport ? (
+            <MarkdownReport markdown={generatedMarkdownReport} source={generatedMarkdownReportSource} />
+          ) : generatedReport ? (
             <article className="data-ai-report-page data-ai-generated-report">
               <div className="data-ai-report-page-header">
                 <p className="eyebrow">AI-Generated Advisory</p>
