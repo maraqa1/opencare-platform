@@ -153,6 +153,121 @@ function gapDomainNames(payload: DiagnosticReportRequest) {
     .filter(Boolean);
 }
 
+function domainRemediationFocus(domainName: string) {
+  const name = domainName.toLowerCase();
+  if (name.includes("quality") || name.includes("master")) {
+    return {
+      decision: "Approve a data-quality recovery sprint for the critical data elements behind priority reports and AI candidates.",
+      owner: "Data Quality Lead with business data owners",
+      action: "Stand up issue logging, validation rules, root-cause analysis, and monthly defect closure reporting.",
+      evidence: "Quality rules, exception reports, owner sign-off, data-quality dashboard, and remediation log.",
+      outcome: "Certified quality controls for the sources used in management reporting and AI-readiness decisions.",
+    };
+  }
+  if (name.includes("source") || name.includes("flow")) {
+    return {
+      decision: "Mandate a source-system inventory and flow certification before new reporting or AI use cases are approved.",
+      owner: "Data Architecture Lead with system owners",
+      action: "Document critical sources, interfaces, refresh cadence, data contracts, and unsupported manual exchanges.",
+      evidence: "Source catalogue, interface map, lineage record, refresh SLA, and accountable system-owner confirmation.",
+      outcome: "Trusted source-to-report traceability for the priority decision flows.",
+    };
+  }
+  if (name.includes("execution") || name.includes("roadmap") || name.includes("value")) {
+    return {
+      decision: "Convert the diagnostic gaps into an approved benefits-led delivery backlog.",
+      owner: "Transformation PMO with Data Council sponsorship",
+      action: "Prioritise initiatives by value, risk, dependency, and evidence readiness; assign milestones and benefit measures.",
+      evidence: "Approved roadmap, initiative charters, benefit cases, dependency log, and steering cadence.",
+      outcome: "A sequenced 90-day and 12-month plan that can be governed and measured.",
+    };
+  }
+  if (name.includes("governance") || name.includes("operating")) {
+    return {
+      decision: "Confirm decision rights, data-owner accountability, and escalation routes for the highest-risk domains.",
+      owner: "Executive sponsor and Data Governance Office",
+      action: "Approve RACI, council cadence, policy ownership, issue escalation, and evidence approval workflow.",
+      evidence: "Council terms of reference, RACI, policy register, decision log, and issue-escalation record.",
+      outcome: "Clear accountability for definitions, quality, access, and remediation decisions.",
+    };
+  }
+  if (name.includes("metadata") || name.includes("catalogue") || name.includes("lineage")) {
+    return {
+      decision: "Require metadata and lineage evidence for priority reports, data products, and AI candidates.",
+      owner: "Metadata and Lineage Lead",
+      action: "Capture business definitions, owners, systems of record, transformations, report usage, and lineage gaps.",
+      evidence: "Data catalogue entries, glossary approvals, lineage maps, and report-to-source traceability.",
+      outcome: "Evidence-backed definitions and lineage for management and AI-readiness decisions.",
+    };
+  }
+  if (name.includes("artificial intelligence") || name.includes("ai")) {
+    return {
+      decision: "Gate AI use cases until data quality, privacy, lineage, owner approval, and model-risk controls are evidenced.",
+      owner: "AI Governance Lead with Data Council approval",
+      action: "Classify AI candidates into proceed, pilot with controls, or hold; document controls and human approval points.",
+      evidence: "AI use-case register, risk assessment, privacy review, model-control checklist, and approval record.",
+      outcome: "Controlled AI adoption without relying on unverified data or unsupported model outputs.",
+    };
+  }
+  if (name.includes("architecture") || name.includes("infrastructure") || name.includes("tools") || name.includes("platform")) {
+    return {
+      decision: "Define the target data platform path and stop tool decisions from outrunning governance readiness.",
+      owner: "Enterprise/Data Architect with IT leadership",
+      action: "Map current platforms, integration patterns, control gaps, target architecture, and near-term enabling investments.",
+      evidence: "Architecture baseline, target-state blueprint, integration standards, control mapping, and investment backlog.",
+      outcome: "A platform roadmap that supports governed reporting, analytics, and AI enablement.",
+    };
+  }
+  if (name.includes("report") || name.includes("dashboard") || name.includes("analytics")) {
+    return {
+      decision: "Rationalise management dashboards around certified definitions, owners, and reporting cadence.",
+      owner: "BI/Product Owner with business performance leads",
+      action: "Identify critical reports, remove duplicates, certify KPI definitions, and publish report ownership rules.",
+      evidence: "Certified KPI dictionary, report inventory, usage analytics, dashboard owner map, and release log.",
+      outcome: "Trusted dashboards that can be used as evidence in executive decisions.",
+    };
+  }
+  if (name.includes("privacy") || name.includes("security") || name.includes("compliance")) {
+    return {
+      decision: "Embed privacy, security, and auditability controls into the data and AI delivery gate.",
+      owner: "Privacy/Security Lead with compliance stakeholders",
+      action: "Review sensitive data handling, access controls, retention, audit trail, and AI-use restrictions.",
+      evidence: "Control assessment, access review, privacy impact review, retention rules, and audit log evidence.",
+      outcome: "Reduced regulatory and operational risk before scaling data products or AI workflows.",
+    };
+  }
+  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
+    return {
+      decision: "Approve a role-based capability plan for owners, stewards, analysts, and AI users.",
+      owner: "Capability Lead with HR and Data Governance Office",
+      action: "Map capability gaps, define role-based learning paths, and link training to operating responsibilities.",
+      evidence: "Capability matrix, training plan, attendance records, role descriptions, and adoption measures.",
+      outcome: "Sustainable operation of the data governance and AI-readiness model.",
+    };
+  }
+  return {
+    decision: "Confirm the management decision needed to close the domain gap.",
+    owner: "Assigned domain owner",
+    action: "Define target state, required evidence, milestone plan, and escalation route.",
+    evidence: "Owner confirmation, approved action plan, evidence artifact, and closure record.",
+    outcome: "A controlled domain improvement plan that can be tracked through governance cadence.",
+  };
+}
+
+function domainActionRecommendation(domain: DiagnosticReportRequest["topGapDomains"][number]) {
+  const focus = domainRemediationFocus(domain.nameEn);
+  const score = formatScore(domain.avgScore);
+  const gap = domain.avgGap === null ? "not calculated" : domain.avgGap.toFixed(1);
+  return [
+    `${domain.nameEn}: score ${score} / 4, gap ${gap}.`,
+    `Decision: ${focus.decision}`,
+    `Owner: ${focus.owner}.`,
+    `Next 30 days: ${focus.action}`,
+    `Evidence required: ${focus.evidence}`,
+    `Success measure: ${focus.outcome}`,
+  ].join(" ");
+}
+
 export function buildDeterministicReport(payload: DiagnosticReportRequest): GeneratedConsultingReport {
   const client = contextLabel(payload, "customerName", "the organisation");
   const domain = contextLabel(payload, "businessDomain", "the stated business domain");
@@ -199,9 +314,7 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
       `Priority gaps are concentrated in ${weakest}, which should drive the first remediation backlog.`,
       `The current readiness score is ${readinessPct === null ? "not available" : `${readinessPct}%`}, so AI adoption should be gated rather than broad-based.`,
     ],
-    domainActionPlan: payload.topGapDomains.slice(0, 5).map((gap) =>
-      `${gap.nameEn}: score ${formatScore(gap.avgScore)} / 4 - assign owner, confirm evidence, define target state, and add remediation milestones.`,
-    ),
+    domainActionPlan: payload.topGapDomains.slice(0, 5).map(domainActionRecommendation),
     priorityGapRegister: priorityGapActions,
     recommendedDecisions: [
       "Confirm the diagnostic baseline and evidence exceptions in the next steering session.",

@@ -496,12 +496,54 @@ function maturityLabel(value: number | null) {
   return "Optimised";
 }
 
-function reportRecommendationForPriority(priority: DomainSummary["priority"]) {
-  if (priority === "critical") return "Immediate executive remediation and evidence recovery.";
-  if (priority === "high") return "Assign owner and close control gaps in the 90-day plan.";
-  if (priority === "medium") return "Strengthen evidence and standardise operating cadence.";
-  if (priority === "watch") return "Maintain control evidence and monitor during quarterly review.";
-  return "Capture baseline score and evidence before decision.";
+function domainActionForSummary(summary: DomainSummary) {
+  const name = summary.nameEn.toLowerCase();
+  const gap = summary.avgGap === null ? "unknown gap" : `${summary.avgGap.toFixed(1)} gap`;
+  const prefix = `${summary.nameEn} (${gap}):`;
+
+  if (summary.priority === "not_scored") {
+    return `${prefix} capture baseline score, evidence note, evidence strength, and accountable owner before this domain is used in the report.`;
+  }
+  if (name.includes("quality") || name.includes("master")) {
+    return `${prefix} appoint data-quality owner, define critical data elements, publish validation rules, log defects, and track monthly remediation closure.`;
+  }
+  if (name.includes("source") || name.includes("flow")) {
+    return `${prefix} certify critical source inventory, system owners, refresh cadence, lineage, and unsupported manual exchanges before approving new reporting or AI use cases.`;
+  }
+  if (name.includes("execution") || name.includes("roadmap") || name.includes("value")) {
+    return `${prefix} convert gaps into a benefits-led roadmap with initiative owners, dependencies, milestones, funding route, and steering committee cadence.`;
+  }
+  if (name.includes("governance") || name.includes("operating")) {
+    return `${prefix} approve data-council decision rights, RACI, policy ownership, issue escalation, and evidence approval workflow.`;
+  }
+  if (name.includes("metadata") || name.includes("catalogue") || name.includes("lineage")) {
+    return `${prefix} create glossary entries, catalogue priority datasets, map source-to-report lineage, and certify ownership for high-value reports.`;
+  }
+  if (name.includes("artificial intelligence") || name.includes("ai")) {
+    return `${prefix} gate AI candidates by data quality, privacy, lineage, owner approval, model-risk controls, and human review requirements.`;
+  }
+  if (name.includes("architecture") || name.includes("infrastructure") || name.includes("tools") || name.includes("platform")) {
+    return `${prefix} document current platforms, integration patterns, target architecture, control gaps, and enabling investments for governed analytics.`;
+  }
+  if (name.includes("report") || name.includes("dashboard") || name.includes("analytics")) {
+    return `${prefix} rationalise dashboards around certified KPI definitions, report owners, release controls, and executive usage evidence.`;
+  }
+  if (name.includes("privacy") || name.includes("security") || name.includes("compliance")) {
+    return `${prefix} embed privacy, access, retention, auditability, and AI-use restrictions into the delivery gate.`;
+  }
+  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
+    return `${prefix} define role-based capability paths for owners, stewards, analysts, and AI users, tied to operating responsibilities.`;
+  }
+  if (summary.priority === "critical") {
+    return `${prefix} secure executive owner, recover evidence, define target state, and track weekly closure until the domain exits critical status.`;
+  }
+  if (summary.priority === "high") {
+    return `${prefix} assign domain owner, close control gaps in the 90-day plan, and report progress through the data council.`;
+  }
+  if (summary.priority === "medium") {
+    return `${prefix} strengthen evidence, standardise operating cadence, and confirm quarterly improvement targets.`;
+  }
+  return `${prefix} maintain evidence, monitor exceptions, and confirm control health during quarterly review.`;
 }
 
 function readinessThesis(value: number | null) {
@@ -2027,7 +2069,7 @@ export function DataAiDiagnosticWorkspace() {
                       <td>{formatScore(summary.avgScore)} / 4</td>
                       <td>{summary.avgGap === null ? "No data" : summary.avgGap.toFixed(1)}</td>
                       <td><span className={`data-ai-priority ${summary.priority}`}>{priorityLabels[summary.priority]}</span></td>
-                      <td>{reportRecommendationForPriority(summary.priority)}</td>
+                      <td>{domainActionForSummary(summary)}</td>
                     </tr>
                   ))}
                 </tbody>

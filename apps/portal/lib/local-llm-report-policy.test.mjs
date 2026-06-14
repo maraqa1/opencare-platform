@@ -51,6 +51,7 @@ assert(markdownSource.includes("Return Markdown only."));
 assert(markdownSource.includes("Do not return JSON."));
 assert(markdownSource.includes("Do not use Markdown tables."));
 assert(markdownSource.includes("Synthesize the implications."));
+assert(markdownSource.includes("For the Domain action plan, do not write generic recommendations."));
 assert(markdownSource.includes("response_format: \"markdown\""));
 assert(markdownSource.includes("strict_json: false"));
 assert(markdownSource.includes("readMarkdownResponse"));
@@ -59,5 +60,7 @@ assert(markdownSource.includes("convertMarkdownTables"));
 assert(markdownSource.includes("buildDeterministicMarkdown"));
 assert(markdownSource.includes("source: \"llm\""));
 assert(markdownSource.includes("source: \"fallback\""));
+assert(deterministicSource.includes("domainRemediationFocus"));
+assert(deterministicSource.includes("Evidence required:"));
 
 console.log("local LLM report policy tests passed");
