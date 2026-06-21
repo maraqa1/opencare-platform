@@ -630,6 +630,18 @@ def metric_label(metric: dict[str, Any]) -> str:
     return str(metric.get("label", "Metric"))
 
 
+def is_bubble_chart(viz_type: str) -> bool:
+    return viz_type in {"echarts_bubble", "bubble_v2"}
+
+
+def is_box_plot_chart(viz_type: str) -> bool:
+    return viz_type in {"echarts_boxplot", "box_plot"}
+
+
+def is_treemap_chart(viz_type: str) -> bool:
+    return viz_type in {"echarts_treemap", "treemap_v2"}
+
+
 def bubble_metrics(chart_config: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         adhoc_metric(chart_config["bubble_size"]),
@@ -641,7 +653,7 @@ def bubble_metrics(chart_config: dict[str, Any]) -> list[dict[str, Any]]:
 def chart_columns(chart_config: dict[str, Any]) -> list[Any]:
     if chart_config.get("query_columns") is not None:
         return list(chart_config.get("query_columns", []))
-    if chart_config["viz_type"] == "echarts_bubble":
+    if is_bubble_chart(chart_config["viz_type"]):
         columns = [chart_config["bubble_entity"]]
         bubble_series = chart_config.get("bubble_series")
         if bubble_series and bubble_series not in columns:
@@ -655,7 +667,7 @@ def chart_columns(chart_config: dict[str, Any]) -> list[Any]:
 
 
 def chart_metrics(chart_config: dict[str, Any]) -> list[dict[str, Any]]:
-    if chart_config["viz_type"] == "echarts_bubble":
+    if is_bubble_chart(chart_config["viz_type"]):
         return bubble_metrics(chart_config)
     metric_specs = chart_config.get("metrics", [])
     return [adhoc_metric(metric_spec) for metric_spec in metric_specs]
@@ -690,10 +702,11 @@ def chart_params(
         "big_number_total",
         "big_number",
         "pie",
-        "echarts_treemap",
     }:
         params["metric"] = metrics[0]
-    if chart_config["viz_type"] == "echarts_bubble":
+    if is_treemap_chart(chart_config["viz_type"]) and metrics:
+        params["metric"] = metrics[0]
+    if is_bubble_chart(chart_config["viz_type"]):
         params.update(
             {
                 "entity": chart_config["bubble_entity"],
@@ -731,7 +744,7 @@ def chart_query(
     }
     if chart_config["viz_type"] == "big_number" and not chart_config.get("x_axis"):
         query["is_timeseries"] = True
-    if chart_config["viz_type"] == "echarts_bubble":
+    if is_bubble_chart(chart_config["viz_type"]):
         query["columns"] = columns
         query["metrics"] = metrics
         bubble_order_metric = chart_config.get("bubble_order_metric")
@@ -739,7 +752,7 @@ def chart_query(
             order_map = {"size": metrics[0], "x": metrics[1], "y": metrics[2]}
             metric_ref = order_map.get(str(bubble_order_metric), metrics[0])
             query["orderby"] = [[metric_ref, not bool(chart_config.get("sort_desc", True))]]
-    if chart_config["viz_type"] == "echarts_boxplot":
+    if is_box_plot_chart(chart_config["viz_type"]):
         query["columns"] = columns + group_by
         query["series_columns"] = group_by
         query["post_processing"] = [
@@ -752,7 +765,7 @@ def chart_query(
                 },
             }
         ]
-    if chart_config["viz_type"] == "echarts_treemap" and chart_config.get("sort_by_metric", False):
+    if is_treemap_chart(chart_config["viz_type"]) and chart_config.get("sort_by_metric", False):
         query["orderby"] = [[metrics[0], False]]
     return deep_merge(query, chart_config.get("query_overrides", {}))
 
