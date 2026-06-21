@@ -80,40 +80,6 @@ type PayerControlResponse = {
   dashboard?: PayerDashboardPayload | null;
 };
 
-const fallbackMonths = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"];
-const fallbackCharges = [7.1, 6.8, 7.4, 7.0, 7.6, 6.9, 5.8, 7.2, 7.5, 7.8, 7.3, 8.0];
-const fallbackCollections = [6.4, 6.2, 6.9, 6.5, 7.0, 6.3, 5.2, 6.7, 6.9, 7.2, 6.8, 7.4];
-const fallbackAging = [
-  { bucket: "0-30", value: 18.3, risk_band: "green" },
-  { bucket: "31-60", value: 9.1, risk_band: "blue" },
-  { bucket: "61-90", value: 5.4, risk_band: "amber" },
-  { bucket: "91-120", value: 3.2, risk_band: "orange" },
-  { bucket: "120+", value: 2.1, risk_band: "red" },
-];
-const fallbackPipeline = [
-  { month: "Dec", Clinical: 22, Coding: 18, Eligibility: 9, Other: 5 },
-  { month: "Jan", Clinical: 19, Coding: 21, Eligibility: 8, Other: 6 },
-  { month: "Feb", Clinical: 24, Coding: 17, Eligibility: 10, Other: 4 },
-  { month: "Mar", Clinical: 20, Coding: 19, Eligibility: 7, Other: 5 },
-  { month: "Apr", Clinical: 17, Coding: 18, Eligibility: 9, Other: 4 },
-  { month: "May", Clinical: 16, Coding: 15, Eligibility: 8, Other: 4 },
-];
-const fallbackPayerPerformance: PayerPerformanceRow[] = [
-  { payer: "Medicare", collection_rate_pct: 96, avg_days_to_pay: 18, collection_rate_band: "green", days_to_pay_band: "green" },
-  { payer: "United Health", collection_rate_pct: 93, avg_days_to_pay: 24, collection_rate_band: "blue", days_to_pay_band: "blue" },
-  { payer: "BlueCross", collection_rate_pct: 91, avg_days_to_pay: 28, collection_rate_band: "blue", days_to_pay_band: "blue" },
-  { payer: "Medicaid", collection_rate_pct: 87, avg_days_to_pay: 35, collection_rate_band: "amber", days_to_pay_band: "amber" },
-  { payer: "Aetna", collection_rate_pct: 89, avg_days_to_pay: 30, collection_rate_band: "amber", days_to_pay_band: "blue" },
-  { payer: "Humana", collection_rate_pct: 84, avg_days_to_pay: 42, collection_rate_band: "red", days_to_pay_band: "red" },
-];
-const fallbackLeakage = [
-  { label: "United", value_pct: 34, leakage_amount: 0 },
-  { label: "Medicare", value_pct: 28, leakage_amount: 0 },
-  { label: "Medicaid", value_pct: 18, leakage_amount: 0 },
-  { label: "BlueCross", value_pct: 12, leakage_amount: 0 },
-  { label: "Other", value_pct: 8, leakage_amount: 0 },
-];
-
 function deltaLabel(value?: number | null, suffix = "%", invertPositive = false) {
   if (value == null) {
     return { text: "No prior comparison", className: "neutral", polarity: "flat" as const };
@@ -182,6 +148,28 @@ function LoadingState() {
   );
 }
 
+function ChartUnavailable({ message = "Data unavailable for the current filters." }: { message?: string }) {
+  return (
+    <div
+      style={{
+        minHeight: 320,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 20,
+        border: "1px dashed rgba(31, 56, 100, 0.12)",
+        background: "linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.96))",
+        color: "var(--oc-gray-600)",
+        fontSize: 13,
+        textAlign: "center",
+        padding: "0 24px",
+      }}
+    >
+      {message}
+    </div>
+  );
+}
+
 export function RCMDashboard() {
   const [cash, setCash] = useState<CashCommandResponse | null>(null);
   const [queue, setQueue] = useState<RecoveryQueueResponse | null>(null);
@@ -224,28 +212,28 @@ export function RCMDashboard() {
     void load();
   }, []);
 
-  const isEmpty = Boolean(cash?.meta?.empty || queue?.meta?.empty || payer?.meta?.empty);
+  const isEmpty = Boolean(cash?.meta?.empty && queue?.meta?.empty && payer?.meta?.empty);
 
   const cashSeries = useMemo(() => {
     return cash?.dashboard?.cash_vs_charge_series?.length
       ? cash.dashboard.cash_vs_charge_series
-      : fallbackMonths.map((month, index) => ({ month, charges: fallbackCharges[index], collections: fallbackCollections[index] }));
+      : [];
   }, [cash]);
 
   const agingBuckets = useMemo(() => {
-    return cash?.dashboard?.ar_aging_buckets?.length ? cash.dashboard.ar_aging_buckets : fallbackAging;
+    return cash?.dashboard?.ar_aging_buckets?.length ? cash.dashboard.ar_aging_buckets : [];
   }, [cash]);
 
   const denialPipeline = useMemo(() => {
-    return queue?.dashboard?.denial_pipeline?.length ? queue.dashboard.denial_pipeline : fallbackPipeline;
+    return queue?.dashboard?.denial_pipeline?.length ? queue.dashboard.denial_pipeline : [];
   }, [queue]);
 
   const payerPerformance = useMemo(() => {
-    return payer?.dashboard?.payer_performance?.length ? payer.dashboard.payer_performance : fallbackPayerPerformance;
+    return payer?.dashboard?.payer_performance?.length ? payer.dashboard.payer_performance : [];
   }, [payer]);
 
   const leakageByPayer = useMemo(() => {
-    return payer?.dashboard?.leakage_by_payer?.length ? payer.dashboard.leakage_by_payer : fallbackLeakage;
+    return payer?.dashboard?.leakage_by_payer?.length ? payer.dashboard.leakage_by_payer : [];
   }, [payer]);
 
   if (loading) return <LoadingState />;
@@ -257,7 +245,7 @@ export function RCMDashboard() {
   const kpis = cash?.dashboard?.kpis;
   const cashDelta = deltaLabel(kpis?.total_cash_collected_delta_pct, "%");
   const denialDelta = deltaLabel(kpis?.denial_rate_delta_pp, "pp", true);
-  const statusBand = cash?.dashboard?.status?.band === "green" ? "normal" : "warning";
+  const statusBand = cash?.dashboard?.status?.band === "green" ? "normal" : cash?.dashboard?.status?.band ? "warning" : "neutral";
   const actionCards = queue?.dashboard?.action_cards ?? [];
 
   return (
@@ -266,17 +254,19 @@ export function RCMDashboard() {
         <div>
           <p className="eyebrow">Executive Dashboard</p>
           <h3 className="section-heading">Revenue Cycle Command</h3>
-          <p className="section-subtitle">{cash?.dashboard?.subtitle ?? "May 2026 - Rolling 12 months - All payers"}</p>
+          <p className="section-subtitle">{cash?.dashboard?.subtitle ?? "Live revenue-cycle performance summary"}</p>
         </div>
         <div className={`summary-badge ${statusBand}`}>
-          {cash?.dashboard?.status?.label ?? "AR Days"}: {integer(cash?.dashboard?.status?.value ?? 38)} - Target {cash?.dashboard?.status?.target ?? "<40"}
+          {cash?.dashboard?.status?.value != null
+            ? `${cash?.dashboard?.status?.label ?? "Status"}: ${integer(cash?.dashboard?.status?.value)} - Target ${cash?.dashboard?.status?.target ?? "Unavailable"}`
+            : "Status unavailable"}
         </div>
       </article>
 
       <section className="rcm-kpi-grid">
         <article className="rcm-kpi-card">
           <span className="eyebrow">Total Cash Collected</span>
-          <strong>{currencyCompact(kpis?.total_cash_collected)}</strong>
+          <strong>{currencyCompact(kpis?.total_cash_collected, "SAR")}</strong>
           <p className={`rcm-kpi-subtext ${cashDelta?.className ?? "neutral"}`}>{cashDelta?.text ?? "No prior comparison"} vs prior year</p>
         </article>
         <article className="rcm-kpi-card">
@@ -286,7 +276,7 @@ export function RCMDashboard() {
         </article>
         <article className="rcm-kpi-card">
           <span className="eyebrow">Leakage Recovered</span>
-          <strong>{currencyCompact(kpis?.leakage_recovered)}</strong>
+          <strong>{currencyCompact(kpis?.leakage_recovered, "SAR")}</strong>
           <p className="rcm-kpi-subtext neutral">{percent(kpis?.leakage_recovered_pct_gross)} of gross charges</p>
         </article>
         <article className="rcm-kpi-card">
@@ -305,17 +295,21 @@ export function RCMDashboard() {
             </div>
           </div>
           <div className="chart-stage">
-            <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={cashSeries}>
-                <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickFormatter={(value) => `GBP ${value}M`} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value: number) => `GBP ${value.toFixed(1)}M`} />
-                <Legend />
-                <Line type="monotone" dataKey="charges" name="Charges" stroke="var(--oc-gray-600)" strokeDasharray="6 6" strokeWidth={2.5} dot={false} />
-                <Line type="monotone" dataKey="collections" name="Collections" stroke="var(--oc-blue)" strokeWidth={3} dot={{ r: 3, fill: "var(--oc-blue)" }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {cashSeries.length > 0 ? (
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={cashSeries}>
+                  <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                  <YAxis tickFormatter={(value) => `SAR ${value}M`} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(value: number) => `SAR ${value.toFixed(1)}M`} />
+                  <Legend />
+                  <Line type="monotone" dataKey="charges" name="Charges" stroke="var(--oc-gray-600)" strokeDasharray="6 6" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="collections" name="Collections" stroke="var(--oc-blue)" strokeWidth={3} dot={{ r: 3, fill: "var(--oc-blue)" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartUnavailable message="Cash and charge trend is unavailable until the rolling monthly series is populated." />
+            )}
           </div>
         </article>
 
@@ -327,19 +321,23 @@ export function RCMDashboard() {
             </div>
           </div>
           <div className="chart-stage">
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={agingBuckets}>
-                <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
-                <XAxis dataKey="bucket" tickLine={false} axisLine={false} />
-                <YAxis tickFormatter={(value) => `GBP ${value}M`} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value: number) => `GBP ${value.toFixed(1)}M`} />
-                <Bar dataKey="value" radius={[10, 10, 0, 0]}>
-                  {agingBuckets.map((entry) => (
-                    <Cell key={entry.bucket} fill={chartColour(entry.risk_band)} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {agingBuckets.length > 0 ? (
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={agingBuckets}>
+                  <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
+                  <XAxis dataKey="bucket" tickLine={false} axisLine={false} />
+                  <YAxis tickFormatter={(value) => `SAR ${value}M`} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(value: number) => `SAR ${value.toFixed(1)}M`} />
+                  <Bar dataKey="value" radius={[10, 10, 0, 0]}>
+                    {agingBuckets.map((entry) => (
+                      <Cell key={entry.bucket} fill={chartColour(entry.risk_band)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartUnavailable message="A/R aging is unavailable for the current filter set." />
+            )}
           </div>
         </article>
 
@@ -351,26 +349,30 @@ export function RCMDashboard() {
             </div>
           </div>
           <div className="chart-stage">
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={denialPipeline}>
-                <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Clinical" stackId="pipeline" fill="var(--oc-critical)" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Coding" stackId="pipeline" fill="var(--oc-blue)" />
-                <Bar dataKey="Eligibility" stackId="pipeline" fill="var(--oc-warning)" />
-                <Bar dataKey="Other" stackId="pipeline" fill="var(--oc-teal)" />
-              </BarChart>
-            </ResponsiveContainer>
+            {denialPipeline.length > 0 ? (
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={denialPipeline}>
+                  <CartesianGrid stroke="rgba(31, 56, 100, 0.08)" vertical={false} />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Clinical" stackId="pipeline" fill="var(--oc-critical)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Coding" stackId="pipeline" fill="var(--oc-blue)" />
+                  <Bar dataKey="Eligibility" stackId="pipeline" fill="var(--oc-warning)" />
+                  <Bar dataKey="Other" stackId="pipeline" fill="var(--oc-teal)" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartUnavailable message="Denial pipeline history is unavailable for the current data slice." />
+            )}
           </div>
           <div className="rcm-action-grid">
             {actionCards.slice(0, 2).map((card) => (
               <article className="rcm-action-card" key={card.label}>
                 <div>
                   <p className="eyebrow">{card.label}</p>
-                  <h4>{currencyCompact(card.amount)} at risk</h4>
+                  <h4>{currencyCompact(card.amount, "SAR")} at risk</h4>
                   <p className="section-subtitle">{card.subtext}</p>
                 </div>
                 <Link className="button primary" href={card.href}>
@@ -397,7 +399,7 @@ export function RCMDashboard() {
             </div>
           </div>
           <div className="rcm-payer-list">
-            {payerPerformance.map((row) => {
+            {payerPerformance.length > 0 ? payerPerformance.map((row) => {
               const value = payerView === "collection" ? row.collection_rate_pct : row.avg_days_to_pay;
               const band = payerView === "collection" ? row.collection_rate_band : row.days_to_pay_band;
               const width = payerView === "collection" ? Math.min(row.collection_rate_pct, 100) : Math.min((row.avg_days_to_pay / 45) * 100, 100);
@@ -412,7 +414,7 @@ export function RCMDashboard() {
                   </div>
                 </div>
               );
-            })}
+            }) : <ChartUnavailable message="Payer performance is unavailable until the latest monthly payer mart is materialized." />}
           </div>
           <div className="button-row" style={{ marginTop: "1rem" }}>
             <Link className="secondary-link" href="/use-cases/revenue-cycle-management/payer-control">
@@ -429,35 +431,41 @@ export function RCMDashboard() {
             </div>
           </div>
           <div className="rcm-leakage-layout">
-            <div className="chart-stage">
-              <ResponsiveContainer width="100%" height={320}>
-                <PieChart>
-                  <Pie
-                    data={leakageByPayer}
-                    dataKey="value_pct"
-                    nameKey="label"
-                    innerRadius={78}
-                    outerRadius={118}
-                    paddingAngle={2}
-                  >
-                    {leakageByPayer.map((entry, index) => {
-                      const palette = ["var(--oc-blue)", "var(--oc-navy)", "var(--oc-warning)", "var(--oc-critical)", "var(--oc-teal)"];
-                      return <Cell key={`${entry.label}-${index}`} fill={palette[index % palette.length]} />;
-                    })}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="rcm-leakage-legend">
-              {leakageByPayer.map((entry, index) => (
-                <div className="rcm-leakage-legend-row" key={entry.label}>
-                  <span className="legend-dot" style={{ background: ["var(--oc-blue)", "var(--oc-navy)", "var(--oc-warning)", "var(--oc-critical)", "var(--oc-teal)"][index % 5] }} />
-                  <strong>{entry.label}</strong>
-                  <span>{percent(entry.value_pct)}</span>
+            {leakageByPayer.length > 0 ? (
+              <>
+                <div className="chart-stage">
+                  <ResponsiveContainer width="100%" height={320}>
+                    <PieChart>
+                      <Pie
+                        data={leakageByPayer}
+                        dataKey="value_pct"
+                        nameKey="label"
+                        innerRadius={78}
+                        outerRadius={118}
+                        paddingAngle={2}
+                      >
+                        {leakageByPayer.map((entry, index) => {
+                          const palette = ["var(--oc-blue)", "var(--oc-navy)", "var(--oc-warning)", "var(--oc-critical)", "var(--oc-teal)"];
+                          return <Cell key={`${entry.label}-${index}`} fill={palette[index % palette.length]} />;
+                        })}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
+                <div className="rcm-leakage-legend">
+                  {leakageByPayer.map((entry, index) => (
+                    <div className="rcm-leakage-legend-row" key={entry.label}>
+                      <span className="legend-dot" style={{ background: ["var(--oc-blue)", "var(--oc-navy)", "var(--oc-warning)", "var(--oc-critical)", "var(--oc-teal)"][index % 5] }} />
+                      <strong>{entry.label}</strong>
+                      <span>{percent(entry.value_pct)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <ChartUnavailable message="Leakage-by-payer distribution is unavailable until payer leakage rows are present." />
+            )}
           </div>
         </article>
       </section>

@@ -6,6 +6,44 @@ export type RCMMeta = {
   message?: string | null;
 };
 
+export type RcmJourneyMetric = {
+  label: string;
+  value: number | null;
+  formatted_value: string;
+  unit: "currency" | "percentage" | "count" | "days" | "text";
+  available: boolean;
+};
+
+export type RcmJourneyStage = {
+  stage_order: number;
+  stage_id: string;
+  stage_name: string;
+  status: "Healthy" | "Watch" | "Critical" | "Unavailable";
+  risk_class: "healthy" | "watch" | "critical" | "unavailable";
+  stage_note: string;
+  risk_note?: string | null;
+  metrics: RcmJourneyMetric[];
+};
+
+export type RcmJourneyResponse = {
+  generated_at: string;
+  currency: string;
+  filters_applied: Record<string, unknown>;
+  stages: RcmJourneyStage[];
+  risk_concentration: Array<{
+    label: string;
+    value: number | null;
+    formatted_value: string;
+    risk_class: string;
+  }>;
+  data_quality: {
+    missing_metrics: string[];
+    warnings: string[];
+    source_tables: string[];
+  };
+  meta?: RCMMeta;
+};
+
 // ─── CASH COMMAND (operational — action cards) ───────────────────────────────
 
 export type ActionItem = {

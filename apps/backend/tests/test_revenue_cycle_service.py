@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from contextlib import contextmanager
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -293,6 +294,269 @@ class RevenueCycleServiceTests(unittest.TestCase):
         self.assertEqual(payload["cash_impact"]["recoverable_cash_7d"], 50000.0)
         self.assertEqual(payload["recommended_actions"][0]["owner"], "rcm.manager")
 
+    def test_journey_returns_all_seven_stages_and_correct_risk_formula(self):
+        revenue_row = {
+            "gross_charges": 58400000.0,
+            "encounter_count": 12420,
+            "net_patient_revenue": 500000.0,
+            "claim_count": 1012,
+            "claim_value": 420000.0,
+            "submitted_claim_count": 980,
+            "submitted_claim_value": 300000.0,
+            "cash_collected": 375000.0,
+            "underpayment_value": 5000.0,
+        }
+        leakage_row = {
+            "dnfb_value": 20000.0,
+            "dnfb_cases": 48,
+            "avg_dnfb_days": 8.2,
+            "dnfb_cases_over_5_days": 12,
+        }
+        aging_row = {
+            "total_ar": 100000.0,
+            "ar_over_90_value": 30000.0,
+        }
+        denials_row = {
+            "denied_claim_value": 30000.0,
+            "denied_claim_count": 32,
+        }
+
+        class Conn:
+            def __init__(self):
+                self.rows = [revenue_row, leakage_row, aging_row, denials_row]
+                self.calls = 0
+
+            def execute(self, query, params=None):
+                row = self.rows[self.calls]
+                self.calls += 1
+                return Result(row)
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            payload = revenue_cycle_service.journey()
+
+        self.assertEqual(payload["currency"], "SAR")
+        self.assertEqual(len(payload["stages"]), 7)
+
+        stages = {stage["stage_id"]: stage for stage in payload["stages"]}
+        self.assertEqual(stages["care_delivered"]["status"], "Unavailable")
+        self.assertEqual(stages["discharge_coding"]["status"], "Critical")
+        self.assertEqual(stages["payer_adjudication"]["status"], "Critical")
+        self.assertEqual(stages["ar_recovery"]["status"], "Critical")
+        self.assertEqual(stages["cash_collected"]["status"], "Watch")
+
+        collection_rate_metric = next(
+            metric for metric in stages["cash_collected"]["metrics"] if metric["label"] == "Collection Rate"
+        )
+        self.assertTrue(collection_rate_metric["available"])
+        self.assertAlmostEqual(collection_rate_metric["value"], 75.0, places=2)
+
+        risk_metric = next(
+            metric for metric in stages["ar_recovery"]["metrics"] if metric["label"] == "Revenue at Risk"
+        )
+        self.assertTrue(risk_metric["available"])
+        self.assertEqual(risk_metric["value"], 85000.0)
+
+    def test_journey_status_logic_returns_healthy_when_metrics_meet_thresholds(self):
+        revenue_row = {
+            "gross_charges": 1200000.0,
+            "encounter_count": 2400,
+            "net_patient_revenue": 500000.0,
+            "claim_count": 600,
+            "claim_value": 430000.0,
+            "submitted_claim_count": 590,
+            "submitted_claim_value": 200000.0,
+            "cash_collected": 425000.0,
+            "underpayment_value": 1500.0,
+        }
+        leakage_row = {
+            "dnfb_value": 3000.0,
+            "dnfb_cases": 8,
+            "avg_dnfb_days": 2.5,
+            "dnfb_cases_over_5_days": 1,
+        }
+        aging_row = {
+            "total_ar": 100000.0,
+            "ar_over_90_value": 10000.0,
+        }
+        denials_row = {
+            "denied_claim_value": 5000.0,
+            "denied_claim_count": 5,
+        }
+
+        class Conn:
+            def __init__(self):
+                self.rows = [revenue_row, leakage_row, aging_row, denials_row]
+                self.calls = 0
+
+            def execute(self, query, params=None):
+                row = self.rows[self.calls]
+                self.calls += 1
+                return Result(row)
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            payload = revenue_cycle_service.journey()
+
+        stages = {stage["stage_id"]: stage for stage in payload["stages"]}
+        self.assertEqual(stages["discharge_coding"]["status"], "Healthy")
+        self.assertEqual(stages["payer_adjudication"]["status"], "Healthy")
+        self.assertEqual(stages["ar_recovery"]["status"], "Healthy")
+        self.assertEqual(stages["cash_collected"]["status"], "Healthy")
+
+    def test_journey_handles_divide_by_zero_without_crashing(self):
+        revenue_row = {
+            "gross_charges": 0.0,
+            "encounter_count": 0,
+            "net_patient_revenue": 0.0,
+            "claim_count": 0,
+            "claim_value": 0.0,
+            "submitted_claim_count": 0,
+            "submitted_claim_value": 0.0,
+            "cash_collected": 0.0,
+            "underpayment_value": 0.0,
+        }
+        leakage_row = {
+            "dnfb_value": 0.0,
+            "dnfb_cases": 0,
+            "avg_dnfb_days": 2.0,
+            "dnfb_cases_over_5_days": 0,
+        }
+        aging_row = {
+            "total_ar": 0.0,
+            "ar_over_90_value": 0.0,
+        }
+        denials_row = {
+            "denied_claim_value": 0.0,
+            "denied_claim_count": 0,
+        }
+
+        class Conn:
+            def __init__(self):
+                self.rows = [revenue_row, leakage_row, aging_row, denials_row]
+                self.calls = 0
+
+            def execute(self, query, params=None):
+                row = self.rows[self.calls]
+                self.calls += 1
+                return Result(row)
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            payload = revenue_cycle_service.journey()
+
+        stages = {stage["stage_id"]: stage for stage in payload["stages"]}
+        denial_rate_metric = next(
+            metric for metric in stages["payer_adjudication"]["metrics"] if metric["label"] == "Denial Rate"
+        )
+        collection_rate_metric = next(
+            metric for metric in stages["cash_collected"]["metrics"] if metric["label"] == "Collection Rate"
+        )
+
+        self.assertFalse(denial_rate_metric["available"])
+        self.assertFalse(collection_rate_metric["available"])
+        self.assertEqual(stages["payer_adjudication"]["status"], "Unavailable")
+        self.assertEqual(stages["ar_recovery"]["status"], "Unavailable")
+        self.assertEqual(stages["cash_collected"]["status"], "Unavailable")
+
+    def test_journey_returns_unavailable_metrics_when_tables_are_absent(self):
+        class Conn:
+            def execute(self, query, params=None):
+                raise UndefinedTable()
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            payload = revenue_cycle_service.journey()
+
+        self.assertEqual(len(payload["stages"]), 7)
+        self.assertGreaterEqual(len(payload["data_quality"]["warnings"]), 4)
+        self.assertIn("collection_rate", payload["data_quality"]["missing_metrics"])
+        first_metric = payload["stages"][0]["metrics"][0]
+        self.assertFalse(first_metric["available"])
+        self.assertEqual(first_metric["formatted_value"], "Data unavailable")
+
+    def test_journey_accepts_supported_filters(self):
+        captured_params: list[list[object]] = []
+
+        zero_row = {
+            "gross_charges": 0.0,
+            "encounter_count": 0,
+            "net_patient_revenue": 1.0,
+            "claim_count": 0,
+            "claim_value": 0.0,
+            "submitted_claim_count": 0,
+            "submitted_claim_value": 1.0,
+            "cash_collected": 1.0,
+            "underpayment_value": 0.0,
+        }
+        zero_leakage_row = {
+            "dnfb_value": 0.0,
+            "dnfb_cases": 0,
+            "avg_dnfb_days": 0.0,
+            "dnfb_cases_over_5_days": 0,
+        }
+        zero_aging_row = {
+            "total_ar": 1.0,
+            "ar_over_90_value": 0.0,
+        }
+        zero_denial_row = {
+            "denied_claim_value": 0.0,
+            "denied_claim_count": 0,
+        }
+
+        class Conn:
+            def __init__(self):
+                self.rows = [zero_row, zero_leakage_row, zero_aging_row, zero_denial_row]
+                self.calls = 0
+
+            def execute(self, query, params=None):
+                captured_params.append(list(params or []))
+                row = self.rows[self.calls]
+                self.calls += 1
+                return Result(row)
+
+        @contextmanager
+        def fake_connect():
+            yield Conn()
+
+        with patch.object(revenue_cycle_service, "connect", fake_connect):
+            revenue_cycle_service.journey(
+                date_from=date(2026, 1, 1),
+                date_to=date(2026, 1, 31),
+                payer="PAYER-A",
+                department="WARD-01",
+                claim_status="submitted",
+            )
+
+        self.assertEqual(
+            captured_params[0],
+            [date(2026, 1, 1), date(2026, 1, 31), "PAYER-A", "WARD-01", "submitted"],
+        )
+        self.assertEqual(
+            captured_params[1],
+            [date(2026, 1, 1), date(2026, 1, 31), "PAYER-A", "WARD-01"],
+        )
+        self.assertEqual(
+            captured_params[2],
+            [date(2026, 1, 1), date(2026, 1, 31), "PAYER-A", "WARD-01", "submitted"],
+        )
+        self.assertEqual(
+            captured_params[3],
+            [date(2026, 1, 1), date(2026, 1, 31), "PAYER-A", "WARD-01", "submitted"],
+        )
+
 
 class RevenueCycleRouteTests(unittest.TestCase):
     def test_cash_command_route_delegates(self):
@@ -300,6 +564,31 @@ class RevenueCycleRouteTests(unittest.TestCase):
             payload = revenue_cycle_routes.revenue_cycle_cash_command()
 
         mocked.assert_called_once_with()
+        self.assertEqual(payload, {"ok": True})
+
+    def test_journey_route_delegates(self):
+        with patch.object(revenue_cycle_routes, "journey", return_value={"ok": True}) as mocked:
+            payload = revenue_cycle_routes.revenue_cycle_journey(
+                date_from=date(2026, 1, 1),
+                date_to=date(2026, 1, 31),
+                facility="FAC-01",
+                payer="PAYER-A",
+                department="WARD-01",
+                specialty="CARD",
+                patient_type="inpatient",
+                claim_status="submitted",
+            )
+
+        mocked.assert_called_once_with(
+            date_from=date(2026, 1, 1),
+            date_to=date(2026, 1, 31),
+            facility="FAC-01",
+            payer="PAYER-A",
+            department="WARD-01",
+            specialty="CARD",
+            patient_type="inpatient",
+            claim_status="submitted",
+        )
         self.assertEqual(payload, {"ok": True})
 
 

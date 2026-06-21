@@ -11,6 +11,7 @@ type FetchState<T> = {
 };
 
 const ENDPOINT_MAP: Record<string, string> = {
+  "journey":             "/api/portal/api/v1/revenue-cycle/journey",
   "cash-command":        "/api/portal/api/v1/revenue-cycle/cash-command",
   "recovery-queue":      "/api/portal/api/v1/revenue-cycle/recovery-queue",
   "payer-control":       "/api/portal/api/v1/revenue-cycle/payer-control",

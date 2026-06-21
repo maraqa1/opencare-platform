@@ -1,0 +1,342 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 20px 0 24px;
+}
+
+.hero {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 244, 255, 0.98));
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(31, 56, 100, 0.08);
+  padding: 24px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--oc-gray-600);
+  margin: 0 0 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--oc-navy);
+}
+
+.subtitle {
+  margin: 10px 0 0;
+  color: var(--oc-gray-600);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 920px;
+}
+
+.generatedAt {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--oc-gray-600);
+}
+
+.stageRail {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stageRail::before {
+  content: "";
+  position: absolute;
+  left: 48px;
+  right: 48px;
+  top: 31px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(31, 56, 100, 0.12), rgba(47, 95, 208, 0.18), rgba(31, 56, 100, 0.12));
+  z-index: 0;
+}
+
+.stageCard {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(31, 56, 100, 0.08);
+  padding: 18px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 292px;
+}
+
+.healthy {
+  border-top: 4px solid var(--oc-normal);
+}
+
+.watch {
+  border-top: 4px solid var(--oc-warning);
+}
+
+.critical {
+  border-top: 4px solid var(--oc-critical);
+}
+
+.unavailable {
+  border-top: 4px solid rgba(31, 56, 100, 0.18);
+}
+
+.stageTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stageNumber {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--oc-navy);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 10px 20px rgba(31, 56, 100, 0.18);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusHealthy {
+  background: var(--oc-normal-bg);
+  color: var(--oc-normal);
+}
+
+.statusWatch {
+  background: var(--oc-warning-bg);
+  color: var(--oc-warning);
+}
+
+.statusCritical {
+  background: var(--oc-critical-bg);
+  color: var(--oc-critical);
+}
+
+.statusUnavailable {
+  background: var(--oc-gray-100);
+  color: var(--oc-gray-600);
+}
+
+.stageName {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--oc-gray-900);
+}
+
+.stageNote {
+  margin: 0;
+  color: var(--oc-gray-600);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.metricGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.metricChip {
+  border-radius: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.98));
+  padding: 10px 12px;
+}
+
+.metricChipMuted {
+  background: var(--oc-gray-100);
+  color: var(--oc-gray-600);
+}
+
+.metricLabel {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oc-gray-600);
+}
+
+.metricValue {
+  margin: 6px 0 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--oc-gray-900);
+}
+
+.riskNote {
+  margin-top: auto;
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+  padding-top: 10px;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.riskStrip {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(31, 56, 100, 0.08);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.riskHeading {
+  margin: 0;
+  font-size: 20px;
+  color: var(--oc-gray-900);
+}
+
+.riskCopy {
+  margin: 0;
+  color: var(--oc-gray-600);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.riskChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.riskChip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: #fff;
+}
+
+.riskChipLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.riskChipValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--oc-gray-900);
+}
+
+.quality {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(31, 56, 100, 0.08);
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+}
+
+.qualityList {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--oc-gray-600);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.tableList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tableChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--oc-blue-light);
+  color: var(--oc-navy);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.loadingCard {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(31, 56, 100, 0.08);
+  padding: 18px;
+}
+
+@media (max-width: 1480px) {
+  .stageRail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .stageRail::before {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .stageRail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quality {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .stageRail {
+    grid-template-columns: 1fr;
+  }
+
+  .stageCard {
+    min-height: auto;
+  }
+
+  .riskChips {
+    flex-direction: column;
+  }
+}
