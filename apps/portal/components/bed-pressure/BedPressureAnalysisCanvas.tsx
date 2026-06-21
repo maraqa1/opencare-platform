@@ -290,8 +290,6 @@ export function BedPressureAnalysisCanvas() {
     (sum, item) => sum + item.admissions_today - item.discharges_today,
     0,
   );
-  const snapshotLabel = payload.current.snapshot_date ? shortDate(payload.current.snapshot_date) : "Pending";
-  const anomalyTimestamp = payload.anomalies.generated_at ? timestamp(payload.anomalies.generated_at) : "Pending";
   const rollingAverage =
     trendSeries.length > 0
       ? trendSeries.reduce((sum, item) => sum + item.averageOccupancy, 0) / trendSeries.length
@@ -326,6 +324,9 @@ export function BedPressureAnalysisCanvas() {
       </section>
     );
   }
+
+  const snapshotLabel = payload.current.snapshot_date ? shortDate(payload.current.snapshot_date) : "Pending";
+  const anomalyTimestamp = payload.anomalies.generated_at ? timestamp(payload.anomalies.generated_at) : "Pending";
 
   return (
     <section className="bed-analysis-shell">
