@@ -129,7 +129,7 @@ dashboards:
       - key: pressure_mix
         enabled: true
         title: Current Pressure Mix
-        viz_type: echarts_pie
+        viz_type: pie
         layout:
           x: 8
           y: 7

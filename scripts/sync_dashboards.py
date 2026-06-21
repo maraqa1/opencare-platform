@@ -395,7 +395,7 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "time_range": time_range,
         "show_legend": True,
     }
-    if metrics and chart_config["viz_type"] in {"big_number_total", "echarts_pie"}:
+    if metrics and chart_config["viz_type"] in {"big_number_total", "pie"}:
         base_params["metric"] = metrics[0]
     params = deep_merge(base_params, chart_config.get("form_data", {}))
 
