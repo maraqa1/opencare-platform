@@ -291,6 +291,47 @@ models:
       - name: pressure_band
         description: Banding of the latest ward occupancy into Normal, Warning, or Critical.
 
+  - name: fct_bed_pressure_distribution
+    description: Ward-day pressure observation mart used for distribution, bubble, and comparative specialty visuals.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
+      data_product: bed_pressure
+    columns:
+      - name: pressure_distribution_key
+        description: Surrogate key for one ward-day pressure observation.
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Calendar day for the pressure observation.
+        tests:
+          - not_null
+      - name: ward_id
+        description: Ward identifier carried through from the occupancy fact.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_ward')
+              field: ward_id
+      - name: ward
+        description: Board-friendly ward label used in visual drill and filters.
+        tests:
+          - not_null
+      - name: specialty
+        description: Service-line grouping used for box plots and treemaps.
+      - name: occupied_beds
+        description: Occupied staffed beds recorded for the ward-day.
+      - name: staffed_beds
+        description: Staffed beds available for the ward-day.
+      - name: available_beds
+        description: Remaining staffed capacity for the ward-day.
+      - name: occupancy_rate_pct
+        description: Ward occupancy expressed as a percentage for chart-friendly distribution analysis.
+      - name: pressure_band
+        description: Pressure classification derived from the occupancy ratio.
+
   - name: fct_bed_pressure_executive_actions
     description: Latest ward-level executive action register derived from occupancy thresholds for the command-centre dashboard.
     meta:

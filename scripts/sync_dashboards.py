@@ -626,14 +626,50 @@ def adhoc_metric(metric_spec: str | dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
-    metric_specs = chart_config.get("metrics", [])
-    metrics = [adhoc_metric(metric_spec) for metric_spec in metric_specs]
-    group_by = chart_config.get("group_by", [])
+def metric_label(metric: dict[str, Any]) -> str:
+    return str(metric.get("label", "Metric"))
+
+
+def bubble_metrics(chart_config: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        adhoc_metric(chart_config["bubble_size"]),
+        adhoc_metric(chart_config["bubble_x"]),
+        adhoc_metric(chart_config["bubble_y"]),
+    ]
+
+
+def chart_columns(chart_config: dict[str, Any]) -> list[Any]:
+    if chart_config.get("query_columns") is not None:
+        return list(chart_config.get("query_columns", []))
+    if chart_config["viz_type"] == "echarts_bubble":
+        columns = [chart_config["bubble_entity"]]
+        bubble_series = chart_config.get("bubble_series")
+        if bubble_series and bubble_series not in columns:
+            columns.append(bubble_series)
+        return columns
+    if chart_config.get("columns") is not None:
+        return list(chart_config.get("columns", []))
     x_axis = chart_config.get("x_axis")
-    columns = [x_axis] if x_axis else group_by
-    time_range = chart_config.get("time_range", "No filter")
-    base_params = {
+    group_by = chart_config.get("group_by", [])
+    return [x_axis] if x_axis else group_by
+
+
+def chart_metrics(chart_config: dict[str, Any]) -> list[dict[str, Any]]:
+    if chart_config["viz_type"] == "echarts_bubble":
+        return bubble_metrics(chart_config)
+    metric_specs = chart_config.get("metrics", [])
+    return [adhoc_metric(metric_spec) for metric_spec in metric_specs]
+
+
+def chart_params(
+    chart_config: dict[str, Any],
+    dataset_id: int,
+    metrics: list[dict[str, Any]],
+    columns: list[Any],
+    time_range: str,
+) -> dict[str, Any]:
+    group_by = chart_config.get("group_by", [])
+    params: dict[str, Any] = {
         "datasource": f"{dataset_id}__table",
         "viz_type": chart_config["viz_type"],
         "groupby": group_by,
@@ -645,13 +681,39 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "time_range": time_range,
         "show_legend": True,
     }
+    x_axis = chart_config.get("x_axis")
     if x_axis:
-        base_params["x_axis"] = x_axis
-    if metrics and chart_config["viz_type"] in {"big_number_total", "big_number", "pie"}:
-        base_params["metric"] = metrics[0]
-    params = deep_merge(base_params, chart_config.get("form_data", {}))
+        params["x_axis"] = x_axis
+    if chart_config.get("columns") is not None:
+        params["columns"] = columns
+    if metrics and chart_config["viz_type"] in {
+        "big_number_total",
+        "big_number",
+        "pie",
+        "echarts_treemap",
+    }:
+        params["metric"] = metrics[0]
+    if chart_config["viz_type"] == "echarts_bubble":
+        params.update(
+            {
+                "entity": chart_config["bubble_entity"],
+                "series": chart_config.get("bubble_series"),
+                "x": metrics[1],
+                "y": metrics[2],
+                "size": metrics[0],
+            }
+        )
+    return deep_merge(params, chart_config.get("form_data", {}))
 
-    base_query = {
+
+def chart_query(
+    chart_config: dict[str, Any],
+    metrics: list[dict[str, Any]],
+    columns: list[Any],
+    time_range: str,
+) -> dict[str, Any]:
+    group_by = chart_config.get("group_by", [])
+    query: dict[str, Any] = {
         "time_range": time_range,
         "granularity": chart_config.get("time_column"),
         "granularity_sqla": chart_config.get("time_column"),
@@ -667,14 +729,43 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "custom_params": {},
         "custom_form_data": {},
     }
-    if chart_config["viz_type"] == "big_number" and not x_axis:
-        base_query["is_timeseries"] = True
+    if chart_config["viz_type"] == "big_number" and not chart_config.get("x_axis"):
+        query["is_timeseries"] = True
+    if chart_config["viz_type"] == "echarts_bubble":
+        query["columns"] = columns
+        query["metrics"] = metrics
+        bubble_order_metric = chart_config.get("bubble_order_metric")
+        if bubble_order_metric:
+            order_map = {"size": metrics[0], "x": metrics[1], "y": metrics[2]}
+            metric_ref = order_map.get(str(bubble_order_metric), metrics[0])
+            query["orderby"] = [[metric_ref, not bool(chart_config.get("sort_desc", True))]]
+    if chart_config["viz_type"] == "echarts_boxplot":
+        query["columns"] = columns + group_by
+        query["series_columns"] = group_by
+        query["post_processing"] = [
+            {
+                "operation": "boxplot",
+                "options": {
+                    "whisker_type": str(chart_config.get("whisker_type", "tukey")),
+                    "groupby": [str(column) for column in group_by],
+                    "metrics": [metric_label(metric) for metric in metrics],
+                },
+            }
+        ]
+    if chart_config["viz_type"] == "echarts_treemap" and chart_config.get("sort_by_metric", False):
+        query["orderby"] = [[metrics[0], False]]
+    return deep_merge(query, chart_config.get("query_overrides", {}))
+
+
+def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
+    metrics = chart_metrics(chart_config)
+    columns = chart_columns(chart_config)
+    time_range = chart_config.get("time_range", "No filter")
+    params = chart_params(chart_config, dataset_id, metrics, columns, time_range)
     query_context = {
         "datasource": {"id": dataset_id, "type": "table"},
         "force": False,
-        "queries": [
-            deep_merge(base_query, chart_config.get("query_overrides", {}))
-        ],
+        "queries": [chart_query(chart_config, metrics, columns, time_range)],
         "result_format": "json",
         "result_type": "full",
     }

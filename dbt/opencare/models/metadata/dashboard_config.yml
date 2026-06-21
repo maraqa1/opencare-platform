@@ -29,11 +29,15 @@ dashboards:
     datasets:
       - analytics.fct_bed_pressure_daily_summary
       - analytics.fct_bed_pressure_executive_actions
+      - analytics.fct_bed_pressure_latest_snapshot
+      - analytics.fct_bed_pressure_distribution
     filters:
       - key: date_range
         type: native_filter
         label: Date Range
-        target_dataset: analytics.fct_bed_pressure_daily_summary
+        target_datasets:
+          - analytics.fct_bed_pressure_daily_summary
+          - analytics.fct_bed_pressure_distribution
         column: date_day
         control: date_range
         default: No filter
@@ -50,10 +54,14 @@ dashboards:
           - net_patient_flow
           - network_occupancy_trend
           - admissions_vs_discharges
+          - specialty_occupancy_boxplot
       - key: ward
         type: native_filter
         label: Ward
-        target_dataset: analytics.fct_bed_pressure_executive_actions
+        target_datasets:
+          - analytics.fct_bed_pressure_executive_actions
+          - analytics.fct_bed_pressure_latest_snapshot
+          - analytics.fct_bed_pressure_distribution
         column: ward
         control: select
         searchable: true
@@ -63,10 +71,16 @@ dashboards:
           - pressure_status
           - top_wards
           - executive_actions_required
+          - ward_pressure_bubble
+          - capacity_treemap
+          - specialty_occupancy_boxplot
       - key: specialty
         type: native_filter
         label: Specialty
-        target_dataset: analytics.fct_bed_pressure_executive_actions
+        target_datasets:
+          - analytics.fct_bed_pressure_executive_actions
+          - analytics.fct_bed_pressure_latest_snapshot
+          - analytics.fct_bed_pressure_distribution
         column: specialty
         control: select
         searchable: true
@@ -76,6 +90,9 @@ dashboards:
           - pressure_status
           - top_wards
           - executive_actions_required
+          - ward_pressure_bubble
+          - capacity_treemap
+          - specialty_occupancy_boxplot
     charts:
       - key: network_occupancy
         enabled: true
@@ -381,6 +398,101 @@ dashboards:
               visible: false
             "Beds Available":
               visible: false
+      - key: ward_pressure_bubble
+        enabled: true
+        title: Ward Pressure Bubble Map
+        viz_type: echarts_bubble
+        layout:
+          x: 0
+          y: 55
+          w: 6
+          h: 14
+        dataset: analytics.fct_bed_pressure_latest_snapshot
+        bubble_entity: ward
+        bubble_series: specialty
+        bubble_order_metric: size
+        bubble_x:
+          name: admissions_today
+          column: admissions_today
+          aggregate: MAX
+          label: Admissions Today
+        bubble_y:
+          name: occupancy_rate_pct
+          column: occupancy_rate_pct
+          aggregate: MAX
+          label: Occupancy %
+        bubble_size:
+          name: occupied_beds
+          column: occupied_beds
+          aggregate: MAX
+          label: Occupied Beds
+        row_limit: 50
+        sort_desc: true
+        form_data:
+          color_scheme: supersetColors
+          showLegend: true
+          maxBubbleSize: "42"
+          xAxisFormat: ".0f"
+          yAxisFormat: ".1f"
+          tooltipSizeFormat: ".0f"
+          opacity: 0.85
+      - key: specialty_occupancy_boxplot
+        enabled: true
+        title: Specialty Occupancy Distribution
+        viz_type: echarts_boxplot
+        layout:
+          x: 6
+          y: 55
+          w: 6
+          h: 14
+        dataset: analytics.fct_bed_pressure_distribution
+        metrics:
+          - name: occupancy_rate_pct
+            column: occupancy_rate_pct
+            aggregate: AVG
+            label: Occupancy %
+        group_by:
+          - specialty
+        columns:
+          - date_day
+        time_column: date_day
+        time_range: "{latest_30d_range}"
+        row_limit: 500
+        sort_desc: true
+        whisker_type: tukey
+        form_data:
+          color_scheme: supersetColors
+          numberFormat: ".1f"
+          whiskerOptions: Tukey
+          xTicksLayout: "45°"
+          xAxisTitle: Specialty
+          yAxisTitle: Occupancy %
+      - key: capacity_treemap
+        enabled: true
+        title: Capacity Mix Treemap
+        viz_type: echarts_treemap
+        layout:
+          x: 0
+          y: 69
+          w: 12
+          h: 14
+        dataset: analytics.fct_bed_pressure_latest_snapshot
+        metrics:
+          - name: occupied_beds
+            column: occupied_beds
+            aggregate: MAX
+            label: Occupied Beds
+        group_by:
+          - specialty
+          - ward
+        row_limit: 100
+        sort_by_metric: true
+        form_data:
+          color_scheme: supersetColors
+          numberFormat: ".0f"
+          showLabels: true
+          showUpperLabels: true
+          labelType: key_value
 
   staff_scheduling:
     enabled: false
