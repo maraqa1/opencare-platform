@@ -283,3 +283,147 @@ tbody tr:has(.oc-risk-pill) td:first-child {
 .oc-meter--beds .oc-meter__fill {
   background: linear-gradient(90deg, rgba(52, 211, 153, 0.92), rgba(59, 130, 246, 0.9));
 }
+
+.dashboard-component-chart-holder table {
+  font-size: 12px;
+}
+
+.dashboard-component-chart-holder th {
+  color: #374151 !important;
+  font-weight: 800 !important;
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.dashboard-component-chart-holder td {
+  vertical-align: middle !important;
+}
+
+.exec-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.exec-critical {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fca5a5;
+}
+
+.exec-warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fbbf24;
+}
+
+.exec-normal {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+
+.exec-owner {
+  background: #e0f2fe;
+  color: #075985;
+  border-color: #7dd3fc;
+}
+
+.exec-owner-critical {
+  background: #e0ecff;
+  color: #17336b;
+  border-color: #9db8f5;
+  box-shadow: inset 0 0 0 1px rgba(191, 74, 63, 0.18);
+}
+
+.exec-owner-warning {
+  background: #fff4db;
+  color: #17336b;
+  border-color: #f1c873;
+}
+
+.exec-owner-normal {
+  background: #e0f2fe;
+  color: #075985;
+  border-color: #7dd3fc;
+}
+
+.exec-meter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.98));
+  border: 1px solid #e5e7eb;
+}
+
+.exec-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 12px;
+  opacity: 0.95;
+}
+
+.exec-meter__value {
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.exec-meter--critical .exec-meter__fill {
+  background: linear-gradient(90deg, rgba(252, 165, 165, 0.92), rgba(239, 68, 68, 0.94));
+}
+
+.exec-meter--warning .exec-meter__fill {
+  background: linear-gradient(90deg, rgba(253, 224, 71, 0.9), rgba(245, 158, 11, 0.94));
+}
+
+.exec-meter--normal .exec-meter__fill {
+  background: linear-gradient(90deg, rgba(134, 239, 172, 0.92), rgba(52, 211, 153, 0.94));
+}
+
+.exec-meter--beds .exec-meter__fill {
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.9), rgba(59, 130, 246, 0.92));
+}
+
+tbody tr:has(.exec-badge.exec-critical) td {
+  background: linear-gradient(90deg, rgba(255, 247, 247, 0.98), rgba(255, 252, 252, 0.99));
+}
+
+tbody tr:has(.exec-badge.exec-warning) td {
+  background: linear-gradient(90deg, rgba(255, 250, 240, 0.98), rgba(255, 253, 248, 0.99));
+}
+
+tbody tr:has(.exec-badge.exec-normal) td {
+  background: linear-gradient(90deg, rgba(249, 252, 250, 0.98), rgba(255, 255, 255, 0.99));
+}
+
+tbody tr:has(.exec-badge.exec-critical) td:first-child {
+  box-shadow: inset 4px 0 0 #fca5a5;
+  font-weight: 700;
+}
+
+tbody tr:has(.exec-badge.exec-warning) td:first-child {
+  box-shadow: inset 4px 0 0 #fbbf24;
+  font-weight: 700;
+}
+
+tbody tr:has(.exec-badge.exec-normal) td:first-child {
+  box-shadow: inset 4px 0 0 #86efac;
+  font-weight: 700;
+}

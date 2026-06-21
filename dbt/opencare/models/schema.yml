@@ -367,6 +367,10 @@ models:
         description: Remaining staffed beds available on the ward.
       - name: available_beds_display
         description: HTML-formatted beds-available meter used to render the executive table with a gradient fill.
+      - name: executive_priority
+        description: Executive interpretation of ward urgency for escalation-board use.
+      - name: executive_priority_badge
+        description: HTML-formatted executive-priority badge used in the escalation board.
       - name: issue
         description: Capacity condition translated into executive language.
       - name: issue_badge
@@ -383,6 +387,8 @@ models:
         description: Executive response window derived from the risk level.
       - name: target_time_badge
         description: HTML-formatted timing badge that highlights urgency in Superset.
+      - name: risk_sort_score
+        description: Hidden helper score used to sort the escalation board by severity first and occupancy second.
 
   - name: dict_metrics
     description: Dictionary metrics reference for the Hospital Bed Occupancy Intelligence demo.

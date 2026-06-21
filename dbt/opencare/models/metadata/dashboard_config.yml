@@ -346,7 +346,7 @@ dashboards:
           y_axis_format: ".0f"
       - key: executive_actions_required
         enabled: true
-        title: Executive Actions Required
+        title: Executive Actions Required - Ward Escalation Board
         viz_type: table
         layout:
           x: 0
@@ -355,17 +355,14 @@ dashboards:
           h: 14
         dataset: analytics.fct_bed_pressure_executive_actions
         metrics:
-          - name: current_occupancy_pct
-            column: current_occupancy_pct
+          - name: risk_sort_score
+            column: risk_sort_score
             aggregate: MAX
-            label: Current Occupancy
-          - name: available_beds
-            column: available_beds
-            aggregate: MAX
-            label: Beds Available
+            label: Risk Sort
         group_by:
           - ward
           - risk_level_badge
+          - executive_priority_badge
           - issue_badge
           - required_action_badge
           - owner_badge
@@ -374,29 +371,43 @@ dashboards:
           - available_beds_display
         row_limit: 25
         sort_desc: true
+        query_overrides:
+          orderby:
+            - - expressionType: SIMPLE
+                column:
+                  column_name: risk_sort_score
+                  type: NUMERIC
+                aggregate: MAX
+                label: Risk Sort
+                optionName: metric_risk_sort_score
+              - false
         form_data:
           allow_render_html: true
           color_scheme: supersetColors
           column_config:
+            ward:
+              customColumnName: Ward
             risk_level_badge:
-              customColumnName: Risk level
+              customColumnName: Risk
+            executive_priority_badge:
+              customColumnName: Executive Priority
+              columnWidth: 190
             issue_badge:
               customColumnName: Issue
             required_action_badge:
-              customColumnName: Required action
+              customColumnName: Required Action
+              columnWidth: 220
             owner_badge:
               customColumnName: Owner
             target_time_badge:
-              customColumnName: Target time
+              customColumnName: Target Time
             current_occupancy_display:
-              customColumnName: Current Occupancy
+              customColumnName: Occupancy %
               columnWidth: 170
             available_beds_display:
               customColumnName: Beds Available
               columnWidth: 150
-            "Current Occupancy":
-              visible: false
-            "Beds Available":
+            "Risk Sort":
               visible: false
       - key: ward_pressure_bubble
         enabled: true
