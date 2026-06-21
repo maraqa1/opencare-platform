@@ -280,10 +280,54 @@ models:
         description: Human-readable ward label used in Superset ranking and filter controls.
         tests:
           - not_null
+      - name: ward
+        description: Board-friendly short ward label used for executive dashboard filters and rankings.
+        tests:
+          - not_null
+      - name: specialty
+        description: Service-line grouping exposed as the dashboard specialty filter.
       - name: occupancy_rate_pct
         description: Latest ward occupancy percentage.
       - name: pressure_band
         description: Banding of the latest ward occupancy into Normal, Warning, or Critical.
+
+  - name: fct_bed_pressure_executive_actions
+    description: Latest ward-level executive action register derived from occupancy thresholds for the command-centre dashboard.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
+      data_product: bed_pressure
+    columns:
+      - name: executive_action_key
+        description: Surrogate key for one ward action row in the executive command dashboard.
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Latest snapshot date that the executive action row represents.
+        tests:
+          - not_null
+      - name: ward
+        description: Board-friendly ward label used in the executive actions table.
+        tests:
+          - not_null
+      - name: specialty
+        description: Service-line grouping used for specialty filtering.
+      - name: risk_level
+        description: Threshold-derived executive risk band for the ward.
+      - name: current_occupancy_pct
+        description: Current ward occupancy expressed as a percentage.
+      - name: available_beds
+        description: Remaining staffed beds available on the ward.
+      - name: issue
+        description: Capacity condition translated into executive language.
+      - name: required_action
+        description: Recommended next action derived from the ward risk level.
+      - name: owner
+        description: Demo owner role responsible for the next action.
+      - name: target_time
+        description: Executive response window derived from the risk level.
 
   - name: dict_metrics
     description: Dictionary metrics reference for the Hospital Bed Occupancy Intelligence demo.

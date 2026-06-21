@@ -38,7 +38,8 @@ body {
 
 .slice_container,
 .chart-slice,
-.dashboard-component-chart-holder {
+.dashboard-component-chart-holder,
+.dashboard-component-markdown {
   border: 1px solid rgba(219, 227, 244, 0.95);
   border-radius: 18px;
   box-shadow: var(--card-shadow);
@@ -48,7 +49,8 @@ body {
 
 .slice_container:hover,
 .chart-slice:hover,
-.dashboard-component-chart-holder:hover {
+.dashboard-component-chart-holder:hover,
+.dashboard-component-markdown:hover {
   box-shadow: var(--card-shadow-hover);
   transform: translateY(-1px);
 }
@@ -71,6 +73,33 @@ body {
 
 .chart-header {
   padding: 18px 22px 8px;
+}
+
+.dashboard-component-markdown {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(242, 246, 255, 0.98));
+  padding: 28px 30px;
+}
+
+.dashboard-markdown,
+.dashboard-component-markdown {
+  color: var(--text-color);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.dashboard-markdown h1,
+.dashboard-component-markdown h1 {
+  margin: 0 0 10px;
+  color: var(--secondary-color);
+  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-markdown p,
+.dashboard-component-markdown p {
+  margin: 10px 0 0;
 }
 
 .slice_container .chart-header .header-title,
@@ -99,7 +128,6 @@ body {
 .filter-bar,
 .dashboard-filters-panel {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 254, 0.96));
-  border-right: 1px solid var(--border-color);
   border-radius: 18px;
 }
 
@@ -111,10 +139,20 @@ body {
   display: none;
 }
 
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  padding: 0 0 16px;
+  background: transparent;
+  border: 0;
+}
+
 .native-filter-control {
   border: 1px solid rgba(219, 227, 244, 0.95);
   box-shadow: 0 8px 22px rgba(39, 64, 121, 0.06);
   padding: 10px 12px;
+  min-width: 180px;
 }
 
 .dashboard-component-tabs .ant-tabs-nav::before {
@@ -126,6 +164,17 @@ body {
 .ant-input {
   border-color: var(--border-color) !important;
   border-radius: 12px !important;
+}
+
+.chart-header .header-controls,
+.chart-header .dropdown,
+.dashboard-component-chart-holder .dropdown-toggle,
+.dashboard-component-chart-holder .ant-dropdown-trigger,
+.dashboard-component-chart-holder [data-test="dashboard-chart-dropdown"],
+.dashboard-component-chart-holder [aria-label="Actions"],
+.dashboard-component-chart-holder [aria-label="More chart controls"],
+.dashboard-header .button-container {
+  display: none !important;
 }
 
 .slice_container svg text,

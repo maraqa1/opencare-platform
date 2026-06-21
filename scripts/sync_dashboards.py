@@ -7,6 +7,7 @@ import re
 import sys
 import uuid
 from copy import deepcopy
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 from urllib import error, parse, request
@@ -16,6 +17,11 @@ import yaml
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG_PATH = ROOT_DIR / "dbt" / "opencare" / "models" / "metadata" / "dashboard_config.yml"
+
+
+class SafeFormatDict(dict[str, Any]):
+    def __missing__(self, key: str) -> str:
+        return "{" + key + "}"
 
 
 class SupersetClient:
@@ -188,6 +194,178 @@ def superset_database_uri() -> str:
     )
 
 
+def analytics_query_one(sql: str) -> dict[str, Any] | None:
+    try:
+        import psycopg2
+
+        conn = psycopg2.connect(
+            host=os.getenv("POSTGRES_HOST", "postgres"),
+            port=os.getenv("POSTGRES_PORT", "5432"),
+            dbname=os.getenv("POSTGRES_DB", "opencare"),
+            user=os.getenv("POSTGRES_USER", "opencare"),
+            password=os.getenv("POSTGRES_PASSWORD", ""),
+            options="-csearch_path=analytics,public",
+        )
+        try:
+            cur = conn.cursor()
+            cur.execute(sql)
+            row = cur.fetchone()
+            if row is None:
+                return None
+            columns = [column[0] for column in cur.description]
+            return dict(zip(columns, row))
+        finally:
+            conn.close()
+    except Exception:
+        return None
+
+
+def human_date(value: Any) -> str:
+    if value is None:
+        return "Unknown date"
+    if isinstance(value, datetime):
+        return value.strftime("%d %b %Y")
+    if isinstance(value, date):
+        return value.strftime("%d %b %Y")
+    try:
+        return datetime.fromisoformat(str(value)).strftime("%d %b %Y")
+    except ValueError:
+        return str(value)
+
+
+def plural_phrase(count: int, singular: str, plural: str) -> str:
+    return singular if count == 1 else plural
+
+
+def join_phrases(parts: list[str]) -> str:
+    clean_parts = [part for part in parts if part]
+    if not clean_parts:
+        return "ongoing monitoring"
+    if len(clean_parts) == 1:
+        return clean_parts[0]
+    if len(clean_parts) == 2:
+        return f"{clean_parts[0]} and {clean_parts[1]}"
+    return ", ".join(clean_parts[:-1]) + f", and {clean_parts[-1]}"
+
+
+def bed_pressure_dashboard_context() -> dict[str, Any]:
+    latest_summary = analytics_query_one(
+        """
+        select
+            date_day,
+            network_occupancy_rate_pct,
+            network_available_beds,
+            critical_ward_count,
+            warning_ward_count,
+            normal_ward_count,
+            admissions_total,
+            discharges_total,
+            net_flow,
+            peak_ward_occupancy_pct,
+            ward_count
+        from analytics.fct_bed_pressure_latest_summary
+        limit 1
+        """
+    )
+    if not latest_summary:
+        return {}
+
+    network_occupancy_rate_pct = float(latest_summary.get("network_occupancy_rate_pct") or 0)
+    network_available_beds = int(latest_summary.get("network_available_beds") or 0)
+    critical_ward_count = int(latest_summary.get("critical_ward_count") or 0)
+    warning_ward_count = int(latest_summary.get("warning_ward_count") or 0)
+    normal_ward_count = int(latest_summary.get("normal_ward_count") or 0)
+    net_flow = int(latest_summary.get("net_flow") or 0)
+
+    if network_occupancy_rate_pct >= 95:
+        capacity_status = "Critical pressure"
+        capacity_status_lower = "critical"
+    elif network_occupancy_rate_pct >= 85:
+        capacity_status = "High pressure"
+        capacity_status_lower = "tightening"
+    else:
+        capacity_status = "Elevated but controlled"
+        capacity_status_lower = "manageable"
+
+    if network_available_beds >= 40:
+        bed_reserve_status = "Operational reserve available"
+    elif network_available_beds >= 20:
+        bed_reserve_status = "Reserve tightening"
+    else:
+        bed_reserve_status = "Reserve constrained"
+
+    if net_flow > 0:
+        net_flow_status = "Pressure increasing"
+    elif net_flow < 0:
+        net_flow_status = "Pressure easing"
+    else:
+        net_flow_status = "Flow balanced"
+
+    focus_areas: list[str] = []
+    if critical_ward_count > 0:
+        focus_areas.append("full-capacity wards")
+    if net_flow >= 0:
+        focus_areas.append("discharge acceleration")
+    if warning_ward_count > 0:
+        focus_areas.append("preventing warning wards from becoming critical")
+
+    return {
+        "as_of_date": human_date(latest_summary.get("date_day")),
+        "network_occupancy_rate_pct": f"{network_occupancy_rate_pct:.1f}",
+        "network_available_beds": network_available_beds,
+        "critical_ward_count": critical_ward_count,
+        "warning_ward_count": warning_ward_count,
+        "normal_ward_count": normal_ward_count,
+        "ward_count": int(latest_summary.get("ward_count") or 0),
+        "peak_ward_occupancy_pct": f"{float(latest_summary.get('peak_ward_occupancy_pct') or 0):.1f}",
+        "admissions_total": int(latest_summary.get("admissions_total") or 0),
+        "discharges_total": int(latest_summary.get("discharges_total") or 0),
+        "net_flow": net_flow,
+        "capacity_status": capacity_status,
+        "capacity_status_lower": capacity_status_lower,
+        "bed_reserve_status": bed_reserve_status,
+        "net_flow_status": net_flow_status,
+        "critical_phrase": (
+            f"{critical_ward_count} "
+            f"{plural_phrase(critical_ward_count, 'ward is', 'wards are')} at critical pressure"
+        ),
+        "warning_phrase": (
+            f"{warning_ward_count} "
+            f"{plural_phrase(warning_ward_count, 'ward is', 'wards are')} approaching escalation thresholds"
+        ),
+        "management_focus": join_phrases(focus_areas),
+    }
+
+
+def dashboard_context(dashboard_key: str) -> dict[str, Any]:
+    if dashboard_key == "bed_pressure":
+        return bed_pressure_dashboard_context()
+    return {}
+
+
+def render_template_string(template: str, context: dict[str, Any]) -> str:
+    return template.format_map(SafeFormatDict(context))
+
+
+def render_templates(value: Any, context: dict[str, Any]) -> Any:
+    if isinstance(value, str):
+        return render_template_string(value, context)
+    if isinstance(value, list):
+        return [render_templates(item, context) for item in value]
+    if isinstance(value, dict):
+        return {key: render_templates(item, context) for key, item in value.items()}
+    return value
+
+
+def render_dashboard_config(dashboard_key: str, dashboard_config: dict[str, Any]) -> dict[str, Any]:
+    context = dashboard_context(dashboard_key)
+    if not context:
+        return deepcopy(dashboard_config)
+    rendered = render_templates(deepcopy(dashboard_config), context)
+    rendered["context"] = context
+    return rendered
+
+
 def find_database_by_name(client: SupersetClient, database_name: str) -> dict[str, Any] | None:
     result = client.get("/api/v1/database/")
     return find_existing(result, "database_name", database_name)
@@ -306,16 +484,36 @@ def deep_merge(base: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any
 
 def adhoc_metric(metric_spec: str | dict[str, Any]) -> dict[str, Any]:
     metric_name = metric_spec["name"] if isinstance(metric_spec, dict) else metric_spec
+    expression_type = (
+        metric_spec.get("expressionType", metric_spec.get("expression_type"))
+        if isinstance(metric_spec, dict)
+        else None
+    )
+    if expression_type == "SQL":
+        sql_expression = metric_spec.get("sqlExpression", metric_spec.get("sql_expression"))
+        if not sql_expression:
+            raise RuntimeError(f"SQL metric '{metric_name}' is missing sqlExpression")
+        label = metric_spec.get("label", metric_name.replace("_", " ").title())
+        return {
+            "expressionType": "SQL",
+            "sqlExpression": sql_expression,
+            "label": label,
+            "hasCustomLabel": True,
+            "optionName": f"metric_{metric_name}",
+        }
+
     metric_map = {
         "avg_occupancy_rate": ("occupancy_rate", "AVG", "Average Occupancy Rate"),
         "current_occupancy_rate": ("occupancy_rate", "AVG", "Current Occupancy Rate"),
         "occupancy_rate_pct": ("occupancy_rate_pct", "AVG", "Ward Occupancy Rate"),
+        "current_occupancy_pct": ("current_occupancy_pct", "MAX", "Current Occupancy"),
         "network_occupancy_rate_pct": ("network_occupancy_rate_pct", "MAX", "Network Occupancy Rate"),
         "avg_ward_occupancy_pct": ("avg_ward_occupancy_pct", "MAX", "Average Ward Occupancy"),
         "peak_ward_occupancy_pct": ("peak_ward_occupancy_pct", "MAX", "Peak Ward Occupancy"),
         "network_occupied_beds": ("network_occupied_beds", "MAX", "Occupied Beds"),
         "network_staffed_beds": ("network_staffed_beds", "MAX", "Staffed Beds"),
         "network_available_beds": ("network_available_beds", "MAX", "Available Beds"),
+        "available_beds": ("available_beds", "MAX", "Beds Available"),
         "critical_ward_count": ("critical_ward_count", "MAX", "Critical Wards"),
         "warning_ward_count": ("warning_ward_count", "MAX", "Warning Wards"),
         "normal_ward_count": ("normal_ward_count", "MAX", "Normal Wards"),
@@ -445,11 +643,15 @@ def build_native_filter(
     dataset_ids: dict[str, int],
     chart_refs: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
-    dataset_name = filter_config.get("target_dataset")
-    if not dataset_name or dataset_name not in dataset_ids:
+    dataset_names = filter_config.get("target_datasets")
+    if not dataset_names:
+        dataset_name = filter_config.get("target_dataset")
+        dataset_names = [dataset_name] if dataset_name else []
+    valid_dataset_names = [dataset_name for dataset_name in dataset_names if dataset_name in dataset_ids]
+    if not valid_dataset_names:
         return None
 
-    dataset_id = dataset_ids[dataset_name]
+    column_by_dataset = filter_config.get("columns_by_dataset", {})
     chart_scope = filter_config.get("chart_scope")
     scoped_charts = (
         [chart_ref for chart_ref in chart_refs if chart_ref.get("key") in chart_scope]
@@ -459,6 +661,7 @@ def build_native_filter(
     chart_ids = [int(chart_ref["id"]) for chart_ref in scoped_charts]
     filter_key = re.sub(r"[^A-Za-z0-9]+", "_", str(filter_config.get("key", "filter"))).upper()
     filter_type = "filter_time" if filter_config.get("control") == "date_range" else "filter_select"
+    default_label = filter_config.get("default_label") or ("All wards" if filter_key == "WARD" else "All")
 
     if filter_type == "filter_time":
         default_time_range = filter_config.get("default", "No filter")
@@ -474,7 +677,7 @@ def build_native_filter(
     else:
         default_mask = {
             "extraFormData": {},
-            "filterState": {"label": "All", "value": None},
+            "filterState": {"label": default_label, "value": None},
             "ownState": {},
         }
         control_values = {
@@ -483,18 +686,22 @@ def build_native_filter(
             "multiSelect": filter_config.get("control") == "multi_select",
             "searchAllOptions": bool(filter_config.get("searchable", False)),
             "inverseSelection": False,
+            "placeholder": filter_config.get("placeholder", default_label),
         }
+
+    targets = [
+        {
+            "datasetId": dataset_ids[dataset_name],
+            "column": {"name": column_by_dataset.get(dataset_name, filter_config["column"])},
+        }
+        for dataset_name in valid_dataset_names
+    ]
 
     return {
         "id": f"NATIVE_FILTER-{filter_key}",
         "name": filter_config.get("label", filter_config.get("key", "Filter")),
         "filterType": filter_type,
-        "targets": [
-            {
-                "datasetId": dataset_id,
-                "column": {"name": filter_config["column"]},
-            }
-        ],
+        "targets": targets,
         "defaultDataMask": default_mask,
         "controlValues": control_values,
         "cascadeParentIds": [],
@@ -521,12 +728,16 @@ def dashboard_json_metadata(
         )
         if native_filter is not None
     ]
-    return {
+    metadata = {
         "default_filters": "{}",
         "expanded_slices": {},
         "timed_refresh_immune_slices": [],
         "native_filter_configuration": native_filters,
     }
+    filter_bar_orientation = dashboard_config.get("filter_bar_orientation")
+    if filter_bar_orientation:
+        metadata["filter_bar_orientation"] = filter_bar_orientation
+    return metadata
 
 
 def find_existing(result_payload: dict[str, Any], name_field: str, target_value: str) -> dict[str, Any] | None:
@@ -699,10 +910,16 @@ def ensure_chart_orm(chart_config: dict[str, Any], dataset_id: int) -> dict[str,
 
 def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[dict[str, Any]]) -> dict[str, Any]:
     enabled_charts = [chart for chart in dashboard_config.get("charts", []) if chart.get("enabled", True)]
-    rows: dict[int, list[tuple[dict[str, Any], dict[str, Any]]]] = {}
-    for chart_config, chart_ref in zip(enabled_charts, chart_refs, strict=False):
+    markdown_components = dashboard_config.get("markdowns", [])
+    rows: dict[int, list[dict[str, Any]]] = {}
+    for chart_config, chart_ref in zip(enabled_charts, chart_refs):
         layout = chart_config.get("layout", {})
-        rows.setdefault(int(layout.get("y", 0)), []).append((chart_config, chart_ref))
+        rows.setdefault(int(layout.get("y", 0)), []).append(
+            {"kind": "chart", "config": chart_config, "ref": chart_ref}
+        )
+    for markdown_config in markdown_components:
+        layout = markdown_config.get("layout", {})
+        rows.setdefault(int(layout.get("y", 0)), []).append({"kind": "markdown", "config": markdown_config})
 
     position_data: dict[str, Any] = {
         "DASHBOARD_VERSION_KEY": "v2",
@@ -730,20 +947,39 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[d
             "meta": {"background": "BACKGROUND_TRANSPARENT"},
         }
 
-        for chart_config, chart_ref in sorted(rows[row_y], key=lambda item: int(item[0].get("layout", {}).get("x", 0))):
-            chart_id = int(chart_ref["id"])
-            chart_component_id = f"CHART-{chart_id}"
-            layout = chart_config.get("layout", {})
-            position_data[row_id]["children"].append(chart_component_id)
-            position_data[chart_component_id] = {
-                "type": "CHART",
-                "id": chart_component_id,
+        for row_item in sorted(rows[row_y], key=lambda item: int(item["config"].get("layout", {}).get("x", 0))):
+            layout = row_item["config"].get("layout", {})
+            if row_item["kind"] == "chart":
+                chart_config = row_item["config"]
+                chart_ref = row_item["ref"]
+                chart_id = int(chart_ref["id"])
+                chart_component_id = f"CHART-{chart_id}"
+                position_data[row_id]["children"].append(chart_component_id)
+                position_data[chart_component_id] = {
+                    "type": "CHART",
+                    "id": chart_component_id,
+                    "children": [],
+                    "parents": ["ROOT_ID", "GRID_ID", row_id],
+                    "meta": {
+                        "chartId": chart_id,
+                        "sliceName": chart_config["title"],
+                        "uuid": chart_ref["uuid"],
+                        "width": int(layout.get("w", 12)),
+                        "height": int(layout.get("h", 12)) * 4,
+                    },
+                }
+                continue
+
+            markdown_config = row_item["config"]
+            markdown_id = f"MARKDOWN-{markdown_config['key']}"
+            position_data[row_id]["children"].append(markdown_id)
+            position_data[markdown_id] = {
+                "type": "MARKDOWN",
+                "id": markdown_id,
                 "children": [],
                 "parents": ["ROOT_ID", "GRID_ID", row_id],
                 "meta": {
-                    "chartId": chart_id,
-                    "sliceName": chart_config["title"],
-                    "uuid": chart_ref["uuid"],
+                    "code": markdown_config["code"],
                     "width": int(layout.get("w", 12)),
                     "height": int(layout.get("h", 12)) * 4,
                 },
@@ -834,6 +1070,7 @@ def sync_dashboards(config_path: Path) -> None:
                     print(f"[skip] {key} is disabled")
                     continue
 
+                dashboard_config = render_dashboard_config(key, dashboard_config)
                 print(f"[sync] dashboard {key}")
                 dataset_ids: dict[str, int] = {}
                 for dataset_name in dashboard_config.get("datasets", []):

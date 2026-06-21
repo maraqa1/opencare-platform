@@ -25,6 +25,7 @@ sync_dbt_project_configmap() {
     --from-file=fct_bed_pressure_daily_summary.sql="$ROOT_DIR/dbt/opencare/models/marts/fct_bed_pressure_daily_summary.sql" \
     --from-file=fct_bed_pressure_latest_summary.sql="$ROOT_DIR/dbt/opencare/models/marts/fct_bed_pressure_latest_summary.sql" \
     --from-file=fct_bed_pressure_latest_snapshot.sql="$ROOT_DIR/dbt/opencare/models/marts/fct_bed_pressure_latest_snapshot.sql" \
+    --from-file=fct_bed_pressure_executive_actions.sql="$ROOT_DIR/dbt/opencare/models/marts/fct_bed_pressure_executive_actions.sql" \
     --from-file=fact_bed_occupancy.sql="$ROOT_DIR/dbt/opencare/models/marts/fact_bed_occupancy.sql" \
     --from-file=fact_capacity.sql="$ROOT_DIR/dbt/opencare/models/marts/fact_capacity.sql" \
     --from-file=dim_department.sql="$ROOT_DIR/dbt/opencare/models/marts/dim_department.sql" \
