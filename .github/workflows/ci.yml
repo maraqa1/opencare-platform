@@ -83,6 +83,10 @@ jobs:
           test -f dbt/opencare/models/schema.yml
           test -f dbt/opencare/models/staging/stg_bed_events.sql
           test -f dbt/opencare/models/staging/stg_departments.sql
+          test -f dbt/opencare/models/marts/fct_bed_occupancy.sql
+          test -f dbt/opencare/models/marts/fct_bed_pressure_daily_summary.sql
+          test -f dbt/opencare/models/marts/fct_bed_pressure_latest_summary.sql
+          test -f dbt/opencare/models/marts/fct_bed_pressure_latest_snapshot.sql
           test -f dbt/opencare/models/marts/fact_bed_occupancy.sql
           test -f dbt/opencare/models/marts/fact_capacity.sql
           test -f dbt/opencare/models/marts/dim_department.sql

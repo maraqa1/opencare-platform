@@ -88,6 +88,12 @@ spec:
                     path: models/marts/dim_date.sql
                   - key: fct_bed_occupancy.sql
                     path: models/marts/fct_bed_occupancy.sql
+                  - key: fct_bed_pressure_daily_summary.sql
+                    path: models/marts/fct_bed_pressure_daily_summary.sql
+                  - key: fct_bed_pressure_latest_summary.sql
+                    path: models/marts/fct_bed_pressure_latest_summary.sql
+                  - key: fct_bed_pressure_latest_snapshot.sql
+                    path: models/marts/fct_bed_pressure_latest_snapshot.sql
                   - key: fact_bed_occupancy.sql
                     path: models/marts/fact_bed_occupancy.sql
                   - key: fact_capacity.sql
@@ -570,6 +576,123 @@ data:
             else false
         end as pressure_flag
     from census_events
+  fct_bed_pressure_daily_summary.sql: |
+    with daily_flow as (
+        select
+            event_date as date_day,
+            count(*) filter (where event_type = 'admission') as admissions_total,
+            count(*) filter (where event_type = 'discharge') as discharges_total
+        from {{ ref('stg_bed_events') }}
+        group by 1
+    ),
+
+    daily_pressure as (
+        select
+            date_day,
+            sum(occupied_beds) as network_occupied_beds,
+            sum(staffed_beds) as network_staffed_beds,
+            sum(available_beds) as network_available_beds,
+            round(
+                case
+                    when sum(staffed_beds) = 0 then 0
+                    else sum(occupied_beds)::numeric / sum(staffed_beds)::numeric * 100
+                end,
+                2
+            ) as network_occupancy_rate_pct,
+            round(avg(occupancy_rate) * 100, 2) as avg_ward_occupancy_pct,
+            round(max(occupancy_rate) * 100, 2) as peak_ward_occupancy_pct,
+            count(*) filter (where occupancy_rate >= 0.90) as critical_ward_count,
+            count(*) filter (where occupancy_rate >= 0.75 and occupancy_rate < 0.90) as warning_ward_count,
+            count(*) filter (where occupancy_rate < 0.75) as normal_ward_count,
+            count(*) as ward_count
+        from {{ ref('fct_bed_occupancy') }}
+        group by 1
+    )
+
+    select
+        md5(date_day::text) as pressure_daily_summary_key,
+        pressure.date_day,
+        pressure.network_occupied_beds,
+        pressure.network_staffed_beds,
+        pressure.network_available_beds,
+        pressure.network_occupancy_rate_pct,
+        pressure.avg_ward_occupancy_pct,
+        pressure.peak_ward_occupancy_pct,
+        pressure.critical_ward_count,
+        pressure.warning_ward_count,
+        pressure.normal_ward_count,
+        pressure.ward_count,
+        coalesce(flow.admissions_total, 0) as admissions_total,
+        coalesce(flow.discharges_total, 0) as discharges_total,
+        coalesce(flow.admissions_total, 0) - coalesce(flow.discharges_total, 0) as net_flow
+    from daily_pressure as pressure
+    left join daily_flow as flow
+        on pressure.date_day = flow.date_day
+  fct_bed_pressure_latest_summary.sql: |
+    with latest_day as (
+        select max(date_day) as date_day
+        from {{ ref('fct_bed_pressure_daily_summary') }}
+    )
+
+    select
+        pressure_daily_summary_key as latest_summary_key,
+        date_day,
+        network_occupied_beds,
+        network_staffed_beds,
+        network_available_beds,
+        network_occupancy_rate_pct,
+        avg_ward_occupancy_pct,
+        peak_ward_occupancy_pct,
+        critical_ward_count,
+        warning_ward_count,
+        normal_ward_count,
+        ward_count,
+        admissions_total,
+        discharges_total,
+        net_flow
+    from {{ ref('fct_bed_pressure_daily_summary') }}
+    where date_day = (select date_day from latest_day)
+  fct_bed_pressure_latest_snapshot.sql: |
+    with latest_day as (
+        select max(date_day) as date_day
+        from {{ ref('fct_bed_occupancy') }}
+    ),
+
+    latest_flow as (
+        select
+            ward_id,
+            count(*) filter (where event_type = 'admission') as admissions_today,
+            count(*) filter (where event_type = 'discharge') as discharges_today
+        from {{ ref('stg_bed_events') }}
+        where event_date = (select date_day from latest_day)
+        group by 1
+    )
+
+    select
+        md5(concat(occupancy.date_day::text, '||', occupancy.ward_id, '||latest')) as latest_snapshot_key,
+        occupancy.date_day,
+        occupancy.ward_id,
+        ward.ward_code,
+        ward.ward_name,
+        occupancy.occupied_beds,
+        occupancy.staffed_beds,
+        occupancy.available_beds,
+        round(occupancy.occupancy_rate * 100, 2) as occupancy_rate_pct,
+        coalesce(flow.admissions_today, 0) as admissions_today,
+        coalesce(flow.discharges_today, 0) as discharges_today,
+        coalesce(flow.admissions_today, 0) - coalesce(flow.discharges_today, 0) as net_flow,
+        case
+            when occupancy.occupancy_rate >= 0.90 then 'Critical'
+            when occupancy.occupancy_rate >= 0.75 then 'Warning'
+            else 'Normal'
+        end as pressure_band
+    from {{ ref('fct_bed_occupancy') }} as occupancy
+    join latest_day
+        on occupancy.date_day = latest_day.date_day
+    join {{ ref('dim_ward') }} as ward
+        on occupancy.ward_id = ward.ward_id
+    left join latest_flow as flow
+        on occupancy.ward_id = flow.ward_id
   fact_bed_occupancy.sql: |
     select
         occupancy_fact_key,
