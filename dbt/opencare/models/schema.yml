@@ -184,15 +184,106 @@ models:
         meta:
           formula: greatest(staffed_beds - occupied_beds, 0)
       - name: occupancy_rate
-        description: Percentage of staffed beds occupied for the ward-day.
+        description: Ratio of staffed beds occupied for the ward-day.
         meta:
-          formula: occupied_beds / staffed_beds * 100
+          formula: occupied_beds / staffed_beds
         tests:
           - not_null
       - name: pressure_flag
         description: Boolean indicator showing occupancy at or above 90 percent of staffed beds.
         meta:
-          formula: occupancy_rate >= 90
+          formula: occupancy_rate >= 0.9
+
+  - name: fct_bed_pressure_daily_summary
+    description: Daily network-level bed pressure summary tailored for the Superset analysis dashboard.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
+      data_product: bed_pressure
+    columns:
+      - name: pressure_daily_summary_key
+        description: Surrogate key for one network day summary row.
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Calendar day for the network pressure snapshot.
+        tests:
+          - not_null
+      - name: network_occupancy_rate_pct
+        description: Network occupied beds divided by staffed beds, expressed as a percentage.
+      - name: avg_ward_occupancy_pct
+        description: Mean occupancy percentage across wards for the day.
+      - name: peak_ward_occupancy_pct
+        description: Highest ward occupancy percentage observed on the day.
+      - name: critical_ward_count
+        description: Count of wards at or above 90 percent occupancy.
+      - name: warning_ward_count
+        description: Count of wards between 75 and 90 percent occupancy.
+      - name: admissions_total
+        description: Number of admission events recorded on the day.
+      - name: discharges_total
+        description: Number of discharge events recorded on the day.
+
+  - name: fct_bed_pressure_latest_summary
+    description: Latest-day network bed pressure summary used for KPI cards in the Superset dashboard.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
+      data_product: bed_pressure
+    columns:
+      - name: latest_summary_key
+        description: Surrogate key for the latest summary snapshot row.
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Latest available network summary date.
+        tests:
+          - not_null
+      - name: network_available_beds
+        description: Remaining staffed bed capacity across the network on the latest day.
+      - name: critical_ward_count
+        description: Number of wards currently at critical pressure.
+      - name: warning_ward_count
+        description: Number of wards currently in the warning band.
+      - name: net_flow
+        description: Admissions minus discharges for the latest summary day.
+
+  - name: fct_bed_pressure_latest_snapshot
+    description: Latest ward-level bed pressure snapshot with occupancy and same-day flow counts for ward comparison.
+    meta:
+      stage: analytics
+      owner: Capacity Management
+      classification: operational
+      data_product: bed_pressure
+    columns:
+      - name: latest_snapshot_key
+        description: Surrogate key for one ward on the latest snapshot day.
+        tests:
+          - not_null
+          - unique
+      - name: date_day
+        description: Latest available ward snapshot date.
+        tests:
+          - not_null
+      - name: ward_id
+        description: Ward identifier carried through to the latest pressure snapshot.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_ward')
+              field: ward_id
+      - name: ward_name
+        description: Human-readable ward label used in Superset ranking and filter controls.
+        tests:
+          - not_null
+      - name: occupancy_rate_pct
+        description: Latest ward occupancy percentage.
+      - name: pressure_band
+        description: Banding of the latest ward occupancy into Normal, Warning, or Critical.
 
   - name: dict_metrics
     description: Dictionary metrics reference for the Hospital Bed Occupancy Intelligence demo.

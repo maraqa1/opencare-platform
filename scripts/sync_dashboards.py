@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import uuid
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 from urllib import error, parse, request
@@ -293,12 +294,38 @@ def dataset_payload(dataset_name: str, database_id: int, owner_ids: list[int] | 
     }
 
 
-def adhoc_metric(metric_name: str) -> dict[str, Any]:
+def deep_merge(base: dict[str, Any], overrides: dict[str, Any]) -> dict[str, Any]:
+    merged = deepcopy(base)
+    for key, value in overrides.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def adhoc_metric(metric_spec: str | dict[str, Any]) -> dict[str, Any]:
+    metric_name = metric_spec["name"] if isinstance(metric_spec, dict) else metric_spec
     metric_map = {
         "avg_occupancy_rate": ("occupancy_rate", "AVG", "Average Occupancy Rate"),
         "current_occupancy_rate": ("occupancy_rate", "AVG", "Current Occupancy Rate"),
-        "admissions_total": ("occupied_beds", "SUM", "Occupied Beds"),
-        "discharges_total": ("available_beds", "SUM", "Available Beds"),
+        "occupancy_rate_pct": ("occupancy_rate_pct", "AVG", "Ward Occupancy Rate"),
+        "network_occupancy_rate_pct": ("network_occupancy_rate_pct", "MAX", "Network Occupancy Rate"),
+        "avg_ward_occupancy_pct": ("avg_ward_occupancy_pct", "MAX", "Average Ward Occupancy"),
+        "peak_ward_occupancy_pct": ("peak_ward_occupancy_pct", "MAX", "Peak Ward Occupancy"),
+        "network_occupied_beds": ("network_occupied_beds", "MAX", "Occupied Beds"),
+        "network_staffed_beds": ("network_staffed_beds", "MAX", "Staffed Beds"),
+        "network_available_beds": ("network_available_beds", "MAX", "Available Beds"),
+        "critical_ward_count": ("critical_ward_count", "MAX", "Critical Wards"),
+        "warning_ward_count": ("warning_ward_count", "MAX", "Warning Wards"),
+        "normal_ward_count": ("normal_ward_count", "MAX", "Normal Wards"),
+        "ward_count": ("ward_count", "MAX", "Ward Count"),
+        "ward_row_count": ("ward_id", "COUNT", "Ward Count"),
+        "admissions_total": ("admissions_total", "SUM", "Admissions"),
+        "discharges_total": ("discharges_total", "SUM", "Discharges"),
+        "admissions_today": ("admissions_today", "SUM", "Admissions Today"),
+        "discharges_today": ("discharges_today", "SUM", "Discharges Today"),
+        "net_flow": ("net_flow", "SUM", "Net Flow"),
         "staffing_pressure_index": ("staffing_pressure_index", "AVG", "Staffing Pressure Index"),
         "recoverable_amount_sum": ("recoverable_amount", "SUM", "Recoverable Amount"),
         "expected_recovery_amount_sum": ("expected_recovery_amount", "SUM", "Expected Recovery Amount"),
@@ -326,12 +353,24 @@ def adhoc_metric(metric_name: str) -> dict[str, Any]:
         "actual_recovery_sum": ("actual_recovery", "SUM", "Actual Recovery"),
         "expected_recovery_sum": ("expected_recovery", "SUM", "Expected Recovery"),
     }
-    column_name, aggregate, label = metric_map.get(metric_name, (metric_name, "AVG", metric_name.replace("_", " ").title()))
+    column_name, aggregate, label = metric_map.get(
+        metric_name,
+        (metric_name, "AVG", metric_name.replace("_", " ").title()),
+    )
+    if isinstance(metric_spec, dict):
+        column_name = metric_spec.get("column", column_name)
+        aggregate = metric_spec.get("aggregate", aggregate)
+        label = metric_spec.get("label", label)
+    column_type = (
+        metric_spec.get("column_type", "NUMERIC")
+        if isinstance(metric_spec, dict)
+        else ("VARCHAR" if aggregate == "COUNT" and column_name.endswith("_id") else "NUMERIC")
+    )
     return {
         "expressionType": "SIMPLE",
         "column": {
             "column_name": column_name,
-            "type": "NUMERIC",
+            "type": column_type,
         },
         "aggregate": aggregate,
         "label": label,
@@ -340,10 +379,11 @@ def adhoc_metric(metric_name: str) -> dict[str, Any]:
 
 
 def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
-    metrics = [adhoc_metric(metric_name) for metric_name in chart_config.get("metrics", [])]
+    metric_specs = chart_config.get("metrics", [])
+    metrics = [adhoc_metric(metric_spec) for metric_spec in metric_specs]
     group_by = chart_config.get("group_by", [])
     time_range = chart_config.get("time_range", "No filter")
-    params = {
+    base_params = {
         "datasource": f"{dataset_id}__table",
         "viz_type": chart_config["viz_type"],
         "groupby": group_by,
@@ -353,27 +393,33 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "adhoc_filters": [],
         "orderby": [],
         "time_range": time_range,
+        "show_legend": True,
+    }
+    if metrics and chart_config["viz_type"] == "big_number_total":
+        base_params["metric"] = metrics[0]
+    params = deep_merge(base_params, chart_config.get("form_data", {}))
+
+    base_query = {
+        "time_range": time_range,
+        "granularity": chart_config.get("time_column"),
+        "granularity_sqla": chart_config.get("time_column"),
+        "columns": group_by,
+        "metrics": metrics,
+        "orderby": [],
+        "annotation_layers": [],
+        "row_limit": chart_config.get("row_limit", 500),
+        "series_limit": 0,
+        "series_limit_metric": None,
+        "order_desc": bool(chart_config.get("sort_desc", True)),
+        "url_params": {},
+        "custom_params": {},
+        "custom_form_data": {},
     }
     query_context = {
         "datasource": {"id": dataset_id, "type": "table"},
         "force": False,
         "queries": [
-            {
-                "time_range": time_range,
-                "granularity": chart_config.get("time_column"),
-                "granularity_sqla": chart_config.get("time_column"),
-                "columns": group_by,
-                "metrics": metrics,
-                "orderby": [],
-                "annotation_layers": [],
-                "row_limit": chart_config.get("row_limit", 500),
-                "series_limit": 0,
-                "series_limit_metric": None,
-                "order_desc": True,
-                "url_params": {},
-                "custom_params": {},
-                "custom_form_data": {},
-            }
+            deep_merge(base_query, chart_config.get("query_overrides", {}))
         ],
         "result_format": "json",
         "result_type": "full",
@@ -385,6 +431,95 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "datasource_type": "table",
         "params": json.dumps(params),
         "query_context": json.dumps(query_context),
+    }
+
+
+def build_native_filter(
+    filter_config: dict[str, Any],
+    dataset_ids: dict[str, int],
+    chart_refs: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    dataset_name = filter_config.get("target_dataset")
+    if not dataset_name or dataset_name not in dataset_ids:
+        return None
+
+    dataset_id = dataset_ids[dataset_name]
+    chart_scope = filter_config.get("chart_scope")
+    scoped_charts = (
+        [chart_ref for chart_ref in chart_refs if chart_ref.get("key") in chart_scope]
+        if isinstance(chart_scope, list) and chart_scope
+        else chart_refs
+    )
+    chart_ids = [int(chart_ref["id"]) for chart_ref in scoped_charts]
+    filter_key = re.sub(r"[^A-Za-z0-9]+", "_", str(filter_config.get("key", "filter"))).upper()
+    filter_type = "filter_time" if filter_config.get("control") == "date_range" else "filter_select"
+
+    if filter_type == "filter_time":
+        default_time_range = filter_config.get("default", "No filter")
+        default_mask = {
+            "extraFormData": {"time_range": default_time_range},
+            "filterState": {"label": default_time_range, "value": default_time_range},
+            "ownState": {},
+        }
+        control_values = {
+            "enableEmptyFilter": False,
+            "defaultToFirstItem": False,
+        }
+    else:
+        default_mask = {
+            "extraFormData": {},
+            "filterState": {"label": "All", "value": None},
+            "ownState": {},
+        }
+        control_values = {
+            "enableEmptyFilter": False,
+            "defaultToFirstItem": False,
+            "multiSelect": filter_config.get("control") == "multi_select",
+            "searchAllOptions": bool(filter_config.get("searchable", False)),
+            "inverseSelection": False,
+        }
+
+    return {
+        "id": f"NATIVE_FILTER-{filter_key}",
+        "name": filter_config.get("label", filter_config.get("key", "Filter")),
+        "filterType": filter_type,
+        "targets": [
+            {
+                "datasetId": dataset_id,
+                "column": {"name": filter_config["column"]},
+            }
+        ],
+        "defaultDataMask": default_mask,
+        "controlValues": control_values,
+        "cascadeParentIds": [],
+        "scope": {"rootPath": ["ROOT_ID"], "excluded": []},
+        "chartsInScope": chart_ids,
+        "tabsInScope": [],
+        "description": "",
+        "type": "NATIVE_FILTER",
+        "adhoc_filters": [],
+    }
+
+
+def dashboard_json_metadata(
+    dashboard_config: dict[str, Any],
+    chart_refs: list[dict[str, Any]],
+    dataset_ids: dict[str, int],
+) -> dict[str, Any]:
+    native_filters = [
+        native_filter
+        for native_filter in (
+            build_native_filter(filter_config, dataset_ids, chart_refs)
+            for filter_config in dashboard_config.get("filters", [])
+            if filter_config.get("type") == "native_filter"
+        )
+        if native_filter is not None
+    ]
+    return {
+        "default_filters": "{}",
+        "expanded_slices": {},
+        "timed_refresh_immune_slices": [],
+        "native_filter_configuration": native_filters,
     }
 
 
@@ -614,6 +749,7 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[d
 def ensure_dashboard_orm(
     dashboard_config: dict[str, Any],
     chart_refs: list[dict[str, Any]],
+    dataset_ids: dict[str, int],
 ) -> dict[str, Any]:
     try:
         from superset import db
@@ -630,13 +766,7 @@ def ensure_dashboard_orm(
         "slug": slug,
         "published": True,
         "position_json": json.dumps(dashboard_position_data(dashboard_config, chart_refs)),
-        "json_metadata": json.dumps(
-            {
-                "default_filters": "{}",
-                "expanded_slices": {},
-                "timed_refresh_immune_slices": [],
-            }
-        ),
+        "json_metadata": json.dumps(dashboard_json_metadata(dashboard_config, chart_refs, dataset_ids)),
     }
 
     chart_ids = [int(chart_ref["id"]) for chart_ref in chart_refs]
@@ -713,9 +843,10 @@ def sync_dashboards(config_path: Path) -> None:
                     dataset_name = chart["dataset"]
                     dataset_id = dataset_ids[dataset_name]
                     chart_ref = ensure_chart_orm(chart, dataset_id)
+                    chart_ref["key"] = chart["key"]
                     chart_refs.append(chart_ref)
 
-                dashboard_ref = ensure_dashboard_orm(dashboard_config, chart_refs)
+                dashboard_ref = ensure_dashboard_orm(dashboard_config, chart_refs, dataset_ids)
                 print(
                     f"[ok] dashboard url -> "
                     f"{os.getenv('SUPERSET_EMBED_URL', os.getenv('SUPERSET_URL', 'http://localhost:8088')).rstrip('/')}"

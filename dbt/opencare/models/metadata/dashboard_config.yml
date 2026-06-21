@@ -8,84 +8,187 @@ dashboards:
     title: Bed Occupancy Intelligence
     schema: analytics
     datasets:
-      - analytics.fct_bed_occupancy
-      - analytics.dim_ward
-      - analytics.dim_date
+      - analytics.fct_bed_pressure_daily_summary
+      - analytics.fct_bed_pressure_latest_summary
+      - analytics.fct_bed_pressure_latest_snapshot
     filters:
       - key: ward
         type: native_filter
         label: Ward
-        target_dataset: analytics.fct_bed_occupancy
-        column: ward_id
+        target_dataset: analytics.fct_bed_pressure_latest_snapshot
+        column: ward_name
         control: multi_select
         searchable: true
+        chart_scope:
+          - pressure_mix
+          - ward_ranking
       - key: date_range
         type: native_filter
         label: Date Range
-        target_dataset: analytics.fct_bed_occupancy
+        target_dataset: analytics.fct_bed_pressure_daily_summary
         column: date_day
         control: date_range
-        default: No filter
+        default: Last 90 days
         presets:
-          - 7d
-          - 14d
           - 30d
           - 90d
+          - 180d
+        chart_scope:
+          - network_occupancy_trend
+          - admissions_vs_discharges
     charts:
-      - key: occupancy_trend_30d
+      - key: network_occupancy
         enabled: true
-        title: 30-Day Occupancy Trend
-        viz_type: echarts_timeseries_line
+        title: Network Occupancy
+        viz_type: big_number_total
         layout:
           x: 0
           y: 0
-          w: 12
-          h: 16
-        dataset: analytics.fct_bed_occupancy
+          w: 3
+          h: 7
+        dataset: analytics.fct_bed_pressure_latest_summary
         metrics:
-          - avg_occupancy_rate
-        group_by:
-          - ward_id
-        time_column: date_day
-        row_limit: 1200
-        reference_lines:
-          - label: Critical Threshold
-            value: 0.90
-            color: "#B71C1C"
-          - label: Warning Threshold
-            value: 0.75
-            color: "#E65100"
-      - key: ward_comparison
+          - network_occupancy_rate_pct
+        form_data:
+          subheader: Latest staffed-bed occupancy %
+          show_timestamp: false
+          y_axis_format: ".1f"
+          color_scheme: supersetColors
+      - key: available_beds
         enabled: true
-        title: Ward Comparison
-        viz_type: echarts_timeseries_bar
+        title: Available Beds
+        viz_type: big_number_total
+        layout:
+          x: 3
+          y: 0
+          w: 3
+          h: 7
+        dataset: analytics.fct_bed_pressure_latest_summary
+        metrics:
+          - network_available_beds
+        form_data:
+          subheader: Latest network open capacity
+          show_timestamp: false
+          y_axis_format: ".0f"
+          color_scheme: d3Category20
+      - key: critical_wards
+        enabled: true
+        title: Critical Wards
+        viz_type: big_number_total
+        layout:
+          x: 6
+          y: 0
+          w: 3
+          h: 7
+        dataset: analytics.fct_bed_pressure_latest_summary
+        metrics:
+          - critical_ward_count
+        form_data:
+          subheader: Wards at or above 90% occupancy
+          show_timestamp: false
+          y_axis_format: ".0f"
+          color_scheme: fire
+      - key: warning_wards
+        enabled: true
+        title: Warning Wards
+        viz_type: big_number_total
+        layout:
+          x: 9
+          y: 0
+          w: 3
+          h: 7
+        dataset: analytics.fct_bed_pressure_latest_summary
+        metrics:
+          - warning_ward_count
+        form_data:
+          subheader: Wards between 75% and 90%
+          show_timestamp: false
+          y_axis_format: ".0f"
+          color_scheme: preswald
+      - key: network_occupancy_trend
+        enabled: true
+        title: Network Occupancy Trend
+        viz_type: echarts_timeseries_line
         layout:
           x: 0
-          y: 16
-          w: 5
-          h: 12
-        dataset: analytics.fct_bed_occupancy
+          y: 7
+          w: 8
+          h: 14
+        dataset: analytics.fct_bed_pressure_daily_summary
         metrics:
-          - current_occupancy_rate
-        group_by:
-          - ward_id
+          - network_occupancy_rate_pct
+          - peak_ward_occupancy_pct
         time_column: date_day
+        row_limit: 180
+        form_data:
+          x_axis_time_format: smart_date
+          y_axis_format: ".0f"
+          color_scheme: supersetColors
+          show_legend: true
+          rich_tooltip: true
+      - key: pressure_mix
+        enabled: true
+        title: Current Pressure Mix
+        viz_type: echarts_pie
+        layout:
+          x: 8
+          y: 7
+          w: 4
+          h: 14
+        dataset: analytics.fct_bed_pressure_latest_snapshot
+        metrics:
+          - ward_row_count
+        group_by:
+          - pressure_band
+        row_limit: 20
+        form_data:
+          donut: true
+          show_legend: true
+          label_type: key_value
+          color_scheme: supersetColors
+          number_format: ".0f"
+      - key: ward_ranking
+        enabled: true
+        title: Highest Occupancy Wards
+        viz_type: dist_bar
+        layout:
+          x: 0
+          y: 21
+          w: 6
+          h: 13
+        dataset: analytics.fct_bed_pressure_latest_snapshot
+        metrics:
+          - occupancy_rate_pct
+        group_by:
+          - ward_name
+        row_limit: 12
         sort_desc: true
+        form_data:
+          show_legend: false
+          color_scheme: supersetColors
+          y_axis_format: ".0f"
+          truncate_metric: false
+          sort_by_metric: true
       - key: admissions_vs_discharges
         enabled: true
         title: Admissions vs Discharges
         viz_type: echarts_area
         layout:
-          x: 5
-          y: 16
-          w: 7
-          h: 12
-        dataset: analytics.fct_bed_occupancy
+          x: 6
+          y: 21
+          w: 6
+          h: 13
+        dataset: analytics.fct_bed_pressure_daily_summary
         metrics:
           - admissions_total
           - discharges_total
         time_column: date_day
-        row_limit: 120
+        row_limit: 180
+        form_data:
+          color_scheme: d3Category20
+          show_legend: true
+          x_axis_time_format: smart_date
+          y_axis_format: ".0f"
 
   staff_scheduling:
     enabled: false
