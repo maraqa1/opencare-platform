@@ -2,8 +2,16 @@ import { getApiJson } from "@/lib/api";
 
 export async function EmbeddedDashboard({
   dashboard,
+  backHref = "/occupancy?tab=occupancy",
+  backLabel = "Back to Occupancy",
+  reportHref = "/api/v1/reports/export/forecast",
+  reportLabel = "Download Report",
 }: {
   dashboard: { id: string; title: string; useCase: string };
+  backHref?: string;
+  backLabel?: string;
+  reportHref?: string;
+  reportLabel?: string;
 }) {
   const [embedPayload, runtimePayload] = await Promise.all([
     getApiJson<{
@@ -38,11 +46,11 @@ export async function EmbeddedDashboard({
           </p>
         </div>
         <div className="button-row">
-          <a className="secondary-link" href="/occupancy?tab=occupancy">
-            Back to Occupancy
+          <a className="secondary-link" href={backHref}>
+            {backLabel}
           </a>
-          <a className="secondary-link" href="/api/v1/reports/export/forecast">
-            Download Report
+          <a className="secondary-link" href={reportHref}>
+            {reportLabel}
           </a>
           <a
             className="button primary"
