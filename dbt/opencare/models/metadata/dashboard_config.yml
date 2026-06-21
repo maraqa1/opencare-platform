@@ -353,11 +353,34 @@ dashboards:
           - required_action_badge
           - owner_badge
           - target_time_badge
+          - current_occupancy_display
+          - available_beds_display
         row_limit: 25
         sort_desc: true
         form_data:
           allow_render_html: true
           color_scheme: supersetColors
+          column_config:
+            risk_level_badge:
+              customColumnName: Risk level
+            issue_badge:
+              customColumnName: Issue
+            required_action_badge:
+              customColumnName: Required action
+            owner_badge:
+              customColumnName: Owner
+            target_time_badge:
+              customColumnName: Target time
+            current_occupancy_display:
+              customColumnName: Current Occupancy
+              columnWidth: 170
+            available_beds_display:
+              customColumnName: Beds Available
+              columnWidth: 150
+            "Current Occupancy":
+              visible: false
+            "Beds Available":
+              visible: false
 
   staff_scheduling:
     enabled: false

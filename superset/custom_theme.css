@@ -247,3 +247,39 @@ tbody tr:has(.oc-risk-pill) td:first-child {
   font-weight: 700;
   color: var(--secondary-color);
 }
+
+.oc-meter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(237, 242, 249, 0.92), rgba(248, 250, 254, 0.98));
+  border: 1px solid rgba(203, 213, 225, 0.7);
+}
+
+.oc-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 12px;
+  opacity: 0.9;
+}
+
+.oc-meter__value {
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+  color: #17336b;
+  font-variant-numeric: tabular-nums;
+}
+
+.oc-meter--occupancy .oc-meter__fill {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.92), rgba(239, 68, 68, 0.92));
+}
+
+.oc-meter--beds .oc-meter__fill {
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.92), rgba(59, 130, 246, 0.9));
+}

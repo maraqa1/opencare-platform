@@ -1,3 +1,19 @@
+with base as (
+    select
+        latest_snapshot_key,
+        date_day,
+        ward_id,
+        ward_code,
+        ward,
+        specialty,
+        pressure_band,
+        occupancy_rate_pct,
+        available_beds,
+        max(available_beds) over () as max_available_beds,
+        trim(trailing '.' from trim(trailing '0' from round(occupancy_rate_pct::numeric, 2)::text)) as current_occupancy_text
+    from {{ ref('fct_bed_pressure_latest_snapshot') }}
+)
+
 select
     md5(concat(latest_snapshot_key, '||executive-action')) as executive_action_key,
     date_day,
@@ -12,7 +28,30 @@ select
         else '<span class="oc-risk-pill oc-risk-pill--normal">Normal</span>'
     end as risk_level_badge,
     occupancy_rate_pct as current_occupancy_pct,
+    concat(
+        '<div class="oc-meter oc-meter--occupancy"><span class="oc-meter__fill" style="width:',
+        greatest(18, least(100, round(occupancy_rate_pct)::int)),
+        '%;"></span><span class="oc-meter__value">',
+        current_occupancy_text,
+        '</span></div>'
+    ) as current_occupancy_display,
     available_beds,
+    concat(
+        '<div class="oc-meter oc-meter--beds"><span class="oc-meter__fill" style="width:',
+        greatest(
+            18,
+            least(
+                100,
+                case
+                    when coalesce(max_available_beds, 0) = 0 then 0
+                    else round((available_beds::numeric / max_available_beds::numeric) * 100)
+                end::int
+            )
+        ),
+        '%;"></span><span class="oc-meter__value">',
+        available_beds,
+        '</span></div>'
+    ) as available_beds_display,
     case
         when occupancy_rate_pct >= 95 then 'No or limited capacity'
         when occupancy_rate_pct >= 85 then 'Pressure building'
@@ -58,4 +97,4 @@ select
         when occupancy_rate_pct >= 85 then 2
         else 1
     end as risk_priority
-from {{ ref('fct_bed_pressure_latest_snapshot') }}
+from base

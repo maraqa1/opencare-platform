@@ -320,8 +320,12 @@ models:
         description: HTML-formatted executive badge used to colour the ward risk level in Superset.
       - name: current_occupancy_pct
         description: Current ward occupancy expressed as a percentage.
+      - name: current_occupancy_display
+        description: HTML-formatted occupancy meter used to render the executive table with a gradient fill.
       - name: available_beds
         description: Remaining staffed beds available on the ward.
+      - name: available_beds_display
+        description: HTML-formatted beds-available meter used to render the executive table with a gradient fill.
       - name: issue
         description: Capacity condition translated into executive language.
       - name: issue_badge
