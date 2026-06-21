@@ -94,6 +94,8 @@ spec:
                     path: models/marts/fct_bed_pressure_latest_summary.sql
                   - key: fct_bed_pressure_latest_snapshot.sql
                     path: models/marts/fct_bed_pressure_latest_snapshot.sql
+                  - key: fct_bed_pressure_distribution.sql
+                    path: models/marts/fct_bed_pressure_distribution.sql
                   - key: fct_bed_pressure_executive_actions.sql
                     path: models/marts/fct_bed_pressure_executive_actions.sql
                   - key: fact_bed_occupancy.sql
@@ -697,6 +699,26 @@ data:
         on occupancy.ward_id = ward.ward_id
     left join latest_flow as flow
         on occupancy.ward_id = flow.ward_id
+  fct_bed_pressure_distribution.sql: |
+    select
+        md5(concat(occupancy.date_day::text, '||', occupancy.ward_id, '||distribution')) as pressure_distribution_key,
+        occupancy.date_day,
+        occupancy.ward_id,
+        ward.ward_code,
+        ward.ward_name as ward,
+        ward.service_line as specialty,
+        occupancy.occupied_beds,
+        occupancy.staffed_beds,
+        occupancy.available_beds,
+        round(occupancy.occupancy_rate * 100, 2) as occupancy_rate_pct,
+        case
+            when occupancy.occupancy_rate >= 0.90 then 'Critical'
+            when occupancy.occupancy_rate >= 0.75 then 'Warning'
+            else 'Normal'
+        end as pressure_band
+    from {{ ref('fct_bed_occupancy') }} as occupancy
+    join {{ ref('dim_ward') }} as ward
+        on occupancy.ward_id = ward.ward_id
   fct_bed_pressure_executive_actions.sql: |
     select
         md5(concat(latest_snapshot_key, '||executive-action')) as executive_action_key,
