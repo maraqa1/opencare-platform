@@ -316,18 +316,28 @@ models:
         description: Service-line grouping used for specialty filtering.
       - name: risk_level
         description: Threshold-derived executive risk band for the ward.
+      - name: risk_level_badge
+        description: HTML-formatted executive badge used to colour the ward risk level in Superset.
       - name: current_occupancy_pct
         description: Current ward occupancy expressed as a percentage.
       - name: available_beds
         description: Remaining staffed beds available on the ward.
       - name: issue
         description: Capacity condition translated into executive language.
+      - name: issue_badge
+        description: HTML-formatted issue badge used for the executive action register.
       - name: required_action
         description: Recommended next action derived from the ward risk level.
+      - name: required_action_badge
+        description: HTML-formatted action badge that emphasises the intervention type.
       - name: owner
         description: Demo owner role responsible for the next action.
+      - name: owner_badge
+        description: HTML-formatted owner badge for the executive actions table.
       - name: target_time
         description: Executive response window derived from the risk level.
+      - name: target_time_badge
+        description: HTML-formatted timing badge that highlights urgency in Superset.
 
   - name: dict_metrics
     description: Dictionary metrics reference for the Hospital Bed Occupancy Intelligence demo.

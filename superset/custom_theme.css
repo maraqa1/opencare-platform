@@ -181,3 +181,69 @@ body {
 .dashboard-component-chart-holder svg text {
   fill: #5b6475;
 }
+
+.oc-risk-pill,
+.oc-issue-pill,
+.oc-action-pill,
+.oc-owner-pill,
+.oc-target-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.oc-risk-pill--critical,
+.oc-issue-pill--critical,
+.oc-action-pill--critical,
+.oc-owner-pill--critical,
+.oc-target-pill--critical {
+  color: #8d1f24;
+  background: linear-gradient(135deg, rgba(248, 220, 220, 0.96), rgba(255, 239, 239, 0.96));
+  border-color: rgba(191, 74, 63, 0.28);
+}
+
+.oc-risk-pill--warning,
+.oc-issue-pill--warning,
+.oc-action-pill--warning,
+.oc-owner-pill--warning,
+.oc-target-pill--warning {
+  color: #8a5611;
+  background: linear-gradient(135deg, rgba(255, 235, 194, 0.98), rgba(255, 246, 225, 0.98));
+  border-color: rgba(200, 135, 25, 0.28);
+}
+
+.oc-risk-pill--normal,
+.oc-issue-pill--normal,
+.oc-action-pill--normal,
+.oc-owner-pill--normal,
+.oc-target-pill--normal {
+  color: #186348;
+  background: linear-gradient(135deg, rgba(214, 243, 226, 0.98), rgba(237, 250, 243, 0.98));
+  border-color: rgba(47, 143, 99, 0.25);
+}
+
+tbody tr:has(.oc-risk-pill--critical) td {
+  background: linear-gradient(90deg, rgba(255, 244, 244, 0.95), rgba(255, 251, 251, 0.98));
+}
+
+tbody tr:has(.oc-risk-pill--warning) td {
+  background: linear-gradient(90deg, rgba(255, 248, 234, 0.95), rgba(255, 252, 244, 0.98));
+}
+
+tbody tr:has(.oc-risk-pill--normal) td {
+  background: linear-gradient(90deg, rgba(243, 251, 247, 0.95), rgba(252, 255, 253, 0.98));
+}
+
+tbody tr:has(.oc-risk-pill) td:first-child {
+  font-weight: 700;
+  color: var(--secondary-color);
+}
