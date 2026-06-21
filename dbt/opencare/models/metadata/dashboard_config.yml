@@ -31,6 +31,17 @@ dashboards:
       - analytics.fct_bed_pressure_executive_actions
       - analytics.fct_bed_pressure_latest_snapshot
       - analytics.fct_bed_pressure_distribution
+    dataset_column_labels:
+      analytics.fct_bed_pressure_executive_actions:
+        ward: Ward
+        risk_level_badge: Risk
+        executive_priority_badge: Executive Priority
+        issue_badge: Issue
+        required_action_badge: Required Action
+        owner_badge: Owner
+        target_time_badge: Target Time
+        current_occupancy_display: Occupancy %
+        available_beds_display: Beds Available
     filters:
       - key: date_range
         type: native_filter
@@ -354,39 +365,16 @@ dashboards:
           w: 12
           h: 14
         dataset: analytics.fct_bed_pressure_executive_actions
-        metrics:
-          - name: risk_sort_score
-            column: risk_sort_score
-            aggregate: MAX
-            label: Risk Sort
         group_by:
-          - expressionType: SQL
-            sqlExpression: ward
-            label: Ward
-          - expressionType: SQL
-            sqlExpression: risk_level_badge
-            label: Risk
-          - expressionType: SQL
-            sqlExpression: executive_priority_badge
-            label: Executive Priority
-          - expressionType: SQL
-            sqlExpression: issue_badge
-            label: Issue
-          - expressionType: SQL
-            sqlExpression: required_action_badge
-            label: Required Action
-          - expressionType: SQL
-            sqlExpression: owner_badge
-            label: Owner
-          - expressionType: SQL
-            sqlExpression: target_time_badge
-            label: Target Time
-          - expressionType: SQL
-            sqlExpression: current_occupancy_display
-            label: Occupancy %
-          - expressionType: SQL
-            sqlExpression: available_beds_display
-            label: Beds Available
+          - ward
+          - risk_level_badge
+          - executive_priority_badge
+          - issue_badge
+          - required_action_badge
+          - owner_badge
+          - target_time_badge
+          - current_occupancy_display
+          - available_beds_display
         row_limit: 25
         sort_desc: true
         query_overrides:
@@ -403,16 +391,14 @@ dashboards:
           allow_render_html: true
           color_scheme: supersetColors
           column_config:
-            Executive Priority:
+            executive_priority_badge:
               columnWidth: 190
-            Required Action:
+            required_action_badge:
               columnWidth: 220
-            Occupancy %:
+            current_occupancy_display:
               columnWidth: 170
-            Beds Available:
+            available_beds_display:
               columnWidth: 150
-            "Risk Sort":
-              visible: false
       - key: ward_pressure_bubble
         enabled: true
         title: Ward Pressure Bubble Map

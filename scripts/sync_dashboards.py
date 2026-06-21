@@ -918,7 +918,12 @@ def bytes_to_uuid(value: object) -> str:
     return str(value)
 
 
-def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) -> int:
+def ensure_dataset(
+    client: SupersetClient,
+    dataset_name: str,
+    database_id: int,
+    column_labels: dict[str, str] | None = None,
+) -> int:
     schema_name, table_name = dataset_name.split(".", 1)
     query = parse.quote(
         json.dumps(
@@ -935,7 +940,12 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     owner_ids = [client.user_id] if client.user_id is not None else []
     payload = dataset_payload(dataset_name, database_id, owner_ids=owner_ids)
     if existing:
-        dataset_id = ensure_dataset_orm(dataset_name, database_id, client.user_id)
+        dataset_id = ensure_dataset_orm(
+            dataset_name,
+            database_id,
+            client.user_id,
+            column_labels=column_labels,
+        )
         print(f"  [ok] refreshed dataset '{dataset_name}' via ORM sync (id={dataset_id})")
         return dataset_id
 
@@ -944,32 +954,64 @@ def ensure_dataset(client: SupersetClient, dataset_name: str, database_id: int) 
     except RuntimeError as exc:
         error_text = str(exc)
         if " failed with 500:" in error_text:
-            dataset_id = ensure_dataset_orm(dataset_name, database_id, client.user_id)
+            dataset_id = ensure_dataset_orm(
+                dataset_name,
+                database_id,
+                client.user_id,
+                column_labels=column_labels,
+            )
             print(f"  [ok] created dataset '{dataset_name}' via ORM fallback (id={dataset_id})")
             return dataset_id
         if "already exists" not in error_text.lower():
             raise
         dataset_id = _lookup_dataset_in_metadata(table_name)
         if dataset_id is not None:
+            dataset_id = ensure_dataset_orm(
+                dataset_name,
+                database_id,
+                client.user_id,
+                column_labels=column_labels,
+            )
             print(f"  [ok] found dataset '{dataset_name}' via metadata (id={dataset_id})")
             return dataset_id
         raise
     created_id = response_id(created)
     if created_id is not None:
-        return created_id
+        return ensure_dataset_orm(
+            dataset_name,
+            database_id,
+            client.user_id,
+            column_labels=column_labels,
+        )
 
     result = client.get(f"/api/v1/dataset/?q={query}")
     existing = find_existing(result, "table_name", table_name)
     if existing:
-        return int(existing["id"])
+        return ensure_dataset_orm(
+            dataset_name,
+            database_id,
+            client.user_id,
+            column_labels=column_labels,
+        )
     dataset_id = _lookup_dataset_in_metadata(table_name)
     if dataset_id is not None:
+        dataset_id = ensure_dataset_orm(
+            dataset_name,
+            database_id,
+            client.user_id,
+            column_labels=column_labels,
+        )
         print(f"  [ok] found dataset '{dataset_name}' via metadata (id={dataset_id})")
         return dataset_id
     raise RuntimeError(f"Superset created dataset {dataset_name} but did not return an id")
 
 
-def ensure_dataset_orm(dataset_name: str, database_id: int, owner_id: int | None) -> int:
+def ensure_dataset_orm(
+    dataset_name: str,
+    database_id: int,
+    owner_id: int | None,
+    column_labels: dict[str, str] | None = None,
+) -> int:
     try:
         from flask_appbuilder.security.sqla.models import User
         from superset import db
@@ -990,6 +1032,7 @@ def ensure_dataset_orm(dataset_name: str, database_id: int, owner_id: int | None
                 existing.owners.append(owner)
                 db.session.add(existing)
         refresh_dataset_metadata(existing, db.session)
+        apply_dataset_column_labels(existing, column_labels, db.session)
         db.session.flush()
         return int(existing.id)
 
@@ -1001,6 +1044,7 @@ def ensure_dataset_orm(dataset_name: str, database_id: int, owner_id: int | None
     db.session.add(dataset)
     db.session.flush()
     refresh_dataset_metadata(dataset, db.session)
+    apply_dataset_column_labels(dataset, column_labels, db.session)
     db.session.flush()
     return int(dataset.id)
 
@@ -1023,6 +1067,26 @@ def refresh_dataset_metadata(dataset: Any, session: Any) -> None:
                         session.add(child)
         session.add(dataset)
         return
+
+
+def apply_dataset_column_labels(
+    dataset: Any,
+    column_labels: dict[str, str] | None,
+    session: Any,
+) -> None:
+    if not column_labels:
+        return
+
+    for column in getattr(dataset, "columns", []) or []:
+        column_name = getattr(column, "column_name", None)
+        if not column_name:
+            continue
+        label = column_labels.get(str(column_name))
+        if label and getattr(column, "verbose_name", None) != label:
+            column.verbose_name = label
+            session.add(column)
+
+    session.add(dataset)
 
 
 def ensure_chart_orm(chart_config: dict[str, Any], dataset_id: int) -> dict[str, Any]:
@@ -1277,8 +1341,14 @@ def sync_dashboards(config_path: Path) -> None:
                 dashboard_config = render_dashboard_config(key, dashboard_config)
                 print(f"[sync] dashboard {key}")
                 dataset_ids: dict[str, int] = {}
+                dataset_column_labels = dashboard_config.get("dataset_column_labels", {})
                 for dataset_name in dashboard_config.get("datasets", []):
-                    dataset_ids[dataset_name] = ensure_dataset(client, dataset_name, database_id)
+                    dataset_ids[dataset_name] = ensure_dataset(
+                        client,
+                        dataset_name,
+                        database_id,
+                        column_labels=dataset_column_labels.get(dataset_name),
+                    )
                     print(f"  [ok] dataset {dataset_name} -> {dataset_ids[dataset_name]}")
 
                 chart_refs: list[dict[str, Any]] = []
