@@ -7,7 +7,7 @@ import re
 import sys
 import uuid
 from copy import deepcopy
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib import error, parse, request
@@ -233,6 +233,23 @@ def human_date(value: Any) -> str:
         return str(value)
 
 
+def coerce_date(value: Any) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    try:
+        return datetime.fromisoformat(str(value)).date()
+    except ValueError:
+        return None
+
+
+def absolute_time_range(start_date: date, end_date: date) -> str:
+    return f"{start_date.isoformat()} : {end_date.isoformat()}"
+
+
 def plural_phrase(count: int, singular: str, plural: str) -> str:
     return singular if count == 1 else plural
 
@@ -249,6 +266,28 @@ def join_phrases(parts: list[str]) -> str:
 
 
 def bed_pressure_dashboard_context() -> dict[str, Any]:
+    fallback_context = {
+        "as_of_date": "Latest available snapshot",
+        "network_occupancy_rate_pct": "0.0",
+        "network_available_beds": 0,
+        "critical_ward_count": 0,
+        "warning_ward_count": 0,
+        "normal_ward_count": 0,
+        "ward_count": 0,
+        "peak_ward_occupancy_pct": "0.0",
+        "admissions_total": 0,
+        "discharges_total": 0,
+        "net_flow": 0,
+        "capacity_status": "Operational view loading",
+        "capacity_status_lower": "operationally stable",
+        "bed_reserve_status": "Reserve position loading",
+        "net_flow_status": "Flow status loading",
+        "critical_phrase": "No critical wards are currently flagged",
+        "warning_phrase": "no warning wards are currently flagged",
+        "management_focus": "ongoing monitoring",
+        "latest_7d_range": "No filter",
+        "latest_30d_range": "No filter",
+    }
     latest_summary = analytics_query_one(
         """
         select
@@ -268,7 +307,7 @@ def bed_pressure_dashboard_context() -> dict[str, Any]:
         """
     )
     if not latest_summary:
-        return {}
+        return fallback_context
 
     network_occupancy_rate_pct = float(latest_summary.get("network_occupancy_rate_pct") or 0)
     network_available_beds = int(latest_summary.get("network_available_beds") or 0)
@@ -276,6 +315,17 @@ def bed_pressure_dashboard_context() -> dict[str, Any]:
     warning_ward_count = int(latest_summary.get("warning_ward_count") or 0)
     normal_ward_count = int(latest_summary.get("normal_ward_count") or 0)
     net_flow = int(latest_summary.get("net_flow") or 0)
+    latest_date = coerce_date(latest_summary.get("date_day"))
+    latest_7d_range = (
+        absolute_time_range(latest_date - timedelta(days=6), latest_date)
+        if latest_date
+        else "No filter"
+    )
+    latest_30d_range = (
+        absolute_time_range(latest_date - timedelta(days=29), latest_date)
+        if latest_date
+        else "No filter"
+    )
 
     if network_occupancy_rate_pct >= 95:
         capacity_status = "Critical pressure"
@@ -334,6 +384,8 @@ def bed_pressure_dashboard_context() -> dict[str, Any]:
             f"{plural_phrase(warning_ward_count, 'ward is', 'wards are')} approaching escalation thresholds"
         ),
         "management_focus": join_phrases(focus_areas),
+        "latest_7d_range": latest_7d_range,
+        "latest_30d_range": latest_30d_range,
     }
 
 
@@ -359,8 +411,6 @@ def render_templates(value: Any, context: dict[str, Any]) -> Any:
 
 def render_dashboard_config(dashboard_key: str, dashboard_config: dict[str, Any]) -> dict[str, Any]:
     context = dashboard_context(dashboard_key)
-    if not context:
-        return deepcopy(dashboard_config)
     rendered = render_templates(deepcopy(dashboard_config), context)
     rendered["context"] = context
     return rendered
@@ -921,30 +971,78 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[d
         layout = markdown_config.get("layout", {})
         rows.setdefault(int(layout.get("y", 0)), []).append({"kind": "markdown", "config": markdown_config})
 
-    position_data: dict[str, Any] = {
-        "DASHBOARD_VERSION_KEY": "v2",
-        "ROOT_ID": {
-            "type": "ROOT",
-            "id": "ROOT_ID",
-            "children": ["GRID_ID"],
-        },
-        "GRID_ID": {
-            "type": "GRID",
-            "id": "GRID_ID",
-            "children": [],
-            "parents": ["ROOT_ID"],
-        },
-    }
+    uses_tabbed_layout = bool(dashboard_config.get("layout_mode") == "tabbed")
+    position_data: dict[str, Any] = {"DASHBOARD_VERSION_KEY": "v2"}
+    if uses_tabbed_layout:
+        tabs_id = dashboard_config.get("tabs_id", "TABS-bed-pressure")
+        tab_id = dashboard_config.get("tab_id", "TAB-bed-pressure-overview")
+        position_data.update(
+            {
+                "ROOT_ID": {
+                    "type": "ROOT",
+                    "id": "ROOT_ID",
+                    "children": [tabs_id],
+                },
+                "GRID_ID": {
+                    "type": "GRID",
+                    "id": "GRID_ID",
+                    "children": [],
+                    "parents": ["ROOT_ID"],
+                },
+                "HEADER_ID": {
+                    "type": "HEADER",
+                    "id": "HEADER_ID",
+                    "meta": {"text": dashboard_config["title"]},
+                },
+                tabs_id: {
+                    "type": "TABS",
+                    "id": tabs_id,
+                    "children": [tab_id],
+                    "parents": ["ROOT_ID"],
+                    "meta": {},
+                },
+                tab_id: {
+                    "type": "TAB",
+                    "id": tab_id,
+                    "children": [],
+                    "parents": ["ROOT_ID", tabs_id],
+                    "meta": {"text": dashboard_config.get("tab_title", "Overview")},
+                },
+            }
+        )
+    else:
+        position_data.update(
+            {
+                "ROOT_ID": {
+                    "type": "ROOT",
+                    "id": "ROOT_ID",
+                    "children": ["GRID_ID"],
+                },
+                "GRID_ID": {
+                    "type": "GRID",
+                    "id": "GRID_ID",
+                    "children": [],
+                    "parents": ["ROOT_ID"],
+                },
+            }
+        )
 
     for row_index, row_y in enumerate(sorted(rows), start=1):
         row_id = f"ROW-{row_index}"
-        position_data["GRID_ID"]["children"].append(row_id)
+        if uses_tabbed_layout:
+            tabs_id = dashboard_config.get("tabs_id", "TABS-bed-pressure")
+            tab_id = dashboard_config.get("tab_id", "TAB-bed-pressure-overview")
+            position_data[tab_id]["children"].append(row_id)
+            row_parents = ["ROOT_ID", tabs_id, tab_id]
+        else:
+            position_data["GRID_ID"]["children"].append(row_id)
+            row_parents = ["ROOT_ID", "GRID_ID"]
         position_data[row_id] = {
             "type": "ROW",
             "id": row_id,
             "children": [],
-            "parents": ["ROOT_ID", "GRID_ID"],
-            "meta": {"background": "BACKGROUND_TRANSPARENT"},
+            "parents": row_parents,
+            "meta": {"0": "ROOT_ID", "background": "BACKGROUND_TRANSPARENT"},
         }
 
         for row_item in sorted(rows[row_y], key=lambda item: int(item["config"].get("layout", {}).get("x", 0))):
@@ -954,12 +1052,13 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[d
                 chart_ref = row_item["ref"]
                 chart_id = int(chart_ref["id"])
                 chart_component_id = f"CHART-{chart_id}"
+                chart_parents = row_parents + [row_id]
                 position_data[row_id]["children"].append(chart_component_id)
                 position_data[chart_component_id] = {
                     "type": "CHART",
                     "id": chart_component_id,
                     "children": [],
-                    "parents": ["ROOT_ID", "GRID_ID", row_id],
+                    "parents": chart_parents,
                     "meta": {
                         "chartId": chart_id,
                         "sliceName": chart_config["title"],
@@ -972,12 +1071,13 @@ def dashboard_position_data(dashboard_config: dict[str, Any], chart_refs: list[d
 
             markdown_config = row_item["config"]
             markdown_id = f"MARKDOWN-{markdown_config['key']}"
+            markdown_parents = row_parents + [row_id]
             position_data[row_id]["children"].append(markdown_id)
             position_data[markdown_id] = {
                 "type": "MARKDOWN",
                 "id": markdown_id,
                 "children": [],
-                "parents": ["ROOT_ID", "GRID_ID", row_id],
+                "parents": markdown_parents,
                 "meta": {
                     "code": markdown_config["code"],
                     "width": int(layout.get("w", 12)),

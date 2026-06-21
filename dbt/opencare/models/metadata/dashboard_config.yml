@@ -6,6 +6,8 @@ dashboards:
     use_case: bed_pressure
     dashboard_id: bed-occupancy-trends
     title: Hospital Capacity Command Centre
+    layout_mode: tabbed
+    tab_title: Overview
     filter_bar_orientation: HORIZONTAL
     markdowns:
       - key: executive_header
@@ -34,7 +36,7 @@ dashboards:
         target_dataset: analytics.fct_bed_pressure_daily_summary
         column: date_day
         control: date_range
-        default: Last 30 days
+        default: No filter
         presets:
           - 7d
           - 30d
@@ -53,7 +55,7 @@ dashboards:
         label: Ward
         target_dataset: analytics.fct_bed_pressure_executive_actions
         column: ward
-        control: multi_select
+        control: select
         searchable: true
         placeholder: All wards
         default_label: All wards
@@ -66,7 +68,7 @@ dashboards:
         label: Specialty
         target_dataset: analytics.fct_bed_pressure_executive_actions
         column: specialty
-        control: multi_select
+        control: select
         searchable: true
         placeholder: All specialties
         default_label: All specialties
@@ -89,14 +91,14 @@ dashboards:
           - network_occupancy_rate_pct
         x_axis: date_day
         time_column: date_day
-        time_range: Last 30 days
+        time_range: "{latest_30d_range}"
         row_limit: 30
         form_data:
           showTrendLine: true
           showTimestamp: false
           compareLag: 1
           compareSuffix: vs previous day
-          subheader: "{capacity_status} · 85% warning / 95% critical"
+          subheader: "{capacity_status} - 85% warning / 95% critical"
           colorPicker:
             r: 74
             g: 119
@@ -119,7 +121,7 @@ dashboards:
           - network_available_beds
         x_axis: date_day
         time_column: date_day
-        time_range: Last 30 days
+        time_range: "{latest_30d_range}"
         row_limit: 30
         form_data:
           showTrendLine: true
@@ -149,7 +151,7 @@ dashboards:
           - critical_ward_count
         x_axis: date_day
         time_column: date_day
-        time_range: Last 30 days
+        time_range: "{latest_30d_range}"
         row_limit: 30
         form_data:
           showTrendLine: true
@@ -179,7 +181,7 @@ dashboards:
           - warning_ward_count
         x_axis: date_day
         time_column: date_day
-        time_range: Last 30 days
+        time_range: "{latest_30d_range}"
         row_limit: 30
         form_data:
           showTrendLine: true
@@ -209,7 +211,7 @@ dashboards:
           - net_flow
         x_axis: date_day
         time_column: date_day
-        time_range: Last 30 days
+        time_range: "{latest_30d_range}"
         row_limit: 30
         form_data:
           showTrendLine: true
@@ -251,7 +253,7 @@ dashboards:
             sqlExpression: "100"
             label: Full Capacity
         time_column: date_day
-        time_range: Last 7 days
+        time_range: "{latest_7d_range}"
         row_limit: 14
         form_data:
           x_axis_time_format: smart_date
@@ -318,7 +320,7 @@ dashboards:
           - discharges_total
           - net_flow
         time_column: date_day
-        time_range: Last 30 days
+        time_range: "{latest_30d_range}"
         row_limit: 30
         form_data:
           color_scheme: d3Category20
