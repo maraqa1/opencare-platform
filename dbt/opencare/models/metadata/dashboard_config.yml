@@ -9,7 +9,6 @@ dashboards:
     schema: analytics
     datasets:
       - analytics.fct_bed_pressure_daily_summary
-      - analytics.fct_bed_pressure_latest_summary
       - analytics.fct_bed_pressure_latest_snapshot
     filters:
       - key: ward
@@ -34,77 +33,133 @@ dashboards:
           - 90d
           - 180d
         chart_scope:
+          - network_occupancy
+          - available_beds
+          - critical_wards
+          - warning_wards
           - network_occupancy_trend
           - admissions_vs_discharges
     charts:
       - key: network_occupancy
         enabled: true
         title: Network Occupancy
-        viz_type: big_number_total
+        viz_type: big_number
         layout:
           x: 0
           y: 0
           w: 3
           h: 7
-        dataset: analytics.fct_bed_pressure_latest_summary
+        dataset: analytics.fct_bed_pressure_daily_summary
         metrics:
           - network_occupancy_rate_pct
+        x_axis: date_day
+        time_column: date_day
+        time_range: Last 30 days
+        row_limit: 30
         form_data:
-          subheader: Latest staffed-bed occupancy %
-          show_timestamp: false
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: from previous day
+          subheader: Staffed-bed occupancy %
+          colorPicker:
+            r: 74
+            g: 119
+            b: 243
+            a: 1
           y_axis_format: ".1f"
           color_scheme: supersetColors
+          timeRangeFixed: true
       - key: available_beds
         enabled: true
         title: Available Beds
-        viz_type: big_number_total
+        viz_type: big_number
         layout:
           x: 3
           y: 0
           w: 3
           h: 7
-        dataset: analytics.fct_bed_pressure_latest_summary
+        dataset: analytics.fct_bed_pressure_daily_summary
         metrics:
           - network_available_beds
+        x_axis: date_day
+        time_column: date_day
+        time_range: Last 30 days
+        row_limit: 30
         form_data:
-          subheader: Latest network open capacity
-          show_timestamp: false
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: from previous day
+          subheader: Network open capacity
+          colorPicker:
+            r: 56
+            g: 161
+            b: 105
+            a: 1
           y_axis_format: ".0f"
           color_scheme: d3Category20
+          timeRangeFixed: true
       - key: critical_wards
         enabled: true
         title: Critical Wards
-        viz_type: big_number_total
+        viz_type: big_number
         layout:
           x: 6
           y: 0
           w: 3
           h: 7
-        dataset: analytics.fct_bed_pressure_latest_summary
+        dataset: analytics.fct_bed_pressure_daily_summary
         metrics:
           - critical_ward_count
+        x_axis: date_day
+        time_column: date_day
+        time_range: Last 30 days
+        row_limit: 30
         form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: from previous day
           subheader: Wards at or above 90% occupancy
-          show_timestamp: false
+          colorPicker:
+            r: 196
+            g: 76
+            b: 71
+            a: 1
           y_axis_format: ".0f"
           color_scheme: fire
+          timeRangeFixed: true
       - key: warning_wards
         enabled: true
         title: Warning Wards
-        viz_type: big_number_total
+        viz_type: big_number
         layout:
           x: 9
           y: 0
           w: 3
           h: 7
-        dataset: analytics.fct_bed_pressure_latest_summary
+        dataset: analytics.fct_bed_pressure_daily_summary
         metrics:
           - warning_ward_count
+        x_axis: date_day
+        time_column: date_day
+        time_range: Last 30 days
+        row_limit: 30
         form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: from previous day
           subheader: Wards between 75% and 90%
-          show_timestamp: false
+          colorPicker:
+            r: 214
+            g: 149
+            b: 53
+            a: 1
           y_axis_format: ".0f"
           color_scheme: preswald
+          timeRangeFixed: true
       - key: network_occupancy_trend
         enabled: true
         title: Network Occupancy Trend

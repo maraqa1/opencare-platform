@@ -382,6 +382,8 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
     metric_specs = chart_config.get("metrics", [])
     metrics = [adhoc_metric(metric_spec) for metric_spec in metric_specs]
     group_by = chart_config.get("group_by", [])
+    x_axis = chart_config.get("x_axis")
+    columns = [x_axis] if x_axis else group_by
     time_range = chart_config.get("time_range", "No filter")
     base_params = {
         "datasource": f"{dataset_id}__table",
@@ -395,7 +397,9 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "time_range": time_range,
         "show_legend": True,
     }
-    if metrics and chart_config["viz_type"] in {"big_number_total", "pie"}:
+    if x_axis:
+        base_params["x_axis"] = x_axis
+    if metrics and chart_config["viz_type"] in {"big_number_total", "big_number", "pie"}:
         base_params["metric"] = metrics[0]
     params = deep_merge(base_params, chart_config.get("form_data", {}))
 
@@ -403,7 +407,7 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "time_range": time_range,
         "granularity": chart_config.get("time_column"),
         "granularity_sqla": chart_config.get("time_column"),
-        "columns": group_by,
+        "columns": columns,
         "metrics": metrics,
         "orderby": [],
         "annotation_layers": [],
@@ -415,6 +419,8 @@ def chart_payload(chart_config: dict[str, Any], dataset_id: int) -> dict[str, An
         "custom_params": {},
         "custom_form_data": {},
     }
+    if chart_config["viz_type"] == "big_number" and not x_axis:
+        base_query["is_timeseries"] = True
     query_context = {
         "datasource": {"id": dataset_id, "type": "table"},
         "force": False,
