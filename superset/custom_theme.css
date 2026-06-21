@@ -454,3 +454,33 @@ td[aria-labelledby="header-available_beds"] {
   font-weight: 700;
   color: #17336b;
 }
+
+td[aria-labelledby="header-revenue_at_risk"] .cell-bar {
+  background: linear-gradient(90deg, rgba(254, 202, 202, 0.92), rgba(239, 68, 68, 0.96)) !important;
+  border-radius: 999px;
+  opacity: 0.94;
+}
+
+td[aria-labelledby="header-revenue_at_risk"] {
+  font-weight: 700;
+  color: #991b1b;
+}
+
+td[aria-labelledby="header-actual_collection_rate_avg"] .cell-bar {
+  background: linear-gradient(90deg, rgba(134, 239, 172, 0.9), rgba(59, 130, 246, 0.9)) !important;
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+td[aria-labelledby="header-payment_lag_avg"] .cell-bar {
+  background: linear-gradient(90deg, rgba(253, 224, 71, 0.9), rgba(245, 158, 11, 0.94), rgba(239, 68, 68, 0.92)) !important;
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+td[aria-labelledby="header-underpayment_amount_sum"] .cell-bar,
+td[aria-labelledby="header-sla_breach_count_sum"] .cell-bar {
+  background: linear-gradient(90deg, rgba(254, 202, 202, 0.92), rgba(185, 28, 28, 0.96)) !important;
+  border-radius: 999px;
+  opacity: 0.92;
+}

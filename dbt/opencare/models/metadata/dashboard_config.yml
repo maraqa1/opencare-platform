@@ -543,8 +543,23 @@ dashboards:
     enabled: true
     use_case: revenue_cycle_management
     dashboard_id: revenue-cycle-management
-    title: Revenue Cycle Executive Command
+    title: Hospital Revenue Cycle CFO Command Centre
     schema: analytics
+    filter_bar_orientation: HORIZONTAL
+    markdowns:
+      - key: executive_header
+        layout:
+          x: 0
+          y: 0
+          w: 12
+          h: 6
+        code: |
+          # Hospital Revenue Cycle CFO Command Centre
+
+          _Executive view of revenue, cash collection, receivables, payer performance, denials, billing leakage, and financial risk across the hospital network._
+
+          **Executive summary**
+          Month-to-date collections are tracking below target, with revenue risk concentrated in denied claims, aged receivables, unbilled discharges, and payer delays. Immediate CFO attention should focus on high-value denied claims, A/R over 90 days, DNFB backlog, and underperforming payers.
     datasets:
       - analytics.fct_cash_forecast
       - analytics.fct_revenue_cycle
@@ -553,26 +568,93 @@ dashboards:
       - analytics.fct_revenue_leakage
       - analytics.fct_claim_aging
       - analytics.fct_payer_contract_performance
-      - analytics.fct_team_recovery_performance
+    dataset_column_labels:
+      analytics.fct_revenue_cycle:
+        payer_id: Payer
+        department_id: Department / Specialty
+        claim_status: Claim Status
+        gross_billed_amount: Gross Charges
+        contracted_amount: Net Patient Revenue
+        expected_cash_amount: Net Revenue
+        posted_cash_amount: Cash Collected
+        ar_days: AR Days
+      analytics.fct_cash_forecast:
+        forecast_date: Forecast Date
+        payer_id: Payer
+        department_id: Department / Specialty
+        expected_cash: Expected Cash
+        recoverable_cash: Recoverable Cash
+        cash_at_risk: Revenue At Risk
+        confidence_score: Forecast Confidence
+      analytics.fct_claim_aging:
+        payer_id: Payer
+        department_id: Department / Specialty
+        aging_bucket_label: A/R Aging Bucket
+        aging_bucket_days: A/R Aging Days
+        outstanding_amount: Outstanding A/R
+        claim_status: Claim Status
+      analytics.fct_denials:
+        payer_id: Payer
+        department_id: Department / Specialty
+        denial_date: Denial Date
+        denial_reason: Denial Root Cause
+        denied_amount: Denied Value
+        appeal_status: Appeal Status
+        claim_status: Claim Status
+      analytics.fct_revenue_leakage:
+        payer_id: Payer
+        department_id: Department / Specialty
+        detected_date: Detection Date
+        leakage_type: Leakage Type
+        leakage_reason: Leakage Reason
+        leakage_amount: Leakage Value
+        owner_team: Owner
+        status: Status
+      analytics.fct_payer_contract_performance:
+        payer_id: Payer
+        month_key: Month
+        paid_amount: Cash Collected
+        underpayment_amount: Underpayment Value
+        actual_collection_rate: Collection Rate
+        contract_rate_pct: Contract Rate
+        actual_payment_days: Payment Lag
+        payment_sla_days: Payment SLA Days
+        sla_breach_count: SLA Breaches
+        contract_breach_flag: Contract Breach
+        renegotiation_flag: Renegotiation Flag
+      analytics.fct_cash_recovery_opportunity:
+        payer_id: Payer
+        department_id: Department / Specialty
+        area: Area
+        risk_level_badge: Risk Level
+        executive_priority_badge: Executive Priority
+        revenue_at_risk: Revenue At Risk
+        root_cause: Root Cause
+        required_action: Required Action
+        owner_badge: Owner
+        target_date_display: Target Date
+        status_badge: Status
+        risk_sort_score: risk_sort_score
     filters:
-      - key: payer
-        type: native_filter
-        label: Payer
-        target_dataset: analytics.fct_revenue_cycle
-        column: payer_id
-        control: multi_select
-        searchable: true
-      - key: department
-        type: native_filter
-        label: Department
-        target_dataset: analytics.fct_revenue_cycle
-        column: department_id
-        control: multi_select
-        searchable: true
       - key: date_range
         type: native_filter
-        label: Date Range
-        target_dataset: analytics.fct_revenue_cycle
+        label: Date / Month
+        target_datasets:
+          - analytics.fct_revenue_cycle
+          - analytics.fct_denials
+          - analytics.fct_cash_forecast
+          - analytics.fct_revenue_leakage
+          - analytics.fct_claim_aging
+          - analytics.fct_payer_contract_performance
+          - analytics.fct_cash_recovery_opportunity
+        columns_by_dataset:
+          analytics.fct_revenue_cycle: claim_date
+          analytics.fct_denials: denial_date
+          analytics.fct_cash_forecast: forecast_date
+          analytics.fct_revenue_leakage: detected_date
+          analytics.fct_claim_aging: snapshot_date
+          analytics.fct_payer_contract_performance: month_key
+          analytics.fct_cash_recovery_opportunity: detected_date
         column: claim_date
         control: date_range
         default: No filter
@@ -580,126 +662,295 @@ dashboards:
           - 30d
           - 90d
           - 180d
-      - key: owner_team
+      - key: payer
         type: native_filter
-        label: Owner Team
-        target_dataset: analytics.fct_cash_recovery_opportunity
-        column: owner_team
+        label: Payer
+        target_datasets:
+          - analytics.fct_revenue_cycle
+          - analytics.fct_denials
+          - analytics.fct_cash_forecast
+          - analytics.fct_revenue_leakage
+          - analytics.fct_claim_aging
+          - analytics.fct_payer_contract_performance
+          - analytics.fct_cash_recovery_opportunity
+        column: payer_id
+        control: multi_select
+        searchable: true
+      - key: department
+        type: native_filter
+        label: Department / Specialty
+        target_datasets:
+          - analytics.fct_revenue_cycle
+          - analytics.fct_denials
+          - analytics.fct_cash_forecast
+          - analytics.fct_revenue_leakage
+          - analytics.fct_claim_aging
+          - analytics.fct_cash_recovery_opportunity
+        column: department_id
+        control: multi_select
+        searchable: true
+      - key: claim_status
+        type: native_filter
+        label: Claim Status
+        target_datasets:
+          - analytics.fct_revenue_cycle
+          - analytics.fct_claim_aging
+          - analytics.fct_denials
+        columns_by_dataset:
+          analytics.fct_revenue_cycle: claim_status
+          analytics.fct_claim_aging: claim_status
+          analytics.fct_denials: claim_status
+        column: claim_status
         control: multi_select
         searchable: true
     charts:
-      - key: executive_cash_position
+      - key: net_patient_revenue
         enabled: true
-        title: Executive Cash Position
-        viz_type: table
+        title: Net Patient Revenue (SAR)
+        viz_type: big_number
         layout:
           x: 0
-          y: 0
-          w: 12
+          y: 6
+          w: 2
           h: 8
-        dataset: analytics.fct_cash_forecast
+        dataset: analytics.fct_revenue_cycle
         metrics:
-          - expected_cash_sum
-          - recoverable_cash_sum
-          - cash_at_risk_sum
-          - confidence_score_avg
-      - key: cash_forecast_and_risk
-        enabled: true
-        title: Expected Cash and Risk Outlook
-        viz_type: echarts_area
-        layout:
-          x: 0
-          y: 8
-          w: 8
-          h: 12
-        dataset: analytics.fct_cash_forecast
-        metrics:
-          - expected_cash_sum
-          - recoverable_cash_sum
-          - cash_at_risk_sum
-        time_column: forecast_date
+          - contracted_amount_sum
+        time_column: claim_date
         row_limit: 180
-      - key: ar_exposure_by_claim_status
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "SAR - billed after contractual adjustment"
+          y_axis_format: ",.2s"
+          colorPicker:
+            r: 23
+            g: 51
+            b: 107
+            a: 1
+          color_scheme: supersetColors
+      - key: cash_collected
         enabled: true
-        title: Open A/R Exposure by Claim Status
-        viz_type: dist_bar
+        title: Cash Collected (SAR)
+        viz_type: big_number
+        layout:
+          x: 2
+          y: 6
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_cycle
+        metrics:
+          - posted_cash_amount_sum
+        time_column: claim_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "SAR - strong when trending toward target"
+          y_axis_format: ",.2s"
+          colorPicker:
+            r: 22
+            g: 101
+            b: 52
+            a: 1
+          color_scheme: supersetColors
+      - key: collection_rate
+        enabled: true
+        title: Collection Rate
+        viz_type: big_number
+        layout:
+          x: 4
+          y: 6
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_cycle
+        metrics:
+          - name: collection_rate
+            expressionType: SQL
+            sqlExpression: "sum(posted_cash_amount) / nullif(sum(expected_cash_amount), 0)"
+            label: Collection Rate
+        time_column: claim_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Healthy >= 80% - Watch 70-79% - Critical < 70%"
+          y_axis_format: ".1%"
+          colorPicker:
+            r: 8
+            g: 89
+            b: 120
+            a: 1
+          color_scheme: supersetColors
+      - key: ar_days
+        enabled: true
+        title: AR Days
+        viz_type: big_number
+        layout:
+          x: 6
+          y: 6
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_cycle
+        metrics:
+          - ar_days_avg
+        time_column: claim_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Healthy <= 55 - Watch 56-70 - Critical > 70"
+          y_axis_format: ".0f"
+          colorPicker:
+            r: 146
+            g: 64
+            b: 14
+            a: 1
+          color_scheme: supersetColors
+      - key: denial_rate
+        enabled: true
+        title: Denial Rate
+        viz_type: big_number
         layout:
           x: 8
-          y: 8
-          w: 4
-          h: 12
-        dataset: analytics.fct_claim_aging
+          y: 6
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_cycle
         metrics:
-          - outstanding_amount_sum
-        group_by:
-          - claim_status
-      - key: billed_vs_collected_trend
+          - name: denial_rate
+            expressionType: SQL
+            sqlExpression: "sum(case when claim_status in ('denied','appealed','writeoff') then greatest(expected_cash_amount - posted_cash_amount, gross_billed_amount * 0.35) else 0 end) / nullif(sum(gross_billed_amount), 0)"
+            label: Denial Rate
+        time_column: claim_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Healthy <= 5% - Watch 5-8% - Critical > 8%"
+          y_axis_format: ".1%"
+          colorPicker:
+            r: 153
+            g: 27
+            b: 27
+            a: 1
+          color_scheme: supersetColors
+      - key: revenue_at_risk
         enabled: true
-        title: Gross Charges vs Posted Cash
+        title: Revenue At Risk (SAR)
+        viz_type: big_number
+        layout:
+          x: 10
+          y: 6
+          w: 2
+          h: 8
+        dataset: analytics.fct_cash_recovery_opportunity
+        metrics:
+          - recoverable_amount_sum
+        time_column: detected_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Denied, aged, delayed, and underpaid cash exposure"
+          y_axis_format: ",.2s"
+          colorPicker:
+            r: 127
+            g: 29
+            b: 29
+            a: 1
+          color_scheme: supersetColors
+      - key: cash_forecast_and_risk
+        enabled: true
+        title: Revenue vs Cash Collection Trend
         viz_type: echarts_timeseries_line
         layout:
           x: 0
-          y: 20
+          y: 14
           w: 8
           h: 12
         dataset: analytics.fct_revenue_cycle
         metrics:
           - gross_billed_amount_sum
+          - contracted_amount_sum
           - posted_cash_amount_sum
         time_column: claim_date
         row_limit: 180
-      - key: denial_pressure_over_time
+        form_data:
+          color_scheme: supersetColors
+          show_legend: true
+          x_axis_time_format: smart_date
+          y_axis_format: ",.2s"
+      - key: ar_exposure_by_claim_status
         enabled: true
-        title: Denial Pressure Over Time
-        viz_type: echarts_timeseries_bar
+        title: Cash Collection by Payer
+        viz_type: dist_bar
         layout:
           x: 8
-          y: 20
+          y: 14
           w: 4
           h: 12
-        dataset: analytics.fct_denials
+        dataset: analytics.fct_revenue_cycle
         metrics:
-          - denied_amount_sum
+          - posted_cash_amount_sum
+          - name: outstanding_ar
+            expressionType: SQL
+            sqlExpression: "sum(greatest(expected_cash_amount - posted_cash_amount, 0))"
+            label: Outstanding A/R
         group_by:
-          - denial_reason
-        time_column: denial_date
-        row_limit: 180
-      - key: underpayment_exposure_by_payer
+          - payer_id
+        sort_desc: true
+        query_overrides:
+          orderby:
+            - - expressionType: SQL
+                sqlExpression: "sum(greatest(expected_cash_amount - posted_cash_amount, 0))"
+                label: Outstanding A/R
+                optionName: metric_outstanding_ar
+              - false
+        form_data:
+          color_scheme: supersetColors
+          show_legend: true
+          y_axis_format: ",.2s"
+          truncate_metric: false
+      - key: ar_aging_exposure
         enabled: true
-        title: Underpayment Exposure by Payer
+        title: AR Aging Exposure
         viz_type: dist_bar
         layout:
           x: 0
-          y: 32
+          y: 26
           w: 6
           h: 12
-        dataset: analytics.fct_payer_contract_performance
+        dataset: analytics.fct_claim_aging
         metrics:
-          - underpayment_amount_sum
+          - outstanding_amount_sum
         group_by:
-          - payer_id
-      - key: payer_collection_vs_contract
+          - aging_bucket_label
+        sort_desc: true
+        form_data:
+          color_scheme: supersetColors
+          show_legend: false
+          y_axis_format: ",.2s"
+          truncate_metric: false
+      - key: leakage_concentration_by_type
         enabled: true
-        title: Payer Collection Rate vs Contract
+        title: Revenue Leakage Bridge
         viz_type: dist_bar
         layout:
           x: 6
-          y: 32
-          w: 6
-          h: 12
-        dataset: analytics.fct_payer_contract_performance
-        metrics:
-          - actual_collection_rate_avg
-          - contract_rate_pct_avg
-        group_by:
-          - payer_id
-      - key: leakage_concentration_by_type
-        enabled: true
-        title: Revenue Leakage Concentration
-        viz_type: dist_bar
-        layout:
-          x: 0
-          y: 44
+          y: 26
           w: 6
           h: 12
         dataset: analytics.fct_revenue_leakage
@@ -707,35 +958,287 @@ dashboards:
           - leakage_amount_sum
         group_by:
           - leakage_type
-      - key: team_recovery_vs_target
+        sort_desc: true
+        form_data:
+          color_scheme: supersetColors
+          show_legend: false
+          y_axis_format: ",.2s"
+          truncate_metric: false
+      - key: dnfb_value
         enabled: true
-        title: Team Recovery vs Expected Value
-        viz_type: dist_bar
+        title: DNFB / Unbilled Value (SAR)
+        viz_type: big_number
+        layout:
+          x: 0
+          y: 38
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_leakage
+        metrics:
+          - name: dnfb_value
+            expressionType: SQL
+            sqlExpression: "sum(case when leakage_type = 'unbilled_encounters' then leakage_amount else 0 end)"
+            label: DNFB Value
+        time_column: detected_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Healthy <= 3d - Watch 4-7d - Critical > 7d"
+          y_axis_format: ",.2s"
+          colorPicker:
+            r: 153
+            g: 27
+            b: 27
+            a: 1
+          color_scheme: supersetColors
+          adhoc_filters:
+            - clause: WHERE
+              subject: leakage_type
+              operator: ==
+              comparator: unbilled_encounters
+      - key: dnfb_cases
+        enabled: true
+        title: DNFB Case Count
+        viz_type: big_number
+        layout:
+          x: 2
+          y: 38
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_leakage
+        metrics:
+          - name: dnfb_case_count
+            expressionType: SQL
+            sqlExpression: "count(distinct case when leakage_type = 'unbilled_encounters' then claim_id end)"
+            label: Unbilled Cases
+        time_column: detected_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Volume of encounters not yet billed"
+          y_axis_format: ",.0f"
+          colorPicker:
+            r: 146
+            g: 64
+            b: 14
+            a: 1
+          color_scheme: supersetColors
+          adhoc_filters:
+            - clause: WHERE
+              subject: leakage_type
+              operator: ==
+              comparator: unbilled_encounters
+      - key: avg_unbilled_days
+        enabled: true
+        title: Average Days Unbilled
+        viz_type: big_number
+        layout:
+          x: 4
+          y: 38
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_leakage
+        metrics:
+          - name: avg_unbilled_days
+            expressionType: SQL
+            sqlExpression: "avg(case when leakage_type = 'unbilled_encounters' then greatest(current_date - detected_date, 0) end)"
+            label: Average Days Unbilled
+        time_column: detected_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Healthy <= 3 days"
+          y_axis_format: ".1f"
+          colorPicker:
+            r: 146
+            g: 64
+            b: 14
+            a: 1
+          color_scheme: supersetColors
+          adhoc_filters:
+            - clause: WHERE
+              subject: leakage_type
+              operator: ==
+              comparator: unbilled_encounters
+      - key: dnfb_cases_over_5_days
+        enabled: true
+        title: DNFB Cases > 5 Days
+        viz_type: big_number
         layout:
           x: 6
-          y: 44
-          w: 6
-          h: 12
-        dataset: analytics.fct_team_recovery_performance
+          y: 38
+          w: 2
+          h: 8
+        dataset: analytics.fct_revenue_leakage
         metrics:
-          - actual_recovery_sum
-          - expected_recovery_sum
-        group_by:
-          - owner_team
-      - key: executive_recovery_actions
+          - name: dnfb_cases_over_5_days
+            expressionType: SQL
+            sqlExpression: "count(distinct case when leakage_type = 'unbilled_encounters' and greatest(current_date - detected_date, 0) > 5 then claim_id end)"
+            label: DNFB Cases > 5 Days
+        time_column: detected_date
+        row_limit: 180
+        form_data:
+          showTrendLine: true
+          showTimestamp: false
+          compareLag: 1
+          compareSuffix: vs previous period
+          subheader: "Backlog exceeding the five-day billing window"
+          y_axis_format: ",.0f"
+          colorPicker:
+            r: 153
+            g: 27
+            b: 27
+            a: 1
+          color_scheme: supersetColors
+          adhoc_filters:
+            - clause: WHERE
+              subject: leakage_type
+              operator: ==
+              comparator: unbilled_encounters
+      - key: claims_health_by_status
         enabled: true
-        title: Executive Recovery Actions This Week
+        title: Claims Stage Mix
+        viz_type: dist_bar
+        layout:
+          x: 8
+          y: 38
+          w: 4
+          h: 8
+        dataset: analytics.fct_revenue_cycle
+        metrics:
+          - name: claim_count
+            column: claim_id
+            aggregate: COUNT
+            label: Claim Count
+        group_by:
+          - claim_status
+        sort_desc: true
+        form_data:
+          color_scheme: supersetColors
+          show_legend: false
+          y_axis_format: ",.0f"
+      - key: payer_performance_matrix
+        enabled: true
+        title: Payer Performance Matrix
         viz_type: table
         layout:
           x: 0
-          y: 56
-          w: 12
+          y: 46
+          w: 8
+          h: 12
+        dataset: analytics.fct_payer_contract_performance
+        metrics:
+          - actual_collection_rate_avg
+          - name: payment_lag_avg
+            column: actual_payment_days
+            aggregate: AVG
+            label: Payment Lag
+          - underpayment_amount_sum
+          - sla_breach_count_sum
+        group_by:
+          - payer_id
+        row_limit: 25
+        sort_desc: true
+        form_data:
+          color_scheme: supersetColors
+          column_config:
+            actual_collection_rate_avg:
+              d3NumberFormat: ".1%"
+              showCellBars: true
+              columnWidth: 140
+            payment_lag_avg:
+              d3NumberFormat: ".0f"
+              showCellBars: true
+              columnWidth: 120
+            underpayment_amount_sum:
+              d3NumberFormat: ",.2s"
+              showCellBars: true
+              columnWidth: 150
+            sla_breach_count_sum:
+              d3NumberFormat: ",.0f"
+              showCellBars: true
+              columnWidth: 120
+      - key: department_revenue_risk
+        enabled: true
+        title: Department Revenue Risk
+        viz_type: dist_bar
+        layout:
+          x: 8
+          y: 46
+          w: 4
           h: 12
         dataset: analytics.fct_cash_recovery_opportunity
         metrics:
           - recoverable_amount_sum
-          - expected_recovery_amount_sum
-          - priority_score_avg
         group_by:
-          - issue_type
-          - owner_team
+          - department_id
+        sort_desc: true
+        form_data:
+          color_scheme: supersetColors
+          show_legend: false
+          y_axis_format: ",.2s"
+          truncate_metric: false
+      - key: executive_recovery_actions
+        enabled: true
+        title: Executive Revenue Actions Required - CFO Escalation Board
+        viz_type: table
+        layout:
+          x: 0
+          y: 58
+          w: 12
+          h: 14
+        dataset: analytics.fct_cash_recovery_opportunity
+        metrics:
+          - name: risk_sort_score
+            column: risk_sort_score
+            aggregate: MAX
+            label: risk_sort_score
+        group_by:
+          - area
+          - risk_level_badge
+          - executive_priority_badge
+          - revenue_at_risk
+          - root_cause
+          - required_action
+          - owner_badge
+          - target_date_display
+          - status_badge
+        row_limit: 25
+        sort_desc: true
+        query_overrides:
+          orderby:
+            - - expressionType: SIMPLE
+                column:
+                  column_name: risk_sort_score
+                  type: NUMERIC
+                aggregate: MAX
+                label: risk_sort_score
+                optionName: metric_risk_sort_score
+              - false
+        form_data:
+          allow_render_html: true
+          color_scheme: supersetColors
+          show_cell_bars: true
+          color_pn: false
+          column_config:
+            revenue_at_risk:
+              d3NumberFormat: ",.2s"
+              showCellBars: true
+              columnWidth: 150
+            root_cause:
+              columnWidth: 280
+            required_action:
+              columnWidth: 300
+            target_date_display:
+              columnWidth: 120
+            risk_sort_score:
+              columnWidth: 1

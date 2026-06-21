@@ -71,12 +71,36 @@ models:
               expression: "priority_score is null or effort_hours > 0"
       - name: priority_score
         data_type: numeric(14,4)
+      - name: area
+        data_type: text
+      - name: revenue_at_risk
+        data_type: numeric(14,2)
+      - name: root_cause
+        data_type: text
+      - name: risk_level
+        data_type: text
+      - name: risk_level_badge
+        data_type: text
+      - name: executive_priority
+        data_type: text
+      - name: executive_priority_badge
+        data_type: text
+      - name: required_action
+        data_type: text
+      - name: target_date_display
+        data_type: text
       - name: owner_team
         data_type: text
       - name: owner_user_id
         data_type: text
+      - name: owner_badge
+        data_type: text
       - name: status
         data_type: text
+      - name: status_badge
+        data_type: text
+      - name: risk_sort_score
+        data_type: numeric(14,2)
       - name: source_system
         data_type: text
       - name: evidence_summary
@@ -271,6 +295,12 @@ models:
         data_type: date
       - name: aging_bucket_days
         data_type: integer
+      - name: aging_bucket_label
+        data_type: text
+      - name: aging_bucket_sort
+        data_type: integer
+      - name: aging_bucket_band
+        data_type: text
       - name: outstanding_amount
         data_type: numeric(14,2)
       - name: ar_days
