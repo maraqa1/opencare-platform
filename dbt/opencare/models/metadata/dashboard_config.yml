@@ -40,8 +40,9 @@ dashboards:
         required_action_badge: Required Action
         owner_badge: Owner
         target_time_badge: Target Time
-        current_occupancy_display: Occupancy %
-        available_beds_display: Beds Available
+        current_occupancy_pct: Occupancy %
+        available_beds: Beds Available
+        risk_sort_score: Risk Sort
     filters:
       - key: date_range
         type: native_filter
@@ -365,6 +366,11 @@ dashboards:
           w: 12
           h: 14
         dataset: analytics.fct_bed_pressure_executive_actions
+        metrics:
+          - name: risk_sort_score
+            column: risk_sort_score
+            aggregate: MAX
+            label: risk_sort_score
         group_by:
           - ward
           - risk_level_badge
@@ -373,8 +379,8 @@ dashboards:
           - required_action_badge
           - owner_badge
           - target_time_badge
-          - current_occupancy_display
-          - available_beds_display
+          - current_occupancy_pct
+          - available_beds
         row_limit: 25
         sort_desc: true
         query_overrides:
@@ -384,21 +390,29 @@ dashboards:
                   column_name: risk_sort_score
                   type: NUMERIC
                 aggregate: MAX
-                label: Risk Sort
+                label: risk_sort_score
                 optionName: metric_risk_sort_score
               - false
         form_data:
           allow_render_html: true
           color_scheme: supersetColors
+          show_cell_bars: true
+          color_pn: false
           column_config:
             executive_priority_badge:
               columnWidth: 190
             required_action_badge:
               columnWidth: 220
-            current_occupancy_display:
+            current_occupancy_pct:
+              d3NumberFormat: ".1f"
+              showCellBars: true
               columnWidth: 170
-            available_beds_display:
+            available_beds:
+              d3NumberFormat: ".0f"
+              showCellBars: true
               columnWidth: 150
+            risk_sort_score:
+              columnWidth: 1
       - key: ward_pressure_bubble
         enabled: true
         title: Ward Pressure Bubble Map

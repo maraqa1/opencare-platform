@@ -427,3 +427,30 @@ tbody tr:has(.exec-badge.exec-normal) td:first-child {
   box-shadow: inset 4px 0 0 #86efac;
   font-weight: 700;
 }
+
+th#header-risk_sort_score,
+td[aria-labelledby="header-risk_sort_score"] {
+  display: none !important;
+}
+
+td[aria-labelledby="header-current_occupancy_pct"] .cell-bar {
+  background: linear-gradient(90deg, rgba(253, 224, 71, 0.92), rgba(245, 158, 11, 0.94), rgba(239, 68, 68, 0.94)) !important;
+  border-radius: 999px;
+  opacity: 0.92;
+}
+
+td[aria-labelledby="header-current_occupancy_pct"] {
+  font-weight: 700;
+  color: #8a3b12;
+}
+
+td[aria-labelledby="header-available_beds"] .cell-bar {
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.92), rgba(59, 130, 246, 0.92)) !important;
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+td[aria-labelledby="header-available_beds"] {
+  font-weight: 700;
+  color: #17336b;
+}

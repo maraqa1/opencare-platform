@@ -23,9 +23,9 @@ select
     specialty,
     pressure_band as risk_level,
     case
-        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical">Critical</span>'
-        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning">Warning</span>'
-        else '<span class="exec-badge exec-normal">Normal</span>'
+        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical" style="background-color:#fee2e2;color:#991b1b;font-weight:700;padding:4px 10px;border:1px solid #fca5a5;border-radius:999px;">Critical</span>'
+        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning" style="background-color:#fef3c7;color:#92400e;font-weight:700;padding:4px 10px;border:1px solid #fbbf24;border-radius:999px;">Warning</span>'
+        else '<span class="exec-badge exec-normal" style="background-color:#dcfce7;color:#166534;font-weight:700;padding:4px 10px;border:1px solid #86efac;border-radius:999px;">Normal</span>'
     end as risk_level_badge,
     occupancy_rate_pct as current_occupancy_pct,
     concat(
@@ -65,9 +65,9 @@ select
         else 'Routine Monitoring'
     end as executive_priority,
     case
-        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical">CEO Escalation</span>'
-        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning">Operational Intervention</span>'
-        else '<span class="exec-badge exec-normal">Routine Monitoring</span>'
+        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical" style="background-color:#fee2e2;color:#991b1b;font-weight:700;padding:4px 10px;border:1px solid #fca5a5;border-radius:999px;">CEO Escalation</span>'
+        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning" style="background-color:#fef3c7;color:#92400e;font-weight:700;padding:4px 10px;border:1px solid #fbbf24;border-radius:999px;">Operational Intervention</span>'
+        else '<span class="exec-badge exec-normal" style="background-color:#dcfce7;color:#166534;font-weight:700;padding:4px 10px;border:1px solid #86efac;border-radius:999px;">Routine Monitoring</span>'
     end as executive_priority_badge,
     case
         when occupancy_rate_pct >= 95 then 'No or limited capacity'
@@ -75,9 +75,9 @@ select
         else 'Stable'
     end as issue,
     case
-        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical">No or limited capacity</span>'
-        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning">Pressure building</span>'
-        else '<span class="exec-badge exec-normal">Stable</span>'
+        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical" style="background-color:#fee2e2;color:#991b1b;font-weight:700;padding:4px 10px;border:1px solid #fca5a5;border-radius:999px;">No or limited capacity</span>'
+        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning" style="background-color:#fef3c7;color:#92400e;font-weight:700;padding:4px 10px;border:1px solid #fbbf24;border-radius:999px;">Pressure building</span>'
+        else '<span class="exec-badge exec-normal" style="background-color:#dcfce7;color:#166534;font-weight:700;padding:4px 10px;border:1px solid #86efac;border-radius:999px;">Stable</span>'
     end as issue_badge,
     case
         when occupancy_rate_pct >= 95 then 'Escalate discharge review'
@@ -85,9 +85,9 @@ select
         else 'Maintain monitoring'
     end as required_action,
     case
-        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical">Escalate discharge review</span>'
-        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning">Monitor admissions and prepare overflow</span>'
-        else '<span class="exec-badge exec-normal">Maintain monitoring</span>'
+        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical" style="background-color:#fee2e2;color:#991b1b;font-weight:700;padding:4px 10px;border:1px solid #fca5a5;border-radius:999px;">Escalate discharge review</span>'
+        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning" style="background-color:#fef3c7;color:#92400e;font-weight:700;padding:4px 10px;border:1px solid #fbbf24;border-radius:999px;">Monitor admissions and prepare overflow</span>'
+        else '<span class="exec-badge exec-normal" style="background-color:#dcfce7;color:#166534;font-weight:700;padding:4px 10px;border:1px solid #86efac;border-radius:999px;">Maintain monitoring</span>'
     end as required_action_badge,
     case
         when occupancy_rate_pct >= 95 then 'Bed Manager'
@@ -95,9 +95,9 @@ select
         else 'Ward Lead'
     end as owner,
     case
-        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-owner exec-owner-critical">Bed Manager</span>'
-        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-owner exec-owner-warning">Site Manager</span>'
-        else '<span class="exec-badge exec-owner exec-owner-normal">Ward Lead</span>'
+        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-owner exec-owner-critical" style="background-color:#e0ecff;color:#17336b;font-weight:700;padding:4px 10px;border:1px solid #9db8f5;border-radius:999px;">Bed Manager</span>'
+        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-owner exec-owner-warning" style="background-color:#fff4db;color:#17336b;font-weight:700;padding:4px 10px;border:1px solid #f1c873;border-radius:999px;">Site Manager</span>'
+        else '<span class="exec-badge exec-owner exec-owner-normal" style="background-color:#e0f2fe;color:#075985;font-weight:700;padding:4px 10px;border:1px solid #7dd3fc;border-radius:999px;">Ward Lead</span>'
     end as owner_badge,
     case
         when occupancy_rate_pct >= 95 then 'Today'
@@ -105,9 +105,9 @@ select
         else 'Routine'
     end as target_time,
     case
-        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical">Today</span>'
-        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning">24 hours</span>'
-        else '<span class="exec-badge exec-normal">Routine</span>'
+        when occupancy_rate_pct >= 95 then '<span class="exec-badge exec-critical" style="background-color:#fee2e2;color:#991b1b;font-weight:700;padding:4px 10px;border:1px solid #fca5a5;border-radius:999px;">Today</span>'
+        when occupancy_rate_pct >= 85 then '<span class="exec-badge exec-warning" style="background-color:#fef3c7;color:#92400e;font-weight:700;padding:4px 10px;border:1px solid #fbbf24;border-radius:999px;">24 hours</span>'
+        else '<span class="exec-badge exec-normal" style="background-color:#dcfce7;color:#166534;font-weight:700;padding:4px 10px;border:1px solid #86efac;border-radius:999px;">Routine</span>'
     end as target_time_badge,
     case
         when occupancy_rate_pct >= 95 then 300 + occupancy_rate_pct
