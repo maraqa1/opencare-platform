@@ -31,7 +31,7 @@ daily_pressure as (
 )
 
 select
-    md5(date_day::text) as pressure_daily_summary_key,
+    md5(pressure.date_day::text) as pressure_daily_summary_key,
     pressure.date_day,
     pressure.network_occupied_beds,
     pressure.network_staffed_beds,
