@@ -348,36 +348,11 @@ dashboards:
             label: Beds Available
         group_by:
           - ward
-          - expressionType: SIMPLE
-            column:
-              column_name: risk_level_badge
-              type: VARCHAR
-            label: Risk Level
-            optionName: column_risk_level_badge
-          - expressionType: SIMPLE
-            column:
-              column_name: issue_badge
-              type: VARCHAR
-            label: Issue
-            optionName: column_issue_badge
-          - expressionType: SIMPLE
-            column:
-              column_name: required_action_badge
-              type: VARCHAR
-            label: Required Action
-            optionName: column_required_action_badge
-          - expressionType: SIMPLE
-            column:
-              column_name: owner_badge
-              type: VARCHAR
-            label: Owner
-            optionName: column_owner_badge
-          - expressionType: SIMPLE
-            column:
-              column_name: target_time_badge
-              type: VARCHAR
-            label: Target Time
-            optionName: column_target_time_badge
+          - risk_level_badge
+          - issue_badge
+          - required_action_badge
+          - owner_badge
+          - target_time_badge
         row_limit: 25
         sort_desc: true
         form_data:
