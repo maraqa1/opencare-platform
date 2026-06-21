@@ -360,15 +360,33 @@ dashboards:
             aggregate: MAX
             label: Risk Sort
         group_by:
-          - ward
-          - risk_level_badge
-          - executive_priority_badge
-          - issue_badge
-          - required_action_badge
-          - owner_badge
-          - target_time_badge
-          - current_occupancy_display
-          - available_beds_display
+          - expressionType: SQL
+            sqlExpression: ward
+            label: Ward
+          - expressionType: SQL
+            sqlExpression: risk_level_badge
+            label: Risk
+          - expressionType: SQL
+            sqlExpression: executive_priority_badge
+            label: Executive Priority
+          - expressionType: SQL
+            sqlExpression: issue_badge
+            label: Issue
+          - expressionType: SQL
+            sqlExpression: required_action_badge
+            label: Required Action
+          - expressionType: SQL
+            sqlExpression: owner_badge
+            label: Owner
+          - expressionType: SQL
+            sqlExpression: target_time_badge
+            label: Target Time
+          - expressionType: SQL
+            sqlExpression: current_occupancy_display
+            label: Occupancy %
+          - expressionType: SQL
+            sqlExpression: available_beds_display
+            label: Beds Available
         row_limit: 25
         sort_desc: true
         query_overrides:
@@ -385,27 +403,13 @@ dashboards:
           allow_render_html: true
           color_scheme: supersetColors
           column_config:
-            ward:
-              customColumnName: Ward
-            risk_level_badge:
-              customColumnName: Risk
-            executive_priority_badge:
-              customColumnName: Executive Priority
+            Executive Priority:
               columnWidth: 190
-            issue_badge:
-              customColumnName: Issue
-            required_action_badge:
-              customColumnName: Required Action
+            Required Action:
               columnWidth: 220
-            owner_badge:
-              customColumnName: Owner
-            target_time_badge:
-              customColumnName: Target Time
-            current_occupancy_display:
-              customColumnName: Occupancy %
+            Occupancy %:
               columnWidth: 170
-            available_beds_display:
-              customColumnName: Beds Available
+            Beds Available:
               columnWidth: 150
             "Risk Sort":
               visible: false
