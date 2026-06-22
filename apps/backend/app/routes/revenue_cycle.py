@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from app.services.revenue_cycle_service import (
     cash_command,
     executive_narrative,
+    journey,
     leakage,
     payer_control,
     recovery_queue,
@@ -29,6 +30,31 @@ def revenue_cycle_cash_command(
     claim_status: Optional[str] = None,
 ) -> dict[str, object]:
     return cash_command(
+        {
+            "date_from": date_from,
+            "date_to": date_to,
+            "facility": facility,
+            "payer": payer,
+            "department": department,
+            "specialty": specialty,
+            "patient_type": patient_type,
+            "claim_status": claim_status,
+        }
+    )
+
+
+@router.get("/journey")
+def revenue_cycle_journey(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    facility: Optional[str] = None,
+    payer: Optional[str] = None,
+    department: Optional[str] = None,
+    specialty: Optional[str] = None,
+    patient_type: Optional[str] = None,
+    claim_status: Optional[str] = None,
+) -> dict[str, object]:
+    return journey(
         {
             "date_from": date_from,
             "date_to": date_to,

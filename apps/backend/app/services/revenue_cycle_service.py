@@ -360,6 +360,99 @@ def _risk_band_from_status(status: str) -> str:
     return mapping.get(status, "blue")
 
 
+def _journey_risk_class(status: object) -> str:
+    normalized = _lower_text(status)
+    if normalized in {"healthy", "watch", "critical"}:
+        return normalized
+    return "unavailable"
+
+
+def _journey_status_label(status: object) -> str:
+    normalized = _lower_text(status)
+    if normalized == "healthy":
+        return "Healthy"
+    if normalized == "watch":
+        return "Watch"
+    if normalized == "critical":
+        return "Critical"
+    return "Unavailable"
+
+
+def _format_journey_metric_value(value: object, unit: object) -> str:
+    numeric_value = _currency_number(value)
+    normalized_unit = _lower_text(unit)
+    if numeric_value is None:
+        return "Not available"
+    if normalized_unit == "currency":
+        return f"SAR {numeric_value:,.0f}"
+    if normalized_unit == "percent":
+        return f"{numeric_value:.1f}%"
+    if normalized_unit == "days":
+        return f"{numeric_value:.1f} days"
+    if normalized_unit == "count":
+        return f"{int(round(numeric_value)):,}"
+    return f"{numeric_value:,.1f}"
+
+
+def _build_journey_payload(cash_payload: dict[str, Any]) -> dict[str, Any]:
+    journey_stages = cash_payload.get("journey", {}).get("stages", [])
+    concentration_rows = cash_payload.get("risk_concentration", [])
+    data_quality = cash_payload.get("data_quality", {})
+
+    stages = []
+    for stage in journey_stages:
+        stage_status = stage.get("status")
+        stages.append(
+            {
+                "stage_id": str(stage.get("key") or stage.get("title") or f"stage-{stage.get('stage_number') or 'x'}"),
+                "stage_order": int(stage.get("stage_number") or 0),
+                "stage_name": str(stage.get("title") or "Unnamed stage"),
+                "stage_note": str(stage.get("why_it_matters") or "No journey narrative available."),
+                "risk_class": _journey_risk_class(stage_status),
+                "status": _journey_status_label(stage_status),
+                "metrics": [
+                    {
+                        "label": str(metric.get("label") or "Metric"),
+                        "value": metric.get("value"),
+                        "unit": metric.get("unit"),
+                        "formatted_value": _format_journey_metric_value(metric.get("value"), metric.get("unit")),
+                        "available": _currency_number(metric.get("value")) is not None,
+                    }
+                    for metric in stage.get("metrics", [])
+                ],
+                "risk_note": str(stage.get("why_it_matters") or _status_note(_lower_text(stage_status))),
+            }
+        )
+
+    return {
+        "generated_at": data_quality.get("generated_at") or cash_payload.get("as_of"),
+        "data_freshness": cash_payload.get("data_freshness"),
+        "meta": cash_payload.get("meta"),
+        "stages": stages,
+        "risk_concentration": [
+            {
+                "label": str(row.get("label") or "Risk"),
+                "formatted_value": _format_journey_metric_value(row.get("amount"), "currency"),
+                "risk_class": _journey_risk_class(row.get("status")),
+            }
+            for row in concentration_rows
+        ],
+        "data_quality": {
+            "warnings": [str(item) for item in data_quality.get("warnings", [])],
+            "source_tables": [
+                str(item.get("table"))
+                for item in data_quality.get("source_tables", [])
+                if item.get("table")
+            ],
+            "missing_metrics": [
+                str(item.get("label"))
+                for item in data_quality.get("missing_metrics", [])
+                if item.get("label")
+            ],
+        },
+    }
+
+
 def _build_cash_command_payload(
     revenue_rows: list[dict[str, Any]],
     aging_rows: list[dict[str, Any]],
@@ -1252,6 +1345,10 @@ def cash_command(filters: dict[str, Any] | None = None) -> dict[str, Any]:
         [_serialize_row(row) for row in leakage_rows],
         filters,
     )
+
+
+def journey(filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    return _build_journey_payload(cash_command(filters))
 
 
 def recovery_queue() -> dict[str, Any]:

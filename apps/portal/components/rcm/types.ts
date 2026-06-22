@@ -158,6 +158,46 @@ export type CashCommandPayload = {
   dashboard?: CashDashboardPayload | null;
 };
 
+export type RcmJourneyRiskClass = "healthy" | "watch" | "critical" | "unavailable";
+
+export type RcmJourneyMetric = {
+  label: string;
+  value?: number | null;
+  unit?: CashCommandUnit | string | null;
+  formatted_value: string;
+  available: boolean;
+};
+
+export type RcmJourneyStage = {
+  stage_id: string;
+  stage_order: number;
+  stage_name: string;
+  stage_note: string;
+  risk_class: RcmJourneyRiskClass;
+  status: string;
+  metrics: RcmJourneyMetric[];
+  risk_note?: string | null;
+};
+
+export type RcmJourneyRiskChip = {
+  label: string;
+  formatted_value: string;
+  risk_class: RcmJourneyRiskClass;
+};
+
+export type RcmJourneyResponse = {
+  generated_at?: string | null;
+  data_freshness?: { seconds?: number | null; status?: string | null };
+  meta?: RCMMeta;
+  stages: RcmJourneyStage[];
+  risk_concentration: RcmJourneyRiskChip[];
+  data_quality: {
+    warnings: string[];
+    source_tables: string[];
+    missing_metrics: string[];
+  };
+};
+
 // ─── CASH COMMAND (executive dashboard — charts) ─────────────────────────────
 
 export type CashDashboardKPIs = {

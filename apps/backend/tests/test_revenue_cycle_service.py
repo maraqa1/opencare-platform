@@ -235,6 +235,50 @@ class RevenueCycleServiceTests(unittest.TestCase):
         self.assertEqual(payload["top_actions"], [])
         self.assertEqual(payload["meta"]["message"], "No revenue cycle data loaded yet")
 
+    def test_journey_maps_cash_command_payload_to_component_shape(self):
+        with patch.object(
+            revenue_cycle_service,
+            "cash_command",
+            return_value={
+                "as_of": "2026-05-01T08:00:00Z",
+                "data_freshness": {"seconds": 120, "status": "fresh"},
+                "meta": {"empty": False},
+                "journey": {
+                    "stages": [
+                        {
+                            "stage_number": 5,
+                            "key": "payer_adjudication",
+                            "title": "Payer Adjudication",
+                            "status": "critical",
+                            "why_it_matters": "Denial pressure is a leading signal of preventable revenue drag.",
+                            "metrics": [
+                                {"label": "Denied claims", "value": 42, "unit": "count"},
+                                {"label": "Denied value", "value": 125000.0, "unit": "currency"},
+                            ],
+                        }
+                    ]
+                },
+                "risk_concentration": [
+                    {"label": "Denied claim value", "amount": 125000.0, "status": "critical"},
+                ],
+                "data_quality": {
+                    "generated_at": "2026-05-01T08:00:00Z",
+                    "warnings": ["Live marts loaded with a 2-minute freshness delay."],
+                    "source_tables": [{"table": "analytics.fct_denials"}],
+                    "missing_metrics": [{"label": "Clean claim rate"}],
+                },
+            },
+        ):
+            payload = revenue_cycle_service.journey({"payer": "PAYER-A"})
+
+        self.assertEqual(payload["generated_at"], "2026-05-01T08:00:00Z")
+        self.assertEqual(payload["stages"][0]["stage_id"], "payer_adjudication")
+        self.assertEqual(payload["stages"][0]["status"], "Critical")
+        self.assertEqual(payload["stages"][0]["metrics"][0]["formatted_value"], "42")
+        self.assertEqual(payload["risk_concentration"][0]["formatted_value"], "SAR 125,000")
+        self.assertEqual(payload["data_quality"]["source_tables"], ["analytics.fct_denials"])
+        self.assertEqual(payload["data_quality"]["missing_metrics"], ["Clean claim rate"])
+
     def test_recovery_queue_adds_next_step_and_notification_summary(self):
         row = {
             "opportunity_id": "RCM-001",
@@ -416,6 +460,30 @@ class RevenueCycleRouteTests(unittest.TestCase):
     def test_cash_command_route_delegates(self):
         with patch.object(revenue_cycle_routes, "cash_command", return_value={"ok": True}) as mocked:
             payload = revenue_cycle_routes.revenue_cycle_cash_command(
+                date_from="2026-04-01",
+                date_to="2026-05-31",
+                payer="PAYER-A",
+                department="DEP-01",
+                claim_status="denied",
+            )
+
+        mocked.assert_called_once_with(
+            {
+                "date_from": "2026-04-01",
+                "date_to": "2026-05-31",
+                "facility": None,
+                "payer": "PAYER-A",
+                "department": "DEP-01",
+                "specialty": None,
+                "patient_type": None,
+                "claim_status": "denied",
+            }
+        )
+        self.assertEqual(payload, {"ok": True})
+
+    def test_journey_route_delegates(self):
+        with patch.object(revenue_cycle_routes, "journey", return_value={"ok": True}) as mocked:
+            payload = revenue_cycle_routes.revenue_cycle_journey(
                 date_from="2026-04-01",
                 date_to="2026-05-31",
                 payer="PAYER-A",
