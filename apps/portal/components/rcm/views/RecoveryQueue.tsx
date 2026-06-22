@@ -755,6 +755,10 @@ export function RecoveryQueue() {
   const scopeLabel = buildScopeLabel(appliedFilters);
   const freshnessLabel = `${data?.data_freshness?.status ?? "unknown"}`;
   const sourceCount = `${data?.data_quality?.sources_loaded ?? 0}/${data?.data_quality?.total_sources ?? 0}`;
+  const reportHref = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `/api/v1/revenue-cycle/board-pack?${query}` : "/api/v1/revenue-cycle/board-pack";
+  }, [searchParams]);
 
   const selectedFromGroup = (claimRef?: string | null) => {
     const matched = queueItems.find((item) => item.claim_ref === claimRef) ?? null;
@@ -802,6 +806,9 @@ export function RecoveryQueue() {
       <button type="button" className={styles.secondaryButton} onClick={() => setTrustOpen(true)}>
         Open Data Trust
       </button>
+      <a href={reportHref} className={styles.secondaryButton}>
+        Download Board Pack
+      </a>
       <Link href="/use-cases/revenue-cycle-management/cash-command" className={styles.primaryLink}>
         View Cash Command
       </Link>

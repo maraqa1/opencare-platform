@@ -360,6 +360,17 @@ export function CashCommand() {
       ? "gray"
       : "amber";
 
+  const headerActions = (
+    <div className={styles.headerActions}>
+      <button type="button" className={styles.secondaryButton} onClick={() => refetch()}>
+        Refresh
+      </button>
+      <a href="/api/v1/revenue-cycle/board-pack" className={styles.secondaryButton}>
+        Download Board Pack
+      </a>
+    </div>
+  );
+
   return (
     <div className={styles.page}>
       <RCMPageHeader
@@ -372,6 +383,7 @@ export function CashCommand() {
           { label: `Freshness: ${data?.data_freshness?.status ?? "unknown"}`, color: badgeColor },
           { label: `${trustLoaded}/${trustTotal || 5} sources loaded`, color: trustLoaded === trustTotal ? "green" : "amber" },
         ]}
+        actions={headerActions}
       />
       <RCMNavTabs active="cash-command" />
 
