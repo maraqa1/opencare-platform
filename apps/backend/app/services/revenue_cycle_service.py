@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -22,6 +22,8 @@ def _serialize(value: object) -> object:
     if isinstance(value, Decimal):
         return float(value)
     if isinstance(value, datetime):
+        if value.tzinfo is not None:
+            return value.astimezone(timezone.utc).replace(tzinfo=None).isoformat() + "Z"
         return value.isoformat() + "Z"
     if isinstance(value, date):
         return value.isoformat()
@@ -35,13 +37,23 @@ def _serialize_row(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def _now_iso() -> str:
-    return datetime.utcnow().isoformat() + "Z"
+    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z"
+
+
+def _utc_now_naive() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _normalize_datetime(value: datetime) -> datetime:
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
 
 
 def _data_freshness(as_of: datetime | None) -> dict[str, Any]:
     if not as_of:
         return {"seconds": None, "status": "unknown"}
-    seconds = max(int((datetime.utcnow() - as_of).total_seconds()), 0)
+    seconds = max(int((_utc_now_naive() - _normalize_datetime(as_of)).total_seconds()), 0)
     if seconds <= 4 * 3600:
         status = "fresh"
     elif seconds <= 24 * 3600:

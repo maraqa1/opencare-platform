@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from contextlib import contextmanager
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -234,6 +234,36 @@ class RevenueCycleServiceTests(unittest.TestCase):
         self.assertTrue(payload["meta"]["empty"])
         self.assertEqual(payload["top_actions"], [])
         self.assertEqual(payload["meta"]["message"], "No revenue cycle data loaded yet")
+
+    def test_cash_command_payload_accepts_timezone_aware_as_of_timestamp(self):
+        revenue_rows = [
+            {
+                "claim_id": "CLAIM-001",
+                "encounter_id": "ENC-001",
+                "payer_id": "PAYER-A",
+                "department_id": "DEP-01",
+                "claim_date": "2026-05-12",
+                "claim_status": "paid",
+                "gross_billed_amount": 1000.0,
+                "contracted_amount": 900.0,
+                "expected_cash_amount": 900.0,
+                "posted_cash_amount": 850.0,
+                "ar_days": 12.0,
+                "as_of_timestamp": datetime(2026, 5, 31, 8, 0, tzinfo=timezone.utc),
+            }
+        ]
+
+        payload = revenue_cycle_service._build_cash_command_payload(  # type: ignore[attr-defined]
+            revenue_rows,
+            [],
+            [],
+            [],
+            [],
+            None,
+        )
+
+        self.assertEqual(payload["as_of"], "2026-05-31T08:00:00Z")
+        self.assertIn(payload["data_freshness"]["status"], {"fresh", "stale", "delayed"})
 
     def test_journey_maps_cash_command_payload_to_component_shape(self):
         with patch.object(
