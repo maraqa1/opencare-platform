@@ -11,7 +11,6 @@ type FetchState<T> = {
 };
 
 const ENDPOINT_MAP: Record<string, string> = {
-  "journey":             "/api/portal/api/v1/revenue-cycle/journey",
   "cash-command":        "/api/portal/api/v1/revenue-cycle/cash-command",
   "recovery-queue":      "/api/portal/api/v1/revenue-cycle/recovery-queue",
   "payer-control":       "/api/portal/api/v1/revenue-cycle/payer-control",
@@ -45,11 +44,16 @@ export function useRCMFetch<T>(view: string, params?: Record<string, string>): F
       try {
         const response = await fetch(url, { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json() as T & { meta?: { freshness?: string } };
+        const payload = await response.json() as T & {
+          meta?: { freshness?: string };
+          data_freshness?: { status?: string | null };
+        };
         if (!cancelled) {
           setData(payload);
           setStale(
-            (payload as { meta?: { freshness?: string } }).meta?.freshness === "stale"
+            payload.meta?.freshness === "stale"
+            || payload.data_freshness?.status === "stale"
+            || payload.data_freshness?.status === "delayed"
           );
         }
       } catch (err) {

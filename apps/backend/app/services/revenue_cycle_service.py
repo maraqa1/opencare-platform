@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from collections import defaultdict
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -125,7 +126,9 @@ def _risk_band_for_aging_bucket(bucket_label: str) -> str:
         "31-60": "blue",
         "61-90": "amber",
         "91-120": "orange",
+        "91-180": "orange",
         "120+": "red",
+        "180+": "red",
     }
     return mapping.get(bucket_label, "blue")
 
@@ -158,843 +161,1077 @@ def _recovery_outcome_status(status: str, measured_at: object) -> str:
     return "not_applicable"
 
 
-def _journey_filters_applied(filters: dict[str, Any]) -> dict[str, Any]:
-    return {key: _serialize(value) for key, value in filters.items() if value not in (None, "", [])}
+def _parse_date(value: object) -> date | None:
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+        except ValueError:
+            try:
+                return date.fromisoformat(value[:10])
+            except ValueError:
+                return None
+    return None
 
 
-def _journey_metric(
-    label: str,
-    value: float | int | None,
-    unit: str,
-    *,
-    currency: str = "SAR",
-    available: bool = True,
+def _first_of_month(value: date) -> date:
+    return value.replace(day=1)
+
+
+def _shift_months(value: date, months: int) -> date:
+    month_index = (value.year * 12 + (value.month - 1)) + months
+    year, month_zero = divmod(month_index, 12)
+    return date(year, month_zero + 1, 1)
+
+
+def _month_span(start: date, end: date) -> list[date]:
+    months: list[date] = []
+    current = _first_of_month(start)
+    last = _first_of_month(end)
+    while current <= last:
+        months.append(current)
+        current = _shift_months(current, 1)
+    return months
+
+
+def _lower_text(value: object) -> str:
+    return str(value or "").strip().lower()
+
+
+def _parse_multi_value(value: object) -> set[str] | None:
+    if value is None:
+        return None
+    parts = [_lower_text(part) for part in str(value).split(",")]
+    normalized = {part for part in parts if part}
+    return normalized or None
+
+
+def _as_number(value: object) -> float:
+    if value is None:
+        return 0.0
+    if isinstance(value, Decimal):
+        return float(value)
+    return float(value)
+
+
+def _average(values: list[float]) -> float | None:
+    if not values:
+        return None
+    return sum(values) / len(values)
+
+
+def _format_period_label(start: date | None, end: date | None, rolling_default: bool) -> str:
+    if not start or not end:
+        return "No claim data in scope"
+    label = f"{start.strftime('%b %Y')} - {end.strftime('%b %Y')}"
+    if rolling_default:
+        return f"{label} - Rolling 12 months"
+    return label
+
+
+def _bucket_for_aging(days_value: float | None) -> str:
+    days = days_value or 0
+    if days <= 30:
+        return "0-30"
+    if days <= 60:
+        return "31-60"
+    if days <= 90:
+        return "61-90"
+    if days <= 180:
+        return "91-180"
+    return "180+"
+
+
+def _kpi_status_for_collection_rate(rate_pct: float | None) -> str:
+    if rate_pct is None:
+        return "unknown"
+    if rate_pct >= 80:
+        return "healthy"
+    if rate_pct >= 70:
+        return "watch"
+    return "critical"
+
+
+def _kpi_status_for_ar_days(days_value: float | None, target: float = 40) -> str:
+    if days_value is None:
+        return "unknown"
+    if days_value <= target:
+        return "healthy"
+    if days_value <= target + 30:
+        return "watch"
+    return "critical"
+
+
+def _kpi_status_for_denial_rate(rate_pct: float | None) -> str:
+    if rate_pct is None:
+        return "unknown"
+    if rate_pct <= 5:
+        return "healthy"
+    if rate_pct <= 8:
+        return "watch"
+    return "critical"
+
+
+def _kpi_status_for_revenue_at_risk(risk_value: float, net_patient_revenue: float) -> str:
+    if net_patient_revenue <= 0:
+        return "unknown"
+    ratio_pct = (risk_value / net_patient_revenue) * 100
+    if ratio_pct < 10:
+        return "healthy"
+    if ratio_pct <= 25:
+        return "watch"
+    return "critical"
+
+
+def _severity_rank(status: str) -> int:
+    order = {"critical": 3, "watch": 2, "healthy": 1, "unknown": 0}
+    return order.get(status, 0)
+
+
+def _headline_severity(ar_days: float | None, denial_rate_pct: float | None, collection_rate_pct: float | None) -> str:
+    statuses = [
+        _kpi_status_for_ar_days(ar_days),
+        _kpi_status_for_denial_rate(denial_rate_pct),
+        _kpi_status_for_collection_rate(collection_rate_pct),
+    ]
+    if "critical" in statuses:
+        return "critical"
+    if "watch" in statuses:
+        return "watch"
+    if "healthy" in statuses:
+        return "healthy"
+    return "unknown"
+
+
+def _status_note(status: str) -> str:
+    if status == "critical":
+        return "Immediate CFO attention required"
+    if status == "watch":
+        return "Watch list - pressure building"
+    if status == "healthy":
+        return "Within benchmark"
+    return "Metric not configured"
+
+
+def _due_bucket(due_date_value: date | None) -> str:
+    if not due_date_value:
+        return "No due date"
+    delta_days = (due_date_value - date.today()).days
+    if delta_days < 0:
+        return "Overdue"
+    if delta_days == 0:
+        return "Today"
+    if delta_days <= 7:
+        return "This week"
+    if delta_days <= 14:
+        return "Next 14 days"
+    return "Later"
+
+
+def _action_priority_label(expected_recovery: float, due_bucket: str) -> str:
+    if due_bucket in {"Overdue", "Today"} or expected_recovery >= 50_000:
+        return "Critical"
+    if due_bucket in {"This week", "Next 14 days"} or expected_recovery >= 15_000:
+        return "Watch"
+    return "Healthy"
+
+
+def _action_label(issue_type: str) -> str:
+    mapping = {
+        "denial_appeal_priority": "Start appeal recovery",
+        "payer_underpayment_review": "Start underpayment recovery",
+        "late_submission_risk": "Escalate timely filing review",
+        "coding_backlog_escalation": "Escalate coding review",
+        "recover_cash_this_week": "Work balance this week",
+    }
+    return mapping.get(issue_type, "Start recovery")
+
+
+def _risk_band_from_status(status: str) -> str:
+    mapping = {
+        "healthy": "green",
+        "watch": "amber",
+        "critical": "red",
+        "unknown": "blue",
+    }
+    return mapping.get(status, "blue")
+
+
+def _build_cash_command_payload(
+    revenue_rows: list[dict[str, Any]],
+    aging_rows: list[dict[str, Any]],
+    denial_rows: list[dict[str, Any]],
+    opportunity_rows: list[dict[str, Any]],
+    leakage_rows: list[dict[str, Any]],
+    filters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if not available or value is None:
+    raw_filters = filters or {}
+    payer_filter = _parse_multi_value(raw_filters.get("payer"))
+    department_filter = _parse_multi_value(raw_filters.get("department"))
+    claim_status_filter = _parse_multi_value(raw_filters.get("claim_status"))
+    unsupported_filters = [
+        key
+        for key in ("facility", "specialty", "patient_type")
+        if raw_filters.get(key)
+    ]
+
+    all_claim_dates = [_parse_date(row.get("claim_date")) for row in revenue_rows]
+    valid_claim_dates = [value for value in all_claim_dates if value]
+    latest_claim_date = max(valid_claim_dates) if valid_claim_dates else None
+
+    requested_end = _parse_date(raw_filters.get("date_to"))
+    requested_start = _parse_date(raw_filters.get("date_from"))
+    rolling_default = requested_start is None and requested_end is None
+
+    if latest_claim_date:
+        period_end = requested_end or latest_claim_date
+        period_start = requested_start or _shift_months(_first_of_month(period_end), -11)
+    else:
+        period_end = requested_end
+        period_start = requested_start
+
+    def _revenue_in_scope(row: dict[str, Any]) -> bool:
+        claim_date = _parse_date(row.get("claim_date"))
+        if period_start and (claim_date is None or claim_date < period_start):
+            return False
+        if period_end and (claim_date is None or claim_date > period_end):
+            return False
+        if payer_filter and _lower_text(row.get("payer_id")) not in payer_filter:
+            return False
+        if department_filter and _lower_text(row.get("department_id")) not in department_filter:
+            return False
+        if claim_status_filter and _lower_text(row.get("claim_status")) not in claim_status_filter:
+            return False
+        return True
+
+    scoped_revenue = [row for row in revenue_rows if _revenue_in_scope(row)]
+    allowed_claim_ids = {str(row.get("claim_id")) for row in scoped_revenue if row.get("claim_id")}
+
+    scoped_aging = [row for row in aging_rows if str(row.get("claim_id")) in allowed_claim_ids]
+    scoped_denials = [row for row in denial_rows if str(row.get("claim_id")) in allowed_claim_ids]
+    scoped_opportunities = [row for row in opportunity_rows if str(row.get("claim_id")) in allowed_claim_ids]
+    scoped_leakage = [row for row in leakage_rows if str(row.get("claim_id")) in allowed_claim_ids]
+
+    as_of_candidates = [
+        row.get("as_of_timestamp")
+        for row in scoped_revenue
+        if row.get("as_of_timestamp")
+    ]
+    as_of_datetime = None
+    if as_of_candidates:
+        parsed_candidates = [
+            value if isinstance(value, datetime) else datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            for value in as_of_candidates
+        ]
+        as_of_datetime = max(parsed_candidates)
+
+    base_meta = {
+        "use_case": USE_CASE_ID,
+        "section": "cash-command",
+        "empty": len(scoped_revenue) == 0,
+        "message": None,
+    }
+
+    if not scoped_revenue:
+        base_meta["message"] = "No cash command data found for the selected filters."
         return {
-            "label": label,
-            "value": None,
-            "formatted_value": "Data unavailable",
-            "unit": unit,
-            "available": False,
+            "as_of": _serialize(as_of_datetime),
+            "currency": "SAR",
+            "period": {
+                "date_from": _serialize(period_start),
+                "date_to": _serialize(period_end),
+                "label": _format_period_label(period_start, period_end, rolling_default),
+            },
+            "data_freshness": _data_freshness(as_of_datetime),
+            "meta": base_meta,
+            "headline": {"severity": "unknown", "message": base_meta["message"], "metrics": []},
+            "kpis": [],
+            "journey": {"stages": []},
+            "risk_concentration": [],
+            "charts": {
+                "cash_vs_charges": [],
+                "ar_aging_buckets": [],
+                "denial_recovery_pipeline": [],
+                "payer_performance": [],
+                "leakage_by_payer": [],
+                "cash_gap_to_charges": 0.0,
+                "ar_total": 0.0,
+                "ar_over_90": 0.0,
+            },
+            "actions": {"grouped": [], "deadlines_at_risk": []},
+            "data_quality": {
+                "trust_label": "Financial truth: ERP postings",
+                "sources_loaded": 0,
+                "total_sources": 5,
+                "generated_at": _serialize(as_of_datetime),
+                "filters_applied": {
+                    "date_from": _serialize(period_start),
+                    "date_to": _serialize(period_end),
+                    "payer": sorted(payer_filter) if payer_filter else [],
+                    "department": sorted(department_filter) if department_filter else [],
+                    "claim_status": sorted(claim_status_filter) if claim_status_filter else [],
+                },
+                "unsupported_filters": unsupported_filters,
+                "source_tables": [],
+                "missing_metrics": [],
+                "warnings": [],
+                "limitations": [],
+            },
+            "recoverable_cash_7d": 0.0,
+            "recoverable_cash_14d": 0.0,
+            "cash_at_risk": 0.0,
+            "expected_collections": 0.0,
+            "top_actions": [],
+            "expiring_opportunities": [],
+            "dashboard": None,
         }
 
-    if unit == "currency":
-        abs_value = abs(float(value))
-        if abs_value >= 1_000_000:
-            formatted_value = f"{currency} {value / 1_000_000:.1f}M"
-        elif abs_value >= 1_000:
-            formatted_value = f"{currency} {value / 1_000:.1f}K"
-        else:
-            formatted_value = f"{currency} {value:,.0f}"
-    elif unit == "percentage":
-        formatted_value = f"{float(value):.1f}%"
-    elif unit == "days":
-        formatted_value = f"{float(value):.1f} days" if not float(value).is_integer() else f"{int(value)} days"
-    elif unit == "count":
-        formatted_value = f"{int(value):,}"
-    else:
-        formatted_value = str(value)
+    fallback_start = min(valid_claim_dates) if valid_claim_dates else date.today()
+    fallback_end = max(valid_claim_dates) if valid_claim_dates else fallback_start
+    months_in_scope = _month_span(period_start or fallback_start, period_end or fallback_end)
+    month_count = max(len(months_in_scope), 1)
+    claim_count = len(scoped_revenue)
+    encounter_count = len({str(row.get("encounter_id") or row.get("claim_id")) for row in scoped_revenue})
+    gross_charges = sum(_as_number(row.get("gross_billed_amount")) for row in scoped_revenue)
+    net_patient_revenue = sum(_as_number(row.get("expected_cash_amount") or row.get("contracted_amount")) for row in scoped_revenue)
+    cash_collected = sum(_as_number(row.get("posted_cash_amount")) for row in scoped_revenue)
+    collection_rate = (cash_collected / net_patient_revenue * 100) if net_patient_revenue else None
 
-    return {
-        "label": label,
-        "value": value,
-        "formatted_value": formatted_value,
-        "unit": unit,
-        "available": True,
-    }
+    ar_total = sum(_as_number(row.get("outstanding_amount")) for row in scoped_aging)
+    ar_over_90_rows = [row for row in scoped_aging if _as_number(row.get("aging_bucket_days")) > 90]
+    ar_over_90_value = sum(_as_number(row.get("outstanding_amount")) for row in ar_over_90_rows)
+    monthly_collection_average = cash_collected / month_count if month_count else 0
+    ar_days = (ar_total / monthly_collection_average * 30) if monthly_collection_average else None
 
+    denied_claim_value = sum(_as_number(row.get("denied_amount")) for row in scoped_denials)
+    denied_claim_count = len(scoped_denials)
+    denial_rate = (denied_claim_count / claim_count * 100) if claim_count else None
 
-def _journey_status_payload(status: str) -> tuple[str, str]:
-    mapping = {
-        "Healthy": "healthy",
-        "Watch": "watch",
-        "Critical": "critical",
-        "Unavailable": "unavailable",
-    }
-    return status, mapping[status]
+    dnfb_rows = [row for row in scoped_revenue if _lower_text(row.get("claim_status")) == "open"]
+    dnfb_value = sum(_as_number(row.get("expected_cash_amount") or row.get("contracted_amount")) for row in dnfb_rows)
+    dnfb_count = len(dnfb_rows)
+    dnfb_open_days = [
+        max(((period_end or latest_claim_date or date.today()) - claim_date).days, 0)
+        for claim_date in [_parse_date(row.get("claim_date")) for row in dnfb_rows]
+        if claim_date
+    ]
+    dnfb_average_days = _average([float(value) for value in dnfb_open_days])
 
+    underpayment_rows = [row for row in scoped_leakage if _lower_text(row.get("leakage_type")) == "underpayments"]
+    underpayment_value = sum(_as_number(row.get("leakage_amount")) for row in underpayment_rows)
+    underpayment_count = len(underpayment_rows)
 
-def _journey_field(alias: str, column: str) -> sql.SQL:
-    return sql.SQL("{}.{}").format(sql.Identifier(alias), sql.Identifier(column))
+    late_submission_rows = [row for row in scoped_leakage if _lower_text(row.get("leakage_type")) == "late_submissions"]
+    late_submission_value = sum(_as_number(row.get("leakage_amount")) for row in late_submission_rows)
+    late_submission_count = len(late_submission_rows)
 
+    revenue_at_risk = denied_claim_value + ar_over_90_value + dnfb_value + underpayment_value
+    risk_ratio_pct = (revenue_at_risk / net_patient_revenue * 100) if net_patient_revenue else None
 
-def _build_journey_where(
-    *,
-    alias: str,
-    date_column: str,
-    filters: dict[str, Any],
-    include_claim_status: bool,
-) -> tuple[sql.SQL, list[Any]]:
-    clauses: list[sql.SQL] = []
-    params: list[Any] = []
-
-    if filters.get("date_from") is not None:
-        clauses.append(sql.SQL("{} >= %s").format(_journey_field(alias, date_column)))
-        params.append(filters["date_from"])
-    if filters.get("date_to") is not None:
-        clauses.append(sql.SQL("{} <= %s").format(_journey_field(alias, date_column)))
-        params.append(filters["date_to"])
-    if filters.get("payer"):
-        clauses.append(sql.SQL("{} = %s").format(_journey_field(alias, "payer_id")))
-        params.append(filters["payer"])
-    if filters.get("department"):
-        clauses.append(sql.SQL("{} = %s").format(_journey_field(alias, "department_id")))
-        params.append(filters["department"])
-    if include_claim_status and filters.get("claim_status"):
-        clauses.append(sql.SQL("{} = %s").format(_journey_field(alias, "claim_status")))
-        params.append(filters["claim_status"])
-
-    if not clauses:
-        return sql.SQL(""), params
-    return sql.SQL(" where ") + sql.SQL(" and ").join(clauses), params
-
-
-def _fetch_optional_row(
-    conn: Any,
-    statement: sql.SQL,
-    params: list[Any],
-    *,
-    source_name: str,
-    warnings: list[str],
-) -> dict[str, Any] | None:
-    try:
-        row = conn.execute(statement, params).fetchone()
-    except (UndefinedTable, UndefinedColumn):
-        warnings.append(
-            f"{source_name} is unavailable in the current analytics build. Dependent journey metrics return Data unavailable."
+    current_window_cash = cash_collected
+    if period_start and period_end:
+        previous_end = period_start - timedelta(days=1)
+        previous_start = _shift_months(_first_of_month(previous_end), -(month_count - 1))
+        previous_rows = [
+            row
+            for row in revenue_rows
+            if (
+                (claim_date := _parse_date(row.get("claim_date"))) is not None
+                and previous_start <= claim_date <= previous_end
+                and (not payer_filter or _lower_text(row.get("payer_id")) in payer_filter)
+                and (not department_filter or _lower_text(row.get("department_id")) in department_filter)
+                and (not claim_status_filter or _lower_text(row.get("claim_status")) in claim_status_filter)
+            )
+        ]
+        previous_cash = sum(_as_number(row.get("posted_cash_amount")) for row in previous_rows)
+        previous_denial_count = sum(
+            1
+            for row in denial_rows
+            if str(row.get("claim_id")) in {str(item.get("claim_id")) for item in previous_rows if item.get("claim_id")}
         )
-        return None
-    return dict(row) if row is not None else None
+        previous_denial_rate = (previous_denial_count / len(previous_rows) * 100) if previous_rows else None
+        cash_growth_pct = ((current_window_cash - previous_cash) / previous_cash * 100) if previous_cash else None
+        denial_delta_pp = (denial_rate - previous_denial_rate) if denial_rate is not None and previous_denial_rate is not None else None
+    else:
+        cash_growth_pct = None
+        denial_delta_pp = None
 
+    collection_status = _kpi_status_for_collection_rate(collection_rate)
+    ar_status = _kpi_status_for_ar_days(ar_days)
+    denial_status = _kpi_status_for_denial_rate(denial_rate)
+    risk_status = _kpi_status_for_revenue_at_risk(revenue_at_risk, net_patient_revenue)
+    headline_severity = _headline_severity(ar_days, denial_rate, collection_rate)
 
-def _mark_missing(missing_metrics: set[str], warnings: list[str], metric_name: str, reason: str) -> None:
-    missing_metrics.add(metric_name)
-    warnings.append(reason)
+    headline_message = (
+        "CFO Position: "
+        + (
+            "Cash conversion is under pressure."
+            if headline_severity == "critical"
+            else "Performance is drifting toward threshold."
+            if headline_severity == "watch"
+            else "Revenue conversion is within benchmark."
+        )
+        + f" AR Days are {round(ar_days or 0)} against a target of <=40, denial rate is {round(denial_rate or 0, 1)}%, "
+        + f"and SAR {revenue_at_risk:,.0f} is exposed through aged receivables, denials, DNFB, and underpayments."
+    )
 
-
-def journey(
-    *,
-    date_from: date | None = None,
-    date_to: date | None = None,
-    facility: str | None = None,
-    payer: str | None = None,
-    department: str | None = None,
-    specialty: str | None = None,
-    patient_type: str | None = None,
-    claim_status: str | None = None,
-) -> dict[str, Any]:
-    revenue_table = qualified_table(settings.analytics_schema, "fct_revenue_cycle")
-    leakage_table = qualified_table(settings.analytics_schema, "fct_revenue_leakage")
-    aging_table = qualified_table(settings.analytics_schema, "fct_claim_aging")
-    denials_table = qualified_table(settings.analytics_schema, "fct_denials")
-
-    filters = {
-        "date_from": date_from,
-        "date_to": date_to,
-        "facility": facility,
-        "payer": payer,
-        "department": department,
-        "specialty": specialty,
-        "patient_type": patient_type,
-        "claim_status": claim_status,
-    }
-    filters_applied = _journey_filters_applied(filters)
-    warnings: list[str] = []
-    missing_metrics: set[str] = set()
-    source_tables = [
-        f"{settings.analytics_schema}.fct_revenue_cycle",
-        f"{settings.analytics_schema}.fct_revenue_leakage",
-        f"{settings.analytics_schema}.fct_claim_aging",
-        f"{settings.analytics_schema}.fct_denials",
+    kpis = [
+        {
+            "key": "net_patient_revenue",
+            "label": "Net Patient Revenue",
+            "value": net_patient_revenue,
+            "unit": "currency",
+            "status": "healthy",
+            "target_label": "Contract value baseline",
+            "interpretation": "Booked contracted cash value for the filtered claim cohort.",
+        },
+        {
+            "key": "cash_collected",
+            "label": "Cash Collected",
+            "value": cash_collected,
+            "unit": "currency",
+            "status": collection_status,
+            "target_label": "Posted against the same claim cohort",
+            "interpretation": "Posted cash is measured on the same cohort as the journey to avoid period-definition drift.",
+        },
+        {
+            "key": "collection_rate",
+            "label": "Collection Rate",
+            "value": collection_rate,
+            "unit": "percent",
+            "status": collection_status,
+            "target_label": "Healthy >= 80%",
+            "interpretation": _status_note(collection_status),
+        },
+        {
+            "key": "ar_days",
+            "label": "AR Days",
+            "value": ar_days,
+            "unit": "days",
+            "status": ar_status,
+            "target_label": "Target <= 40 days",
+            "interpretation": _status_note(ar_status),
+        },
+        {
+            "key": "denial_rate",
+            "label": "Denial Rate",
+            "value": denial_rate,
+            "unit": "percent",
+            "status": denial_status,
+            "target_label": "Healthy <= 5%",
+            "interpretation": _status_note(denial_status),
+        },
+        {
+            "key": "revenue_at_risk",
+            "label": "Revenue at Risk",
+            "value": revenue_at_risk,
+            "unit": "currency",
+            "status": risk_status,
+            "target_label": "Healthy < 10% of NPR",
+            "interpretation": "Composite exposure from denials, aged AR >90, DNFB proxy, and underpayments.",
+        },
     ]
 
-    if facility:
-        warnings.append("Facility filter was ignored because no facility field is present in the current revenue-cycle marts.")
-    if specialty:
-        warnings.append("Specialty filter was ignored because specialty is not exposed in the current revenue-cycle marts.")
-    if patient_type:
-        warnings.append("Patient type filter was ignored because patient type is not present in the current revenue-cycle marts.")
-    if claim_status:
-        warnings.append(
-            "Claim status filter is not applied to DNFB metrics because analytics.fct_revenue_leakage does not expose claim_status."
-        )
+    created_claim_rows = [row for row in scoped_revenue if _lower_text(row.get("claim_status")) != "open"]
+    submitted_claim_rows = [
+        row
+        for row in scoped_revenue
+        if _lower_text(row.get("claim_status")) in {"submitted", "paid", "denied", "appealed", "writeoff"}
+    ]
+    paid_claim_rows = [row for row in scoped_revenue if _as_number(row.get("posted_cash_amount")) > 0]
+    open_recovery_actions = len(scoped_opportunities)
 
-    revenue_where, revenue_params = _build_journey_where(
-        alias="r",
-        date_column="claim_date",
-        filters=filters,
-        include_claim_status=True,
-    )
-    leakage_where, leakage_params = _build_journey_where(
-        alias="l",
-        date_column="detected_date",
-        filters={**filters, "claim_status": None},
-        include_claim_status=False,
-    )
-    aging_where, aging_params = _build_journey_where(
-        alias="a",
-        date_column="snapshot_date",
-        filters=filters,
-        include_claim_status=True,
-    )
-    denials_where, denials_params = _build_journey_where(
-        alias="d",
-        date_column="denial_date",
-        filters=filters,
-        include_claim_status=True,
-    )
-
-    with connect() as conn:
-        revenue_row = _fetch_optional_row(
-            conn,
-            sql.SQL(
-                """
-                select
-                    coalesce(sum(r.gross_billed_amount), 0)::numeric(14, 2) as gross_charges,
-                    count(distinct r.encounter_id)::integer as encounter_count,
-                    coalesce(sum(r.contracted_amount), 0)::numeric(14, 2) as net_patient_revenue,
-                    count(distinct r.claim_id)::integer as claim_count,
-                    coalesce(sum(r.expected_cash_amount), 0)::numeric(14, 2) as claim_value,
-                    count(distinct case when r.claim_status <> 'open' then r.claim_id end)::integer as submitted_claim_count,
-                    coalesce(sum(case when r.claim_status <> 'open' then r.expected_cash_amount else 0 end), 0)::numeric(14, 2) as submitted_claim_value,
-                    coalesce(sum(r.posted_cash_amount), 0)::numeric(14, 2) as cash_collected,
-                    coalesce(
-                        sum(
-                            case
-                                when r.posted_cash_amount > 0 and r.expected_cash_amount > r.posted_cash_amount
-                                    then r.expected_cash_amount - r.posted_cash_amount
-                                else 0
-                            end
-                        ),
-                        0
-                    )::numeric(14, 2) as underpayment_value
-                from {revenue_table} r
-                {where_clause}
-                """
-            ).format(revenue_table=revenue_table, where_clause=revenue_where),
-            revenue_params,
-            source_name=f"{settings.analytics_schema}.fct_revenue_cycle",
-            warnings=warnings,
-        )
-
-        leakage_row = _fetch_optional_row(
-            conn,
-            sql.SQL(
-                """
-                select
-                    coalesce(sum(case when l.leakage_type = 'unbilled_encounters' then l.leakage_amount else 0 end), 0)::numeric(14, 2) as dnfb_value,
-                    count(distinct case when l.leakage_type = 'unbilled_encounters' then l.encounter_id end)::integer as dnfb_cases,
-                    avg(
-                        case
-                            when l.leakage_type = 'unbilled_encounters'
-                                then greatest(current_date - l.detected_date, 0)
-                            else null
-                        end
-                    )::numeric(10, 2) as avg_dnfb_days,
-                    count(
-                        distinct case
-                            when l.leakage_type = 'unbilled_encounters'
-                             and greatest(current_date - l.detected_date, 0) > 5
-                                then l.encounter_id
-                            else null
-                        end
-                    )::integer as dnfb_cases_over_5_days
-                from {leakage_table} l
-                {where_clause}
-                """
-            ).format(leakage_table=leakage_table, where_clause=leakage_where),
-            leakage_params,
-            source_name=f"{settings.analytics_schema}.fct_revenue_leakage",
-            warnings=warnings,
-        )
-
-        aging_row = _fetch_optional_row(
-            conn,
-            sql.SQL(
-                """
-                select
-                    coalesce(sum(a.outstanding_amount), 0)::numeric(14, 2) as total_ar,
-                    coalesce(
-                        sum(case when a.aging_bucket_days > 90 then a.outstanding_amount else 0 end),
-                        0
-                    )::numeric(14, 2) as ar_over_90_value
-                from {aging_table} a
-                {where_clause}
-                """
-            ).format(aging_table=aging_table, where_clause=aging_where),
-            aging_params,
-            source_name=f"{settings.analytics_schema}.fct_claim_aging",
-            warnings=warnings,
-        )
-
-        denials_row = _fetch_optional_row(
-            conn,
-            sql.SQL(
-                """
-                select
-                    coalesce(sum(d.denied_amount), 0)::numeric(14, 2) as denied_claim_value,
-                    count(distinct d.claim_id)::integer as denied_claim_count
-                from {denials_table} d
-                {where_clause}
-                """
-            ).format(denials_table=denials_table, where_clause=denials_where),
-            denials_params,
-            source_name=f"{settings.analytics_schema}.fct_denials",
-            warnings=warnings,
-        )
-
-    gross_charges = float(revenue_row["gross_charges"]) if revenue_row else None
-    encounter_count = int(revenue_row["encounter_count"]) if revenue_row else None
-    net_patient_revenue = float(revenue_row["net_patient_revenue"]) if revenue_row else None
-    claim_count = int(revenue_row["claim_count"]) if revenue_row else None
-    claim_value = float(revenue_row["claim_value"]) if revenue_row else None
-    submitted_claim_count = int(revenue_row["submitted_claim_count"]) if revenue_row else None
-    submitted_claim_value = float(revenue_row["submitted_claim_value"]) if revenue_row else None
-    cash_collected = float(revenue_row["cash_collected"]) if revenue_row else None
-    underpayment_value = float(revenue_row["underpayment_value"]) if revenue_row else None
-
-    dnfb_value = float(leakage_row["dnfb_value"]) if leakage_row else None
-    dnfb_cases = int(leakage_row["dnfb_cases"]) if leakage_row else None
-    avg_dnfb_days = float(leakage_row["avg_dnfb_days"]) if leakage_row and leakage_row["avg_dnfb_days"] is not None else None
-    dnfb_cases_over_5_days = int(leakage_row["dnfb_cases_over_5_days"]) if leakage_row else None
-
-    total_ar = float(aging_row["total_ar"]) if aging_row else None
-    ar_over_90_value = float(aging_row["ar_over_90_value"]) if aging_row else None
-
-    denied_claim_value = float(denials_row["denied_claim_value"]) if denials_row else None
-    denied_claim_count = int(denials_row["denied_claim_count"]) if denials_row else None
-
-    denial_rate = None
-    if denied_claim_value is not None and submitted_claim_value not in (None, 0):
-        denial_rate = (denied_claim_value / submitted_claim_value) * 100
-    else:
-        _mark_missing(
-            missing_metrics,
-            warnings,
-            "denial_rate",
-            "Denial rate is unavailable because submitted claim value is zero or unavailable under the current filters.",
-        )
-
-    collection_rate = None
-    if cash_collected is not None and net_patient_revenue not in (None, 0):
-        collection_rate = (cash_collected / net_patient_revenue) * 100
-    else:
-        _mark_missing(
-            missing_metrics,
-            warnings,
-            "collection_rate",
-            "Collection rate is unavailable because net patient revenue is zero or unavailable under the current filters.",
-        )
-
-    ar_over_90_ratio = None
-    if ar_over_90_value is not None and total_ar not in (None, 0):
-        ar_over_90_ratio = (ar_over_90_value / total_ar) * 100
-    else:
-        _mark_missing(
-            missing_metrics,
-            warnings,
-            "ar_over_90_ratio",
-            "A/R over 90 ratio is unavailable because total A/R is zero or unavailable under the current filters.",
-        )
-
-    revenue_at_risk = None
-    if None not in (denied_claim_value, ar_over_90_value, dnfb_value, underpayment_value):
-        revenue_at_risk = denied_claim_value + ar_over_90_value + dnfb_value + underpayment_value
-    else:
-        _mark_missing(
-            missing_metrics,
-            warnings,
-            "revenue_at_risk",
-            "Revenue at risk is unavailable because one or more dependency metrics are unavailable.",
-        )
-
-    _mark_missing(
-        missing_metrics,
-        warnings,
-        "care_delivered_target",
-        "Care Delivered target is unavailable because no net revenue target dataset is wired into the current RCM marts.",
-    )
-    _mark_missing(
-        missing_metrics,
-        warnings,
-        "coding_completion_rate",
-        "Coding completion rate is unavailable because coding_status is not exposed in the current RCM marts.",
-    )
-    _mark_missing(
-        missing_metrics,
-        warnings,
-        "clean_claim_rate",
-        "Clean claim rate is unavailable because clean-claim fields are not present in the current RCM marts.",
-    )
-    _mark_missing(
-        missing_metrics,
-        warnings,
-        "accepted_claim_rate",
-        "Accepted claim rate is unavailable because accepted-claim fields are not present in the current RCM marts.",
-    )
-    _mark_missing(
-        missing_metrics,
-        warnings,
-        "payment_lag",
-        "Payment lag is unavailable in the journey because claim-level payment timestamps are not surfaced through the current filtered mart path.",
-    )
-    _mark_missing(
-        missing_metrics,
-        warnings,
-        "cash_gap_vs_target",
-        "Cash gap versus target is unavailable because no collection target dataset is wired into the current RCM marts.",
-    )
-
-    def stage_status(stage_id: str) -> tuple[str, str]:
-        if stage_id == "care_delivered":
-            return _journey_status_payload("Unavailable")
-        if stage_id == "discharge_coding":
-            if avg_dnfb_days is None:
-                return _journey_status_payload("Unavailable")
-            if avg_dnfb_days <= 3:
-                return _journey_status_payload("Healthy")
-            if avg_dnfb_days <= 7:
-                return _journey_status_payload("Watch")
-            return _journey_status_payload("Critical")
-        if stage_id == "claim_created":
-            return _journey_status_payload("Unavailable")
-        if stage_id == "claim_submitted":
-            return _journey_status_payload("Unavailable")
-        if stage_id == "payer_adjudication":
-            if denial_rate is None:
-                return _journey_status_payload("Unavailable")
-            if denial_rate <= 5:
-                return _journey_status_payload("Healthy")
-            if denial_rate <= 8:
-                return _journey_status_payload("Watch")
-            return _journey_status_payload("Critical")
-        if stage_id == "ar_recovery":
-            if ar_over_90_ratio is None:
-                return _journey_status_payload("Unavailable")
-            if ar_over_90_ratio <= 15:
-                return _journey_status_payload("Healthy")
-            if ar_over_90_ratio <= 25:
-                return _journey_status_payload("Watch")
-            return _journey_status_payload("Critical")
-        if collection_rate is None:
-            return _journey_status_payload("Unavailable")
-        if collection_rate >= 80:
-            return _journey_status_payload("Healthy")
-        if collection_rate >= 70:
-            return _journey_status_payload("Watch")
-        return _journey_status_payload("Critical")
-
-    stages = [
+    journey_stages = [
         {
-            "stage_order": 1,
-            "stage_id": "care_delivered",
-            "stage_name": "Care Delivered",
-            "stage_note": "Clinical activity creates financial value before any billing or payer processing begins.",
-            "risk_note": "Target benchmarking is not yet available in the current marts, so this stage is shown as neutral.",
-            "status": stage_status("care_delivered")[0],
-            "risk_class": stage_status("care_delivered")[1],
+            "stage_number": 1,
+            "key": "care_delivered",
+            "title": "Care Delivered",
+            "status": "healthy",
+            "why_it_matters": "Charge opportunity starts with the claimable encounter volume in scope.",
             "metrics": [
-                _journey_metric("Gross Charges", gross_charges, "currency"),
-                _journey_metric("Encounters", encounter_count, "count"),
-                _journey_metric("Net Patient Revenue", net_patient_revenue, "currency"),
+                {"label": "Encounters", "value": encounter_count, "unit": "count"},
+                {"label": "Gross charges", "value": gross_charges, "unit": "currency"},
+                {"label": "Expected cash", "value": net_patient_revenue, "unit": "currency"},
             ],
         },
         {
-            "stage_order": 2,
-            "stage_id": "discharge_coding",
-            "stage_name": "Discharge & Coding",
-            "stage_note": "DNFB backlog slows conversion from completed care into billable claims.",
-            "risk_note": "Avg DNFB days above 7 means cash is being delayed before claims even reach billing.",
-            "status": stage_status("discharge_coding")[0],
-            "risk_class": stage_status("discharge_coding")[1],
+            "stage_number": 2,
+            "key": "discharge_coding",
+            "title": "Discharge & Coding",
+            "status": _kpi_status_for_revenue_at_risk(dnfb_value, net_patient_revenue),
+            "why_it_matters": "DNFB is proxied by open claims because discharge-to-bill timestamps are not modeled separately.",
             "metrics": [
-                _journey_metric("DNFB Value", dnfb_value, "currency"),
-                _journey_metric("DNFB Case Count", dnfb_cases, "count"),
-                _journey_metric("Average DNFB Days", avg_dnfb_days, "days"),
-                _journey_metric("Cases Older Than 5 Days", dnfb_cases_over_5_days, "count"),
+                {"label": "Open claims", "value": dnfb_count, "unit": "count"},
+                {"label": "DNFB proxy value", "value": dnfb_value, "unit": "currency"},
+                {"label": "Open age", "value": dnfb_average_days, "unit": "days"},
             ],
         },
         {
-            "stage_order": 3,
-            "stage_id": "claim_created",
-            "stage_name": "Claim Created",
-            "stage_note": "Claims created from coded encounters establish the amount that can enter the billing workflow.",
-            "risk_note": "Coding completion cannot yet be scored because coding-status fields are not exposed in the current marts.",
-            "status": stage_status("claim_created")[0],
-            "risk_class": stage_status("claim_created")[1],
+            "stage_number": 3,
+            "key": "claim_created",
+            "title": "Claim Created",
+            "status": "healthy" if created_claim_rows else "unknown",
+            "why_it_matters": "Claim creation is inferred from active claims because a separate creation event is not modeled.",
             "metrics": [
-                _journey_metric("Claim Count", claim_count, "count"),
-                _journey_metric("Claim Value", claim_value, "currency"),
-                _journey_metric("Coding Completion Rate", None, "percentage", available=False),
+                {"label": "Created claims", "value": len(created_claim_rows), "unit": "count"},
+                {"label": "Created value", "value": sum(_as_number(row.get("expected_cash_amount")) for row in created_claim_rows), "unit": "currency"},
+                {"label": "Coverage", "value": (len(created_claim_rows) / claim_count * 100) if claim_count else None, "unit": "percent"},
             ],
         },
         {
-            "stage_order": 4,
-            "stage_id": "claim_submitted",
-            "stage_name": "Claim Submitted",
-            "stage_note": "Submission moves value from internal workflow into payer review, but clean-claim quality is not yet tracked.",
-            "risk_note": "Clean claim scoring is unavailable until clean-claim fields are added to the mart layer.",
-            "status": stage_status("claim_submitted")[0],
-            "risk_class": stage_status("claim_submitted")[1],
+            "stage_number": 4,
+            "key": "claim_submitted",
+            "title": "Claim Submitted",
+            "status": "watch" if late_submission_count else "healthy",
+            "why_it_matters": "Late submission leakage shows where billing speed is suppressing cash conversion.",
             "metrics": [
-                _journey_metric("Submitted Claim Value", submitted_claim_value, "currency"),
-                _journey_metric("Submitted Claim Count", submitted_claim_count, "count"),
-                _journey_metric("Clean Claim Rate", None, "percentage", available=False),
+                {"label": "Submitted claims", "value": len(submitted_claim_rows), "unit": "count"},
+                {"label": "Late submissions", "value": late_submission_count, "unit": "count"},
+                {"label": "Late submission value", "value": late_submission_value, "unit": "currency"},
             ],
         },
         {
-            "stage_order": 5,
-            "stage_id": "payer_adjudication",
-            "stage_name": "Payer Adjudication",
-            "stage_note": "Denied claims are where collectible value starts leaking out of the adjudication path.",
-            "risk_note": "Denial rate above 8% indicates critical payer or coding friction requiring escalation.",
-            "status": stage_status("payer_adjudication")[0],
-            "risk_class": stage_status("payer_adjudication")[1],
+            "stage_number": 5,
+            "key": "payer_adjudication",
+            "title": "Payer Adjudication",
+            "status": denial_status,
+            "why_it_matters": "Denial pressure is the cleanest leading signal of preventable revenue drag.",
             "metrics": [
-                _journey_metric("Denial Rate", denial_rate, "percentage", available=denial_rate is not None),
-                _journey_metric("Denied Claim Value", denied_claim_value, "currency"),
-                _journey_metric("Denied Claim Count", denied_claim_count, "count"),
-                _journey_metric("Accepted Claim Rate", None, "percentage", available=False),
+                {"label": "Denied claims", "value": denied_claim_count, "unit": "count"},
+                {"label": "Denial rate", "value": denial_rate, "unit": "percent"},
+                {"label": "Denied value", "value": denied_claim_value, "unit": "currency"},
             ],
         },
         {
-            "stage_order": 6,
-            "stage_id": "ar_recovery",
-            "stage_name": "AR & Recovery",
-            "stage_note": "Aged receivables, underpayments, and unresolved denials trap cash after adjudication.",
-            "risk_note": "A/R over 90 days above 25% of total A/R is treated as a critical recovery exposure.",
-            "status": stage_status("ar_recovery")[0],
-            "risk_class": stage_status("ar_recovery")[1],
+            "stage_number": 6,
+            "key": "ar_recovery",
+            "title": "AR & Recovery",
+            "status": risk_status if _severity_rank(risk_status) >= _severity_rank(ar_status) else ar_status,
+            "why_it_matters": "Aged receivables and open recovery work determine how much cash stays trapped in the ledger.",
             "metrics": [
-                _journey_metric("Total AR", total_ar, "currency"),
-                _journey_metric("AR Over 90 Days", ar_over_90_value, "currency"),
-                _journey_metric("Underpayment Value", underpayment_value, "currency"),
-                _journey_metric("Revenue at Risk", revenue_at_risk, "currency", available=revenue_at_risk is not None),
+                {"label": "Total AR", "value": ar_total, "unit": "currency"},
+                {"label": "AR >90", "value": ar_over_90_value, "unit": "currency"},
+                {"label": "Open recovery actions", "value": open_recovery_actions, "unit": "count"},
             ],
         },
         {
-            "stage_order": 7,
-            "stage_id": "cash_collected",
-            "stage_name": "Cash Collected",
-            "stage_note": "This is the final proof point that value created by care has converted into posted cash.",
-            "risk_note": "Collection rate below 70% signals critical pressure on cash conversion.",
-            "status": stage_status("cash_collected")[0],
-            "risk_class": stage_status("cash_collected")[1],
+            "stage_number": 7,
+            "key": "cash_collected",
+            "title": "Cash Collected",
+            "status": collection_status,
+            "why_it_matters": "Posted cash and conversion rate use the exact same cohort shown in the KPI cards above.",
             "metrics": [
-                _journey_metric("Cash Collected", cash_collected, "currency"),
-                _journey_metric("Collection Rate", collection_rate, "percentage", available=collection_rate is not None),
-                _journey_metric("Cash Gap vs Target", None, "currency", available=False),
+                {"label": "Cash collected", "value": cash_collected, "unit": "currency"},
+                {"label": "Collection rate", "value": collection_rate, "unit": "percent"},
+                {"label": "Paid claims", "value": len(paid_claim_rows), "unit": "count"},
             ],
         },
     ]
 
-    risk_concentration = [
+    concentration_components = [
         {
-            "label": "Denied Claims",
-            "value": denied_claim_value if denied_claim_value is not None else None,
-            "formatted_value": _journey_metric("Denied Claims", denied_claim_value, "currency", available=denied_claim_value is not None)["formatted_value"],
-            "risk_class": "critical" if (denied_claim_value or 0) > 0 else "unavailable",
+            "key": "ar_over_90",
+            "label": "Aged receivables >90d",
+            "amount": ar_over_90_value,
+            "claims": len(ar_over_90_rows),
+            "status": _kpi_status_for_revenue_at_risk(ar_over_90_value, net_patient_revenue),
+            "note": "Older receivables are the heaviest drag on AR Days.",
         },
         {
-            "label": "AR > 90 Days",
-            "value": ar_over_90_value if ar_over_90_value is not None else None,
-            "formatted_value": _journey_metric("AR > 90 Days", ar_over_90_value, "currency", available=ar_over_90_value is not None)["formatted_value"],
-            "risk_class": "critical" if ar_over_90_ratio is not None and ar_over_90_ratio > 25 else "watch" if ar_over_90_ratio is not None else "unavailable",
+            "key": "denials",
+            "label": "Denied claim value",
+            "amount": denied_claim_value,
+            "claims": denied_claim_count,
+            "status": denial_status,
+            "note": "Denied balances need appeal or write-off governance.",
         },
         {
-            "label": "DNFB",
-            "value": dnfb_value if dnfb_value is not None else None,
-            "formatted_value": _journey_metric("DNFB", dnfb_value, "currency", available=dnfb_value is not None)["formatted_value"],
-            "risk_class": "critical" if avg_dnfb_days is not None and avg_dnfb_days > 7 else "watch" if avg_dnfb_days is not None else "unavailable",
+            "key": "dnfb",
+            "label": "DNFB proxy",
+            "amount": dnfb_value,
+            "claims": dnfb_count,
+            "status": _kpi_status_for_revenue_at_risk(dnfb_value, net_patient_revenue),
+            "note": "Open claims are acting as the discharge-to-bill backlog proxy.",
         },
         {
+            "key": "underpayments",
             "label": "Underpayments",
-            "value": underpayment_value if underpayment_value is not None else None,
-            "formatted_value": _journey_metric("Underpayments", underpayment_value, "currency", available=underpayment_value is not None)["formatted_value"],
-            "risk_class": "watch" if underpayment_value is not None else "unavailable",
+            "amount": underpayment_value,
+            "claims": underpayment_count,
+            "status": _kpi_status_for_revenue_at_risk(underpayment_value, net_patient_revenue),
+            "note": "Paid below contract value and still recoverable.",
+        },
+    ]
+    concentration_components = sorted(concentration_components, key=lambda item: item["amount"], reverse=True)
+    for component in concentration_components:
+        component["share_pct"] = (component["amount"] / revenue_at_risk * 100) if revenue_at_risk else None
+
+    monthly_rollup: dict[str, dict[str, Any]] = {}
+    for month_key in months_in_scope:
+        label = month_key.strftime("%b")
+        monthly_rollup[label] = {
+            "month": label,
+            "charges": 0.0,
+            "cash_collected": 0.0,
+            "expected_collections": 0.0,
+            "denied_value": 0.0,
+            "expected_recovery": 0.0,
+        }
+    for row in scoped_revenue:
+        claim_date = _parse_date(row.get("claim_date"))
+        if not claim_date:
+            continue
+        label = _first_of_month(claim_date).strftime("%b")
+        if label not in monthly_rollup:
+            continue
+        monthly_rollup[label]["charges"] += _as_number(row.get("gross_billed_amount"))
+        monthly_rollup[label]["cash_collected"] += _as_number(row.get("posted_cash_amount"))
+        monthly_rollup[label]["expected_collections"] += _as_number(row.get("expected_cash_amount"))
+    for row in scoped_denials:
+        denial_date = _parse_date(row.get("denial_date"))
+        if not denial_date:
+            continue
+        label = _first_of_month(denial_date).strftime("%b")
+        if label in monthly_rollup:
+            monthly_rollup[label]["denied_value"] += _as_number(row.get("denied_amount"))
+    for row in scoped_opportunities:
+        due_date = _parse_date(row.get("due_date"))
+        if not due_date:
+            continue
+        label = _first_of_month(due_date).strftime("%b")
+        if label in monthly_rollup:
+            monthly_rollup[label]["expected_recovery"] += _as_number(row.get("expected_recovery_amount"))
+
+    ar_aging_totals: dict[str, float] = {"0-30": 0.0, "31-60": 0.0, "61-90": 0.0, "91-180": 0.0, "180+": 0.0}
+    for row in scoped_aging:
+        bucket = _bucket_for_aging(_as_number(row.get("aging_bucket_days")))
+        ar_aging_totals[bucket] += _as_number(row.get("outstanding_amount"))
+
+    payer_rollup: dict[str, dict[str, float]] = defaultdict(
+        lambda: {
+            "expected_cash": 0.0,
+            "cash_collected": 0.0,
+            "claim_count": 0.0,
+            "denied_claims": 0.0,
+            "ar_exposure": 0.0,
+            "days_total": 0.0,
+            "days_count": 0.0,
+        }
+    )
+    for row in scoped_revenue:
+        payer_id = str(row.get("payer_id") or "Unknown")
+        payer_rollup[payer_id]["expected_cash"] += _as_number(row.get("expected_cash_amount"))
+        payer_rollup[payer_id]["cash_collected"] += _as_number(row.get("posted_cash_amount"))
+        payer_rollup[payer_id]["claim_count"] += 1
+        if _as_number(row.get("posted_cash_amount")) > 0:
+            payer_rollup[payer_id]["days_total"] += _as_number(row.get("ar_days"))
+            payer_rollup[payer_id]["days_count"] += 1
+    for row in scoped_denials:
+        payer_rollup[str(row.get("payer_id") or "Unknown")]["denied_claims"] += 1
+    for row in scoped_aging:
+        payer_rollup[str(row.get("payer_id") or "Unknown")]["ar_exposure"] += _as_number(row.get("outstanding_amount"))
+
+    payer_performance = []
+    for payer_id, totals in payer_rollup.items():
+        payer_expected = totals["expected_cash"]
+        payer_collection_rate = (totals["cash_collected"] / payer_expected * 100) if payer_expected else None
+        payer_denial_rate = (totals["denied_claims"] / totals["claim_count"] * 100) if totals["claim_count"] else None
+        payer_days = (totals["days_total"] / totals["days_count"]) if totals["days_count"] else None
+        risk_score = (
+            (max((100 - (payer_collection_rate or 0)), 0) * 0.35)
+            + ((payer_denial_rate or 0) * 4.0)
+            + ((payer_days or 0) * 0.6)
+            + ((totals["ar_exposure"] / payer_expected * 100) if payer_expected else 0) * 0.25
+        )
+        payer_status = _headline_severity(payer_days, payer_denial_rate, payer_collection_rate)
+        payer_performance.append(
+            {
+                "payer": payer_id,
+                "collection_rate_pct": payer_collection_rate,
+                "denial_rate_pct": payer_denial_rate,
+                "avg_days_to_pay": payer_days,
+                "ar_exposure": totals["ar_exposure"],
+                "risk_score": risk_score,
+                "status": payer_status,
+            }
+        )
+    payer_performance.sort(key=lambda item: item["risk_score"], reverse=True)
+
+    leakage_by_payer_rollup: dict[str, float] = defaultdict(float)
+    for row in scoped_leakage:
+        leakage_by_payer_rollup[str(row.get("payer_id") or "Unknown")] += _as_number(row.get("leakage_amount"))
+    leakage_total = sum(leakage_by_payer_rollup.values())
+    leakage_by_payer = [
+        {
+            "payer": payer_id,
+            "leakage_amount": amount,
+            "share_pct": (amount / leakage_total * 100) if leakage_total else None,
+        }
+        for payer_id, amount in sorted(leakage_by_payer_rollup.items(), key=lambda item: item[1], reverse=True)
+    ]
+
+    serialized_opportunities = []
+    for row in scoped_opportunities:
+        item = _serialize_row(row)
+        item["next_step"] = _next_step(str(item.get("status") or "open"), "not_applicable")
+        serialized_opportunities.append(item)
+    serialized_opportunities.sort(
+        key=lambda item: (
+            -_as_number(item.get("priority_score")),
+            -_as_number(item.get("expected_recovery_amount")),
+            _parse_date(item.get("due_date")) or date.max,
+        )
+    )
+
+    grouped_actions: dict[tuple[str, str, str, str, str], dict[str, Any]] = {}
+    for item in serialized_opportunities:
+        due_date = _parse_date(item.get("due_date"))
+        bucket = _due_bucket(due_date)
+        key = (
+            str(item.get("issue_type") or "unknown"),
+            str(item.get("payer_id") or "Unknown"),
+            str(item.get("department_id") or "Unknown"),
+            str(item.get("owner_team") or item.get("owner_user_id") or "Unassigned"),
+            bucket,
+        )
+        existing = grouped_actions.get(key)
+        if not existing:
+            grouped_actions[key] = {
+                "priority": None,
+                "issue_type": key[0],
+                "payer_id": key[1],
+                "department_id": key[2],
+                "owner": key[3],
+                "due_bucket": bucket,
+                "claims": 0,
+                "recoverable_amount": 0.0,
+                "expected_recovery": 0.0,
+                "earliest_due_date": _serialize(due_date),
+                "action": _action_label(key[0]),
+            }
+            existing = grouped_actions[key]
+        existing["claims"] += 1
+        existing["recoverable_amount"] += _as_number(item.get("recoverable_amount"))
+        existing["expected_recovery"] += _as_number(item.get("expected_recovery_amount"))
+        earliest_due = _parse_date(existing.get("earliest_due_date"))
+        if due_date and (earliest_due is None or due_date < earliest_due):
+            existing["earliest_due_date"] = _serialize(due_date)
+
+    grouped_action_rows = list(grouped_actions.values())
+    for row in grouped_action_rows:
+        row["priority"] = _action_priority_label(float(row["expected_recovery"]), str(row["due_bucket"]))
+    grouped_action_rows.sort(
+        key=lambda row: (
+            -_severity_rank(_lower_text(row["priority"])),
+            -float(row["expected_recovery"]),
+            _parse_date(row.get("earliest_due_date")) or date.max,
+        )
+    )
+
+    deadlines_at_risk = [
+        item
+        for item in serialized_opportunities
+        if _due_bucket(_parse_date(item.get("due_date"))) in {"Overdue", "Today", "This week", "Next 14 days"}
+    ]
+    deadlines_at_risk.sort(
+        key=lambda item: (
+            -_as_number(item.get("expected_recovery_amount")),
+            _parse_date(item.get("due_date")) or date.max,
+        )
+    )
+
+    warnings = []
+    if unsupported_filters:
+        warnings.append(
+            "Unsupported filters were ignored: "
+            + ", ".join(unsupported_filters)
+            + ". These dimensions are not exposed on the current revenue-cycle marts."
+        )
+    warnings.append(
+        "Claim created and claim submitted are inferred from claim status because separate workflow timestamps are not modeled."
+    )
+    warnings.append(
+        "Cash collected uses posted cash attached to the filtered claim cohort to preserve payer and department consistency."
+    )
+
+    source_tables = [
+        {
+            "table": f"{settings.analytics_schema}.fct_revenue_cycle",
+            "role": "Gross charges, contracted value, posted cash, and claim states.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.analytics_schema}.fct_claim_aging",
+            "role": "Current AR snapshot and aging buckets.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.analytics_schema}.fct_denials",
+            "role": "Denied claim counts, value, and appeal status.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.analytics_schema}.fct_cash_recovery_opportunity",
+            "role": "Recovery owners, due dates, and recoverable balances.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.analytics_schema}.fct_revenue_leakage",
+            "role": "Underpayments, late submissions, and leakage categorization.",
+            "loaded": True,
         },
     ]
 
-    return {
-        "generated_at": _now_iso(),
+    payload = {
+        "as_of": _serialize(as_of_datetime),
         "currency": "SAR",
-        "filters_applied": filters_applied,
-        "stages": stages,
-        "risk_concentration": risk_concentration,
+        "period": {
+            "date_from": _serialize(period_start),
+            "date_to": _serialize(period_end),
+            "label": _format_period_label(period_start, period_end, rolling_default),
+        },
+        "data_freshness": _data_freshness(as_of_datetime),
+        "meta": base_meta,
+        "headline": {
+            "severity": headline_severity,
+            "message": headline_message,
+            "metrics": [
+                {"label": "AR Days", "value": ar_days, "unit": "days"},
+                {"label": "Denial Rate", "value": denial_rate, "unit": "percent"},
+                {"label": "Collection Rate", "value": collection_rate, "unit": "percent"},
+                {"label": "Revenue at Risk", "value": revenue_at_risk, "unit": "currency"},
+            ],
+        },
+        "kpis": kpis,
+        "journey": {"stages": journey_stages},
+        "risk_concentration": concentration_components,
+        "charts": {
+            "cash_vs_charges": list(monthly_rollup.values()),
+            "ar_aging_buckets": [
+                {
+                    "bucket": bucket,
+                    "value": amount,
+                    "risk_band": _risk_band_for_aging_bucket(bucket),
+                }
+                for bucket, amount in ar_aging_totals.items()
+            ],
+            "denial_recovery_pipeline": [
+                {
+                    "month": row["month"],
+                    "denied_value": row["denied_value"],
+                    "expected_recovery": row["expected_recovery"],
+                }
+                for row in monthly_rollup.values()
+            ],
+            "payer_performance": payer_performance,
+            "leakage_by_payer": leakage_by_payer,
+            "cash_gap_to_charges": gross_charges - cash_collected,
+            "ar_total": ar_total,
+            "ar_over_90": ar_over_90_value,
+        },
+        "actions": {
+            "grouped": grouped_action_rows[:8],
+            "deadlines_at_risk": deadlines_at_risk[:5],
+        },
         "data_quality": {
-            "missing_metrics": sorted(missing_metrics),
-            "warnings": list(dict.fromkeys(warnings)),
+            "trust_label": "Financial truth: ERP postings",
+            "sources_loaded": sum(1 for item in source_tables if item["loaded"]),
+            "total_sources": len(source_tables),
+            "generated_at": _serialize(as_of_datetime),
+            "filters_applied": {
+                "date_from": _serialize(period_start),
+                "date_to": _serialize(period_end),
+                "payer": sorted(payer_filter) if payer_filter else [],
+                "department": sorted(department_filter) if department_filter else [],
+                "claim_status": sorted(claim_status_filter) if claim_status_filter else [],
+            },
+            "unsupported_filters": unsupported_filters,
             "source_tables": source_tables,
+            "missing_metrics": [
+                {
+                    "label": "Coding completion rate",
+                    "reason": "Discharge-to-bill workflow timestamps are not modeled on the current marts.",
+                },
+                {
+                    "label": "Clean claim rate",
+                    "reason": "A distinct claim-created versus claim-submitted event split is not available yet.",
+                },
+            ],
+            "warnings": warnings,
+            "limitations": [
+                "Facility, specialty, and patient type filters are accepted but ignored because those dimensions are not present on the live marts.",
+                "DNFB is proxied with open-claim contractual value rather than a discharge-specific queue table.",
+                "Cash collected is measured on the filtered claim cohort instead of a standalone posting-period ledger slice so KPI cards and journey totals stay reconciled.",
+            ],
+        },
+        "recoverable_cash_7d": sum(
+            _as_number(item.get("expected_recovery_amount"))
+            for item in serialized_opportunities
+            if (due_date := _parse_date(item.get("due_date"))) and due_date <= date.today() + timedelta(days=7)
+        ),
+        "recoverable_cash_14d": sum(
+            _as_number(item.get("expected_recovery_amount"))
+            for item in serialized_opportunities
+            if (due_date := _parse_date(item.get("due_date"))) and due_date <= date.today() + timedelta(days=14)
+        ),
+        "cash_at_risk": revenue_at_risk,
+        "expected_collections": net_patient_revenue,
+        "top_actions": serialized_opportunities[:5],
+        "expiring_opportunities": deadlines_at_risk[:5],
+        "dashboard": {
+            "subtitle": _format_period_label(period_start, period_end, rolling_default),
+            "status": {
+                "label": "AR Days",
+                "value": round(ar_days or 0),
+                "target": "<=40",
+                "band": _risk_band_from_status(ar_status),
+            },
+            "kpis": {
+                "total_cash_collected": cash_collected,
+                "total_cash_collected_delta_pct": _percentage(cash_growth_pct),
+                "denial_rate_pct": _percentage(denial_rate),
+                "denial_rate_delta_pp": _percentage(denial_delta_pp),
+                "leakage_recovered": None,
+                "leakage_recovered_pct_gross": _percentage(risk_ratio_pct),
+                "claims_in_pipeline": claim_count,
+                "claims_require_action": open_recovery_actions,
+            },
+            "cash_vs_charge_series": [
+                {
+                    "month": row["month"],
+                    "charges": row["charges"],
+                    "collections": row["cash_collected"],
+                    "expected_collections": row["expected_collections"],
+                }
+                for row in monthly_rollup.values()
+            ],
+            "ar_aging_buckets": [
+                {
+                    "bucket": bucket,
+                    "value": amount,
+                    "risk_band": _risk_band_for_aging_bucket(bucket),
+                }
+                for bucket, amount in ar_aging_totals.items()
+            ],
         },
     }
+    return payload
 
 
-def cash_command() -> dict[str, Any]:
-    forecast_table = qualified_table(settings.analytics_schema, "fct_cash_forecast")
-    opportunity_table = qualified_table(settings.analytics_schema, "fct_cash_recovery_opportunity")
+def cash_command(filters: dict[str, Any] | None = None) -> dict[str, Any]:
     revenue_table = qualified_table(settings.analytics_schema, "fct_revenue_cycle")
-    posting_table = qualified_table(settings.analytics_schema, "fct_financial_posting")
     aging_table = qualified_table(settings.analytics_schema, "fct_claim_aging")
     denials_table = qualified_table(settings.analytics_schema, "fct_denials")
-    team_table = qualified_table(settings.analytics_schema, "fct_team_recovery_performance")
+    opportunity_table = qualified_table(settings.analytics_schema, "fct_cash_recovery_opportunity")
+    leakage_table = qualified_table(settings.analytics_schema, "fct_revenue_leakage")
 
     try:
         with connect() as conn:
-            summary = conn.execute(
+            revenue_rows = conn.execute(
                 sql.SQL(
                     """
-                    with latest_forecast as (
-                        select max(run_timestamp) as as_of
-                        from {forecast_table}
-                    ),
-                    forecast_rollup as (
-                        select
-                            sum(case when forecast_date <= current_date + interval '7 days' then recoverable_cash else 0 end) as recoverable_cash_7d,
-                            sum(case when forecast_date <= current_date + interval '14 days' then recoverable_cash else 0 end) as recoverable_cash_14d,
-                            sum(case when forecast_date <= current_date + interval '7 days' then cash_at_risk else 0 end) as cash_at_risk,
-                            sum(case when forecast_date <= current_date + interval '7 days' then expected_cash else 0 end) as expected_collections
-                        from {forecast_table}, latest_forecast
-                        where run_timestamp = latest_forecast.as_of
-                    )
                     select
-                        latest_forecast.as_of,
-                        forecast_rollup.recoverable_cash_7d,
-                        forecast_rollup.recoverable_cash_14d,
-                        forecast_rollup.cash_at_risk,
-                        forecast_rollup.expected_collections
-                    from latest_forecast
-                    cross join forecast_rollup
+                        claim_id,
+                        encounter_id,
+                        payer_id,
+                        department_id,
+                        claim_date,
+                        claim_status,
+                        gross_billed_amount,
+                        contracted_amount,
+                        expected_cash_amount,
+                        posted_cash_amount,
+                        ar_days,
+                        as_of_timestamp
+                    from {revenue_table}
                     """
                 ).format(
-                    forecast_table=forecast_table,
+                    revenue_table=revenue_table,
                 )
-            ).fetchone()
+            ).fetchall()
 
-            action_rows = conn.execute(
+            aging_rows = conn.execute(
+                sql.SQL(
+                    """
+                    select
+                        claim_id,
+                        payer_id,
+                        department_id,
+                        snapshot_date,
+                        aging_bucket_days,
+                        outstanding_amount,
+                        ar_days,
+                        claim_status
+                    from {aging_table}
+                    """
+                ).format(aging_table=aging_table)
+            ).fetchall()
+
+            denial_rows = conn.execute(
+                sql.SQL(
+                    """
+                    select
+                        claim_id,
+                        payer_id,
+                        department_id,
+                        denial_date,
+                        denial_reason,
+                        appeal_status,
+                        denied_amount,
+                        appeal_due_date,
+                        claim_status
+                    from {denials_table}
+                    """
+                ).format(denials_table=denials_table)
+            ).fetchall()
+
+            opportunity_rows = conn.execute(
                 sql.SQL(
                     """
                     select
                         opportunity_id,
-                        issue_type,
                         claim_id,
                         payer_id,
                         department_id,
+                        issue_type,
+                        issue_reason,
+                        detected_date,
+                        due_date,
                         recoverable_amount,
                         expected_recovery_amount,
-                        due_date,
+                        effort_hours,
                         priority_score,
                         owner_team,
                         owner_user_id,
                         status,
+                        source_system,
                         evidence_summary
                     from {opportunity_table}
-                    where not (coalesce(status, 'open') = any(%s))
-                    order by priority_score desc nulls last, expected_recovery_amount desc nulls last, due_date asc nulls last
-                    limit 5
                     """
-                ).format(opportunity_table=opportunity_table),
-                (list(TERMINAL_RECOVERY_STATUSES),),
+                ).format(opportunity_table=opportunity_table)
             ).fetchall()
 
-            expiring_rows = conn.execute(
+            leakage_rows = conn.execute(
                 sql.SQL(
                     """
                     select
-                        opportunity_id,
-                        issue_type,
                         claim_id,
                         payer_id,
                         department_id,
-                        due_date,
-                        expected_recovery_amount,
+                        detected_date,
+                        leakage_type,
+                        leakage_reason,
+                        leakage_amount,
                         owner_team,
                         owner_user_id,
                         status
-                    from {opportunity_table}
-                    where due_date is not null
-                      and due_date <= current_date + interval '7 days'
-                      and not (coalesce(status, 'open') = any(%s))
-                    order by due_date asc, priority_score desc nulls last
-                    limit 5
+                    from {leakage_table}
                     """
-                ).format(opportunity_table=opportunity_table),
-                (list(TERMINAL_RECOVERY_STATUSES),),
+                ).format(leakage_table=leakage_table)
             ).fetchall()
-
-            active_opportunity_count = conn.execute(
-                sql.SQL(
-                    """
-                    select count(*)::integer as total_count
-                    from {opportunity_table}
-                    where not (coalesce(status, 'open') = any(%s))
-                    """
-                ).format(opportunity_table=opportunity_table),
-                (list(TERMINAL_RECOVERY_STATUSES),),
-            ).fetchone()
-
-            monthly_rows = []
-            kpi_summary = None
-            aging_rows = []
-            try:
-                monthly_rows = conn.execute(
-                    sql.SQL(
-                        """
-                        with latest_month as (
-                            select max(date_trunc('month', claim_date)::date) as month_key
-                            from {revenue_table}
-                        ),
-                        months as (
-                            select generate_series(
-                                (select month_key from latest_month) - interval '11 months',
-                                (select month_key from latest_month),
-                                interval '1 month'
-                            )::date as month_key
-                        ),
-                        charges as (
-                            select
-                                date_trunc('month', claim_date)::date as month_key,
-                                sum(gross_billed_amount)::numeric(14, 2) as charges_amount
-                            from {revenue_table}
-                            group by 1
-                        ),
-                        collections as (
-                            select
-                                date_trunc('month', posting_date)::date as month_key,
-                                sum(paid_amount)::numeric(14, 2) as collected_amount
-                            from {posting_table}
-                            group by 1
-                        )
-                        select
-                            months.month_key,
-                            coalesce(charges.charges_amount, 0)::numeric(14, 2) as charges_amount,
-                            coalesce(collections.collected_amount, 0)::numeric(14, 2) as collected_amount
-                        from months
-                        left join charges using (month_key)
-                        left join collections using (month_key)
-                        order by months.month_key asc
-                        """
-                    ).format(
-                        revenue_table=revenue_table,
-                        posting_table=posting_table,
-                    )
-                ).fetchall()
-
-                kpi_summary = conn.execute(
-                    sql.SQL(
-                        """
-                        with latest_month as (
-                            select max(date_trunc('month', claim_date)::date) as month_key
-                            from {revenue_table}
-                        ),
-                        current_window as (
-                            select *
-                            from {revenue_table}, latest_month
-                            where date_trunc('month', claim_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
-                        ),
-                        prior_window as (
-                            select *
-                            from {revenue_table}, latest_month
-                            where date_trunc('month', claim_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
-                        ),
-                        current_cash as (
-                            select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
-                            from {posting_table}, latest_month
-                            where date_trunc('month', posting_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
-                        ),
-                        prior_cash as (
-                            select coalesce(sum(paid_amount), 0)::numeric(14, 2) as total_cash_collected
-                            from {posting_table}, latest_month
-                            where date_trunc('month', posting_date)::date between latest_month.month_key - interval '23 months' and latest_month.month_key - interval '12 months'
-                        ),
-                        leakage_recovery as (
-                            select coalesce(sum(actual_recovery), 0)::numeric(14, 2) as leakage_recovered
-                            from {team_table}, latest_month
-                            where period_end between latest_month.month_key - interval '11 months' and latest_month.month_key + interval '31 days'
-                        ),
-                        ar_snapshot as (
-                            select coalesce(sum(outstanding_amount), 0)::numeric(14, 2) as ending_ar_balance
-                            from {aging_table}
-                        ),
-                        current_denials as (
-                            select
-                                count(*)::numeric as total_claims,
-                                count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
-                            from current_window
-                        ),
-                        prior_denials as (
-                            select
-                                count(*)::numeric as total_claims,
-                                count(*) filter (where claim_status in ('denied', 'appealed', 'writeoff'))::numeric as denied_claims
-                            from prior_window
-                        ),
-                        denial_counts as (
-                            select
-                                count(*)::numeric as denied_events
-                            from {denials_table}, latest_month
-                            where date_trunc('month', denial_date)::date between latest_month.month_key - interval '11 months' and latest_month.month_key
-                        )
-                        select
-                            current_cash.total_cash_collected,
-                            prior_cash.total_cash_collected as prior_year_cash_collected,
-                            leakage_recovery.leakage_recovered,
-                            ar_snapshot.ending_ar_balance,
-                            current_denials.total_claims as claims_in_pipeline,
-                            denial_counts.denied_events as denied_claim_events,
-                            prior_denials.denied_claims as prior_denied_claims,
-                            prior_denials.total_claims as prior_total_claims,
-                            current_denials.denied_claims as current_denied_claims
-                        from current_cash
-                        cross join prior_cash
-                        cross join leakage_recovery
-                        cross join ar_snapshot
-                        cross join current_denials
-                        cross join prior_denials
-                        cross join denial_counts
-                        """
-                    ).format(
-                        revenue_table=revenue_table,
-                        posting_table=posting_table,
-                        aging_table=aging_table,
-                        denials_table=denials_table,
-                        team_table=team_table,
-                    )
-                ).fetchone()
-
-                aging_rows = conn.execute(
-                    sql.SQL(
-                        """
-                        with bucketed as (
-                            select
-                                case
-                                    when aging_bucket_days <= 30 then '0-30'
-                                    when aging_bucket_days <= 60 then '31-60'
-                                    when aging_bucket_days <= 90 then '61-90'
-                                    when aging_bucket_days <= 120 then '91-120'
-                                    else '120+'
-                                end as aging_bucket,
-                                outstanding_amount
-                            from {aging_table}
-                        )
-                        select
-                            aging_bucket,
-                            sum(outstanding_amount)::numeric(14, 2) as outstanding_amount
-                        from bucketed
-                        group by 1
-                        order by case aging_bucket
-                            when '0-30' then 1
-                            when '31-60' then 2
-                            when '61-90' then 3
-                            when '91-120' then 4
-                            else 5
-                        end
-                        """
-                    ).format(aging_table=aging_table)
-                ).fetchall()
-            except AssertionError:
-                monthly_rows = []
-                kpi_summary = None
-                aging_rows = []
     except (UndefinedTable, UndefinedColumn):
         return _safe_empty(
             "cash-command",
@@ -1007,97 +1244,14 @@ def cash_command() -> dict[str, Any]:
             expiring_opportunities=[],
             dashboard=None,
         )
-
-    as_of_dt = summary.get("as_of") if summary else None
-    top_actions = []
-    for row in action_rows:
-        item = _serialize_row(row)
-        item["next_step"] = _next_step(str(item.get("status") or "open"), "not_applicable")
-        top_actions.append(item)
-
-    expiring = []
-    for row in expiring_rows:
-        item = _serialize_row(row)
-        item["next_step"] = _next_step(str(item.get("status") or "open"), "not_applicable")
-        expiring.append(item)
-
-    latest_month_total_cash = float(kpi_summary.get("total_cash_collected") or 0) if kpi_summary else 0.0
-    prior_year_cash = float(kpi_summary.get("prior_year_cash_collected") or 0) if kpi_summary else 0.0
-    leakage_recovered = float(kpi_summary.get("leakage_recovered") or 0) if kpi_summary else 0.0
-    ending_ar_balance = float(kpi_summary.get("ending_ar_balance") or 0) if kpi_summary else 0.0
-    claims_in_pipeline = int(kpi_summary.get("claims_in_pipeline") or 0) if kpi_summary else 0
-    current_denied_claims = float(kpi_summary.get("current_denied_claims") or 0) if kpi_summary else 0.0
-    prior_denied_claims = float(kpi_summary.get("prior_denied_claims") or 0) if kpi_summary else 0.0
-    prior_total_claims = float(kpi_summary.get("prior_total_claims") or 0) if kpi_summary else 0.0
-    cash_growth_pct = ((latest_month_total_cash - prior_year_cash) / prior_year_cash * 100) if prior_year_cash else None
-    denial_rate_pct = (current_denied_claims / claims_in_pipeline * 100) if claims_in_pipeline else None
-    prior_denial_rate_pct = (prior_denied_claims / prior_total_claims * 100) if prior_total_claims else None
-    denial_delta_pp = (denial_rate_pct - prior_denial_rate_pct) if denial_rate_pct is not None and prior_denial_rate_pct is not None else None
-    leakage_recovered_pct_gross = (
-        leakage_recovered / sum(float(row.get("charges_amount") or 0) for row in monthly_rows) * 100
-        if monthly_rows and sum(float(row.get("charges_amount") or 0) for row in monthly_rows) > 0
-        else None
+    return _build_cash_command_payload(
+        [_serialize_row(row) for row in revenue_rows],
+        [_serialize_row(row) for row in aging_rows],
+        [_serialize_row(row) for row in denial_rows],
+        [_serialize_row(row) for row in opportunity_rows],
+        [_serialize_row(row) for row in leakage_rows],
+        filters,
     )
-    monthly_collections_avg = (
-        sum(float(row.get("collected_amount") or 0) for row in monthly_rows) / len(monthly_rows)
-        if monthly_rows
-        else 0
-    )
-    ar_days = (ending_ar_balance / monthly_collections_avg * 30) if monthly_collections_avg else None
-
-    dashboard = {
-        "subtitle": f"{_month_label(monthly_rows[-1].get('month_key'))} {str(monthly_rows[-1].get('month_key'))[:4]} - Rolling 12 months - All payers" if monthly_rows else "Rolling 12 months - All payers",
-        "status": {
-            "label": "AR Days",
-            "value": round(ar_days or 0),
-            "target": "<40",
-            "band": "amber" if ar_days and ar_days >= 36 else "green",
-        },
-        "kpis": {
-            "total_cash_collected": latest_month_total_cash,
-            "total_cash_collected_delta_pct": _percentage(cash_growth_pct),
-            "denial_rate_pct": _percentage(denial_rate_pct),
-            "denial_rate_delta_pp": _percentage(denial_delta_pp),
-            "leakage_recovered": leakage_recovered,
-            "leakage_recovered_pct_gross": _percentage(leakage_recovered_pct_gross),
-            "claims_in_pipeline": claims_in_pipeline,
-            "claims_require_action": int(active_opportunity_count.get("total_count") or 0) if active_opportunity_count else len(action_rows),
-        },
-        "cash_vs_charge_series": [
-            {
-                "month": _month_label(row.get("month_key")),
-                "charges": round(float(row.get("charges_amount") or 0) / 1_000_000, 1),
-                "collections": round(float(row.get("collected_amount") or 0) / 1_000_000, 1),
-            }
-            for row in monthly_rows
-        ],
-        "ar_aging_buckets": [
-            {
-                "bucket": row.get("aging_bucket"),
-                "value": round(float(row.get("outstanding_amount") or 0) / 1_000_000, 1),
-                "risk_band": _risk_band_for_aging_bucket(str(row.get("aging_bucket") or "")),
-            }
-            for row in aging_rows
-        ],
-    }
-
-    return {
-        "as_of": _serialize(as_of_dt),
-        "data_freshness": _data_freshness(as_of_dt),
-        "meta": {
-            "use_case": USE_CASE_ID,
-            "section": "cash-command",
-            "empty": False,
-            "message": None,
-        },
-        "recoverable_cash_7d": _currency_number(summary.get("recoverable_cash_7d") if summary else None),
-        "recoverable_cash_14d": _currency_number(summary.get("recoverable_cash_14d") if summary else None),
-        "cash_at_risk": _currency_number(summary.get("cash_at_risk") if summary else None),
-        "expected_collections": _currency_number(summary.get("expected_collections") if summary else None),
-        "top_actions": top_actions,
-        "expiring_opportunities": expiring,
-        "dashboard": dashboard,
-    }
 
 
 def recovery_queue() -> dict[str, Any]:

@@ -6,54 +6,18 @@ export type RCMMeta = {
   message?: string | null;
 };
 
-export type RcmJourneyMetric = {
-  label: string;
-  value: number | null;
-  formatted_value: string;
-  unit: "currency" | "percentage" | "count" | "days" | "text";
-  available: boolean;
-};
-
-export type RcmJourneyStage = {
-  stage_order: number;
-  stage_id: string;
-  stage_name: string;
-  status: "Healthy" | "Watch" | "Critical" | "Unavailable";
-  risk_class: "healthy" | "watch" | "critical" | "unavailable";
-  stage_note: string;
-  risk_note?: string | null;
-  metrics: RcmJourneyMetric[];
-};
-
-export type RcmJourneyResponse = {
-  generated_at: string;
-  currency: string;
-  filters_applied: Record<string, unknown>;
-  stages: RcmJourneyStage[];
-  risk_concentration: Array<{
-    label: string;
-    value: number | null;
-    formatted_value: string;
-    risk_class: string;
-  }>;
-  data_quality: {
-    missing_metrics: string[];
-    warnings: string[];
-    source_tables: string[];
-  };
-  meta?: RCMMeta;
-};
-
 // ─── CASH COMMAND (operational — action cards) ───────────────────────────────
 
 export type ActionItem = {
   opportunity_id?: string | null;
   issue_type?: string | null;
+  issue_reason?: string | null;
   claim_id?: string | null;
   payer_id?: string | null;
   department_id?: string | null;
   recoverable_amount?: number | null;
   expected_recovery_amount?: number | null;
+  priority_score?: number | null;
   due_date?: string | null;
   owner_team?: string | null;
   owner_user_id?: string | null;
@@ -62,16 +26,136 @@ export type ActionItem = {
   evidence_summary?: string | null;
 };
 
+export type CashCommandStatus = "critical" | "watch" | "healthy" | "unknown";
+export type CashCommandUnit = "currency" | "percent" | "days" | "count";
+
+export type CashCommandMetric = {
+  label: string;
+  value?: number | null;
+  unit: CashCommandUnit;
+};
+
+export type CashCommandKpi = {
+  key: string;
+  label: string;
+  value?: number | null;
+  unit: CashCommandUnit;
+  status: CashCommandStatus;
+  target_label?: string | null;
+  interpretation?: string | null;
+};
+
+export type CashCommandStage = {
+  stage_number: number;
+  key: string;
+  title: string;
+  status: CashCommandStatus;
+  why_it_matters?: string | null;
+  metrics: CashCommandMetric[];
+};
+
+export type CashCommandRiskRow = {
+  key: string;
+  label: string;
+  amount: number;
+  claims: number;
+  share_pct?: number | null;
+  status: CashCommandStatus;
+  note?: string | null;
+};
+
+export type CashCommandGroupedAction = {
+  priority?: string | null;
+  issue_type?: string | null;
+  payer_id?: string | null;
+  department_id?: string | null;
+  owner?: string | null;
+  due_bucket?: string | null;
+  claims?: number | null;
+  recoverable_amount?: number | null;
+  expected_recovery?: number | null;
+  earliest_due_date?: string | null;
+  action?: string | null;
+};
+
 export type CashCommandPayload = {
   as_of?: string | null;
+  currency?: string | null;
+  period?: {
+    date_from?: string | null;
+    date_to?: string | null;
+    label?: string | null;
+  };
   data_freshness?: { seconds?: number | null; status?: string | null };
   meta?: RCMMeta;
+  headline?: {
+    severity?: CashCommandStatus;
+    message?: string | null;
+    metrics?: CashCommandMetric[];
+  };
+  kpis?: CashCommandKpi[];
+  journey?: {
+    stages?: CashCommandStage[];
+  };
+  risk_concentration?: CashCommandRiskRow[];
+  charts?: {
+    cash_vs_charges?: Array<{
+      month: string;
+      charges: number;
+      cash_collected: number;
+      expected_collections: number;
+      denied_value?: number;
+      expected_recovery?: number;
+    }>;
+    ar_aging_buckets?: Array<{ bucket: string; value: number; risk_band: string }>;
+    denial_recovery_pipeline?: Array<{ month: string; denied_value: number; expected_recovery: number }>;
+    payer_performance?: Array<{
+      payer: string;
+      collection_rate_pct?: number | null;
+      denial_rate_pct?: number | null;
+      avg_days_to_pay?: number | null;
+      ar_exposure?: number | null;
+      risk_score?: number | null;
+      status?: CashCommandStatus;
+    }>;
+    leakage_by_payer?: Array<{
+      payer: string;
+      leakage_amount: number;
+      share_pct?: number | null;
+    }>;
+    cash_gap_to_charges?: number | null;
+    ar_total?: number | null;
+    ar_over_90?: number | null;
+  };
+  actions?: {
+    grouped?: CashCommandGroupedAction[];
+    deadlines_at_risk?: ActionItem[];
+  };
+  data_quality?: {
+    trust_label?: string | null;
+    sources_loaded?: number | null;
+    total_sources?: number | null;
+    generated_at?: string | null;
+    filters_applied?: {
+      date_from?: string | null;
+      date_to?: string | null;
+      payer?: string[];
+      department?: string[];
+      claim_status?: string[];
+    };
+    unsupported_filters?: string[];
+    source_tables?: Array<{ table: string; role: string; loaded: boolean }>;
+    missing_metrics?: Array<{ label: string; reason: string }>;
+    warnings?: string[];
+    limitations?: string[];
+  };
   recoverable_cash_7d?: number | null;
   recoverable_cash_14d?: number | null;
   cash_at_risk?: number | null;
   expected_collections?: number | null;
   top_actions?: ActionItem[];
   expiring_opportunities?: ActionItem[];
+  dashboard?: CashDashboardPayload | null;
 };
 
 // ─── CASH COMMAND (executive dashboard — charts) ─────────────────────────────

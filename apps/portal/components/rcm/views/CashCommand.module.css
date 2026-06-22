@@ -1,0 +1,605 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: var(--oc-gray-900);
+}
+
+.alertStrip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: linear-gradient(135deg, rgba(8, 32, 66, 0.96), rgba(16, 58, 112, 0.9));
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 20px 44px rgba(8, 32, 66, 0.2);
+}
+
+.alertStripCritical {
+  border-left: 4px solid var(--oc-critical);
+}
+
+.alertStripWatch {
+  border-left: 4px solid var(--oc-warning);
+}
+
+.alertStripHealthy {
+  border-left: 4px solid var(--oc-normal);
+}
+
+.alertEyebrow {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.alertMessage {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.alertMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-content: flex-start;
+  justify-content: flex-end;
+}
+
+.metricChip {
+  min-width: 120px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.metricChipLabel {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.metricChipValue {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpiCard {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 30px rgba(31, 56, 100, 0.06);
+}
+
+.kpiCardCritical {
+  border-top: 4px solid rgba(183, 28, 28, 0.9);
+  background: linear-gradient(180deg, rgba(255, 245, 245, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.kpiCardWatch {
+  border-top: 4px solid rgba(194, 117, 0, 0.88);
+  background: linear-gradient(180deg, rgba(255, 248, 236, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.kpiCardHealthy {
+  border-top: 4px solid rgba(0, 105, 92, 0.88);
+  background: linear-gradient(180deg, rgba(242, 250, 248, 0.96), rgba(255, 255, 255, 0.96));
+}
+
+.kpiHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.kpiLabel {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--oc-gray-600);
+}
+
+.statusBadge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.statusCritical {
+  background: var(--oc-critical-bg);
+  color: var(--oc-critical);
+}
+
+.statusWatch {
+  background: var(--oc-warning-bg);
+  color: var(--oc-warning);
+}
+
+.statusHealthy {
+  background: var(--oc-normal-bg);
+  color: var(--oc-normal);
+}
+
+.statusUnknown {
+  background: var(--oc-blue-light);
+  color: var(--oc-navy);
+}
+
+.kpiValue {
+  margin: 0 0 6px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.kpiTarget {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--oc-gray-600);
+}
+
+.kpiInterpretation {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--oc-gray-700);
+}
+
+.sectionCard {
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 36px rgba(31, 56, 100, 0.06);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.sectionEyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--oc-gray-600);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.sectionSubtext {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--oc-gray-600);
+}
+
+.journeyGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.journeyCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 230px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 252, 0.94));
+}
+
+.journeyCard::after {
+  content: "->";
+  position: absolute;
+  right: -12px;
+  top: 24px;
+  font-size: 16px;
+  color: rgba(31, 56, 100, 0.22);
+}
+
+.journeyCard:nth-child(4)::after,
+.journeyCard:last-child::after {
+  content: "";
+}
+
+.journeyNumber {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(31, 56, 100, 0.08);
+  color: var(--oc-navy);
+}
+
+.journeyTitle {
+  margin: 10px 0 4px;
+  font-size: 18px;
+}
+
+.journeyReason {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--oc-gray-600);
+}
+
+.journeyMetrics {
+  display: grid;
+  gap: 10px;
+}
+
+.journeyMetric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.journeyMetricLabel {
+  font-size: 12px;
+  color: var(--oc-gray-600);
+}
+
+.journeyMetricValue {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.riskGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.riskCard {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: linear-gradient(180deg, rgba(244, 247, 252, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.riskLabel {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--oc-gray-600);
+}
+
+.riskAmount {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.riskMeta {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--oc-gray-600);
+}
+
+.chartGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.chartCard {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 32px rgba(31, 56, 100, 0.05);
+}
+
+.span12 {
+  grid-column: span 12;
+}
+
+.span8 {
+  grid-column: span 8;
+}
+
+.span6 {
+  grid-column: span 6;
+}
+
+.span4 {
+  grid-column: span 4;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.chartTitle {
+  margin: 0;
+  font-size: 18px;
+}
+
+.chartNote {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--oc-gray-600);
+}
+
+.chartInterpretation {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--oc-gray-700);
+}
+
+.chartStage {
+  width: 100%;
+  height: 300px;
+}
+
+.payersList,
+.leakageList {
+  display: grid;
+  gap: 12px;
+}
+
+.payerRow,
+.leakageRow {
+  display: grid;
+  gap: 8px;
+}
+
+.payerTop,
+.leakageTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.payerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--oc-gray-600);
+}
+
+.barTrack {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(31, 56, 100, 0.08);
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(28, 82, 155, 0.96), rgba(19, 113, 196, 0.76));
+}
+
+.criticalFill {
+  background: linear-gradient(90deg, rgba(183, 28, 28, 0.96), rgba(218, 92, 92, 0.82));
+}
+
+.watchFill {
+  background: linear-gradient(90deg, rgba(194, 117, 0, 0.94), rgba(239, 183, 56, 0.82));
+}
+
+.healthyFill {
+  background: linear-gradient(90deg, rgba(0, 105, 92, 0.96), rgba(72, 178, 148, 0.82));
+}
+
+.actionsLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+.actionsTableWrap {
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+}
+
+.actionsTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.actionsTable th,
+.actionsTable td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(31, 56, 100, 0.08);
+  text-align: left;
+  vertical-align: top;
+  font-size: 13px;
+}
+
+.actionsTable th {
+  background: rgba(244, 247, 252, 0.92);
+  color: var(--oc-gray-600);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.actionsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.deadlineList {
+  display: grid;
+  gap: 10px;
+}
+
+.deadlineCard {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: linear-gradient(180deg, rgba(255, 248, 248, 0.96), rgba(255, 255, 255, 0.98));
+}
+
+.deadlineTitle {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.deadlineMeta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--oc-gray-600);
+}
+
+.trustDrawer {
+  border-radius: 20px;
+  border: 1px solid rgba(31, 56, 100, 0.08);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 32px rgba(31, 56, 100, 0.05);
+}
+
+.trustSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.trustSummary::-webkit-details-marker {
+  display: none;
+}
+
+.trustGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 14px;
+  padding: 0 20px 20px;
+}
+
+.trustBlock {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(244, 247, 252, 0.92);
+}
+
+.trustList {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: var(--oc-gray-700);
+}
+
+.trustMiniGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.emptyBlock {
+  padding: 28px 20px;
+  border-radius: 18px;
+  border: 1px dashed rgba(31, 56, 100, 0.18);
+  text-align: center;
+  color: var(--oc-gray-600);
+}
+
+@media (max-width: 1400px) {
+  .kpiGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .riskGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .journeyGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .journeyCard::after {
+    content: "";
+  }
+
+  .actionsLayout,
+  .trustGrid,
+  .alertStrip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .span8,
+  .span6,
+  .span4 {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 760px) {
+  .kpiGrid,
+  .journeyGrid,
+  .riskGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionTitle {
+    font-size: 21px;
+  }
+
+  .kpiValue,
+  .riskAmount {
+    font-size: 25px;
+  }
+}
