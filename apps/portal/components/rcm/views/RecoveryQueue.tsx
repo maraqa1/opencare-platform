@@ -151,6 +151,28 @@ function prettyValue(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function formatUnknownValue(value: unknown) {
+  if (value == null) return "All";
+  if (Array.isArray(value)) return value.length > 0 ? value.join(", ") : "All";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "string") return value.trim() ? value : "All";
+  return String(value);
+}
+
+function storyStripSeverityClass(value?: string | null) {
+  switch (value) {
+    case "critical":
+      return styles.storyStripCritical;
+    case "watch":
+      return styles.storyStripWatch;
+    case "healthy":
+      return styles.storyStripHealthy;
+    default:
+      return "";
+  }
+}
+
 function filterChipLabel(key: keyof DraftFilters, value: string) {
   const formatters: Partial<Record<keyof DraftFilters, (raw: string) => string>> = {
     sort_by: prettyValue,
@@ -516,6 +538,30 @@ function DataTrustDrawer({
           </ul>
         </div>
         <div className={styles.drawerSection}>
+          <strong>Filters applied</strong>
+          <ul>
+            {Object.entries(dataQuality?.filters_applied ?? {}).length === 0 ? (
+              <li>No filters applied.</li>
+            ) : (
+              Object.entries(dataQuality?.filters_applied ?? {}).map(([key, value]) => (
+                <li key={key}>{`${prettyValue(key)}: ${formatUnknownValue(value)}`}</li>
+              ))
+            )}
+          </ul>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Metric definitions</strong>
+          <ul>
+            {(dataQuality?.metric_definitions ?? []).length === 0 ? (
+              <li>No metric definitions loaded.</li>
+            ) : (
+              (dataQuality?.metric_definitions ?? []).map((metric) => (
+                <li key={metric.label}>{`${metric.label}: ${metric.definition}`}</li>
+              ))
+            )}
+          </ul>
+        </div>
+        <div className={styles.drawerSection}>
           <strong>Missing metrics</strong>
           <ul>
             {(dataQuality?.missing_metrics ?? []).length === 0 ? (
@@ -574,6 +620,14 @@ function DetailDrawer({
         </div>
         <div className={styles.detailGrid}>
           <div>
+            <span>Priority</span>
+            <strong>{item.priority ?? "Routine"}</strong>
+          </div>
+          <div>
+            <span>Priority score</span>
+            <strong>{item.formatted_priority_score ?? "-"}</strong>
+          </div>
+          <div>
             <span>Payer</span>
             <strong>{item.payer_label ?? "Payer pending"}</strong>
           </div>
@@ -588,6 +642,10 @@ function DetailDrawer({
           <div>
             <span>Expected recovery</span>
             <strong>{item.formatted_expected_recovery ?? "-"}</strong>
+          </div>
+          <div>
+            <span>Effort</span>
+            <strong>{item.formatted_effort_hours ?? item.formatted_effort ?? "-"}</strong>
           </div>
           <div>
             <span>Due date</span>
@@ -608,6 +666,10 @@ function DetailDrawer({
           <div>
             <span>Status</span>
             <strong>{item.status_label ?? "Open"}</strong>
+          </div>
+          <div>
+            <span>Next action</span>
+            <strong>{item.next_action ?? "Review work item"}</strong>
           </div>
         </div>
         <div className={styles.drawerSection}>
@@ -662,6 +724,7 @@ export function RecoveryQueue() {
   const [draftFilters, setDraftFilters] = useState<DraftFilters>(appliedFilters);
   const [selectedItem, setSelectedItem] = useState<RecoveryQueueItem | null>(null);
   const [trustOpen, setTrustOpen] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
 
   useEffect(() => {
     setDraftFilters(appliedFilters);
@@ -679,6 +742,12 @@ export function RecoveryQueue() {
   const { data, loading, error, stale, refetch } =
     useRCMFetch<RecoveryQueuePayload>("recovery-queue", apiParams);
 
+  useEffect(() => {
+    if (!loading) {
+      setIsApplying(false);
+    }
+  }, [loading]);
+
   const queueItems = data?.queue_items ?? data?.items ?? [];
   const groupedQueue = data?.grouped_queue ?? [];
   const currencyCode = data?.currency ?? "SAR";
@@ -693,6 +762,7 @@ export function RecoveryQueue() {
   };
 
   const applyFilters = () => {
+    setIsApplying(true);
     const nextFilters = {
       ...draftFilters,
       group_by:
@@ -711,6 +781,7 @@ export function RecoveryQueue() {
   };
 
   const resetFilters = () => {
+    setIsApplying(true);
     setDraftFilters(DEFAULT_FILTERS);
     router.replace(pathname);
   };
@@ -764,7 +835,7 @@ export function RecoveryQueue() {
 
       {!loading && !error && !data?.meta?.empty && (
         <>
-          <section className={styles.storyStrip}>
+          <section className={`${styles.storyStrip} ${storyStripSeverityClass(data?.headline?.severity)}`}>
             <div>
               <div className={styles.storyHeader}>
                 <span className={styles.storyEyebrow}>Executive Story</span>
@@ -772,6 +843,9 @@ export function RecoveryQueue() {
               </div>
               <p className={styles.storyMessage}>{data?.headline?.message ?? "Recovery queue narrative unavailable."}</p>
               <p className={styles.storyNarrative}>{data?.story ?? "No narrative available."}</p>
+              <button type="button" className={styles.storyAction} onClick={() => setTrustOpen(true)}>
+                Open Data Trust
+              </button>
             </div>
             <div className={styles.storyMetrics}>
               {(data?.headline?.metrics ?? []).map((metric) => (
@@ -916,8 +990,13 @@ export function RecoveryQueue() {
               />
             </div>
             <div className={styles.controlActions}>
-              <button type="button" className={styles.primaryButton} onClick={applyFilters}>
-                Apply filters
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={applyFilters}
+                disabled={loading || isApplying}
+              >
+                {isApplying ? "Applying..." : "Apply filters"}
               </button>
               <button type="button" className={styles.secondaryButton} onClick={resetFilters}>
                 Reset filters

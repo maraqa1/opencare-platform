@@ -384,6 +384,8 @@ export type RecoveryQueuePayload = {
 
 // ─── PAYER CONTROL ───────────────────────────────────────────────────────────
 
+export type RecoveryQueueDataQuality = NonNullable<RecoveryQueuePayload["data_quality"]>;
+
 export type PayerControlItem = {
   payer_id?: string | null;
   gross_billed?: number | null;
