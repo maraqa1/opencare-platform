@@ -511,6 +511,75 @@ class RevenueCycleRouteTests(unittest.TestCase):
         )
         self.assertEqual(payload, {"ok": True})
 
+    def test_recovery_queue_route_delegates_with_filters(self):
+        with patch.object(revenue_cycle_routes, "recovery_queue", return_value={"ok": True}) as mocked:
+            payload = revenue_cycle_routes.revenue_cycle_recovery_queue(
+                payer="PAYER-A",
+                issue_type="payer_underpayment_review",
+                owner="revenue.integrity",
+                priority="high",
+                due_window="Due This Week",
+                min_value="5000",
+                search="CLAIM-001",
+                sort_by="expected_recovery",
+                group_by="issue_type",
+                view="grouped_cards",
+            )
+
+        mocked.assert_called_once_with(
+            {
+                "date_from": None,
+                "date_to": None,
+                "period": None,
+                "facility": None,
+                "payer": "PAYER-A",
+                "department": None,
+                "specialty": None,
+                "patient_type": None,
+                "claim_status": None,
+                "issue_type": "payer_underpayment_review",
+                "owner": "revenue.integrity",
+                "status": None,
+                "priority": "high",
+                "due_window": "Due This Week",
+                "min_value": "5000",
+                "search": "CLAIM-001",
+                "sort_by": "expected_recovery",
+                "group_by": "issue_type",
+                "view": "grouped_cards",
+            }
+        )
+        self.assertEqual(payload, {"ok": True})
+
+    def test_recovery_queue_alias_route_delegates(self):
+        with patch.object(revenue_cycle_routes, "recovery_queue", return_value={"ok": True}) as mocked:
+            payload = revenue_cycle_routes.rcm_recovery_queue(status="assigned", group_by="owner")
+
+        mocked.assert_called_once_with(
+            {
+                "date_from": None,
+                "date_to": None,
+                "period": None,
+                "facility": None,
+                "payer": None,
+                "department": None,
+                "specialty": None,
+                "patient_type": None,
+                "claim_status": None,
+                "issue_type": None,
+                "owner": None,
+                "status": "assigned",
+                "priority": None,
+                "due_window": None,
+                "min_value": None,
+                "search": None,
+                "sort_by": None,
+                "group_by": "owner",
+                "view": None,
+            }
+        )
+        self.assertEqual(payload, {"ok": True})
+
     def test_journey_route_delegates(self):
         with patch.object(revenue_cycle_routes, "journey", return_value={"ok": True}) as mocked:
             payload = revenue_cycle_routes.revenue_cycle_journey(

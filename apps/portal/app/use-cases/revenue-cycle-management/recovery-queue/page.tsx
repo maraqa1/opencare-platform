@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { RecoveryQueue } from "@/components/rcm/views/RecoveryQueue";
 
 export const metadata: Metadata = {
-  title: "Recovery Queue - OpenCare Portal",
+  title: "Recovery Queue - Cash Recovery Execution Board",
 };
 
 export default function RevenueCycleRecoveryQueuePage() {

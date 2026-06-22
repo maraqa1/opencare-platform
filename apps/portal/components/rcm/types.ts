@@ -235,14 +235,151 @@ export type RecoveryQueueItem = ActionItem & {
   owner?: string | null;
   decision_status?: string | null;
   outcome_status?: string | null;
+  claim_ref?: string | null;
+  currency?: string | null;
+  recoverable_value?: number | null;
+  expected_recovery?: number | null;
+  formatted_recoverable_value?: string | null;
+  formatted_expected_recovery?: string | null;
+  formatted_effort?: string | null;
+  formatted_effort_hours?: string | null;
+  formatted_priority_score?: string | null;
+  priority?: string | null;
+  priority_label?: string | null;
+  owner_key?: string | null;
+  owner_label?: string | null;
+  payer?: string | null;
+  payer_label?: string | null;
+  issue_label?: string | null;
+  status_key?: string | null;
+  status_label?: string | null;
+  detected_date?: string | null;
+  days_to_due?: number | null;
+  sla_risk?: string | null;
+  root_cause?: string | null;
+  source_evidence?: string | null;
+  timeline?: Array<{ label?: string; value?: string | null } | string>;
+  next_action?: string | null;
+};
+
+export type RecoveryQueueHeadlineMetric = {
+  label: string;
+  value?: number | null;
+  formatted_value?: string | null;
+};
+
+export type RecoveryQueueKpi = {
+  id: string;
+  label: string;
+  value?: number | null;
+  formatted_value?: string | null;
+  status?: "critical" | "watch" | "healthy" | "unknown" | string;
+  interpretation?: string | null;
+  target_label?: string | null;
+  benchmark?: string | null;
+};
+
+export type RecoveryQueueRollup = {
+  label: string;
+  count?: number | null;
+  recoverable_value?: number | null;
+  expected_recovery?: number | null;
+  effort_hours?: number | null;
+  formatted_value?: string | null;
+  formatted_recoverable_value?: string | null;
+  formatted_expected_recovery?: string | null;
+  formatted_effort_hours?: string | null;
+};
+
+export type RecoveryQueueGroupedCard = {
+  key?: string;
+  group_key?: string;
+  label?: string;
+  group_label?: string;
+  group_by?: string;
+  count?: number;
+  claims?: number;
+  recoverable_value?: number;
+  expected_recovery?: number;
+  effort_hours?: number;
+  formatted_value?: string | null;
+  formatted_recoverable_value?: string | null;
+  formatted_expected_recovery?: string | null;
+  formatted_effort_hours?: string | null;
+  high_priority_items?: number;
+  overdue_items?: number;
+  top_payer?: string | null;
+  top_owner?: string | null;
+  due_pressure?: string | null;
+  priority_mix?: Record<string, number>;
+  sample_items?: Array<{
+    claim_ref?: string | null;
+    recoverable_value?: number | null;
+    expected_recovery?: number | null;
+    priority?: string | null;
+    status?: string | null;
+  }>;
 };
 
 export type RecoveryQueuePayload = {
   as_of?: string | null;
+  generated_at?: string | null;
+  currency?: string | null;
+  period?: {
+    date_from?: string | null;
+    date_to?: string | null;
+    label?: string | null;
+  };
+  filters_applied?: Record<string, unknown>;
   data_freshness?: { seconds?: number | null; status?: string | null };
   meta?: RCMMeta;
+  headline?: {
+    severity?: "critical" | "watch" | "healthy" | "unknown" | string;
+    message?: string | null;
+    metrics?: RecoveryQueueHeadlineMetric[];
+  };
+  story?: string | null;
+  kpis?: RecoveryQueueKpi[];
+  intelligence?: {
+    issue_mix?: RecoveryQueueRollup[];
+    payer_recovery?: RecoveryQueueRollup[];
+    owner_workload?: RecoveryQueueRollup[];
+    due_window?: Array<{
+      label: string;
+      count?: number | null;
+      recoverable_value?: number | null;
+      formatted_value?: string | null;
+      expected_recovery?: number | null;
+      formatted_expected_recovery?: string | null;
+    }>;
+  };
   total?: number;
   items?: RecoveryQueueItem[];
+  queue_items?: RecoveryQueueItem[];
+  grouped_queue?: RecoveryQueueGroupedCard[];
+  filter_options?: Record<string, Array<{ value: string; label: string }>>;
+  data_quality?: {
+    generated_at?: string | null;
+    currency?: string | null;
+    sources_loaded?: number | null;
+    total_sources?: number | null;
+    source_tables?: Array<{ table: string; role?: string; loaded?: boolean }>;
+    filters_applied?: Record<string, unknown>;
+    metric_definitions?: Array<{ label: string; definition: string }>;
+    missing_metrics?: Array<{ label: string; reason: string }>;
+    warnings?: string[];
+    limitations?: string[];
+  };
+  dashboard?: {
+    denial_pipeline?: Array<Record<string, unknown>>;
+    action_cards?: Array<{
+      label: string;
+      amount: number;
+      subtext?: string | null;
+      button_label?: string | null;
+      href?: string | null;
+    }>;
+  } | null;
 };
 
 // ─── PAYER CONTROL ───────────────────────────────────────────────────────────

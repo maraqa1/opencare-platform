@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 type Badge = { label: string; color?: "green" | "amber" | "blue" | "gray" };
 
@@ -18,6 +19,8 @@ export function RCMPageHeader({
   onCFOClick,
   cfoHref,
   cfoLabel = "CFO View",
+  contextLine,
+  actions,
 }: {
   eyebrow?: string;
   title?: string;
@@ -29,6 +32,8 @@ export function RCMPageHeader({
   onCFOClick?: () => void;
   cfoHref?: string;
   cfoLabel?: string;
+  contextLine?: string;
+  actions?: ReactNode;
 }) {
   const arBreached = arDays != null && arDays > arTarget;
 
@@ -60,6 +65,9 @@ export function RCMPageHeader({
           {subtitle && (
             <p style={{ fontSize: 12, color: "var(--oc-gray-600)", margin: 0 }}>{subtitle}</p>
           )}
+          {contextLine && (
+            <p style={{ fontSize: 12, color: "var(--oc-gray-600)", margin: "8px 0 0" }}>{contextLine}</p>
+          )}
           {badges.length > 0 && (
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
               {badges.map((b) => {
@@ -90,6 +98,7 @@ export function RCMPageHeader({
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {actions}
           {arDays != null && (
             <span
               style={{

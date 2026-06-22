@@ -1363,7 +1363,728 @@ def journey(filters: dict[str, Any] | None = None) -> dict[str, Any]:
     return _build_journey_payload(cash_command(filters))
 
 
-def recovery_queue() -> dict[str, Any]:
+RECOVERY_QUEUE_CURRENCY = "SAR"
+RECOVERY_QUEUE_CRITICAL_SCORE_THRESHOLD = 4500.0
+RECOVERY_QUEUE_HIGH_SCORE_THRESHOLD = 3000.0
+RECOVERY_QUEUE_MEDIUM_SCORE_THRESHOLD = 1500.0
+RECOVERY_QUEUE_HIGH_VALUE_THRESHOLD = 50_000.0
+RECOVERY_QUEUE_DUE_PRESSURE_THRESHOLD = 10
+
+
+def _format_queue_currency(value: object) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "-"
+    return f"{RECOVERY_QUEUE_CURRENCY} {numeric_value:,.0f}"
+
+
+def _format_queue_currency_compact(value: object) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "-"
+    absolute_value = abs(numeric_value)
+    if absolute_value >= 1_000_000:
+        return f"{RECOVERY_QUEUE_CURRENCY} {numeric_value / 1_000_000:.1f}M"
+    if absolute_value >= 1_000:
+        return f"{RECOVERY_QUEUE_CURRENCY} {numeric_value / 1_000:.0f}K"
+    return _format_queue_currency(numeric_value)
+
+
+def _format_queue_hours(value: object) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "-"
+    if float(numeric_value).is_integer():
+        return f"{int(numeric_value)}h"
+    return f"{numeric_value:.1f}h"
+
+
+def _format_queue_number(value: object) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "-"
+    if float(numeric_value).is_integer():
+        return f"{int(numeric_value):,}"
+    return f"{numeric_value:,.1f}"
+
+
+def _humanize_token(value: object) -> str:
+    return str(value or "").replace("_", " ").replace("-", " ").title()
+
+
+def _queue_days_to_due(due_date_value: object, status_value: object | None = None) -> int | None:
+    if _lower_text(status_value) in TERMINAL_RECOVERY_STATUSES:
+        return None
+    due_date = _parse_date(due_date_value)
+    if due_date is None:
+        return None
+    return (due_date - date.today()).days
+
+
+def _queue_due_window(due_date_value: object, status_value: object | None = None) -> str:
+    if _lower_text(status_value) in TERMINAL_RECOVERY_STATUSES:
+        return "Closed"
+    days_to_due = _queue_days_to_due(due_date_value, status_value)
+    if days_to_due is None:
+        return "No due date"
+    if days_to_due < 0:
+        return "Overdue"
+    if days_to_due == 0:
+        return "Due Today"
+    if days_to_due <= 7:
+        return "Due This Week"
+    return "Future"
+
+
+def _queue_urgency_multiplier(days_to_due: int | None) -> float:
+    if days_to_due is None:
+        return 1.0
+    if days_to_due < 0:
+        return 2.5
+    if days_to_due == 0:
+        return 2.1
+    if days_to_due <= 2:
+        return 1.8
+    if days_to_due <= 7:
+        return 1.4
+    return 1.0
+
+
+def _queue_priority_score(row: dict[str, Any]) -> float:
+    existing_score = _currency_number(row.get("priority_score"))
+    if existing_score is not None and existing_score > 0:
+        return round(existing_score, 2)
+    expected_recovery = _as_number(row.get("expected_recovery_amount") or row.get("expected_recovery"))
+    effort_hours = _as_number(row.get("effort_hours"))
+    if expected_recovery <= 0 or effort_hours <= 0:
+        return 0.0
+    days_to_due = _queue_days_to_due(row.get("due_date") or row.get("due_at"), row.get("decision_status") or row.get("status"))
+    return round((expected_recovery / effort_hours) * _queue_urgency_multiplier(days_to_due), 2)
+
+
+def _queue_priority_label(recoverable_value: float, priority_score: float, due_window: str) -> str:
+    if (
+        due_window == "Overdue"
+        or recoverable_value >= RECOVERY_QUEUE_HIGH_VALUE_THRESHOLD
+        or priority_score >= RECOVERY_QUEUE_CRITICAL_SCORE_THRESHOLD
+    ):
+        return "Critical"
+    if priority_score >= RECOVERY_QUEUE_HIGH_SCORE_THRESHOLD:
+        return "High"
+    if priority_score >= RECOVERY_QUEUE_MEDIUM_SCORE_THRESHOLD:
+        return "Medium"
+    return "Routine"
+
+
+def _queue_priority_rank(value: object) -> int:
+    mapping = {
+        "critical": 4,
+        "high": 3,
+        "medium": 2,
+        "routine": 1,
+    }
+    return mapping.get(_lower_text(value), 0)
+
+
+def _queue_due_rank(value: object) -> int:
+    mapping = {
+        "overdue": 5,
+        "due today": 4,
+        "due this week": 3,
+        "future": 2,
+        "no due date": 1,
+        "closed": 0,
+    }
+    return mapping.get(_lower_text(value), 0)
+
+
+def _queue_status_label(status: object) -> str:
+    normalized = _lower_text(status)
+    if not normalized:
+        return "Open"
+    return _humanize_token(normalized)
+
+
+def _queue_scope_value(item: dict[str, Any], field: str) -> str:
+    if field == "payer":
+        return _lower_text(item.get("payer_id"))
+    if field == "issue_type":
+        return _lower_text(item.get("issue_type"))
+    if field == "owner":
+        return _lower_text(item.get("owner_key"))
+    if field == "status":
+        return _lower_text(item.get("status_key"))
+    if field == "priority":
+        return _lower_text(item.get("priority"))
+    if field == "due_window":
+        return _lower_text(item.get("sla_risk"))
+    return ""
+
+
+def _queue_sort_items(items: list[dict[str, Any]], sort_by: str) -> list[dict[str, Any]]:
+    def _sort_tuple(item: dict[str, Any]) -> tuple[Any, ...]:
+        if sort_by == "recoverable_value":
+            return (-_as_number(item.get("recoverable_value")), -_as_number(item.get("priority_score")), item.get("claim_ref") or "")
+        if sort_by == "expected_recovery":
+            return (-_as_number(item.get("expected_recovery")), -_as_number(item.get("priority_score")), item.get("claim_ref") or "")
+        if sort_by == "due_date":
+            return (
+                _queue_due_rank(item.get("sla_risk")) * -1,
+                _parse_date(item.get("due_date")) or date.max,
+                -_as_number(item.get("priority_score")),
+            )
+        if sort_by == "effort_hours":
+            return (_as_number(item.get("effort_hours")), -_as_number(item.get("expected_recovery")), item.get("claim_ref") or "")
+        if sort_by == "payer":
+            return (str(item.get("payer_label") or item.get("payer") or ""), -_as_number(item.get("expected_recovery")), item.get("claim_ref") or "")
+        return (-_as_number(item.get("priority_score")), -_as_number(item.get("expected_recovery")), _parse_date(item.get("due_date")) or date.max)
+
+    return sorted(items, key=_sort_tuple)
+
+
+def _queue_group_value(item: dict[str, Any], group_by: str) -> str:
+    if group_by == "issue_type":
+        return str(item.get("issue_type") or "unknown")
+    if group_by == "payer":
+        return str(item.get("payer_id") or "unknown")
+    if group_by == "owner":
+        return str(item.get("owner_key") or "unassigned")
+    if group_by == "due_window":
+        return str(item.get("sla_risk") or "Future")
+    if group_by == "status":
+        return str(item.get("status_key") or "open")
+    return "all"
+
+
+def _queue_group_label(item: dict[str, Any], group_by: str) -> str:
+    if group_by == "issue_type":
+        return str(item.get("issue_label") or "Unknown issue")
+    if group_by == "payer":
+        return str(item.get("payer_label") or "Payer pending")
+    if group_by == "owner":
+        return str(item.get("owner_label") or "Unassigned")
+    if group_by == "due_window":
+        return str(item.get("sla_risk") or "Future")
+    if group_by == "status":
+        return str(item.get("status_label") or "Open")
+    return "All visible items"
+
+
+def _build_recovery_queue_story(
+    total_value: float,
+    due_this_week: int,
+    high_priority_count: int,
+    overdue_count: int,
+    top_issue_label: str | None,
+    top_payer_label: str | None,
+) -> str:
+    issue_segment = top_issue_label or "the current recovery queue"
+    payer_segment = top_payer_label or "the visible payer mix"
+    return (
+        f"Most recoverable value is currently concentrated in {issue_segment} for {payer_segment}. "
+        f"The queue contains {_format_queue_currency_compact(total_value)} of recoverable value, "
+        f"{due_this_week} items are due this week, {high_priority_count} are high priority, and {overdue_count} are overdue."
+    )
+
+
+def _build_recovery_queue_payload(
+    items: list[dict[str, Any]],
+    pipeline_rows: list[dict[str, Any]],
+    filters: dict[str, Any] | None = None,
+    as_of: str | None = None,
+) -> dict[str, Any]:
+    raw_filters = filters or {}
+    issue_filter = _parse_multi_value(raw_filters.get("issue_type"))
+    payer_filter = _parse_multi_value(raw_filters.get("payer"))
+    owner_filter = _parse_multi_value(raw_filters.get("owner"))
+    status_filter = _parse_multi_value(raw_filters.get("status"))
+    priority_filter = _parse_multi_value(raw_filters.get("priority"))
+    due_window_filter = _parse_multi_value(raw_filters.get("due_window"))
+    search_term = _lower_text(raw_filters.get("search"))
+    sort_by = _lower_text(raw_filters.get("sort_by") or "priority_score")
+    group_by = _lower_text(raw_filters.get("group_by") or "issue_type")
+    view_mode = _lower_text(raw_filters.get("view") or "table")
+    min_value = _currency_number(raw_filters.get("min_value"))
+    requested_start = _parse_date(raw_filters.get("date_from"))
+    requested_end = _parse_date(raw_filters.get("date_to"))
+    period_key = _lower_text(raw_filters.get("period"))
+    unsupported_filters = [
+        key
+        for key in ("facility", "specialty", "patient_type", "claim_status")
+        if raw_filters.get(key)
+    ]
+
+    if period_key and requested_start is None and requested_end is None:
+        anchor_end = date.today()
+        if period_key in {"7d", "7days", "7_days"}:
+            requested_start = anchor_end - timedelta(days=6)
+            requested_end = anchor_end
+        elif period_key in {"30d", "30days", "30_days"}:
+            requested_start = anchor_end - timedelta(days=29)
+            requested_end = anchor_end
+        elif period_key in {"90d", "90days", "90_days"}:
+            requested_start = anchor_end - timedelta(days=89)
+            requested_end = anchor_end
+
+    def _within_date_scope(item: dict[str, Any]) -> bool:
+        candidate_date = _parse_date(item.get("detected_date")) or _parse_date(item.get("due_date"))
+        if requested_start and (candidate_date is None or candidate_date < requested_start):
+            return False
+        if requested_end and (candidate_date is None or candidate_date > requested_end):
+            return False
+        return True
+
+    filtered_items = []
+    for item in items:
+        if issue_filter and _queue_scope_value(item, "issue_type") not in issue_filter:
+            continue
+        if payer_filter and _queue_scope_value(item, "payer") not in payer_filter:
+            continue
+        if owner_filter and _queue_scope_value(item, "owner") not in owner_filter:
+            continue
+        if status_filter and _queue_scope_value(item, "status") not in status_filter:
+            continue
+        if priority_filter and _queue_scope_value(item, "priority") not in priority_filter:
+            continue
+        if due_window_filter and _queue_scope_value(item, "due_window") not in due_window_filter:
+            continue
+        if min_value is not None and _as_number(item.get("recoverable_value")) < min_value:
+            continue
+        if search_term:
+            haystack = " ".join(
+                [
+                    str(item.get("claim_ref") or ""),
+                    str(item.get("claim_id") or ""),
+                    str(item.get("encounter_id") or ""),
+                    str(item.get("opportunity_id") or ""),
+                ]
+            ).lower()
+            if search_term not in haystack:
+                continue
+        if not _within_date_scope(item):
+            continue
+        filtered_items.append(item)
+
+    filtered_items = _queue_sort_items(filtered_items, sort_by)
+
+    recoverable_value = sum(_as_number(item.get("recoverable_value")) for item in filtered_items)
+    expected_recovery = sum(_as_number(item.get("expected_recovery")) for item in filtered_items)
+    due_this_week = sum(1 for item in filtered_items if item.get("sla_risk") in {"Due Today", "Due This Week"})
+    overdue_items = sum(1 for item in filtered_items if item.get("sla_risk") == "Overdue")
+    high_priority_items = sum(1 for item in filtered_items if item.get("priority") in {"Critical", "High"})
+    effort_hours = sum(_as_number(item.get("effort_hours")) for item in filtered_items)
+
+    if overdue_items > 0 or (high_priority_items > 0 and due_this_week >= RECOVERY_QUEUE_DUE_PRESSURE_THRESHOLD):
+        severity = "critical"
+    elif due_this_week > 0 or high_priority_items > 0:
+        severity = "watch"
+    else:
+        severity = "healthy"
+
+    issue_rollup: dict[str, dict[str, Any]] = {}
+    payer_rollup: dict[str, dict[str, Any]] = {}
+    owner_rollup: dict[str, dict[str, Any]] = {}
+    due_rollup: dict[str, dict[str, Any]] = {}
+    group_rollup: dict[str, dict[str, Any]] = {}
+
+    for item in filtered_items:
+        issue_key = str(item.get("issue_type") or "unknown")
+        issue_entry = issue_rollup.setdefault(
+            issue_key,
+            {
+                "issue_type": issue_key,
+                "label": item.get("issue_label") or "Unknown issue",
+                "count": 0,
+                "recoverable_value": 0.0,
+                "expected_recovery": 0.0,
+                "effort_hours": 0.0,
+                "high_priority_items": 0,
+            },
+        )
+        issue_entry["count"] += 1
+        issue_entry["recoverable_value"] += _as_number(item.get("recoverable_value"))
+        issue_entry["expected_recovery"] += _as_number(item.get("expected_recovery"))
+        issue_entry["effort_hours"] += _as_number(item.get("effort_hours"))
+        if item.get("priority") in {"Critical", "High"}:
+            issue_entry["high_priority_items"] += 1
+
+        payer_key = str(item.get("payer_id") or "unknown")
+        payer_entry = payer_rollup.setdefault(
+            payer_key,
+            {
+                "payer": payer_key,
+                "label": item.get("payer_label") or "Payer pending",
+                "count": 0,
+                "recoverable_value": 0.0,
+                "expected_recovery": 0.0,
+            },
+        )
+        payer_entry["count"] += 1
+        payer_entry["recoverable_value"] += _as_number(item.get("recoverable_value"))
+        payer_entry["expected_recovery"] += _as_number(item.get("expected_recovery"))
+
+        owner_key = str(item.get("owner_key") or "unassigned")
+        owner_entry = owner_rollup.setdefault(
+            owner_key,
+            {
+                "owner": owner_key,
+                "label": item.get("owner_label") or "Unassigned",
+                "count": 0,
+                "effort_hours": 0.0,
+                "expected_recovery": 0.0,
+            },
+        )
+        owner_entry["count"] += 1
+        owner_entry["effort_hours"] += _as_number(item.get("effort_hours"))
+        owner_entry["expected_recovery"] += _as_number(item.get("expected_recovery"))
+
+        due_key = str(item.get("sla_risk") or "Future")
+        due_entry = due_rollup.setdefault(
+            due_key,
+            {
+                "label": due_key,
+                "count": 0,
+                "recoverable_value": 0.0,
+            },
+        )
+        due_entry["count"] += 1
+        due_entry["recoverable_value"] += _as_number(item.get("recoverable_value"))
+
+        current_group = group_by if group_by in {"issue_type", "payer", "owner", "due_window", "status"} else "issue_type"
+        group_key = _queue_group_value(item, current_group)
+        group_entry = group_rollup.setdefault(
+            group_key,
+            {
+                "key": group_key,
+                "label": _queue_group_label(item, current_group),
+                "group_by": current_group,
+                "count": 0,
+                "recoverable_value": 0.0,
+                "expected_recovery": 0.0,
+                "effort_hours": 0.0,
+                "high_priority_items": 0,
+                "overdue_items": 0,
+                "top_payer": item.get("payer_label") or "Payer pending",
+                "top_owner": item.get("owner_label") or "Unassigned",
+            },
+        )
+        group_entry["count"] += 1
+        group_entry["recoverable_value"] += _as_number(item.get("recoverable_value"))
+        group_entry["expected_recovery"] += _as_number(item.get("expected_recovery"))
+        group_entry["effort_hours"] += _as_number(item.get("effort_hours"))
+        if item.get("priority") in {"Critical", "High"}:
+            group_entry["high_priority_items"] += 1
+        if item.get("sla_risk") == "Overdue":
+            group_entry["overdue_items"] += 1
+
+    issue_mix = sorted(issue_rollup.values(), key=lambda row: row["recoverable_value"], reverse=True)
+    payer_recovery = sorted(payer_rollup.values(), key=lambda row: row["recoverable_value"], reverse=True)
+    owner_workload = sorted(owner_rollup.values(), key=lambda row: (row["count"], row["effort_hours"]), reverse=True)
+    due_window = sorted(due_rollup.values(), key=lambda row: _queue_due_rank(row["label"]), reverse=True)
+    grouped_queue = sorted(group_rollup.values(), key=lambda row: (row["recoverable_value"], row["expected_recovery"]), reverse=True)
+
+    issue_leader = issue_mix[0]["label"] if issue_mix else None
+    payer_leader = payer_recovery[0]["label"] if payer_recovery else None
+
+    queue_story = _build_recovery_queue_story(
+        recoverable_value,
+        due_this_week,
+        high_priority_items,
+        overdue_items,
+        issue_leader,
+        payer_leader,
+    )
+
+    period_candidates = [
+        _parse_date(item.get("detected_date")) or _parse_date(item.get("due_date"))
+        for item in filtered_items
+    ]
+    valid_period_candidates = [candidate for candidate in period_candidates if candidate]
+    period_start = requested_start or (min(valid_period_candidates) if valid_period_candidates else None)
+    period_end = requested_end or (max(valid_period_candidates) if valid_period_candidates else None)
+
+    filter_options = {
+        "issue_type": [
+            {"value": row["issue_type"], "label": row["label"]}
+            for row in sorted(issue_rollup.values(), key=lambda row: row["label"])
+        ],
+        "payer": [
+            {"value": row["payer"], "label": row["label"]}
+            for row in sorted(payer_rollup.values(), key=lambda row: row["label"])
+        ],
+        "owner": [
+            {"value": row["owner"], "label": row["label"]}
+            for row in sorted(owner_rollup.values(), key=lambda row: row["label"])
+        ],
+        "status": [
+            {"value": value, "label": label}
+            for value, label in sorted(
+                {
+                    str(item.get("status_key") or "open"): str(item.get("status_label") or "Open")
+                    for item in filtered_items
+                }.items(),
+                key=lambda pair: pair[1],
+            )
+        ],
+        "priority": [
+            {"value": value, "label": value}
+            for value in ["Critical", "High", "Medium", "Routine"]
+            if any(item.get("priority") == value for item in filtered_items)
+        ],
+        "due_window": [
+            {"value": row["label"], "label": row["label"]}
+            for row in due_window
+        ],
+    }
+
+    source_tables = [
+        {
+            "table": f"{settings.analytics_schema}.fct_cash_recovery_opportunity",
+            "role": "Recoverable value, expected recovery, owner, effort, and due-date backlog.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.analytics_schema}.fct_denials",
+            "role": "Denial recovery queue mix and comparable denial pipeline trends.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.decision_schema}.decision_queue",
+            "role": "Decision workflow status, expected recovery, and action due dates.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.decision_schema}.decision_outcomes",
+            "role": "Measured recovery outcomes for completed actions when available.",
+            "loaded": True,
+        },
+        {
+            "table": f"{settings.decision_schema}.notification_log",
+            "role": "Notification and dispatch evidence for queue action delivery.",
+            "loaded": True,
+        },
+    ]
+
+    kpis = [
+        {
+            "id": "recoverable_queue_value",
+            "label": "Recoverable Queue Value",
+            "value": recoverable_value,
+            "formatted_value": _format_queue_currency_compact(recoverable_value),
+            "status": severity,
+            "interpretation": "Total recoverable value across visible queue items.",
+            "target_label": "Lower is better as actions are worked down.",
+        },
+        {
+            "id": "expected_recovery",
+            "label": "Expected Recovery",
+            "value": expected_recovery,
+            "formatted_value": _format_queue_currency_compact(expected_recovery),
+            "status": "healthy" if expected_recovery >= recoverable_value * 0.75 else "watch",
+            "interpretation": "Expected cash recovery after applying row-level expected recovery values.",
+            "target_label": "Expected recovery should stay close to recoverable value.",
+        },
+        {
+            "id": "due_this_week",
+            "label": "Due This Week",
+            "value": due_this_week,
+            "formatted_value": _format_queue_number(due_this_week),
+            "status": "critical" if due_this_week >= RECOVERY_QUEUE_DUE_PRESSURE_THRESHOLD else ("watch" if due_this_week > 0 else "healthy"),
+            "interpretation": "Actions due within the next 7 days including today.",
+            "target_label": "Target: keep weekly due pressure below 10 items.",
+        },
+        {
+            "id": "overdue_items",
+            "label": "Overdue Items",
+            "value": overdue_items,
+            "formatted_value": _format_queue_number(overdue_items),
+            "status": "critical" if overdue_items > 0 else "healthy",
+            "interpretation": "Items with a due date before today and no terminal status.",
+            "target_label": "Target: 0 overdue items.",
+        },
+        {
+            "id": "high_priority_items",
+            "label": "High Priority Items",
+            "value": high_priority_items,
+            "formatted_value": _format_queue_number(high_priority_items),
+            "status": "critical" if high_priority_items >= RECOVERY_QUEUE_DUE_PRESSURE_THRESHOLD else ("watch" if high_priority_items > 0 else "healthy"),
+            "interpretation": "Rows marked Critical or High by the priority thresholds.",
+            "target_label": "Use with due pressure to sequence work first.",
+        },
+        {
+            "id": "recovery_effort_hours",
+            "label": "Recovery Effort Hours",
+            "value": effort_hours,
+            "formatted_value": _format_queue_hours(effort_hours),
+            "status": "watch" if effort_hours > 0 and expected_recovery / max(effort_hours, 1) < 5_000 else "healthy",
+            "interpretation": "Estimated work effort required across visible queue items.",
+            "target_label": "Higher expected cash per hour indicates better queue quality.",
+        },
+    ]
+
+    filters_applied = {
+        "date_from": _serialize(period_start),
+        "date_to": _serialize(period_end),
+        "period": period_key or None,
+        "payer": sorted(payer_filter) if payer_filter else [],
+        "issue_type": sorted(issue_filter) if issue_filter else [],
+        "owner": sorted(owner_filter) if owner_filter else [],
+        "status": sorted(status_filter) if status_filter else [],
+        "priority": sorted(priority_filter) if priority_filter else [],
+        "due_window": sorted(due_window_filter) if due_window_filter else [],
+        "min_value": min_value,
+        "search": raw_filters.get("search") or None,
+        "sort_by": sort_by,
+        "group_by": group_by,
+        "view": view_mode,
+    }
+
+    pipeline_by_month: dict[str, dict[str, Any]] = {}
+    for row in pipeline_rows:
+        month_label = _month_label(row.get("month_key"))
+        month_entry = pipeline_by_month.setdefault(
+            month_label,
+            {"month": month_label, "Clinical": 0, "Coding": 0, "Eligibility": 0, "Other": 0},
+        )
+        month_entry[str(row.get("category"))] = int(row.get("total_count") or 0)
+
+    return {
+        "generated_at": as_of or _now_iso(),
+        "as_of": as_of or _now_iso(),
+        "currency": RECOVERY_QUEUE_CURRENCY,
+        "period": {
+            "date_from": _serialize(period_start),
+            "date_to": _serialize(period_end),
+            "label": _format_period_label(period_start, period_end, requested_start is None and requested_end is None),
+        },
+        "filters_applied": filters_applied,
+        "data_freshness": {"seconds": 0 if filtered_items else None, "status": "fresh" if filtered_items else "unknown"},
+        "meta": {
+            "use_case": USE_CASE_ID,
+            "section": "recovery-queue",
+            "empty": len(filtered_items) == 0,
+            "message": "No recovery queue items matched the selected filters." if not filtered_items else None,
+        },
+        "headline": {
+            "severity": severity,
+            "message": (
+                f"Active recovery queue contains {_format_queue_currency_compact(recoverable_value)} of recoverable value. "
+                f"{due_this_week} items are due this week, {high_priority_items} are high priority, and {overdue_items} are overdue. "
+                f"The highest ranked actions are concentrated in {issue_leader or 'the visible queue'}."
+            ),
+            "metrics": [
+                {"label": "Recoverable value", "value": recoverable_value, "formatted_value": _format_queue_currency_compact(recoverable_value)},
+                {"label": "Due this week", "value": due_this_week, "formatted_value": _format_queue_number(due_this_week)},
+                {"label": "High priority", "value": high_priority_items, "formatted_value": _format_queue_number(high_priority_items)},
+                {"label": "Overdue", "value": overdue_items, "formatted_value": _format_queue_number(overdue_items)},
+            ],
+        },
+        "story": queue_story,
+        "kpis": kpis,
+        "intelligence": {
+            "issue_mix": [
+                {
+                    **row,
+                    "formatted_value": _format_queue_currency_compact(row["recoverable_value"]),
+                    "formatted_expected_recovery": _format_queue_currency_compact(row["expected_recovery"]),
+                    "formatted_effort_hours": _format_queue_hours(row["effort_hours"]),
+                }
+                for row in issue_mix
+            ],
+            "payer_recovery": [
+                {
+                    **row,
+                    "formatted_value": _format_queue_currency_compact(row["recoverable_value"]),
+                    "formatted_expected_recovery": _format_queue_currency_compact(row["expected_recovery"]),
+                }
+                for row in payer_recovery[:6]
+            ],
+            "owner_workload": [
+                {
+                    **row,
+                    "formatted_effort_hours": _format_queue_hours(row["effort_hours"]),
+                    "formatted_expected_recovery": _format_queue_currency_compact(row["expected_recovery"]),
+                }
+                for row in owner_workload[:6]
+            ],
+            "due_window": [
+                {
+                    **row,
+                    "formatted_value": _format_queue_currency_compact(row["recoverable_value"]),
+                }
+                for row in due_window
+            ],
+        },
+        "queue_items": filtered_items,
+        "grouped_queue": [
+            {
+                **row,
+                "formatted_value": _format_queue_currency_compact(row["recoverable_value"]),
+                "formatted_expected_recovery": _format_queue_currency_compact(row["expected_recovery"]),
+                "formatted_effort_hours": _format_queue_hours(row["effort_hours"]),
+            }
+            for row in grouped_queue
+        ],
+        "filter_options": filter_options,
+        "data_quality": {
+            "generated_at": as_of or _now_iso(),
+            "currency": RECOVERY_QUEUE_CURRENCY,
+            "sources_loaded": sum(1 for row in source_tables if row["loaded"]),
+            "total_sources": len(source_tables),
+            "source_tables": source_tables,
+            "filters_applied": filters_applied,
+            "metric_definitions": [
+                {"label": "Recoverable Queue Value", "definition": "Total recoverable amount across visible queue items."},
+                {"label": "Expected Recovery", "definition": "Visible queue value adjusted by row-level expected recovery estimates."},
+                {"label": "Priority Score", "definition": "Existing backend score when present, otherwise expected recovery per effort hour adjusted by due-date urgency."},
+            ],
+            "missing_metrics": [
+                {
+                    "label": "Recovery probability by payer cohort",
+                    "reason": "No separate payer-risk weighting field is currently exposed on the live recovery opportunity mart.",
+                }
+            ],
+            "warnings": [
+                *(
+                    [
+                        "Unsupported filters were ignored: "
+                        + ", ".join(unsupported_filters)
+                        + ". These dimensions are not exposed on the current recovery queue marts."
+                    ]
+                    if unsupported_filters
+                    else []
+                ),
+            ],
+            "limitations": [
+                "Facility, specialty, patient type, and claim status filters are accepted for contract compatibility but are not available on the current recovery queue mart.",
+                "The queue is ranked with existing backend priority_score when present; otherwise the fallback score uses expected recovery per effort hour adjusted by due-date urgency.",
+            ],
+        },
+        "total": len(filtered_items),
+        "items": filtered_items,
+        "dashboard": {
+            "denial_pipeline": list(pipeline_by_month.values()),
+            "action_cards": [
+                {
+                    "label": issue_leader or "Top recovery focus",
+                    "amount": recoverable_value,
+                    "subtext": queue_story,
+                    "button_label": "View queue",
+                    "href": "/use-cases/revenue-cycle-management/recovery-queue",
+                },
+                {
+                    "label": payer_leader or "Top payer exposure",
+                    "amount": expected_recovery,
+                    "subtext": f"Expected recovery is {_format_queue_currency_compact(expected_recovery)} across the visible queue.",
+                    "button_label": "Open payer control",
+                    "href": "/use-cases/revenue-cycle-management/payer-control",
+                },
+            ],
+        },
+    }
+
+
+def recovery_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
     opportunity_table = qualified_table(settings.analytics_schema, "fct_cash_recovery_opportunity")
     denials_table = qualified_table(settings.analytics_schema, "fct_denials")
     decision_table = qualified_table(settings.decision_schema, "decision_queue")
@@ -1541,79 +2262,68 @@ def recovery_queue() -> dict[str, Any]:
     for row in serialized_rows:
         status = str(row.get("decision_status") or row.get("status") or "open")
         outcome_status = _recovery_outcome_status(status, row.get("measured_at"))
+        recoverable_amount = _as_number(row.get("recoverable_amount"))
+        expected_recovery = _as_number(row.get("expected_recovery_amount") or row.get("expected_recovery"))
+        days_to_due = _queue_days_to_due(row.get("due_date") or row.get("due_at"), status)
+        sla_risk = _queue_due_window(row.get("due_date") or row.get("due_at"), status)
+        priority_score = _queue_priority_score(row)
+        priority = _queue_priority_label(recoverable_amount, priority_score, sla_risk)
+        status_key = _lower_text(status) or "open"
+        owner_key = str(row.get("owner_user_id") or row.get("owner_team") or "unassigned")
+        claim_ref = str(row.get("claim_id") or row.get("opportunity_id") or row.get("encounter_id") or "Unknown")
+        detected_date = row.get("detected_date")
+        due_date = row.get("due_date") or row.get("due_at")
+
+        timeline = []
+        if detected_date:
+            timeline.append({"label": "Detected", "value": detected_date})
+        if due_date:
+            timeline.append({"label": "Due", "value": due_date})
+        if row.get("measured_at"):
+            timeline.append({"label": "Outcome measured", "value": row.get("measured_at")})
+
         items.append(
             {
                 **row,
-                "owner": row.get("owner_user_id") or row.get("owner_team"),
+                "claim_ref": claim_ref,
+                "currency": RECOVERY_QUEUE_CURRENCY,
+                "recoverable_value": recoverable_amount,
+                "expected_recovery": expected_recovery,
+                "formatted_recoverable_value": _format_queue_currency(recoverable_amount),
+                "formatted_expected_recovery": _format_queue_currency(expected_recovery),
+                "formatted_effort": _format_queue_hours(row.get("effort_hours")),
+                "priority_score": priority_score,
+                "formatted_priority_score": f"{priority_score:,.2f}",
+                "priority": priority,
+                "priority_label": priority,
+                "owner": owner_key,
+                "owner_key": owner_key,
+                "owner_label": _humanize_token(owner_key),
+                "payer": row.get("payer_id"),
+                "payer_label": _humanize_token(row.get("payer_id")),
+                "issue_label": _humanize_token(row.get("issue_type")),
+                "status_key": status_key,
+                "status_label": _queue_status_label(status_key),
+                "detected_date": detected_date,
+                "due_date": due_date,
+                "days_to_due": days_to_due,
+                "sla_risk": sla_risk,
+                "root_cause": row.get("issue_reason"),
+                "source_evidence": row.get("evidence_summary"),
+                "timeline": timeline,
                 "notification_status": {
                     "sent_count": row.get("sent_count", 0) or 0,
                     "failed_count": row.get("failed_count", 0) or 0,
                     "skipped_count": row.get("skipped_count", 0) or 0,
                 },
                 "outcome_status": outcome_status,
+                "next_action": _next_step(status, outcome_status),
                 "next_step": _next_step(status, outcome_status),
             }
         )
 
-    as_of = None
-    for item in items:
-        due_date = item.get("due_date")
-        if isinstance(due_date, str):
-            as_of = _now_iso()
-            break
-
-    pipeline_by_month: dict[str, dict[str, Any]] = {}
-    for row in pipeline_rows:
-        month_label = _month_label(row.get("month_key"))
-        month_entry = pipeline_by_month.setdefault(
-            month_label,
-            {"month": month_label, "Clinical": 0, "Coding": 0, "Eligibility": 0, "Other": 0},
-        )
-        month_entry[str(row.get("category"))] = int(row.get("total_count") or 0)
-
-    top_payers = high_value_denials.get("top_payers") if high_value_denials else []
-    if not isinstance(top_payers, list):
-        top_payers = list(top_payers or [])
-
-    timely_due = timely_filing.get("nearest_due_date") if timely_filing else None
-    days_until_due = max((timely_due - date.today()).days, 0) if isinstance(timely_due, date) else 14
-
-    dashboard = {
-        "denial_pipeline": list(pipeline_by_month.values()),
-        "action_cards": [
-            {
-                "label": "High-value denials",
-                "amount": float(high_value_denials.get("amount_at_risk") or 0) if high_value_denials else 0.0,
-                "subtext": f"{int(high_value_denials.get('claim_count') or 0)} claims - {', '.join(top_payers) if top_payers else 'Payer mix pending'} - coding errors",
-                "button_label": "Review",
-                "href": "/use-cases/revenue-cycle-management/recovery-queue",
-            },
-            {
-                "label": "Approaching timely filing",
-                "amount": float(timely_filing.get("exposure_amount") or 0) if timely_filing else 0.0,
-                "subtext": (
-                    f"{int(timely_filing.get('claim_count') or 0)} claims - "
-                    f"Deadline within {days_until_due} days"
-                ),
-                "button_label": "Act",
-                "href": "/use-cases/revenue-cycle-management/leakage",
-            },
-        ],
-    }
-
-    return {
-        "as_of": as_of or _now_iso(),
-        "data_freshness": {"seconds": 0 if items else None, "status": "fresh" if items else "unknown"},
-        "meta": {
-            "use_case": USE_CASE_ID,
-            "section": "recovery-queue",
-            "empty": len(items) == 0,
-            "message": "No revenue cycle data loaded yet" if not items else None,
-        },
-        "total": len(items),
-        "items": items,
-        "dashboard": dashboard,
-    }
+    as_of = _now_iso() if items else None
+    return _build_recovery_queue_payload(items, [_serialize_row(row) for row in pipeline_rows], filters, as_of)
 
 
 def payer_control() -> dict[str, Any]:

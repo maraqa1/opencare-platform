@@ -1,335 +1,976 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { RCMNavTabs } from "../layout/RCMNavTabs";
 import { RCMPageHeader } from "../layout/RCMPageHeader";
-import { KPIGrid } from "../layout/KPIGrid";
-import { StatusPill } from "../shared/StatusPill";
-import { ScorePill } from "../shared/ScorePill";
-import { LoadingView, ErrorView, EmptyView, StaleBanner } from "../shared/ViewStates";
+import { EmptyView, ErrorView, LoadingView, StaleBanner } from "../shared/ViewStates";
 import { useRCMFetch } from "../useRCMFetch";
-import type { RecoveryQueuePayload, RecoveryQueueItem } from "../types";
-import { currency, currencyCompact, shortDate } from "@/lib/format";
-import { priorityScore, scoreBand } from "@/lib/scoring";
-import { issueTypeLabel, ownerLabel, payerLabel, departmentLabel } from "@/lib/displayNames";
+import type {
+  RecoveryQueueDataQuality,
+  RecoveryQueueGroupedCard,
+  RecoveryQueueItem,
+  RecoveryQueueKpi,
+  RecoveryQueuePayload,
+  RecoveryQueueRollup,
+} from "../types";
+import { shortDate, timestamp } from "@/lib/format";
+import styles from "./RecoveryQueue.module.css";
 
-const NEXT_STEPS: Record<string, string> = {
-  late_submission_risk: "Submit claim before filing deadline",
-  denial_coding_error: "Correct CPT/ICD code and resubmit",
-  denial_clinical: "Obtain clinical documentation and appeal",
-  underpayment: "Request EOB and log underpayment dispute",
-  denial_eligibility: "Verify eligibility and resubmit",
-  missing_authorization: "Obtain retroactive authorisation",
-  unbilled_encounter: "Route to charge capture for billing",
+type DraftFilters = {
+  issue_type: string;
+  payer: string;
+  owner: string;
+  status: string;
+  priority: string;
+  due_window: string;
+  min_value: string;
+  search: string;
+  sort_by: string;
+  group_by: string;
+  view: "table" | "grouped_cards";
 };
 
-function isOverdue(dueDate?: string | null) {
-  if (!dueDate) return false;
-  return new Date(dueDate) < new Date(new Date().toDateString());
+const FILTER_KEYS: Array<keyof DraftFilters> = [
+  "issue_type",
+  "payer",
+  "owner",
+  "status",
+  "priority",
+  "due_window",
+  "min_value",
+  "search",
+  "sort_by",
+  "group_by",
+  "view",
+];
+
+const DEFAULT_FILTERS: DraftFilters = {
+  issue_type: "",
+  payer: "",
+  owner: "",
+  status: "",
+  priority: "",
+  due_window: "",
+  min_value: "",
+  search: "",
+  sort_by: "priority_score",
+  group_by: "none",
+  view: "table",
+};
+
+function formatSar(value?: number | null, digits = 0, currencyCode = "SAR") {
+  if (value == null) return "-";
+  return `${currencyCode} ${new Intl.NumberFormat("en-GB", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value)}`;
 }
 
-function daysToDeadline(dueDate?: string | null): number | null {
-  if (!dueDate) return null;
-  const diff = new Date(dueDate).getTime() - new Date().getTime();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+function formatSarCompact(value?: number | null, currencyCode = "SAR") {
+  if (value == null) return "-";
+  const absolute = Math.abs(value);
+  if (absolute >= 1_000_000) return `${currencyCode} ${(value / 1_000_000).toFixed(1)}M`;
+  if (absolute >= 1_000) return `${currencyCode} ${(value / 1_000).toFixed(1)}K`;
+  return formatSar(value, 0, currencyCode);
+}
+
+function formatHours(value?: number | null) {
+  if (value == null) return "-";
+  return `${value.toFixed(1)}h`.replace(".0h", "h");
+}
+
+function formatDaysToDue(value?: number | null) {
+  if (value == null) return "No due date";
+  if (value < 0) return `${Math.abs(value)}d overdue`;
+  if (value === 0) return "Due today";
+  return `${value}d`;
+}
+
+function severityClass(value?: string | null) {
+  switch (value) {
+    case "critical":
+      return `${styles.badge} ${styles.badgeCritical}`;
+    case "watch":
+      return `${styles.badge} ${styles.badgeWatch}`;
+    case "healthy":
+      return `${styles.badge} ${styles.badgeHealthy}`;
+    default:
+      return `${styles.badge} ${styles.badgeNeutral}`;
+  }
+}
+
+function priorityClass(value?: string | null) {
+  switch ((value ?? "").toLowerCase()) {
+    case "critical":
+      return `${styles.badge} ${styles.badgeCritical}`;
+    case "high":
+      return `${styles.badge} ${styles.badgeWatch}`;
+    case "medium":
+      return `${styles.badge} ${styles.badgeInfo}`;
+    default:
+      return `${styles.badge} ${styles.badgeNeutral}`;
+  }
+}
+
+function dueWindowClass(value?: string | null) {
+  switch (value) {
+    case "Overdue":
+      return `${styles.badge} ${styles.badgeCritical}`;
+    case "Due Today":
+    case "Due This Week":
+      return `${styles.badge} ${styles.badgeWatch}`;
+    case "Future":
+      return `${styles.badge} ${styles.badgeHealthy}`;
+    default:
+      return `${styles.badge} ${styles.badgeNeutral}`;
+  }
+}
+
+function statusClass(value?: string | null) {
+  const normalized = (value ?? "").toLowerCase();
+  if (normalized.includes("progress") || normalized.includes("review")) {
+    return `${styles.badge} ${styles.badgeWatch}`;
+  }
+  if (normalized.includes("assign")) {
+    return `${styles.badge} ${styles.badgeInfo}`;
+  }
+  if (normalized.includes("complete") || normalized.includes("close") || normalized.includes("resolve")) {
+    return `${styles.badge} ${styles.badgeHealthy}`;
+  }
+  return `${styles.badge} ${styles.badgeNeutral}`;
+}
+
+function widthPercent(value: number, max: number) {
+  if (!max) return 0;
+  return Math.max(8, Math.min(100, (value / max) * 100));
+}
+
+function prettyValue(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function filterChipLabel(key: keyof DraftFilters, value: string) {
+  const formatters: Partial<Record<keyof DraftFilters, (raw: string) => string>> = {
+    sort_by: prettyValue,
+    group_by: (raw) => (raw === "none" ? "None" : prettyValue(raw)),
+    view: (raw) => (raw === "grouped_cards" ? "Grouped Cards" : "Table"),
+  };
+  const labels: Record<keyof DraftFilters, string> = {
+    issue_type: "Issue",
+    payer: "Payer",
+    owner: "Owner",
+    status: "Status",
+    priority: "Priority",
+    due_window: "Due Window",
+    min_value: "Min Value",
+    search: "Search",
+    sort_by: "Sort",
+    group_by: "Group",
+    view: "View",
+  };
+  const formatter = formatters[key];
+  return `${labels[key]}: ${formatter ? formatter(value) : value}`;
+}
+
+function buildScopeLabel(filters: DraftFilters) {
+  const active = FILTER_KEYS.filter((key) => filters[key] && filters[key] !== DEFAULT_FILTERS[key]);
+  if (active.length === 0) return "All queue items";
+  return active.map((key) => filterChipLabel(key, filters[key])).join(" | ");
+}
+
+function filtersFromSearchParams(searchParams: URLSearchParams): DraftFilters {
+  return {
+    issue_type: searchParams.get("issue_type") ?? "",
+    payer: searchParams.get("payer") ?? "",
+    owner: searchParams.get("owner") ?? "",
+    status: searchParams.get("status") ?? "",
+    priority: searchParams.get("priority") ?? "",
+    due_window: searchParams.get("due_window") ?? "",
+    min_value: searchParams.get("min_value") ?? "",
+    search: searchParams.get("search") ?? "",
+    sort_by: searchParams.get("sort_by") ?? DEFAULT_FILTERS.sort_by,
+    group_by: searchParams.get("group_by") ?? DEFAULT_FILTERS.group_by,
+    view: searchParams.get("view") === "grouped_cards" ? "grouped_cards" : "table",
+  };
+}
+
+function downloadQueueCsv(items: RecoveryQueueItem[]) {
+  const header = [
+    "Claim",
+    "Payer",
+    "Recovery Issue",
+    "Priority",
+    "Recoverable Value",
+    "Expected Recovery",
+    "Effort",
+    "Priority Score",
+    "Owner",
+    "Due Date",
+    "SLA Risk",
+    "Status",
+    "Next Action",
+  ];
+  const rows = items.map((item) => [
+    item.claim_ref ?? "",
+    item.payer_label ?? "",
+    item.issue_label ?? "",
+    item.priority ?? "",
+    item.formatted_recoverable_value ?? "",
+    item.formatted_expected_recovery ?? "",
+    item.formatted_effort_hours ?? "",
+    item.formatted_priority_score ?? "",
+    item.owner_label ?? "",
+    item.due_date ?? "",
+    item.sla_risk ?? "",
+    item.status_label ?? "",
+    item.next_action ?? "",
+  ]);
+  const csv = [header, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll("\"", "\"\"")}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "recovery-queue.csv";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function FilterSelect({
   label,
   value,
-  onChange,
   options,
+  onChange,
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
 }) {
   return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      aria-label={label}
-      style={{
-        padding: "5px 10px",
-        borderRadius: 10,
-        border: "1px solid rgba(31, 56, 100, 0.08)",
-        fontSize: 13,
-        color: "var(--oc-gray-900)",
-        background: "rgba(255,255,255,0.92)",
-        cursor: "pointer",
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      <option value="">{label}</option>
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+    <label className={styles.controlField}>
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">{`All ${label.toLowerCase()}`}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
-function scoreItem(item: RecoveryQueueItem): number {
-  const daysRemaining = daysToDeadline(item.due_date);
-  return priorityScore(
-    item.expected_recovery_amount ?? item.recoverable_amount,
-    item.effort_hours,
-    daysRemaining,
+function KpiCard({ item }: { item: RecoveryQueueKpi }) {
+  return (
+    <article className={styles.kpiCard}>
+      <div className={styles.kpiHeader}>
+        <p className={styles.kpiLabel}>{item.label}</p>
+        <span className={severityClass(item.status)}>{item.status ?? "unknown"}</span>
+      </div>
+      <p className={styles.kpiValue}>{item.formatted_value ?? "-"}</p>
+      <p className={styles.kpiBenchmark}>{item.benchmark ?? item.target_label ?? "No benchmark configured"}</p>
+      <p className={styles.kpiInterpretation}>{item.interpretation ?? "No interpretation available."}</p>
+    </article>
+  );
+}
+
+function RollupList({
+  rows,
+  kind,
+  currencyCode,
+}: {
+  rows: RecoveryQueueRollup[];
+  kind: "issue" | "payer" | "owner";
+  currencyCode: string;
+}) {
+  const maxValue = Math.max(
+    0,
+    ...rows.map((row) =>
+      kind === "owner" ? Number(row.effort_hours ?? 0) : Number(row.expected_recovery ?? 0),
+    ),
+  );
+
+  return (
+    <div className={styles.rollupList}>
+      {rows.map((row) => {
+        const metricValue =
+          kind === "owner" ? Number(row.effort_hours ?? 0) : Number(row.expected_recovery ?? 0);
+        return (
+          <div className={styles.rollupRow} key={row.label}>
+            <div className={styles.rollupTop}>
+              <strong>{row.label}</strong>
+              <span>
+                {kind === "owner"
+                  ? row.formatted_effort_hours ?? formatHours(row.effort_hours)
+                  : row.formatted_expected_recovery ?? formatSarCompact(row.expected_recovery, currencyCode)}
+              </span>
+            </div>
+            <div className={styles.rollupMeta}>
+              <span>{row.count ?? 0} items</span>
+              {kind !== "owner" && (
+                <span>{row.formatted_recoverable_value ?? row.formatted_value ?? formatSarCompact(row.recoverable_value, currencyCode)} recoverable</span>
+              )}
+              {kind === "owner" && (
+                <span>{row.formatted_expected_recovery ?? formatSarCompact(row.expected_recovery, currencyCode)} expected</span>
+              )}
+            </div>
+            <div className={styles.rollupTrack}>
+              <span className={styles.rollupFill} style={{ width: `${widthPercent(metricValue, maxValue)}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DueWindowPanel({
+  rows,
+  currencyCode,
+}: {
+  rows: Array<{ label: string; count?: number | null; recoverable_value?: number | null; formatted_value?: string | null; expected_recovery?: number | null; formatted_expected_recovery?: string | null }>;
+  currencyCode: string;
+}) {
+  const maxCount = Math.max(0, ...rows.map((row) => Number(row.count ?? 0)));
+  return (
+    <div className={styles.rollupList}>
+      {rows.map((row) => (
+        <div className={styles.rollupRow} key={row.label}>
+          <div className={styles.rollupTop}>
+            <strong>{row.label}</strong>
+            <span>{row.count ?? 0}</span>
+          </div>
+          <div className={styles.rollupMeta}>
+            <span>{row.formatted_expected_recovery ?? row.formatted_value ?? formatSarCompact(row.expected_recovery ?? row.recoverable_value, currencyCode)}</span>
+          </div>
+          <div className={styles.rollupTrack}>
+            <span className={styles.rollupFill} style={{ width: `${widthPercent(Number(row.count ?? 0), maxCount)}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TableView({
+  items,
+  onSelect,
+}: {
+  items: RecoveryQueueItem[];
+  onSelect: (item: RecoveryQueueItem) => void;
+}) {
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Claim</th>
+            <th>Payer</th>
+            <th>Recovery Issue</th>
+            <th>Priority</th>
+            <th>Recoverable Value</th>
+            <th>Expected Recovery</th>
+            <th>Effort</th>
+            <th>Priority Score</th>
+            <th>Owner</th>
+            <th>Due Date</th>
+            <th>Days to Due</th>
+            <th>SLA Risk</th>
+            <th>Status</th>
+            <th>Next Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={`${item.claim_ref}-${item.opportunity_id}`} onClick={() => onSelect(item)}>
+              <td>
+                <button type="button" className={styles.rowLink} onClick={() => onSelect(item)}>
+                  {item.claim_ref ?? "--"}
+                </button>
+              </td>
+              <td>{item.payer_label ?? "Payer pending"}</td>
+              <td>{item.issue_label ?? "Issue pending"}</td>
+              <td>
+                <span className={priorityClass(item.priority)}>{item.priority ?? "Routine"}</span>
+              </td>
+              <td>{item.formatted_recoverable_value ?? "-"}</td>
+              <td>{item.formatted_expected_recovery ?? "-"}</td>
+              <td>{item.formatted_effort_hours ?? item.formatted_effort ?? "-"}</td>
+              <td>{item.formatted_priority_score ?? "-"}</td>
+              <td>{item.owner_label ?? "Unassigned"}</td>
+              <td>{item.due_date ? shortDate(item.due_date) : "No due date"}</td>
+              <td>{formatDaysToDue(item.days_to_due)}</td>
+              <td>
+                <span className={dueWindowClass(item.sla_risk)}>{item.sla_risk ?? "No due date"}</span>
+              </td>
+              <td>
+                <span className={statusClass(item.status_label)}>{item.status_label ?? "Open"}</span>
+              </td>
+              <td>{item.next_action ?? "Review work item"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function GroupedCardsView({
+  groups,
+  onSelect,
+}: {
+  groups: RecoveryQueueGroupedCard[];
+  onSelect: (claimRef?: string | null) => void;
+}) {
+  return (
+    <div className={styles.groupGrid}>
+      {groups.map((group) => (
+        <article className={styles.groupCard} key={group.group_key ?? group.key}>
+          <div className={styles.groupTop}>
+            <div>
+              <p className={styles.groupLabel}>{group.group_label ?? group.label}</p>
+              <p className={styles.groupMeta}>{group.claims ?? group.count} claims</p>
+            </div>
+            <span className={styles.groupByPill}>{group.group_by}</span>
+          </div>
+          <div className={styles.groupMetrics}>
+            <div>
+              <span>Recoverable</span>
+              <strong>{group.formatted_recoverable_value ?? group.formatted_value}</strong>
+            </div>
+            <div>
+              <span>Expected</span>
+              <strong>{group.formatted_expected_recovery}</strong>
+            </div>
+            <div>
+              <span>Effort</span>
+              <strong>{group.formatted_effort_hours}</strong>
+            </div>
+          </div>
+          <div className={styles.groupDetails}>
+            <span>{`Top payer: ${group.top_payer ?? "Pending"}`}</span>
+            <span>{`Top owner: ${group.top_owner ?? "Pending"}`}</span>
+            <span>{`Due pressure: ${group.due_pressure ?? "Future"}`}</span>
+          </div>
+          <div className={styles.groupSamples}>
+            {(group.sample_items ?? []).map((sample) => (
+              <button
+                key={`${group.group_key}-${sample.claim_ref}`}
+                type="button"
+                className={styles.sampleRow}
+                onClick={() => onSelect(sample.claim_ref)}
+              >
+                <span>{sample.claim_ref}</span>
+                <span>{sample.priority}</span>
+                <span>{sample.status}</span>
+              </button>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function DataTrustDrawer({
+  open,
+  onClose,
+  dataQuality,
+}: {
+  open: boolean;
+  onClose: () => void;
+  dataQuality?: RecoveryQueueDataQuality;
+}) {
+  if (!open) return null;
+  return (
+    <div className={styles.drawerScrim} onClick={onClose}>
+      <aside className={styles.drawer} onClick={(event) => event.stopPropagation()}>
+        <div className={styles.drawerHeader}>
+          <div>
+            <p className={styles.drawerEyebrow}>Data Trust</p>
+            <h3>Recovery Queue data contract</h3>
+          </div>
+          <button type="button" className={styles.secondaryButton} onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Generated</strong>
+          <span>{timestamp(dataQuality?.generated_at)}</span>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Currency</strong>
+          <span>{dataQuality?.currency ?? "SAR"}</span>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Sources</strong>
+          <ul>
+            {(dataQuality?.source_tables ?? []).map((source) => (
+              <li key={source.table}>{`${source.table} - ${source.role}`}</li>
+            ))}
+          </ul>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Missing metrics</strong>
+          <ul>
+            {(dataQuality?.missing_metrics ?? []).length === 0 ? (
+              <li>No missing metrics reported.</li>
+            ) : (
+              (dataQuality?.missing_metrics ?? []).map((metric) => (
+                <li key={metric.label}>{`${metric.label}: ${metric.reason}`}</li>
+              ))
+            )}
+          </ul>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Warnings</strong>
+          <ul>
+            {(dataQuality?.warnings ?? []).length === 0 ? (
+              <li>No warnings reported.</li>
+            ) : (
+              (dataQuality?.warnings ?? []).map((warning) => <li key={warning}>{warning}</li>)
+            )}
+          </ul>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Known limitations</strong>
+          <ul>
+            {(dataQuality?.limitations ?? []).length === 0 ? (
+              <li>No limitations reported.</li>
+            ) : (
+              (dataQuality?.limitations ?? []).map((limitation) => <li key={limitation}>{limitation}</li>)
+            )}
+          </ul>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function DetailDrawer({
+  item,
+  onClose,
+}: {
+  item: RecoveryQueueItem | null;
+  onClose: () => void;
+}) {
+  if (!item) return null;
+  return (
+    <div className={styles.drawerScrim} onClick={onClose}>
+      <aside className={styles.drawer} onClick={(event) => event.stopPropagation()}>
+        <div className={styles.drawerHeader}>
+          <div>
+            <p className={styles.drawerEyebrow}>Recovery Action Detail</p>
+            <h3>{item.claim_ref ?? "Claim detail"}</h3>
+          </div>
+          <button type="button" className={styles.secondaryButton} onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className={styles.detailGrid}>
+          <div>
+            <span>Payer</span>
+            <strong>{item.payer_label ?? "Payer pending"}</strong>
+          </div>
+          <div>
+            <span>Recovery issue</span>
+            <strong>{item.issue_label ?? "Issue pending"}</strong>
+          </div>
+          <div>
+            <span>Recoverable value</span>
+            <strong>{item.formatted_recoverable_value ?? "-"}</strong>
+          </div>
+          <div>
+            <span>Expected recovery</span>
+            <strong>{item.formatted_expected_recovery ?? "-"}</strong>
+          </div>
+          <div>
+            <span>Due date</span>
+            <strong>{item.due_date ? shortDate(item.due_date) : "No due date"}</strong>
+          </div>
+          <div>
+            <span>SLA risk</span>
+            <strong>{item.sla_risk ?? "No due date"}</strong>
+          </div>
+          <div>
+            <span>Days to due</span>
+            <strong>{formatDaysToDue(item.days_to_due)}</strong>
+          </div>
+          <div>
+            <span>Owner</span>
+            <strong>{item.owner_label ?? "Unassigned"}</strong>
+          </div>
+          <div>
+            <span>Status</span>
+            <strong>{item.status_label ?? "Open"}</strong>
+          </div>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Root cause</strong>
+          <p>{item.root_cause ?? "No root cause narrative loaded for this action."}</p>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Source evidence</strong>
+          <p>{item.source_evidence ?? "No evidence summary loaded."}</p>
+        </div>
+        <div className={styles.drawerSection}>
+          <strong>Timeline</strong>
+          <ul>
+            {(item.timeline ?? []).length === 0 ? (
+              <li>No timeline events loaded.</li>
+            ) : (
+              (item.timeline ?? []).map((entry, index) => (
+                <li key={typeof entry === "string" ? entry : `${entry.label ?? "timeline"}-${entry.value ?? index}`}>
+                  {typeof entry === "string" ? entry : `${entry.label ?? "Event"}: ${entry.value ?? "Unavailable"}`}
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+        <div className={styles.drawerActions}>
+          {["Start action", "Mark in progress", "Add note", "Assign owner", "Open payer control"].map((label) => (
+            <button
+              key={label}
+              type="button"
+              className={styles.disabledButton}
+              disabled
+              title="Action workflow not configured"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className={styles.drawerNote}>Action workflow not configured</p>
+      </aside>
+    </div>
   );
 }
 
 export function RecoveryQueue() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const appliedFilters = useMemo(
+    () => filtersFromSearchParams(new URLSearchParams(searchParams.toString())),
+    [searchParams],
+  );
+  const [draftFilters, setDraftFilters] = useState<DraftFilters>(appliedFilters);
+  const [selectedItem, setSelectedItem] = useState<RecoveryQueueItem | null>(null);
+  const [trustOpen, setTrustOpen] = useState(false);
+
+  useEffect(() => {
+    setDraftFilters(appliedFilters);
+  }, [appliedFilters]);
+
+  const apiParams = useMemo(() => {
+    const entries = Object.entries(appliedFilters).filter(([key, value]) => {
+      if (!value) return false;
+      if (value === DEFAULT_FILTERS[key as keyof DraftFilters]) return false;
+      return true;
+    });
+    return Object.fromEntries(entries);
+  }, [appliedFilters]);
+
   const { data, loading, error, stale, refetch } =
-    useRCMFetch<RecoveryQueuePayload>("recovery-queue");
+    useRCMFetch<RecoveryQueuePayload>("recovery-queue", apiParams);
 
-  const [filterIssue, setFilterIssue] = useState("");
-  const [filterPayer, setFilterPayer] = useState("");
-  const [filterOwner, setFilterOwner] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const queueItems = data?.queue_items ?? data?.items ?? [];
+  const groupedQueue = data?.grouped_queue ?? [];
+  const currencyCode = data?.currency ?? "SAR";
+  const filterOptions = data?.filter_options ?? {};
+  const scopeLabel = buildScopeLabel(appliedFilters);
+  const freshnessLabel = `${data?.data_freshness?.status ?? "unknown"}`;
+  const sourceCount = `${data?.data_quality?.sources_loaded ?? 0}/${data?.data_quality?.total_sources ?? 0}`;
 
-  const items = data?.items ?? [];
+  const selectedFromGroup = (claimRef?: string | null) => {
+    const matched = queueItems.find((item) => item.claim_ref === claimRef) ?? null;
+    setSelectedItem(matched);
+  };
 
-  const issueOptions = useMemo(
-    () =>
-      [...new Set(items.map((item) => item.issue_type).filter(Boolean))].map((value) => ({
-        value: value!,
-        label: issueTypeLabel(value),
-      })),
-    [items],
-  );
-  const payerOptions = useMemo(
-    () =>
-      [...new Set(items.map((item) => item.payer_id).filter(Boolean))].map((value) => ({
-        value: value!,
-        label: payerLabel(value),
-      })),
-    [items],
-  );
-  const ownerOptions = useMemo(
-    () =>
-      [...new Set(items.map((item) => item.owner ?? item.owner_user_id).filter(Boolean))].map((value) => ({
-        value: value!,
-        label: ownerLabel(value),
-      })),
-    [items],
-  );
-  const statusOptions = useMemo(
-    () =>
-      [...new Set(items.map((item) => item.decision_status ?? item.status).filter(Boolean))].map((value) => ({
-        value: value!,
-        label: value!.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
-      })),
-    [items],
-  );
+  const applyFilters = () => {
+    const nextFilters = {
+      ...draftFilters,
+      group_by:
+        draftFilters.view === "grouped_cards" && draftFilters.group_by === "none"
+          ? "issue_type"
+          : draftFilters.group_by,
+    };
+    const params = new URLSearchParams();
+    FILTER_KEYS.forEach((key) => {
+      const value = nextFilters[key];
+      if (value && value !== DEFAULT_FILTERS[key]) {
+        params.set(key, value);
+      }
+    });
+    router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname);
+  };
 
-  const filteredAndScored = useMemo(() => {
-    return items
-      .filter((item) => {
-        if (filterIssue && item.issue_type !== filterIssue) return false;
-        if (filterPayer && item.payer_id !== filterPayer) return false;
-        if (filterOwner && (item.owner ?? item.owner_user_id) !== filterOwner) return false;
-        if (filterStatus && (item.decision_status ?? item.status) !== filterStatus) return false;
-        return true;
-      })
-      .map((item) => ({ ...item, _score: scoreItem(item) }))
-      .sort((left, right) => right._score - left._score);
-  }, [filterIssue, filterOwner, filterPayer, filterStatus, items]);
+  const resetFilters = () => {
+    setDraftFilters(DEFAULT_FILTERS);
+    router.replace(pathname);
+  };
 
-  const overdueCount = items.filter((item) => isOverdue(item.due_date)).length;
-  const dueThisWeek = items.filter((item) => {
-    const daysRemaining = daysToDeadline(item.due_date);
-    return daysRemaining != null && daysRemaining >= 0 && daysRemaining <= 7;
-  }).length;
-  const highPriority = items.filter((item) => scoreBand(scoreItem(item)) === "High").length;
-  const totalQueueValue = items.reduce(
-    (sum, item) => sum + (item.expected_recovery_amount ?? item.recoverable_amount ?? 0),
-    0,
+  const headerActions = (
+    <div className={styles.headerActions}>
+      <button type="button" className={styles.secondaryButton} onClick={() => refetch()}>
+        Refresh
+      </button>
+      <button
+        type="button"
+        className={styles.secondaryButton}
+        onClick={() => downloadQueueCsv(queueItems)}
+        disabled={queueItems.length === 0}
+      >
+        Export queue
+      </button>
+      <button type="button" className={styles.secondaryButton} onClick={() => setTrustOpen(true)}>
+        Open Data Trust
+      </button>
+      <Link href="/use-cases/revenue-cycle-management/cash-command" className={styles.primaryLink}>
+        View Cash Command
+      </Link>
+    </div>
   );
 
   return (
-    <div style={{ fontFamily: "var(--font-body)", color: "var(--oc-gray-900)" }}>
-      <RCMPageHeader subtitle="Ranked operating queue for revenue recovery actions prioritised by expected cash per effort hour." />
-      <RCMNavTabs active="recovery-queue" />
+    <div className={styles.page}>
+      <RCMPageHeader
+        eyebrow="Revenue Cycle Management"
+        title="Recovery Queue - Cash Recovery Execution Board"
+        subtitle="Ranked operating queue for revenue recovery actions prioritised by value, urgency, payer risk, due date, and expected cash per effort hour."
+        contextLine={`Period: ${data?.period?.label ?? "Active scope"} | Scope: ${scopeLabel} | Refreshed: ${timestamp(data?.generated_at ?? data?.as_of)}`}
+        badges={[
+          { label: `Freshness: ${freshnessLabel}`, color: stale ? "amber" : "green" },
+          { label: `Sources loaded: ${sourceCount}`, color: "blue" },
+          { label: `Currency: ${currencyCode}`, color: "gray" },
+        ]}
+        actions={headerActions}
+      />
+      <div className={styles.navWrap}>
+        <RCMNavTabs active="recovery-queue" />
+      </div>
 
       {stale && <StaleBanner />}
-
-      <KPIGrid
-        items={[
-          { label: "TOTAL QUEUE VALUE", value: currencyCompact(totalQueueValue || null) },
-          { label: "OVERDUE ITEMS", value: String(overdueCount), sub: "Require immediate action" },
-          { label: "DUE THIS WEEK", value: String(dueThisWeek), sub: "Items due within 7 days" },
-          { label: "HIGH PRIORITY", value: String(highPriority), sub: "Score >= 3,000" },
-        ]}
-      />
-
       {loading && <LoadingView />}
       {error && <ErrorView message={error} onRetry={refetch} />}
-      {data?.meta?.empty && (
+      {data?.meta?.empty && !loading && !error && (
         <EmptyView message={data.meta.message ?? "The recovery queue will populate when cash opportunities are loaded."} />
       )}
 
       {!loading && !error && !data?.meta?.empty && (
         <>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-            <FilterSelect label="All issue types" options={issueOptions} value={filterIssue} onChange={setFilterIssue} />
-            <FilterSelect label="All payers" options={payerOptions} value={filterPayer} onChange={setFilterPayer} />
-            <FilterSelect label="All owners" options={ownerOptions} value={filterOwner} onChange={setFilterOwner} />
-            <FilterSelect label="All statuses" options={statusOptions} value={filterStatus} onChange={setFilterStatus} />
-            {(filterIssue || filterPayer || filterOwner || filterStatus) && (
-              <button
-                onClick={() => {
-                  setFilterIssue("");
-                  setFilterPayer("");
-                  setFilterOwner("");
-                  setFilterStatus("");
-                }}
-                style={{
-                  padding: "5px 14px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(31, 56, 100, 0.14)",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  background: "var(--oc-white)",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-body)",
-                  color: "var(--oc-gray-600)",
-                }}
-              >
-                Clear filters
+          <section className={styles.storyStrip}>
+            <div>
+              <div className={styles.storyHeader}>
+                <span className={styles.storyEyebrow}>Executive Story</span>
+                <span className={severityClass(data?.headline?.severity)}>{prettyValue(data?.headline?.severity ?? "healthy")}</span>
+              </div>
+              <p className={styles.storyMessage}>{data?.headline?.message ?? "Recovery queue narrative unavailable."}</p>
+              <p className={styles.storyNarrative}>{data?.story ?? "No narrative available."}</p>
+            </div>
+            <div className={styles.storyMetrics}>
+              {(data?.headline?.metrics ?? []).map((metric) => (
+                <div className={styles.metricCard} key={metric.label}>
+                  <span>{metric.label}</span>
+                  <strong>{metric.formatted_value ?? "-"}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.kpiGrid}>
+            {(data?.kpis ?? []).map((item) => (
+              <KpiCard key={item.id} item={item} />
+            ))}
+          </section>
+
+          <section className={styles.intelligenceGrid}>
+            <article className={styles.panelCard}>
+              <div className={styles.panelHeader}>
+                <h3>Recovery Mix by Issue Type</h3>
+                <span>Value + count</span>
+              </div>
+              <RollupList rows={data?.intelligence?.issue_mix ?? []} kind="issue" currencyCode={currencyCode} />
+            </article>
+            <article className={styles.panelCard}>
+              <div className={styles.panelHeader}>
+                <h3>Recovery Value by Payer</h3>
+                <span>Top payers</span>
+              </div>
+              <RollupList rows={data?.intelligence?.payer_recovery ?? []} kind="payer" currencyCode={currencyCode} />
+            </article>
+            <article className={styles.panelCard}>
+              <div className={styles.panelHeader}>
+                <h3>Workload by Owner</h3>
+                <span>Count + effort</span>
+              </div>
+              <RollupList rows={data?.intelligence?.owner_workload ?? []} kind="owner" currencyCode={currencyCode} />
+            </article>
+            <article className={styles.panelCard}>
+              <div className={styles.panelHeader}>
+                <h3>Due Window / SLA Risk</h3>
+                <span>Pressure view</span>
+              </div>
+              <DueWindowPanel rows={data?.intelligence?.due_window ?? []} currencyCode={currencyCode} />
+            </article>
+          </section>
+
+          <section className={styles.controlCard}>
+            <div className={styles.controlsGrid}>
+              <FilterSelect
+                label="Issue Type"
+                value={draftFilters.issue_type}
+                options={filterOptions.issue_type ?? []}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, issue_type: value }))}
+              />
+              <FilterSelect
+                label="Payer"
+                value={draftFilters.payer}
+                options={filterOptions.payer ?? []}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, payer: value }))}
+              />
+              <FilterSelect
+                label="Owner"
+                value={draftFilters.owner}
+                options={filterOptions.owner ?? []}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, owner: value }))}
+              />
+              <FilterSelect
+                label="Status"
+                value={draftFilters.status}
+                options={filterOptions.status ?? []}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, status: value }))}
+              />
+              <FilterSelect
+                label="Priority"
+                value={draftFilters.priority}
+                options={filterOptions.priority ?? []}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, priority: value }))}
+              />
+              <FilterSelect
+                label="Due Window"
+                value={draftFilters.due_window}
+                options={filterOptions.due_window ?? []}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, due_window: value }))}
+              />
+              <label className={styles.controlField}>
+                <span>Minimum Value</span>
+                <input
+                  value={draftFilters.min_value}
+                  onChange={(event) => setDraftFilters((current) => ({ ...current, min_value: event.target.value }))}
+                  placeholder="5000"
+                />
+              </label>
+              <label className={styles.controlField}>
+                <span>Search claim reference</span>
+                <input
+                  value={draftFilters.search}
+                  onChange={(event) => setDraftFilters((current) => ({ ...current, search: event.target.value }))}
+                  placeholder="CLAIM-001"
+                />
+              </label>
+              <FilterSelect
+                label="Sort"
+                value={draftFilters.sort_by}
+                options={[
+                  { value: "priority_score", label: "Priority Score" },
+                  { value: "recoverable_value", label: "Recoverable Value" },
+                  { value: "expected_recovery", label: "Expected Recovery" },
+                  { value: "due_date", label: "Due Date" },
+                  { value: "effort_hours", label: "Effort Hours" },
+                  { value: "payer", label: "Payer" },
+                ]}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, sort_by: value }))}
+              />
+              <FilterSelect
+                label="Group"
+                value={draftFilters.group_by}
+                options={[
+                  { value: "none", label: "None" },
+                  { value: "issue_type", label: "Issue Type" },
+                  { value: "payer", label: "Payer" },
+                  { value: "owner", label: "Owner" },
+                  { value: "due_window", label: "Due Window" },
+                  { value: "status", label: "Status" },
+                ]}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, group_by: value }))}
+              />
+              <FilterSelect
+                label="View"
+                value={draftFilters.view}
+                options={[
+                  { value: "table", label: "Table" },
+                  { value: "grouped_cards", label: "Grouped Cards" },
+                ]}
+                onChange={(value) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    view: value === "grouped_cards" ? "grouped_cards" : "table",
+                  }))
+                }
+              />
+            </div>
+            <div className={styles.controlActions}>
+              <button type="button" className={styles.primaryButton} onClick={applyFilters}>
+                Apply filters
               </button>
+              <button type="button" className={styles.secondaryButton} onClick={resetFilters}>
+                Reset filters
+              </button>
+              <button type="button" className={styles.secondaryButton} onClick={() => refetch()}>
+                Refresh
+              </button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => downloadQueueCsv(queueItems)}
+                disabled={queueItems.length === 0}
+              >
+                Export visible queue
+              </button>
+            </div>
+            <div className={styles.appliedChips}>
+              {FILTER_KEYS.filter(
+                (key) => appliedFilters[key] && appliedFilters[key] !== DEFAULT_FILTERS[key],
+              ).map((key) => (
+                <span className={styles.filterChip} key={key}>
+                  {filterChipLabel(key, appliedFilters[key])}
+                </span>
+              ))}
+              {FILTER_KEYS.every(
+                (key) => !appliedFilters[key] || appliedFilters[key] === DEFAULT_FILTERS[key],
+              ) && <span className={styles.filterChip}>Default executive queue view</span>}
+            </div>
+          </section>
+
+          <section className={styles.sectionCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <p className={styles.sectionEyebrow}>Recovery Actions Story</p>
+                <h3>Ranked queue and grouped recovery patterns</h3>
+                <p className={styles.sectionSubtext}>{data?.story ?? "No recovery queue narrative available."}</p>
+              </div>
+              <div className={styles.sectionMeta}>
+                <span>{`${queueItems.length} visible items`}</span>
+                <span>{formatSarCompact(queueItems.reduce((sum, item) => sum + Number(item.expected_recovery ?? 0), 0), currencyCode)} expected</span>
+              </div>
+            </div>
+            {appliedFilters.view === "grouped_cards" ? (
+              <GroupedCardsView groups={groupedQueue} onSelect={selectedFromGroup} />
+            ) : (
+              <TableView items={queueItems} onSelect={setSelectedItem} />
             )}
-          </div>
-
-          <div
-            style={{
-              background: "rgba(255, 255, 255, 0.92)",
-              border: "1px solid rgba(31, 56, 100, 0.08)",
-              borderRadius: 20,
-              overflow: "auto",
-              boxShadow: "0 18px 40px rgba(31, 56, 100, 0.08)",
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid rgba(31, 56, 100, 0.06)" }}>
-                  {[
-                    { label: "Claim Ref" },
-                    { label: "Payer" },
-                    { label: "Issue Type" },
-                    { label: "Value" },
-                    { label: "Effort" },
-                    {
-                      label: "Score",
-                      title:
-                        "Score = (Expected Recovery / Effort) x Urgency Multiplier. Urgency bands: overdue=2.5x, <=2 days=2.0x, <=7 days=1.5x, <=14 days=1.2x, otherwise 1.0x.",
-                    },
-                    { label: "Owner" },
-                    { label: "Due" },
-                    { label: "Status" },
-                    { label: "Next Step" },
-                  ].map((column) => (
-                    <th
-                      key={column.label}
-                      title={column.title}
-                      style={{
-                        padding: "10px 12px",
-                        textAlign: "left",
-                        fontSize: 10,
-                        fontWeight: 500,
-                        textTransform: "uppercase",
-                        color: "var(--oc-gray-600)",
-                        letterSpacing: "0.05em",
-                        whiteSpace: "nowrap",
-                        cursor: column.title ? "help" : "default",
-                      }}
-                    >
-                      {column.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAndScored.map((item, index) => {
-                  const ref = item.claim_id ?? item.opportunity_id ?? "--";
-                  const overdue = isOverdue(item.due_date);
-                  const nextStep = NEXT_STEPS[item.issue_type ?? ""] ?? item.next_step ?? "Review and action";
-
-                  return (
-                    <tr
-                      key={`${ref}-${index}`}
-                      style={{
-                        borderBottom:
-                          index < filteredAndScored.length - 1 ? "1px solid rgba(31, 56, 100, 0.06)" : "none",
-                        background: overdue ? "var(--oc-critical-bg)" : "transparent",
-                        borderLeft: overdue ? "3px solid var(--oc-critical)" : "3px solid transparent",
-                      }}
-                    >
-                      <td
-                        style={{
-                          padding: "10px 12px",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 12,
-                          color: "var(--oc-navy)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {ref}
-                      </td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{payerLabel(item.payer_id)}</td>
-                      <td style={{ padding: "10px 12px" }}>{issueTypeLabel(item.issue_type)}</td>
-                      <td style={{ padding: "10px 12px", fontWeight: 500 }}>
-                        {currency(item.expected_recovery_amount ?? item.recoverable_amount)}
-                      </td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        {item.effort_hours != null ? `${item.effort_hours}h` : "n/a"}
-                      </td>
-                      <td style={{ padding: "10px 12px" }}>
-                        <ScorePill score={item._score} />
-                      </td>
-                      <td style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>
-                        {ownerLabel(item.owner ?? item.owner_user_id)}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 12px",
-                          whiteSpace: "nowrap",
-                          color: overdue ? "var(--oc-critical)" : "var(--oc-gray-600)",
-                        }}
-                      >
-                        {shortDate(item.due_date)}
-                      </td>
-                      <td style={{ padding: "10px 12px" }}>
-                        <StatusPill status={item.decision_status ?? item.status ?? "open"} />
-                      </td>
-                      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--oc-gray-600)", maxWidth: 180 }}>
-                        {nextStep}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          </section>
         </>
       )}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-        <span
-          style={{
-            padding: "4px 10px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 500,
-            background: "var(--oc-normal-bg)",
-            color: "var(--oc-normal)",
-            border: "1px solid rgba(46, 125, 50, 0.22)",
-          }}
-        >
-          AR Days: 38d (target 40d)
-        </span>
-      </div>
+      <DetailDrawer item={selectedItem} onClose={() => setSelectedItem(null)} />
+      <DataTrustDrawer open={trustOpen} onClose={() => setTrustOpen(false)} dataQuality={data?.data_quality} />
     </div>
   );
 }
