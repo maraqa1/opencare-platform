@@ -349,7 +349,10 @@ class RevenueCycleServiceTests(unittest.TestCase):
         def fake_connect():
             yield Conn()
 
-        with patch.object(revenue_cycle_service, "connect", fake_connect):
+        with (
+            patch.object(revenue_cycle_service, "connect", fake_connect),
+            patch.object(revenue_cycle_service, "ensure_decision_schema", return_value=None),
+        ):
             payload = revenue_cycle_service.recovery_queue()
 
         self.assertEqual(payload["total"], 1)
