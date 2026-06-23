@@ -107,6 +107,82 @@ type DailyLogPayload = {
   decisions: DailyLogDecision[];
 };
 
+const DEMO_DECISIONS: ApiDecision[] = [
+  {
+    id: -1001,
+    entity_name: "Intensive Care Unit",
+    priority: "urgent",
+    priority_score: 96.4,
+    title: "ICU: activate surge capacity",
+    signal_summary: "Occupancy at 100.0%, no beds available, pressure forecast remains above threshold.",
+    decision_summary: "Open 4 overflow beds and redirect non-urgent admissions.",
+    rationale:
+      "The ward has no spare staffed capacity. Creating a small surge buffer prevents admission blocking while discharge review is underway.",
+    confidence_level: "high",
+    confidence_detail: "High confidence: occupancy, staffed beds, and forecast all align.",
+    recommended_actions: [
+      { action: "Notify capacity manager and ICU bed manager", order: 1, completed: false },
+      { action: "Open 4 monitored overflow beds", order: 2, completed: false },
+      { action: "Redirect non-urgent admissions to alternative wards for the next 12 hours", order: 3, completed: false },
+    ],
+    expected_beds_released: 4,
+    expected_occupancy_before: 100,
+    expected_occupancy_after: 82.1,
+    expected_risk_reduction: "Critical -> Warning",
+    status: "recommended",
+    owner_team: "Capacity Command",
+  },
+  {
+    id: -1002,
+    entity_name: "Emergency Observation",
+    priority: "high",
+    priority_score: 88.7,
+    title: "Emergency Observation: accelerate discharge review",
+    signal_summary: "Occupancy at 87.5%, two beds available, admissions outpacing discharges.",
+    decision_summary: "Pull forward discharge-ready reviews and prepare overflow pathway.",
+    rationale:
+      "The ward is not yet critical, but the short-term trend is rising. Early discharge action is lower friction than a later escalation.",
+    confidence_level: "medium",
+    confidence_detail: "Medium confidence: current pressure is visible, forecast trend is watch-level.",
+    recommended_actions: [
+      { action: "Run 11:00 discharge huddle with site manager", order: 1, completed: false },
+      { action: "Confirm transport and pharmacy blockers for discharge-ready patients", order: 2, completed: false },
+      { action: "Prepare overflow pathway if occupancy exceeds 90%", order: 3, completed: false },
+    ],
+    expected_beds_released: 2,
+    expected_occupancy_before: 87.5,
+    expected_occupancy_after: 75,
+    expected_risk_reduction: "Warning -> Normal",
+    status: "assigned",
+    assignee_user: "site_manager",
+    owner_team: "Site Operations",
+  },
+  {
+    id: -1003,
+    entity_name: "Surgical Recovery",
+    priority: "medium",
+    priority_score: 74.2,
+    title: "Surgical Recovery: review elective admission timing",
+    signal_summary: "Occupancy at 83.3%, four beds available, next-day elective load is elevated.",
+    decision_summary: "Review tomorrow's elective list and hold a deferral option for late afternoon.",
+    rationale:
+      "The ward has enough capacity today, but planned intake could remove the buffer if discharge pace slows.",
+    confidence_level: "medium",
+    confidence_detail: "Medium confidence: risk depends on next-day elective volume and morning discharges.",
+    recommended_actions: [
+      { action: "Review elective admissions scheduled for tomorrow", order: 1, completed: false },
+      { action: "Agree deferral threshold with surgical coordinator", order: 2, completed: false },
+      { action: "Recheck bed position after morning discharges", order: 3, completed: false },
+    ],
+    expected_beds_released: 1,
+    expected_occupancy_before: 83.3,
+    expected_occupancy_after: 77.1,
+    expected_risk_reduction: "Warning -> Normal",
+    status: "recommended",
+    owner_team: "Surgical Flow",
+  },
+];
+
 function statusLabel(state: DecisionState) {
   switch (state) {
     case "assigned":
@@ -183,6 +259,17 @@ export function DecisionCards() {
   const [generating, setGenerating] = useState(false);
   const measuredResolved = resolved.filter((item) => item.measurement_status === "measured");
   const pendingResolved = resolved.filter((item) => item.measurement_status === "pending");
+  const usingDemoDecisions = !loading && apiDecisions.length === 0;
+  const decisionsToRender = usingDemoDecisions ? DEMO_DECISIONS : apiDecisions;
+  const displayCounts = usingDemoDecisions
+    ? {
+        recommended: DEMO_DECISIONS.filter((item) => item.status === "recommended").length,
+        assigned: DEMO_DECISIONS.filter((item) => item.status === "assigned").length,
+        in_progress: DEMO_DECISIONS.filter((item) => item.status === "in_progress").length,
+        total_active: DEMO_DECISIONS.length,
+        urgent_count: DEMO_DECISIONS.filter((item) => item.priority === "urgent" || item.priority === "high").length,
+      }
+    : counts;
 
   async function loadDecisions() {
     setLoading(true);
@@ -216,7 +303,7 @@ export function DecisionCards() {
       if (decisionPayload.items?.length) {
         setMessage("Live decision queue loaded from decision.decision_queue.");
       } else {
-        setMessage("No live bed-pressure decisions exist yet. Generate the queue from current forecast and anomaly evidence.");
+        setMessage("No live bed-pressure decisions exist yet. Showing demo decision candidates from seeded ward-pressure evidence.");
       }
     } catch (error) {
       setMessage(error instanceof Error ? `Decision API unavailable: ${error.message}` : "Decision API unavailable.");
@@ -386,22 +473,22 @@ export function DecisionCards() {
       <section className="decision-summary-grid">
         <article className="metric-card">
           <span className="eyebrow">Active Queue</span>
-          <strong>{counts.total_active}</strong>
-          <p>Recommended, assigned, and in-progress decisions currently live.</p>
+          <strong>{displayCounts.total_active}</strong>
+          <p>{usingDemoDecisions ? "Demo candidates available for the walkthrough." : "Recommended, assigned, and in-progress decisions currently live."}</p>
         </article>
         <article className="metric-card">
           <span className="eyebrow">Urgent</span>
-          <strong>{counts.urgent_count}</strong>
+          <strong>{displayCounts.urgent_count}</strong>
           <p>Highest-risk decisions requiring immediate operational action.</p>
         </article>
         <article className="metric-card">
           <span className="eyebrow">Assigned</span>
-          <strong>{counts.assigned}</strong>
+          <strong>{displayCounts.assigned}</strong>
           <p>Items with a named owner and notification trail.</p>
         </article>
         <article className="metric-card">
           <span className="eyebrow">In Progress</span>
-          <strong>{counts.in_progress}</strong>
+          <strong>{displayCounts.in_progress}</strong>
           <p>Actions underway and tracked in the audit log.</p>
         </article>
       </section>
@@ -419,13 +506,31 @@ export function DecisionCards() {
         </div>
       </section>
 
-      {apiDecisions.length ? (
+      {usingDemoDecisions ? (
+        <section className="panel pressure-strip">
+          <div>
+            <p className="eyebrow">Demo Decision Candidates</p>
+            <h3>Seeded for demonstration while the live queue is empty</h3>
+            <p className="section-subtitle">
+              These candidates use the bed-pressure demo evidence so the decision workflow can be shown before the live generator writes rows.
+            </p>
+          </div>
+          <div className="trust-line">
+            <span>Source: seeded ward pressure</span>
+            <span>Actions: preview only</span>
+            <span>Use Generate Live Queue to persist decisions</span>
+          </div>
+        </section>
+      ) : null}
+
+      {decisionsToRender.length ? (
         <section className="decision-stack">
-          {apiDecisions.map((decision, index) => {
+          {decisionsToRender.map((decision, index) => {
             const tone = toneForDecision(decision);
             const state = decision.status;
             const before = Number(decision.expected_occupancy_before ?? 0);
             const after = Number(decision.expected_occupancy_after ?? before);
+            const isDemoDecision = decision.id < 0;
             return (
               <article className={`decision-card ${tone}`} key={decision.id}>
                 <div className="panel-header">
@@ -500,15 +605,15 @@ export function DecisionCards() {
                 <div className="button-row">
                   <button
                     className="button primary"
-                    disabled={state !== "recommended"}
+                    disabled={isDemoDecision || state !== "recommended"}
                     onClick={() => void transitionDecision(decision, "execute-all")}
                     type="button"
                   >
-                    Execute All
+                    {isDemoDecision ? "Preview Only" : "Execute All"}
                   </button>
                   <button
                     className="button primary"
-                    disabled={state !== "assigned" && state !== "in_progress"}
+                    disabled={isDemoDecision || (state !== "assigned" && state !== "in_progress")}
                     onClick={() => void transitionDecision(decision, "complete")}
                     type="button"
                   >
@@ -516,7 +621,7 @@ export function DecisionCards() {
                   </button>
                   <button
                     className="secondary-link"
-                    disabled={state !== "recommended"}
+                    disabled={isDemoDecision || state !== "recommended"}
                     onClick={() => void transitionDecision(decision, "assign")}
                     type="button"
                   >
@@ -524,7 +629,7 @@ export function DecisionCards() {
                   </button>
                   <button
                     className="secondary-link"
-                    disabled={state === "completed" || state === "dismissed" || state === "expired"}
+                    disabled={isDemoDecision || state === "completed" || state === "dismissed" || state === "expired"}
                     onClick={() => void transitionDecision(decision, "start")}
                     type="button"
                   >
@@ -532,13 +637,13 @@ export function DecisionCards() {
                   </button>
                   <button
                     className="secondary-link"
-                    disabled={state === "completed" || state === "dismissed" || state === "expired"}
+                    disabled={isDemoDecision || state === "completed" || state === "dismissed" || state === "expired"}
                     onClick={() => void transitionDecision(decision, "dismiss")}
                     type="button"
                   >
                     Dismiss with Reason
                   </button>
-                  <button className="secondary-link" onClick={() => void toggleDecisionLog(decision)} type="button">
+                  <button className="secondary-link" disabled={isDemoDecision} onClick={() => void toggleDecisionLog(decision)} type="button">
                     {openLogs[decision.id] ? "Hide Decision Log" : "View Decision Log"}
                   </button>
                 </div>
