@@ -528,7 +528,8 @@ export function DecisionQueue() {
   }, [decisionIdParam, decisions]);
 
   useEffect(() => {
-    if (!selectedDecision?.id) {
+    const decisionId = selectedDecision?.id;
+    if (!decisionId) {
       setWorkspace(null);
       return;
     }
@@ -537,7 +538,7 @@ export function DecisionQueue() {
       setWorkspaceLoading(true);
       setWorkspaceError("");
       try {
-        const response = await fetch(`/api/portal/api/v1/rcm/decisions/${selectedDecision.id}`, { cache: "no-store" });
+        const response = await fetch(`/api/portal/api/v1/rcm/decisions/${decisionId}`, { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json() as RCMDecisionWorkspacePayload;
         if (!cancelled) setWorkspace(payload);
