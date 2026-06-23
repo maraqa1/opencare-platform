@@ -404,6 +404,7 @@ function TableView({
             <th>Days to Due</th>
             <th>SLA Risk</th>
             <th>Status</th>
+            <th>Decision</th>
             <th>Next Action</th>
           </tr>
         </thead>
@@ -432,6 +433,21 @@ function TableView({
               </td>
               <td>
                 <span className={statusClass(item.status_label)}>{item.status_label ?? "Open"}</span>
+              </td>
+              <td>
+                {item.decision_id && item.linked_decision_id ? (
+                  <Link
+                    href={`/use-cases/revenue-cycle-management/decision-queue?decision_id=${item.linked_decision_id}`}
+                    className={styles.rowLink}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {item.linked_decision_id}
+                  </Link>
+                ) : item.decision_required ? (
+                  <span className={priorityClass(item.decision_priority)}>{item.can_promote_to_decision ? "Decision required" : "Decision linked"}</span>
+                ) : (
+                  <span className={`${styles.badge} ${styles.badgeNeutral}`}>Routine</span>
+                )}
               </td>
               <td>{item.next_action ?? "Review work item"}</td>
             </tr>
@@ -601,9 +617,11 @@ function DataTrustDrawer({
 function DetailDrawer({
   item,
   onClose,
+  onPromote,
 }: {
   item: RecoveryQueueItem | null;
   onClose: () => void;
+  onPromote: (item: RecoveryQueueItem) => void;
 }) {
   if (!item) return null;
   return (
@@ -681,6 +699,10 @@ function DetailDrawer({
           <p>{item.source_evidence ?? "No evidence summary loaded."}</p>
         </div>
         <div className={styles.drawerSection}>
+          <strong>Governed decision signal</strong>
+          <p>{item.decision_reason ?? "This work item currently stays in the operational backlog and does not need a governed decision."}</p>
+        </div>
+        <div className={styles.drawerSection}>
           <strong>Timeline</strong>
           <ul>
             {(item.timeline ?? []).length === 0 ? (
@@ -695,6 +717,15 @@ function DetailDrawer({
           </ul>
         </div>
         <div className={styles.drawerActions}>
+          {item.decision_id && item.linked_decision_id ? (
+            <Link href={`/use-cases/revenue-cycle-management/decision-queue?decision_id=${item.linked_decision_id}`} className={styles.primaryLink}>
+              Open {item.linked_decision_id}
+            </Link>
+          ) : item.can_promote_to_decision ? (
+            <button type="button" className={styles.primaryButton} onClick={() => onPromote(item)}>
+              Promote to Decision
+            </button>
+          ) : null}
           {["Start action", "Mark in progress", "Add note", "Assign owner", "Open payer control"].map((label) => (
             <button
               key={label}
@@ -725,6 +756,7 @@ export function RecoveryQueue() {
   const [selectedItem, setSelectedItem] = useState<RecoveryQueueItem | null>(null);
   const [trustOpen, setTrustOpen] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [workflowMessage, setWorkflowMessage] = useState("");
 
   useEffect(() => {
     setDraftFilters(appliedFilters);
@@ -763,6 +795,36 @@ export function RecoveryQueue() {
   const selectedFromGroup = (claimRef?: string | null) => {
     const matched = queueItems.find((item) => item.claim_ref === claimRef) ?? null;
     setSelectedItem(matched);
+  };
+
+  const promoteToDecision = async (item: RecoveryQueueItem) => {
+    const sourceId = item.opportunity_id ?? item.claim_ref ?? item.claim_id;
+    if (!sourceId) {
+      setWorkflowMessage("Unable to promote this recovery item because no source id is available.");
+      return;
+    }
+    const response = await fetch(`/api/portal/api/v1/rcm/recovery-items/${encodeURIComponent(sourceId)}/promote`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ performed_by: "portal_user", performed_by_role: "rcm_supervisor" }),
+    });
+    if (!response.ok) {
+      let detail = `HTTP ${response.status}`;
+      try {
+        const payload = await response.json() as { detail?: string };
+        detail = payload.detail ?? detail;
+      } catch {
+        // Keep fallback detail.
+      }
+      setWorkflowMessage(`Decision promotion failed: ${detail}`);
+      return;
+    }
+    const payload = await response.json() as { decision?: { decision_id?: string | null } };
+    setWorkflowMessage(`Promoted ${item.claim_ref ?? sourceId} into the governed Decision Queue.`);
+    refetch();
+    router.push(
+      `/use-cases/revenue-cycle-management/decision-queue${payload.decision?.decision_id ? `?decision_id=${payload.decision.decision_id}` : ""}`,
+    );
   };
 
   const applyFilters = () => {
@@ -834,6 +896,11 @@ export function RecoveryQueue() {
       </div>
 
       {stale && <StaleBanner />}
+      {workflowMessage && (
+        <section className={styles.sectionCard}>
+          <p className={styles.sectionSubtext} style={{ margin: 0 }}>{workflowMessage}</p>
+        </section>
+      )}
       {loading && <LoadingView />}
       {error && <ErrorView message={error} onRetry={refetch} />}
       {data?.meta?.empty && !loading && !error && (
@@ -1055,7 +1122,7 @@ export function RecoveryQueue() {
         </>
       )}
 
-      <DetailDrawer item={selectedItem} onClose={() => setSelectedItem(null)} />
+      <DetailDrawer item={selectedItem} onClose={() => setSelectedItem(null)} onPromote={promoteToDecision} />
       <DataTrustDrawer open={trustOpen} onClose={() => setTrustOpen(false)} dataQuality={data?.data_quality} />
     </div>
   );

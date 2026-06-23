@@ -356,6 +356,79 @@ class RevenueCycleServiceTests(unittest.TestCase):
         self.assertEqual(payload["items"][0]["next_step"], "Complete action or dismiss with reason")
         self.assertEqual(payload["items"][0]["notification_status"]["sent_count"], 1)
 
+    def test_decision_candidate_preview_skips_routine_low_value_item(self):
+        candidate = revenue_cycle_service._decision_candidate_preview(  # type: ignore[attr-defined]
+            {
+                "opportunity_id": "RCM-100",
+                "claim_ref": "CLAIM-100",
+                "issue_type": "follow_up",
+                "issue_label": "Follow Up",
+                "payer_id": "PAYER-A",
+                "payer_label": "Payer A",
+                "expected_recovery": 900.0,
+                "effort_hours": 2.0,
+                "days_to_due": 14,
+                "sla_risk": "Future",
+                "owner_label": "Revenue Integrity",
+                "owner_team": "Revenue Integrity",
+                "source_evidence": "Routine reminder",
+            }
+        )
+
+        self.assertIsNone(candidate)
+
+    def test_decision_candidate_preview_marks_high_value_item_for_approval(self):
+        candidate = revenue_cycle_service._decision_candidate_preview(  # type: ignore[attr-defined]
+            {
+                "opportunity_id": "RCM-200",
+                "claim_ref": "CLAIM-200",
+                "claim_id": "CLAIM-200",
+                "issue_type": "payer_underpayment_review",
+                "issue_label": "Payer Underpayment Review",
+                "payer_id": "PAYER-B",
+                "payer_label": "Payer B",
+                "expected_recovery": 25000.0,
+                "effort_hours": 3.0,
+                "days_to_due": 2,
+                "sla_risk": "Due This Week",
+                "owner_label": "Revenue Integrity",
+                "owner_team": "Revenue Integrity",
+                "root_cause": "Paid below schedule",
+                "source_evidence": "Contract variance found in ledger",
+            }
+        )
+
+        self.assertIsNotNone(candidate)
+        assert candidate is not None
+        self.assertTrue(candidate["approval_required"])
+        self.assertEqual(candidate["decision_type"], "payer_contract_review")
+        self.assertGreater(candidate["decision_score"], 0)
+
+    def test_decision_candidate_preview_handles_zero_effort_hours(self):
+        candidate = revenue_cycle_service._decision_candidate_preview(  # type: ignore[attr-defined]
+            {
+                "opportunity_id": "RCM-300",
+                "claim_ref": "CLAIM-300",
+                "claim_id": "CLAIM-300",
+                "issue_type": "denial_appeal_priority",
+                "issue_label": "Denial Appeal Priority",
+                "payer_id": "PAYER-C",
+                "payer_label": "Payer C",
+                "expected_recovery": 12000.0,
+                "effort_hours": 0.0,
+                "days_to_due": 0,
+                "sla_risk": "Due Today",
+                "owner_label": "Denials Lead",
+                "owner_team": "Denials Management",
+                "source_evidence": "Appeal packet ready",
+            }
+        )
+
+        self.assertIsNotNone(candidate)
+        assert candidate is not None
+        self.assertGreater(candidate["decision_score"], 0)
+        self.assertEqual(candidate["expected_effort_hours"], 0.25)
+
     def test_payer_control_returns_latest_month_summary(self):
         row = {
             "payer_id": "PAYER-A",
@@ -576,6 +649,47 @@ class RevenueCycleRouteTests(unittest.TestCase):
                 "sort_by": None,
                 "group_by": "owner",
                 "view": None,
+            }
+        )
+        self.assertEqual(payload, {"ok": True})
+
+    def test_decision_queue_route_delegates_with_filters(self):
+        with patch.object(revenue_cycle_routes, "decision_queue", return_value={"ok": True}) as mocked:
+            payload = revenue_cycle_routes.rcm_decision_queue(
+                payer="PAYER-A",
+                decision_type="appeal_denial",
+                decision_status="awaiting_review",
+                approval_role="RCM Manager",
+                owner="Payer Relations Team",
+                priority="high",
+                due_window="Due This Week",
+                min_expected_recovery="5000",
+                confidence_min="0.75",
+                search="CLAIM-001",
+                sort_by="confidence",
+            )
+
+        mocked.assert_called_once_with(
+            {
+                "date_from": None,
+                "date_to": None,
+                "period": None,
+                "facility": None,
+                "payer": "PAYER-A",
+                "department": None,
+                "specialty": None,
+                "patient_type": None,
+                "claim_status": None,
+                "decision_type": "appeal_denial",
+                "decision_status": "awaiting_review",
+                "approval_role": "RCM Manager",
+                "owner": "Payer Relations Team",
+                "priority": "high",
+                "due_window": "Due This Week",
+                "min_expected_recovery": "5000",
+                "confidence_min": "0.75",
+                "search": "CLAIM-001",
+                "sort_by": "confidence",
             }
         )
         self.assertEqual(payload, {"ok": True})

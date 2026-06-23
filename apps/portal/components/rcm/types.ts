@@ -260,6 +260,16 @@ export type RecoveryQueueItem = ActionItem & {
   source_evidence?: string | null;
   timeline?: Array<{ label?: string; value?: string | null } | string>;
   next_action?: string | null;
+  decision_id?: number | null;
+  linked_decision_id?: string | null;
+  decision_required?: boolean | null;
+  can_promote_to_decision?: boolean | null;
+  decision_reason?: string | null;
+  recommended_decision_action?: string | null;
+  decision_priority?: string | null;
+  decision_confidence?: number | null;
+  approval_required?: boolean | null;
+  approval_role?: string | null;
 };
 
 export type RecoveryQueueHeadlineMetric = {
@@ -385,6 +395,173 @@ export type RecoveryQueuePayload = {
 // ─── PAYER CONTROL ───────────────────────────────────────────────────────────
 
 export type RecoveryQueueDataQuality = NonNullable<RecoveryQueuePayload["data_quality"]>;
+
+export type RCMDecisionActionState = {
+  enabled: boolean;
+  message?: string | null;
+  reason?: string | null;
+};
+
+export type RCMDecision = {
+  id?: number | null;
+  decision_id?: string | null;
+  source_item_id?: string | null;
+  source_type?: string | null;
+  source_label?: string | null;
+  payer?: string | null;
+  payer_id?: string | null;
+  decision_type?: string | null;
+  decision_type_label?: string | null;
+  recommended_action?: string | null;
+  decision_reason?: string | null;
+  why_now?: string | null;
+  expected_recovery?: number | null;
+  formatted_expected_recovery?: string | null;
+  expected_effort_hours?: number | null;
+  formatted_expected_effort_hours?: string | null;
+  expected_roi_per_hour?: number | null;
+  formatted_expected_roi_per_hour?: string | null;
+  decision_score?: number | null;
+  formatted_decision_score?: string | null;
+  priority?: string | null;
+  priority_label?: string | null;
+  confidence?: number | null;
+  formatted_confidence?: string | null;
+  confidence_detail?: string | null;
+  due_pressure?: string | null;
+  due_at?: string | null;
+  risk_of_inaction?: string | null;
+  approval_required?: boolean | null;
+  approval_role?: string | null;
+  decision_status?: string | null;
+  decision_status_label?: string | null;
+  outcome_status?: string | null;
+  recommended_owner?: string | null;
+  recommended_channel?: string | null;
+  assignee_user?: string | null;
+  assignee_email?: string | null;
+  manual_action_required?: boolean | null;
+  auto_dispatch_eligible?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  dispatched_at?: string | null;
+  closed_at?: string | null;
+  generated_by?: string | null;
+  claim_ref?: string | null;
+  issue_type?: string | null;
+  issue_label?: string | null;
+  root_cause?: string | null;
+  source_evidence?: string | null;
+  timeline?: Array<{ label?: string; value?: string | null } | string>;
+  comparable_case_support?: Array<{
+    case_group?: string | null;
+    success_rate?: number | null;
+    sample_size?: number | null;
+    source?: string | null;
+  }>;
+  scoring_breakdown?: {
+    decision_score?: number | null;
+    priority_score?: number | null;
+    urgency_multiplier?: number | null;
+    policy_weight?: number | null;
+    confidence_weight?: number | null;
+    recoverability_probability?: number | null;
+  };
+  notification_status?: {
+    sent_count?: number | null;
+    failed_count?: number | null;
+    skipped_count?: number | null;
+  };
+  audit_event_count?: number | null;
+  last_log_at?: string | null;
+  available_actions?: Partial<Record<"approve" | "reject" | "revise" | "dispatch" | "escalate" | "note" | "assign", RCMDecisionActionState>>;
+};
+
+export type RCMDecisionQueueDataQuality = {
+  generated_at?: string | null;
+  currency?: string | null;
+  source_tables?: Array<{ table: string; role?: string; loaded?: boolean }>;
+  filters_applied?: Record<string, unknown>;
+  scoring_logic?: string[];
+  decision_thresholds?: Array<{ label: string; value: string }>;
+  confidence_logic?: string[];
+  approval_rules?: string[];
+  missing_fields?: Array<{ label?: string; reason?: string } | string>;
+  warnings?: string[];
+  unsupported_filters?: string[];
+  limitations?: string[];
+};
+
+export type RCMDecisionQueuePayload = {
+  generated_at?: string | null;
+  currency?: string | null;
+  period?: {
+    date_from?: string | null;
+    date_to?: string | null;
+    label?: string | null;
+  };
+  filters_applied?: Record<string, unknown>;
+  data_freshness?: { seconds?: number | null; status?: string | null };
+  meta?: RCMMeta;
+  headline?: {
+    severity?: "critical" | "watch" | "healthy" | "unknown" | string;
+    message?: string | null;
+    decision_count?: number | null;
+    approval_required_count?: number | null;
+    expected_recovery?: number | null;
+    high_confidence_count?: number | null;
+  };
+  kpis?: RecoveryQueueKpi[];
+  decision_mix?: {
+    by_decision_type?: RecoveryQueueRollup[];
+    by_approval_role?: RecoveryQueueRollup[];
+    by_payer?: RecoveryQueueRollup[];
+    by_status?: RecoveryQueueRollup[];
+  };
+  decisions?: RCMDecision[];
+  filter_options?: Record<string, Array<{ value: string; label: string }>>;
+  data_quality?: RCMDecisionQueueDataQuality;
+  outcome_review?: {
+    enabled?: boolean | null;
+    reason?: string | null;
+  };
+};
+
+export type RCMDecisionWorkspacePayload = {
+  generated_at?: string | null;
+  decision?: RCMDecision | null;
+  audit_trail?: Array<{
+    id?: number | null;
+    previous_state?: string | null;
+    new_state?: string | null;
+    action?: string | null;
+    performed_by?: string | null;
+    performed_by_role?: string | null;
+    reason?: string | null;
+    notes?: string | null;
+    metadata?: Record<string, unknown> | null;
+    created_at?: string | null;
+  }>;
+  notifications?: Array<{
+    id?: number | null;
+    notification_type?: string | null;
+    channel?: string | null;
+    recipient_email?: string | null;
+    recipient_team?: string | null;
+    recipient_user?: string | null;
+    subject?: string | null;
+    sent_at?: string | null;
+    delivery_status?: string | null;
+    error_message?: string | null;
+  }>;
+  outcome_review?: {
+    enabled?: boolean | null;
+    reason?: string | null;
+    [key: string]: unknown;
+  } | null;
+};
 
 export type PayerControlItem = {
   payer_id?: string | null;

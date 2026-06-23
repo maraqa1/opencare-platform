@@ -8,9 +8,11 @@ from uuid import UUID
 
 from psycopg import sql
 from psycopg.errors import UndefinedColumn, UndefinedTable
+from psycopg.types.json import Jsonb
 
 from app.config import settings
 from app.db import connect, qualified_table
+from app.services.decision_service import ensure_decision_schema
 
 
 USE_CASE_ID = "revenue_cycle_management"
@@ -34,6 +36,10 @@ def _serialize(value: object) -> object:
 
 def _serialize_row(row: dict[str, Any]) -> dict[str, Any]:
     return {key: _serialize(value) for key, value in dict(row).items()}
+
+
+def _json(value: object) -> object:
+    return Jsonb(value)
 
 
 def _now_iso() -> str:
@@ -1369,6 +1375,702 @@ RECOVERY_QUEUE_HIGH_SCORE_THRESHOLD = 3000.0
 RECOVERY_QUEUE_MEDIUM_SCORE_THRESHOLD = 1500.0
 RECOVERY_QUEUE_HIGH_VALUE_THRESHOLD = 50_000.0
 RECOVERY_QUEUE_DUE_PRESSURE_THRESHOLD = 10
+RCM_DECISION_ACTIVE_STATUSES = ("recommended", "awaiting_review", "approved", "revised", "dispatched", "in_progress")
+RCM_DECISION_VISIBLE_STATUSES = RCM_DECISION_ACTIVE_STATUSES + ("measured",)
+RCM_DECISION_TERMINAL_STATUSES = ("rejected", "closed")
+RCM_DECISION_MIN_EXPECTED_RECOVERY = 3_000.0
+RCM_DECISION_HIGH_VALUE_THRESHOLD = 15_000.0
+RCM_DECISION_APPROVAL_THRESHOLD = 20_000.0
+RCM_DECISION_MIN_CONFIDENCE = 0.58
+RCM_DECISION_HIGH_CONFIDENCE = 0.75
+RCM_DECISION_AUTO_DISPATCH_THRESHOLD = 6_000.0
+
+
+def _decision_display_id(value: object) -> str:
+    try:
+        return f"DEC-{int(value):04d}"
+    except (TypeError, ValueError):
+        return str(value or "DEC-0000")
+
+
+def _decision_status_label(value: object) -> str:
+    return _humanize_token(value or "recommended")
+
+
+def _decision_transition_allowed(current_status: str, action: str) -> bool:
+    status = _lower_text(current_status)
+    if status in RCM_DECISION_TERMINAL_STATUSES:
+        return False
+    allowed_transitions = {
+        "approve": {"recommended", "awaiting_review", "revised"},
+        "reject": set(RCM_DECISION_VISIBLE_STATUSES),
+        "revise": {"recommended", "awaiting_review", "approved"},
+        "dispatch": {"recommended", "awaiting_review", "approved", "revised"},
+        "escalate": set(RCM_DECISION_VISIBLE_STATUSES),
+        "note": set(RCM_DECISION_VISIBLE_STATUSES) | set(RCM_DECISION_TERMINAL_STATUSES),
+        "assign": set(RCM_DECISION_VISIBLE_STATUSES),
+    }
+    return status in allowed_transitions.get(action, set())
+
+
+def _decision_source_type(item: dict[str, Any]) -> str:
+    issue_type = _lower_text(item.get("issue_type") or item.get("issue_label"))
+    if "denial" in issue_type:
+        return "denial"
+    if "underpayment" in issue_type:
+        return "underpayment_item"
+    if "aged" in issue_type or "ar" in issue_type:
+        return "aged_ar_item"
+    if "documentation" in issue_type:
+        return "documentation_hold"
+    if "payer" in issue_type:
+        return "payer_dispute"
+    return "claim"
+
+
+def _decision_type(item: dict[str, Any]) -> str:
+    issue_type = _lower_text(item.get("issue_type") or item.get("issue_label"))
+    owner_missing = not (item.get("owner_user_id") or item.get("owner_team") or item.get("owner"))
+    expected_recovery = _as_number(item.get("expected_recovery"))
+    due_pressure = str(item.get("sla_risk") or "Future")
+
+    if owner_missing:
+        return "assign_owner"
+    if "denial" in issue_type:
+        return "appeal_denial"
+    if "late_submission" in issue_type:
+        return "resubmit_claim"
+    if "underpayment" in issue_type:
+        return "payer_contract_review" if expected_recovery >= RCM_DECISION_MIN_EXPECTED_RECOVERY else "assign_owner"
+    if "aged" in issue_type or "ar" in issue_type:
+        return "manager_review"
+    if "documentation" in issue_type:
+        return "request_documentation"
+    if due_pressure in {"Overdue", "Due Today"}:
+        return "manager_review"
+    return "assign_owner"
+
+
+def _decision_recommended_action(decision_type: str) -> str:
+    mapping = {
+        "assign_owner": "Assign accountable owner",
+        "appeal_denial": "Appeal denial",
+        "resubmit_claim": "Resubmit claim before filing window closes",
+        "escalate_payer": "Escalate payer dispute",
+        "writeoff_review": "Review write-off exposure",
+        "request_documentation": "Request supporting documentation",
+        "manager_review": "Route for manager review",
+        "payer_contract_review": "Route contract variance review",
+    }
+    return mapping.get(decision_type, "Review recovery decision")
+
+
+def _decision_action_plan(decision_type: str) -> list[dict[str, Any]]:
+    plans = {
+        "assign_owner": [
+            {"order": 1, "action": "Confirm accountable owner", "completed": False},
+            {"order": 2, "action": "Route item into recovery workqueue", "completed": False},
+        ],
+        "appeal_denial": [
+            {"order": 1, "action": "Validate denial packet and filing window", "completed": False},
+            {"order": 2, "action": "Submit payer appeal", "completed": False},
+        ],
+        "resubmit_claim": [
+            {"order": 1, "action": "Correct claim exception", "completed": False},
+            {"order": 2, "action": "Resubmit claim", "completed": False},
+        ],
+        "request_documentation": [
+            {"order": 1, "action": "Request missing documentation", "completed": False},
+            {"order": 2, "action": "Re-evaluate claim readiness", "completed": False},
+        ],
+        "payer_contract_review": [
+            {"order": 1, "action": "Validate contract variance", "completed": False},
+            {"order": 2, "action": "Escalate to payer relations lead", "completed": False},
+        ],
+        "manager_review": [
+            {"order": 1, "action": "Review evidence and routing", "completed": False},
+            {"order": 2, "action": "Approve next intervention", "completed": False},
+        ],
+    }
+    return plans.get(decision_type, [{"order": 1, "action": "Review decision", "completed": False}])
+
+
+def _decision_recommended_owner(decision_type: str, item: dict[str, Any]) -> str:
+    mapping = {
+        "assign_owner": item.get("owner_label") or item.get("owner_team") or "Revenue Recovery Team",
+        "appeal_denial": "Payer Relations Team",
+        "resubmit_claim": "Claims Submission Team",
+        "request_documentation": "Clinical Documentation Team",
+        "payer_contract_review": "Payer Relations Lead",
+        "manager_review": "RCM Manager",
+        "writeoff_review": "CFO Delegate",
+        "escalate_payer": "Payer Relations Lead",
+    }
+    return str(mapping.get(decision_type, "Revenue Recovery Team"))
+
+
+def _decision_recommended_channel(decision_type: str) -> str:
+    mapping = {
+        "assign_owner": "Revenue Recovery Workqueue",
+        "appeal_denial": "Payer Workqueue",
+        "resubmit_claim": "Claims Workqueue",
+        "request_documentation": "Clinical Review Queue",
+        "payer_contract_review": "Supervisor Review",
+        "manager_review": "Supervisor Review",
+        "writeoff_review": "Executive Review",
+        "escalate_payer": "Payer Escalation Queue",
+    }
+    return mapping.get(decision_type, "Revenue Recovery Workqueue")
+
+
+def _decision_recoverability_probability(decision_type: str) -> float:
+    mapping = {
+        "assign_owner": 0.64,
+        "appeal_denial": 0.74,
+        "resubmit_claim": 0.67,
+        "request_documentation": 0.69,
+        "payer_contract_review": 0.78,
+        "manager_review": 0.62,
+        "writeoff_review": 0.45,
+        "escalate_payer": 0.58,
+    }
+    return mapping.get(decision_type, 0.60)
+
+
+def _decision_policy_weight(decision_type: str, due_pressure: str) -> float:
+    mapping = {
+        "assign_owner": 1.00,
+        "appeal_denial": 1.18,
+        "resubmit_claim": 1.22,
+        "request_documentation": 1.08,
+        "payer_contract_review": 1.20,
+        "manager_review": 1.25,
+        "writeoff_review": 1.35,
+        "escalate_payer": 1.15,
+    }
+    weight = mapping.get(decision_type, 1.00)
+    if due_pressure in {"Overdue", "Due Today"}:
+        return round(weight + 0.05, 2)
+    return weight
+
+
+def _decision_confidence(item: dict[str, Any], decision_type: str, recoverability_probability: float) -> float:
+    confidence = recoverability_probability
+    if item.get("source_evidence"):
+        confidence += 0.08
+    if item.get("root_cause"):
+        confidence += 0.03
+    if item.get("owner_label") or item.get("owner_team"):
+        confidence += 0.04
+    if str(item.get("sla_risk") or "") in {"Overdue", "Due Today", "Due This Week"}:
+        confidence += 0.04
+    if _as_number(item.get("expected_recovery")) >= RCM_DECISION_HIGH_VALUE_THRESHOLD:
+        confidence += 0.04
+    if _as_number(item.get("effort_hours")) <= 2:
+        confidence += 0.03
+    if decision_type == "assign_owner":
+        confidence -= 0.04
+    return round(max(0.45, min(0.95, confidence)), 2)
+
+
+def _decision_confidence_weight(confidence: float) -> float:
+    return round(0.80 + (confidence * 0.50), 2)
+
+
+def _decision_priority(decision_score: float, due_pressure: str, approval_required: bool) -> str:
+    if due_pressure in {"Overdue", "Due Today"} or decision_score >= RECOVERY_QUEUE_CRITICAL_SCORE_THRESHOLD:
+        return "Critical"
+    if approval_required or decision_score >= RECOVERY_QUEUE_HIGH_SCORE_THRESHOLD:
+        return "High"
+    if decision_score >= RECOVERY_QUEUE_MEDIUM_SCORE_THRESHOLD:
+        return "Medium"
+    return "Routine"
+
+
+def _decision_approval(decision_type: str, item: dict[str, Any]) -> tuple[bool, str | None]:
+    expected_recovery = _as_number(item.get("expected_recovery"))
+    due_pressure = str(item.get("sla_risk") or "Future")
+    owner_missing = not (item.get("owner_user_id") or item.get("owner_team") or item.get("owner"))
+    if expected_recovery >= RECOVERY_QUEUE_HIGH_VALUE_THRESHOLD:
+        return True, "CFO Delegate"
+    if decision_type == "payer_contract_review":
+        return True, "Payer Relations Lead"
+    if decision_type in {"manager_review", "writeoff_review"}:
+        return True, "RCM Manager"
+    if owner_missing:
+        return True, "Revenue Integrity Manager"
+    if due_pressure in {"Overdue", "Due Today"} and expected_recovery >= RCM_DECISION_MIN_EXPECTED_RECOVERY:
+        return True, "Revenue Integrity Manager"
+    if expected_recovery >= RCM_DECISION_APPROVAL_THRESHOLD:
+        return True, "RCM Manager"
+    return False, None
+
+
+def _decision_risk_of_inaction(decision_type: str, item: dict[str, Any]) -> str:
+    due_pressure = str(item.get("sla_risk") or "Future")
+    issue_label = item.get("issue_label") or item.get("issue_type") or "recovery item"
+    if decision_type == "appeal_denial":
+        return "Appeal window may close and denied cash may become unrecoverable."
+    if decision_type == "resubmit_claim":
+        return "Timely filing exposure may lock the claim out of payer recovery."
+    if decision_type == "payer_contract_review":
+        return "Contract variance may continue to leak cash if the payer route is not authorised."
+    if due_pressure in {"Overdue", "Due Today"}:
+        return f"{issue_label} is already under immediate due pressure and may miss its intervention window."
+    return f"{issue_label} may continue aging without a governed routing decision."
+
+
+def _decision_comparable_case_support(decision_type: str, item: dict[str, Any], recoverability_probability: float) -> list[dict[str, Any]]:
+    sample_sizes = {
+        "assign_owner": 16,
+        "appeal_denial": 42,
+        "resubmit_claim": 27,
+        "request_documentation": 24,
+        "payer_contract_review": 31,
+        "manager_review": 18,
+        "writeoff_review": 12,
+        "escalate_payer": 21,
+    }
+    return [
+        {
+            "case_group": f"Seeded {str(item.get('issue_label') or item.get('issue_type') or decision_type).replace('_', ' ')} interventions",
+            "success_rate": round(recoverability_probability, 2),
+            "sample_size": sample_sizes.get(decision_type, 12),
+            "source": "seeded_benchmark_until_rcm_outcomes_accumulate",
+        }
+    ]
+
+
+def _decision_reason(item: dict[str, Any], decision_type: str, approval_required: bool, confidence: float) -> str:
+    reasons: list[str] = []
+    if _as_number(item.get("expected_recovery")) >= RCM_DECISION_HIGH_VALUE_THRESHOLD:
+        reasons.append("high expected recovery")
+    if str(item.get("sla_risk") or "") in {"Overdue", "Due Today", "Due This Week"}:
+        reasons.append(f"due pressure is {item.get('sla_risk')}")
+    if approval_required:
+        reasons.append("approval is required")
+    if not (item.get("owner_label") or item.get("owner_team")):
+        reasons.append("owner assignment is missing")
+    if confidence >= RCM_DECISION_HIGH_CONFIDENCE:
+        reasons.append("evidence confidence is high")
+    if not reasons:
+        reasons.append("the recommendation changes routing or escalation, not just work order")
+    return (
+        f"{_decision_recommended_action(decision_type)} because "
+        + ", ".join(reasons[:-1] + [reasons[-1]])
+        + "."
+    )
+
+
+def _decision_candidate_preview(item: dict[str, Any], force: bool = False) -> dict[str, Any] | None:
+    status = _lower_text(item.get("status") or item.get("decision_status"))
+    if status in TERMINAL_RECOVERY_STATUSES:
+        return None
+
+    expected_recovery = _as_number(item.get("expected_recovery"))
+    effort_hours = max(_as_number(item.get("effort_hours")), 0.25)
+    if expected_recovery <= 0:
+        return None
+
+    decision_type = _decision_type(item)
+    recoverability_probability = _decision_recoverability_probability(decision_type)
+    due_pressure = str(item.get("sla_risk") or "Future")
+    policy_weight = _decision_policy_weight(decision_type, due_pressure)
+    confidence = _decision_confidence(item, decision_type, recoverability_probability)
+    confidence_weight = _decision_confidence_weight(confidence)
+    urgency_multiplier = _queue_urgency_multiplier(item.get("days_to_due"))
+    approval_required, approval_role = _decision_approval(decision_type, item)
+    decision_score = round(
+        (expected_recovery * recoverability_probability * urgency_multiplier * policy_weight * confidence_weight)
+        / max(effort_hours, 0.25),
+        2,
+    )
+    priority = _decision_priority(decision_score, due_pressure, approval_required)
+    comparable_case_support = _decision_comparable_case_support(decision_type, item, recoverability_probability)
+    owner_missing = not (item.get("owner_label") or item.get("owner_team"))
+    high_value = expected_recovery >= RCM_DECISION_HIGH_VALUE_THRESHOLD
+    urgent = due_pressure in {"Overdue", "Due Today", "Due This Week"}
+
+    should_promote = any(
+        [
+            high_value,
+            decision_score >= RECOVERY_QUEUE_MEDIUM_SCORE_THRESHOLD,
+            approval_required,
+            owner_missing,
+            urgent,
+            decision_type in {"appeal_denial", "payer_contract_review", "manager_review"},
+        ]
+    )
+    if not force:
+        if not should_promote:
+            return None
+        if confidence < RCM_DECISION_MIN_CONFIDENCE and not (approval_required or urgent or high_value):
+            return None
+        if priority == "Routine" and expected_recovery < RCM_DECISION_MIN_EXPECTED_RECOVERY:
+            return None
+
+    recommended_owner = _decision_recommended_owner(decision_type, item)
+    recommended_channel = _decision_recommended_channel(decision_type)
+    recommended_action = _decision_recommended_action(decision_type)
+    decision_reason = _decision_reason(item, decision_type, approval_required, confidence)
+    decision_status = "awaiting_review" if approval_required or owner_missing else "recommended"
+    auto_dispatch_eligible = (
+        not approval_required
+        and confidence >= 0.80
+        and expected_recovery >= RCM_DECISION_AUTO_DISPATCH_THRESHOLD
+        and due_pressure == "Future"
+    )
+    source_item_id = str(item.get("opportunity_id") or item.get("claim_ref") or item.get("claim_id") or "")
+    return {
+        "source_item_id": source_item_id,
+        "source_type": _decision_source_type(item),
+        "decision_type": decision_type,
+        "decision_reason": decision_reason,
+        "recommended_action": recommended_action,
+        "recommended_owner": recommended_owner,
+        "recommended_channel": recommended_channel,
+        "expected_recovery": round(expected_recovery, 2),
+        "expected_effort_hours": round(effort_hours, 2),
+        "expected_roi_per_hour": round(expected_recovery / max(effort_hours, 0.25), 2),
+        "due_pressure": due_pressure,
+        "recoverability_probability": recoverability_probability,
+        "confidence": confidence,
+        "risk_of_inaction": _decision_risk_of_inaction(decision_type, item),
+        "comparable_case_support": comparable_case_support,
+        "approval_required": approval_required,
+        "approval_role": approval_role,
+        "decision_status": decision_status,
+        "outcome_status": "pending",
+        "priority": priority,
+        "decision_score": decision_score,
+        "policy_weight": policy_weight,
+        "confidence_weight": confidence_weight,
+        "auto_dispatch_eligible": auto_dispatch_eligible,
+        "manual_action_required": False,
+        "generated_by": "rcm_decision_model_v1",
+        "recommended_actions": _decision_action_plan(decision_type),
+        "data_inputs": {
+            "source_snapshot": {
+                "claim_ref": item.get("claim_ref"),
+                "claim_id": item.get("claim_id"),
+                "opportunity_id": item.get("opportunity_id"),
+                "payer_id": item.get("payer_id") or item.get("payer"),
+                "payer_label": item.get("payer_label"),
+                "issue_type": item.get("issue_type"),
+                "issue_label": item.get("issue_label"),
+                "root_cause": item.get("root_cause"),
+                "source_evidence": item.get("source_evidence"),
+                "owner_label": item.get("owner_label"),
+                "owner_team": item.get("owner_team"),
+                "timeline": item.get("timeline") or [],
+                "due_date": item.get("due_date"),
+            },
+            "scoring": {
+                "decision_score": decision_score,
+                "priority_score": _as_number(item.get("priority_score")),
+                "urgency_multiplier": urgency_multiplier,
+                "policy_weight": policy_weight,
+                "confidence_weight": confidence_weight,
+                "recoverability_probability": recoverability_probability,
+            },
+            "thresholds": {
+                "min_expected_recovery": RCM_DECISION_MIN_EXPECTED_RECOVERY,
+                "approval_threshold": RCM_DECISION_APPROVAL_THRESHOLD,
+                "high_value_threshold": RCM_DECISION_HIGH_VALUE_THRESHOLD,
+                "min_confidence": RCM_DECISION_MIN_CONFIDENCE,
+            },
+        },
+    }
+
+
+def _rcm_log_transition(
+    conn: Any,
+    decision_id: int,
+    previous_state: str | None,
+    new_state: str,
+    action: str,
+    *,
+    performed_by: str,
+    performed_by_role: str,
+    reason: str | None = None,
+    notes: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    conn.execute(
+        """
+        insert into decision.decision_log (
+            decision_id,
+            previous_state,
+            new_state,
+            action,
+            performed_by,
+            performed_by_role,
+            reason,
+            notes,
+            metadata
+        )
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            decision_id,
+            previous_state,
+            new_state,
+            action,
+            performed_by,
+            performed_by_role,
+            reason,
+            notes,
+            _json(metadata or {}),
+        ),
+    )
+
+
+def _rcm_log_notification(
+    conn: Any,
+    decision_id: int,
+    notification_type: str,
+    *,
+    recipient_team: str | None = None,
+    recipient_user: str | None = None,
+    recipient_email: str | None = None,
+    delivery_status: str = "skipped",
+    error_message: str | None = None,
+) -> None:
+    conn.execute(
+        """
+        insert into decision.notification_log (
+            decision_id,
+            notification_type,
+            channel,
+            recipient_email,
+            recipient_team,
+            recipient_user,
+            subject,
+            delivery_status,
+            error_message
+        )
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            decision_id,
+            notification_type,
+            "manual",
+            recipient_email,
+            recipient_team,
+            recipient_user,
+            "RCM decision workflow",
+            delivery_status,
+            error_message,
+        ),
+    )
+
+
+def _find_existing_rcm_decision(conn: Any, item: dict[str, Any]) -> dict[str, Any] | None:
+    source_item_id = str(item.get("opportunity_id") or item.get("claim_ref") or item.get("claim_id") or "")
+    claim_id = str(item.get("claim_id") or item.get("claim_ref") or "")
+    row = conn.execute(
+        """
+        select *
+        from decision.decision_queue
+        where use_case = %s
+          and (
+            source_item_id = %s
+            or source_opportunity_id = %s
+            or (claim_id is not null and claim_id = %s)
+          )
+        order by updated_at desc nulls last, id desc
+        limit 1
+        """,
+        (USE_CASE_ID, source_item_id, item.get("opportunity_id"), claim_id),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def _insert_rcm_decision_candidate(conn: Any, item: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any]:
+    entity_id = str(candidate["source_item_id"] or item.get("claim_ref") or item.get("claim_id") or item.get("opportunity_id"))
+    claim_ref = str(item.get("claim_ref") or item.get("claim_id") or item.get("opportunity_id") or "Recovery item")
+    payer_label = str(item.get("payer_label") or item.get("payer_id") or "Unknown payer")
+    inserted = conn.execute(
+        """
+        insert into decision.decision_queue (
+            use_case,
+            decision_type,
+            entity_type,
+            entity_id,
+            entity_name,
+            priority,
+            priority_score,
+            urgency_score,
+            impact_score,
+            title,
+            signal_summary,
+            decision_summary,
+            rationale,
+            recommended_actions,
+            data_inputs,
+            model_version,
+            confidence_level,
+            confidence_detail,
+            owner_team,
+            owner_user_id,
+            assignee_user,
+            assignee_email,
+            source_opportunity_id,
+            source_item_id,
+            source_type,
+            claim_id,
+            payer_id,
+            department_id,
+            expected_recovery,
+            due_at,
+            status,
+            recommended_action,
+            recommended_owner,
+            recommended_channel,
+            decision_reason,
+            risk_of_inaction,
+            approval_required,
+            approval_role,
+            auto_dispatch_eligible,
+            manual_action_required,
+            decision_score,
+            recoverability_probability,
+            confidence,
+            policy_weight,
+            confidence_weight,
+            due_pressure,
+            expected_effort_hours,
+            expected_roi_per_hour,
+            comparable_case_support,
+            outcome_status,
+            generated_by
+        )
+        values (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        )
+        returning *
+        """,
+        (
+            USE_CASE_ID,
+            candidate["decision_type"],
+            candidate["source_type"],
+            entity_id,
+            f"{claim_ref} · {payer_label}",
+            candidate["priority"],
+            candidate["decision_score"],
+            round(_queue_urgency_multiplier(item.get("days_to_due")) * 100, 2),
+            round(candidate["expected_recovery"] / 1_000, 2),
+            f"{candidate['recommended_action']} · {claim_ref}",
+            f"{item.get('issue_label') or item.get('issue_type') or 'Recovery item'} · {candidate['due_pressure']} · {item.get('formatted_expected_recovery') or _format_queue_currency(candidate['expected_recovery'])}",
+            candidate["decision_reason"],
+            candidate["risk_of_inaction"],
+            _json(candidate["recommended_actions"]),
+            _json(candidate["data_inputs"]),
+            "rcm-decision-v1.0",
+            "High" if candidate["confidence"] >= RCM_DECISION_HIGH_CONFIDENCE else ("Medium" if candidate["confidence"] >= RCM_DECISION_MIN_CONFIDENCE else "Low"),
+            f"Confidence {candidate['confidence']:.0%} from issue pattern, due pressure, and source evidence coverage.",
+            candidate["recommended_owner"],
+            item.get("owner_user_id"),
+            item.get("owner_user_id"),
+            None,
+            item.get("opportunity_id"),
+            candidate["source_item_id"],
+            candidate["source_type"],
+            item.get("claim_id") or item.get("claim_ref"),
+            item.get("payer_id") or item.get("payer"),
+            item.get("department_id"),
+            candidate["expected_recovery"],
+            item.get("due_date"),
+            candidate["decision_status"],
+            candidate["recommended_action"],
+            candidate["recommended_owner"],
+            candidate["recommended_channel"],
+            candidate["decision_reason"],
+            candidate["risk_of_inaction"],
+            candidate["approval_required"],
+            candidate["approval_role"],
+            candidate["auto_dispatch_eligible"],
+            candidate["manual_action_required"],
+            candidate["decision_score"],
+            candidate["recoverability_probability"],
+            candidate["confidence"],
+            candidate["policy_weight"],
+            candidate["confidence_weight"],
+            candidate["due_pressure"],
+            candidate["expected_effort_hours"],
+            candidate["expected_roi_per_hour"],
+            _json(candidate["comparable_case_support"]),
+            candidate["outcome_status"],
+            candidate["generated_by"],
+        ),
+    ).fetchone()
+    inserted_row = dict(inserted)
+    _rcm_log_transition(
+        conn,
+        int(inserted_row["id"]),
+        None,
+        str(inserted_row["status"]),
+        "generated",
+        performed_by=str(candidate["generated_by"]),
+        performed_by_role="decision_model",
+        notes="RCM decision candidate generated from active recovery backlog.",
+        metadata={"source_item_id": candidate["source_item_id"], "decision_score": candidate["decision_score"]},
+    )
+    return inserted_row
+
+
+def _apply_rcm_decision_signals(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    enriched: list[dict[str, Any]] = []
+    for item in items:
+        preview = _decision_candidate_preview(item)
+        decision_status = _lower_text(item.get("decision_status"))
+        has_live_decision = bool(item.get("decision_id")) and decision_status not in {
+            "completed",
+            "dismissed",
+            "expired",
+            "closed",
+            "rejected",
+        }
+        enriched.append(
+            {
+                **item,
+                "linked_decision_id": _decision_display_id(item.get("decision_id")) if item.get("decision_id") else None,
+                "decision_required": preview is not None or has_live_decision,
+                "can_promote_to_decision": preview is not None and not has_live_decision,
+                "decision_reason": preview.get("decision_reason") if preview else None,
+                "recommended_decision_action": preview.get("recommended_action") if preview else None,
+                "decision_priority": preview.get("priority") if preview else None,
+                "decision_confidence": preview.get("confidence") if preview else None,
+                "approval_required": preview.get("approval_required") if preview else False,
+                "approval_role": preview.get("approval_role") if preview else None,
+            }
+        )
+    return enriched
+
+
+def _sync_rcm_decision_candidates(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    ensure_decision_schema()
+    created: list[dict[str, Any]] = []
+    with connect() as conn:
+        for item in items:
+            if item.get("decision_id") and _lower_text(item.get("decision_status")) not in {
+                "completed",
+                "dismissed",
+                "expired",
+                "closed",
+                "rejected",
+            }:
+                continue
+            candidate = _decision_candidate_preview(item)
+            if not candidate:
+                continue
+            existing = _find_existing_rcm_decision(conn, item)
+            if existing and _lower_text(existing.get("status")) not in {"completed", "dismissed", "expired", "closed", "rejected"}:
+                continue
+            created.append(_insert_rcm_decision_candidate(conn, item, candidate))
+    return created
 
 
 def _format_queue_currency(value: object) -> str:
@@ -2085,6 +2787,7 @@ def _build_recovery_queue_payload(
 
 
 def recovery_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    ensure_decision_schema()
     opportunity_table = qualified_table(settings.analytics_schema, "fct_cash_recovery_opportunity")
     denials_table = qualified_table(settings.analytics_schema, "fct_denials")
     decision_table = qualified_table(settings.decision_schema, "decision_queue")
@@ -2322,8 +3025,705 @@ def recovery_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
             }
         )
 
+    items = _apply_rcm_decision_signals(items)
     as_of = _now_iso() if items else None
     return _build_recovery_queue_payload(items, [_serialize_row(row) for row in pipeline_rows], filters, as_of)
+
+
+def _decision_generation_filters(filters: dict[str, Any] | None) -> dict[str, Any]:
+    raw = filters or {}
+    allowed_keys = {
+        "date_from",
+        "date_to",
+        "period",
+        "facility",
+        "payer",
+        "department",
+        "specialty",
+        "patient_type",
+        "claim_status",
+        "issue_type",
+        "owner",
+        "priority",
+        "due_window",
+        "min_value",
+        "search",
+    }
+    return {key: value for key, value in raw.items() if key in allowed_keys and value not in (None, "")}
+
+
+def _decision_available_actions(decision: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    status = str(decision.get("decision_status") or decision.get("status") or "recommended")
+    approval_required = bool(decision.get("approval_required"))
+    base_message = {
+        "approve": "Marks the recommendation as approved for governed execution.",
+        "reject": "Closes the recommendation and records why it should not proceed.",
+        "revise": "Keeps the recommendation open but requests a different routing or narrative.",
+        "dispatch": "Marks the recommendation as dispatched. Downstream handoff remains manual until workflow integration exists.",
+        "escalate": "Routes the item back into supervisory review and records escalation.",
+        "note": "Appends an audit note without changing status.",
+        "assign": "Assigns an owner for the governed decision workflow.",
+    }
+    actions: dict[str, dict[str, Any]] = {}
+    for action in ("approve", "reject", "revise", "dispatch", "escalate", "note", "assign"):
+        enabled = _decision_transition_allowed(status, action)
+        reason = None
+        if action == "dispatch" and approval_required and status not in {"approved", "revised"}:
+            enabled = False
+            reason = "Approval is required before dispatch."
+        elif not enabled:
+            reason = f"{_decision_status_label(status)} decisions cannot {action.replace('_', ' ')}."
+        actions[action] = {"enabled": enabled, "message": base_message[action], "reason": reason}
+    return actions
+
+
+def _serialize_rcm_decision_row(
+    row: dict[str, Any],
+    *,
+    audit_count: int = 0,
+    latest_log_at: str | None = None,
+    sent_count: int = 0,
+    failed_count: int = 0,
+    skipped_count: int = 0,
+) -> dict[str, Any]:
+    data_inputs = row.get("data_inputs") or {}
+    source_snapshot = data_inputs.get("source_snapshot") or {}
+    scoring = data_inputs.get("scoring") or {}
+    confidence = _as_number(row.get("confidence"))
+    expected_recovery = _as_number(row.get("expected_recovery"))
+    effort_hours = _as_number(row.get("expected_effort_hours"))
+    due_at = row.get("due_at") or source_snapshot.get("due_date")
+    decision = {
+        "id": row.get("id"),
+        "decision_id": _decision_display_id(row.get("id")),
+        "source_item_id": row.get("source_item_id") or row.get("source_opportunity_id") or row.get("claim_id"),
+        "source_type": row.get("source_type") or row.get("entity_type"),
+        "source_label": source_snapshot.get("claim_ref") or row.get("entity_id"),
+        "payer": source_snapshot.get("payer_label") or _humanize_token(row.get("payer_id")),
+        "payer_id": row.get("payer_id"),
+        "decision_type": row.get("decision_type"),
+        "decision_type_label": _humanize_token(row.get("decision_type")),
+        "recommended_action": row.get("recommended_action") or _decision_recommended_action(str(row.get("decision_type") or "")),
+        "decision_reason": row.get("decision_reason") or row.get("decision_summary") or row.get("rationale"),
+        "why_now": row.get("decision_reason") or row.get("decision_summary") or row.get("signal_summary"),
+        "expected_recovery": expected_recovery,
+        "formatted_expected_recovery": _format_queue_currency(expected_recovery),
+        "expected_effort_hours": effort_hours,
+        "formatted_expected_effort_hours": _format_queue_hours(effort_hours),
+        "expected_roi_per_hour": _as_number(row.get("expected_roi_per_hour")),
+        "formatted_expected_roi_per_hour": f"{RECOVERY_QUEUE_CURRENCY} {_as_number(row.get('expected_roi_per_hour')):,.0f}/h",
+        "decision_score": _as_number(row.get("decision_score") or row.get("priority_score")),
+        "formatted_decision_score": _format_queue_number(row.get("decision_score") or row.get("priority_score")),
+        "priority": row.get("priority"),
+        "priority_label": row.get("priority"),
+        "confidence": confidence,
+        "formatted_confidence": f"{confidence:.0%}",
+        "confidence_detail": row.get("confidence_detail"),
+        "due_pressure": row.get("due_pressure") or _queue_due_window(due_at, row.get("status")),
+        "due_at": due_at,
+        "risk_of_inaction": row.get("risk_of_inaction") or row.get("rationale"),
+        "approval_required": bool(row.get("approval_required")),
+        "approval_role": row.get("approval_role"),
+        "decision_status": row.get("status"),
+        "decision_status_label": _decision_status_label(row.get("status")),
+        "outcome_status": row.get("outcome_status") or "pending",
+        "recommended_owner": row.get("recommended_owner") or row.get("owner_team"),
+        "recommended_channel": row.get("recommended_channel"),
+        "assignee_user": row.get("assignee_user"),
+        "assignee_email": row.get("assignee_email"),
+        "manual_action_required": bool(row.get("manual_action_required")),
+        "auto_dispatch_eligible": bool(row.get("auto_dispatch_eligible")),
+        "created_at": row.get("created_at"),
+        "updated_at": row.get("updated_at"),
+        "approved_at": row.get("approved_at"),
+        "approved_by": row.get("approved_by"),
+        "dispatched_at": row.get("dispatched_at"),
+        "closed_at": row.get("closed_at"),
+        "generated_by": row.get("generated_by"),
+        "claim_ref": source_snapshot.get("claim_ref") or row.get("claim_id"),
+        "issue_type": source_snapshot.get("issue_type"),
+        "issue_label": source_snapshot.get("issue_label") or _humanize_token(source_snapshot.get("issue_type")),
+        "root_cause": source_snapshot.get("root_cause"),
+        "source_evidence": source_snapshot.get("source_evidence"),
+        "timeline": source_snapshot.get("timeline") or [],
+        "comparable_case_support": row.get("comparable_case_support") or [],
+        "scoring_breakdown": {
+            "decision_score": _as_number(row.get("decision_score") or row.get("priority_score")),
+            "priority_score": _as_number(scoring.get("priority_score")),
+            "urgency_multiplier": _as_number(scoring.get("urgency_multiplier")),
+            "policy_weight": _as_number(row.get("policy_weight") or scoring.get("policy_weight")),
+            "confidence_weight": _as_number(row.get("confidence_weight") or scoring.get("confidence_weight")),
+            "recoverability_probability": _as_number(row.get("recoverability_probability") or scoring.get("recoverability_probability")),
+        },
+        "notification_status": {
+            "sent_count": sent_count,
+            "failed_count": failed_count,
+            "skipped_count": skipped_count,
+        },
+        "audit_event_count": audit_count,
+        "last_log_at": latest_log_at,
+    }
+    decision["available_actions"] = _decision_available_actions(decision)
+    return decision
+
+
+def _decision_filter_options(decisions: list[dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
+    def collect(key: str) -> list[dict[str, str]]:
+        values = sorted({str(item.get(key) or "").strip() for item in decisions if str(item.get(key) or "").strip()})
+        return [{"value": value, "label": value if key == "payer" else _humanize_token(value)} for value in values]
+
+    return {
+        "decision_type": collect("decision_type"),
+        "payer": collect("payer"),
+        "approval_role": collect("approval_role"),
+        "owner": collect("recommended_owner"),
+        "priority": collect("priority"),
+        "decision_status": collect("decision_status"),
+        "due_window": collect("due_pressure"),
+    }
+
+
+def _matches_decision_filter(decision: dict[str, Any], filters: dict[str, Any]) -> bool:
+    if not filters:
+        return decision.get("decision_status") in RCM_DECISION_ACTIVE_STATUSES
+
+    def text(key: str) -> str:
+        return _lower_text(decision.get(key))
+
+    search = _lower_text(filters.get("search"))
+    if search:
+        haystack = " ".join(
+            [
+                str(decision.get("decision_id") or ""),
+                str(decision.get("source_item_id") or ""),
+                str(decision.get("claim_ref") or ""),
+                str(decision.get("payer") or ""),
+                str(decision.get("recommended_action") or ""),
+                str(decision.get("decision_reason") or ""),
+                str(decision.get("approval_role") or ""),
+                str(decision.get("recommended_owner") or ""),
+            ]
+        ).lower()
+        if search not in haystack:
+            return False
+
+    checks = {
+        "payer": text("payer"),
+        "decision_type": text("decision_type"),
+        "decision_status": text("decision_status"),
+        "approval_role": text("approval_role"),
+        "owner": text("recommended_owner"),
+        "priority": text("priority"),
+        "due_window": text("due_pressure"),
+        "department": _lower_text(decision.get("department_id")),
+    }
+    for key, decision_value in checks.items():
+        filter_value = _lower_text(filters.get(key))
+        if filter_value and decision_value != filter_value:
+            return False
+
+    if filters.get("min_expected_recovery") not in (None, "") and _as_number(decision.get("expected_recovery")) < _as_number(filters.get("min_expected_recovery")):
+        return False
+    if filters.get("confidence_min") not in (None, "") and _as_number(decision.get("confidence")) < _as_number(filters.get("confidence_min")):
+        return False
+    if filters.get("date_from"):
+        created_date = _parse_date(decision.get("created_at"))
+        from_date = _parse_date(filters.get("date_from"))
+        if from_date and created_date and created_date < from_date:
+            return False
+    if filters.get("date_to"):
+        created_date = _parse_date(decision.get("created_at"))
+        to_date = _parse_date(filters.get("date_to"))
+        if to_date and created_date and created_date > to_date:
+            return False
+    status_filter = _lower_text(filters.get("decision_status"))
+    if not status_filter and decision.get("decision_status") not in RCM_DECISION_ACTIVE_STATUSES:
+        return False
+    return True
+
+
+def _sort_decisions(decisions: list[dict[str, Any]], sort_by: str) -> list[dict[str, Any]]:
+    def sort_key(item: dict[str, Any]) -> tuple[Any, ...]:
+        if sort_by == "expected_recovery":
+            return (-_as_number(item.get("expected_recovery")), -_as_number(item.get("decision_score")), str(item.get("decision_id") or ""))
+        if sort_by == "confidence":
+            return (-_as_number(item.get("confidence")), -_as_number(item.get("expected_recovery")), str(item.get("decision_id") or ""))
+        if sort_by == "due_date":
+            return (_parse_date(item.get("due_at")) or date.max, -_as_number(item.get("decision_score")), str(item.get("decision_id") or ""))
+        if sort_by == "approval_role":
+            return (str(item.get("approval_role") or ""), -_as_number(item.get("decision_score")), str(item.get("decision_id") or ""))
+        return (-_as_number(item.get("decision_score")), -_as_number(item.get("expected_recovery")), str(item.get("decision_id") or ""))
+
+    return sorted(decisions, key=sort_key)
+
+
+def decision_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    raw_filters = filters or {}
+    source_queue = recovery_queue(_decision_generation_filters(raw_filters))
+    source_items = list(source_queue.get("items") or source_queue.get("queue_items") or [])
+    _sync_rcm_decision_candidates(source_items)
+
+    ensure_decision_schema()
+    with connect() as conn:
+        rows = [dict(row) for row in conn.execute("select * from decision.decision_queue where use_case = %s order by updated_at desc, id desc", (USE_CASE_ID,)).fetchall()]
+        log_rows = conn.execute(
+            """
+            select decision_id, count(*)::integer as audit_count, max(created_at) as last_log_at
+            from decision.decision_log
+            group by decision_id
+            """
+        ).fetchall()
+        notification_rows = conn.execute(
+            """
+            select
+                decision_id,
+                count(*) filter (where delivery_status = 'sent')::integer as sent_count,
+                count(*) filter (where delivery_status = 'failed')::integer as failed_count,
+                count(*) filter (where delivery_status = 'skipped')::integer as skipped_count
+            from decision.notification_log
+            group by decision_id
+            """
+        ).fetchall()
+
+    audit_map = {
+        int(row["decision_id"]): {
+            "audit_count": int(row["audit_count"] or 0),
+            "last_log_at": _serialize(row["last_log_at"]),
+        }
+        for row in log_rows
+    }
+    notification_map = {
+        int(row["decision_id"]): {
+            "sent_count": int(row["sent_count"] or 0),
+            "failed_count": int(row["failed_count"] or 0),
+            "skipped_count": int(row["skipped_count"] or 0),
+        }
+        for row in notification_rows
+    }
+    decisions = [
+        _serialize_rcm_decision_row(
+            _serialize_row(row),
+            audit_count=audit_map.get(int(row["id"]), {}).get("audit_count", 0),
+            latest_log_at=audit_map.get(int(row["id"]), {}).get("last_log_at"),
+            sent_count=notification_map.get(int(row["id"]), {}).get("sent_count", 0),
+            failed_count=notification_map.get(int(row["id"]), {}).get("failed_count", 0),
+            skipped_count=notification_map.get(int(row["id"]), {}).get("skipped_count", 0),
+        )
+        for row in rows
+    ]
+    filtered = _sort_decisions([decision for decision in decisions if _matches_decision_filter(decision, raw_filters)], _lower_text(raw_filters.get("sort_by") or "decision_score"))
+
+    expected_recovery = sum(_as_number(item.get("expected_recovery")) for item in filtered)
+    requiring_review = sum(1 for item in filtered if item.get("decision_status") in {"recommended", "awaiting_review", "revised"})
+    approval_required_count = sum(1 for item in filtered if item.get("approval_required"))
+    high_confidence_count = sum(1 for item in filtered if _as_number(item.get("confidence")) >= RCM_DECISION_HIGH_CONFIDENCE)
+    due_this_week_count = sum(1 for item in filtered if item.get("due_pressure") in {"Overdue", "Due Today", "Due This Week"})
+    dispatched_today = sum(1 for item in filtered if item.get("decision_status") == "dispatched" and _parse_date(item.get("dispatched_at")) == date.today())
+
+    def rollup(key: str) -> list[dict[str, Any]]:
+        grouped: dict[str, dict[str, Any]] = {}
+        for item in filtered:
+            label = str(item.get(key) or "Unspecified")
+            bucket = grouped.setdefault(label, {"label": label, "count": 0, "expected_recovery": 0.0})
+            bucket["count"] += 1
+            bucket["expected_recovery"] += _as_number(item.get("expected_recovery"))
+        return [
+            {
+                **entry,
+                "formatted_expected_recovery": _format_queue_currency_compact(entry["expected_recovery"]),
+            }
+            for entry in sorted(grouped.values(), key=lambda row: (-row["count"], -row["expected_recovery"], row["label"]))
+        ]
+
+    unsupported_filters = [
+        key
+        for key in ("facility", "specialty", "patient_type", "claim_status")
+        if raw_filters.get(key) not in (None, "")
+    ]
+    if not filtered:
+        return {
+            "generated_at": _now_iso(),
+            "currency": RECOVERY_QUEUE_CURRENCY,
+            "period": source_queue.get("period"),
+            "filters_applied": {key: value for key, value in raw_filters.items() if value not in (None, "")},
+            "data_freshness": source_queue.get("data_freshness"),
+            "meta": {
+                "use_case": USE_CASE_ID,
+                "section": "decision-queue",
+                "empty": True,
+                "message": "No governed recovery decisions match the selected filters.",
+            },
+            "headline": {
+                "severity": "healthy",
+                "message": "Recovery Queue still holds the full backlog. No governed subset requires action for the current filters.",
+                "decision_count": 0,
+                "approval_required_count": 0,
+                "expected_recovery": 0,
+                "high_confidence_count": 0,
+            },
+            "kpis": [],
+            "decision_mix": {"by_decision_type": [], "by_approval_role": [], "by_payer": [], "by_status": []},
+            "decisions": [],
+            "filter_options": _decision_filter_options(decisions),
+            "data_quality": {
+                "generated_at": _now_iso(),
+                "currency": RECOVERY_QUEUE_CURRENCY,
+                "source_tables": [
+                    {"table": f"{settings.analytics_schema}.fct_cash_recovery_opportunity", "role": "Recovery backlog source", "loaded": True},
+                    {"table": f"{settings.decision_schema}.decision_queue", "role": "Persisted governed decisions", "loaded": True},
+                    {"table": f"{settings.decision_schema}.decision_log", "role": "Decision audit trail", "loaded": True},
+                    {"table": f"{settings.decision_schema}.notification_log", "role": "Dispatch and notification evidence", "loaded": True},
+                ],
+                "filters_applied": {key: value for key, value in raw_filters.items() if value not in (None, "")},
+                "scoring_logic": [
+                    "decision_score = expected_recovery_value * recoverability_probability * urgency_multiplier * policy_weight * confidence_weight / effort_hours",
+                ],
+                "decision_thresholds": [
+                    {"label": "Minimum expected recovery", "value": _format_queue_currency(RCM_DECISION_MIN_EXPECTED_RECOVERY)},
+                    {"label": "Approval threshold", "value": _format_queue_currency(RCM_DECISION_APPROVAL_THRESHOLD)},
+                    {"label": "High confidence threshold", "value": f"{RCM_DECISION_HIGH_CONFIDENCE:.0%}"},
+                ],
+                "confidence_logic": [
+                    "Confidence blends issue-type recoverability priors, evidence coverage, due pressure, and owner readiness.",
+                ],
+                "approval_rules": [
+                    "Payer contract review, manager review, overdue interventions, and high-value cash exposure require human approval.",
+                ],
+                "missing_fields": [],
+                "warnings": ["Comparable-case support uses seeded benchmarks until RCM outcome history accumulates."],
+                "unsupported_filters": unsupported_filters,
+                "limitations": ["Outcome review remains deferred until measured RCM decision outcomes are captured in production."],
+            },
+        }
+
+    severity = "critical" if due_this_week_count > 0 and approval_required_count > 0 else ("watch" if requiring_review > 0 else "healthy")
+    return {
+        "generated_at": _now_iso(),
+        "currency": RECOVERY_QUEUE_CURRENCY,
+        "period": source_queue.get("period"),
+        "filters_applied": {key: value for key, value in raw_filters.items() if value not in (None, "")},
+        "data_freshness": source_queue.get("data_freshness"),
+        "meta": {"empty": False, "message": None},
+        "headline": {
+            "severity": severity,
+            "message": (
+                f"Recovery Queue shows all recoverable work. Decision Queue narrows that to {len(filtered)} governed interventions, "
+                f"with {approval_required_count} requiring formal approval and {_format_queue_currency_compact(expected_recovery)} under decision."
+            ),
+            "decision_count": len(filtered),
+            "approval_required_count": approval_required_count,
+            "expected_recovery": expected_recovery,
+            "high_confidence_count": high_confidence_count,
+        },
+        "kpis": [
+            {"id": "decisions_requiring_review", "label": "Decisions Requiring Review", "value": requiring_review, "formatted_value": _format_queue_number(requiring_review), "status": severity},
+            {"id": "expected_recovery_under_decision", "label": "Expected Recovery Under Decision", "value": expected_recovery, "formatted_value": _format_queue_currency_compact(expected_recovery), "status": "watch" if expected_recovery > 0 else "healthy"},
+            {"id": "approval_required", "label": "Approval Required", "value": approval_required_count, "formatted_value": _format_queue_number(approval_required_count), "status": "critical" if approval_required_count > 0 else "healthy"},
+            {"id": "high_confidence_recommendations", "label": "High Confidence Recommendations", "value": high_confidence_count, "formatted_value": _format_queue_number(high_confidence_count), "status": "healthy" if high_confidence_count > 0 else "watch"},
+            {"id": "due_this_week", "label": "Due This Week", "value": due_this_week_count, "formatted_value": _format_queue_number(due_this_week_count), "status": "critical" if due_this_week_count > 0 else "healthy"},
+            {"id": "dispatched_today", "label": "Dispatched Today", "value": dispatched_today, "formatted_value": _format_queue_number(dispatched_today), "status": "healthy"},
+        ],
+        "decision_mix": {
+            "by_decision_type": rollup("decision_type_label"),
+            "by_approval_role": rollup("approval_role"),
+            "by_payer": rollup("payer"),
+            "by_status": rollup("decision_status_label"),
+        },
+        "decisions": filtered,
+        "filter_options": _decision_filter_options(decisions),
+        "data_quality": {
+            "generated_at": _now_iso(),
+            "currency": RECOVERY_QUEUE_CURRENCY,
+            "source_tables": [
+                {"table": f"{settings.analytics_schema}.fct_cash_recovery_opportunity", "role": "Recovery backlog source", "loaded": True},
+                {"table": f"{settings.decision_schema}.decision_queue", "role": "Persisted governed decisions", "loaded": True},
+                {"table": f"{settings.decision_schema}.decision_log", "role": "Decision audit trail", "loaded": True},
+                {"table": f"{settings.decision_schema}.notification_log", "role": "Dispatch and notification evidence", "loaded": True},
+            ],
+            "filters_applied": {key: value for key, value in raw_filters.items() if value not in (None, "")},
+            "scoring_logic": [
+                "decision_score = expected_recovery_value * recoverability_probability * urgency_multiplier * policy_weight * confidence_weight / effort_hours",
+                "Urgency multiplier reuses the Recovery Queue due-date pressure bands.",
+                "Critical / High / Medium priority thresholds reuse the existing recovery priority score breakpoints.",
+            ],
+            "decision_thresholds": [
+                {"label": "Minimum expected recovery", "value": _format_queue_currency(RCM_DECISION_MIN_EXPECTED_RECOVERY)},
+                {"label": "Approval threshold", "value": _format_queue_currency(RCM_DECISION_APPROVAL_THRESHOLD)},
+                {"label": "High value threshold", "value": _format_queue_currency(RCM_DECISION_HIGH_VALUE_THRESHOLD)},
+                {"label": "Minimum confidence", "value": f"{RCM_DECISION_MIN_CONFIDENCE:.0%}"},
+                {"label": "High confidence", "value": f"{RCM_DECISION_HIGH_CONFIDENCE:.0%}"},
+            ],
+            "confidence_logic": [
+                "Confidence blends issue-type recoverability priors, evidence coverage, due pressure, and owner readiness.",
+            ],
+            "approval_rules": [
+                "Payer contract review, manager review, overdue interventions, missing-owner interventions, and high-value exposure require human approval.",
+            ],
+            "missing_fields": [],
+            "warnings": [
+                "Comparable-case support uses seeded benchmarks until RCM outcome history accumulates.",
+                "Dispatch persists audit evidence but remains a manual downstream handoff until workqueue integration is connected.",
+            ],
+            "unsupported_filters": unsupported_filters,
+            "limitations": [
+                "Outcome review structure exists but RCM measurement is not yet populated from production recovery outcomes.",
+            ],
+        },
+        "outcome_review": {
+            "enabled": False,
+            "reason": "Outcome measurement structure exists but production RCM actual-recovery measurement is deferred.",
+        },
+    }
+
+
+def decision_workspace(decision_id: int) -> dict[str, Any] | None:
+    ensure_decision_schema()
+    with connect() as conn:
+        row = conn.execute("select * from decision.decision_queue where use_case = %s and id = %s", (USE_CASE_ID, decision_id)).fetchone()
+        if not row:
+            return None
+        logs = [
+            _serialize_row(dict(log))
+            for log in conn.execute(
+                "select * from decision.decision_log where decision_id = %s order by created_at desc, id desc",
+                (decision_id,),
+            ).fetchall()
+        ]
+        notifications = [
+            _serialize_row(dict(log))
+            for log in conn.execute(
+                "select * from decision.notification_log where decision_id = %s order by sent_at desc nulls last, id desc",
+                (decision_id,),
+            ).fetchall()
+        ]
+        outcome = conn.execute(
+            "select * from decision.decision_outcomes where decision_id = %s order by measured_at desc nulls last, id desc limit 1",
+            (decision_id,),
+        ).fetchone()
+
+    serialized = _serialize_rcm_decision_row(
+        _serialize_row(dict(row)),
+        audit_count=len(logs),
+        latest_log_at=logs[0]["created_at"] if logs else None,
+        sent_count=sum(int(entry.get("delivery_status") == "sent") for entry in notifications),
+        failed_count=sum(int(entry.get("delivery_status") == "failed") for entry in notifications),
+        skipped_count=sum(int(entry.get("delivery_status") == "skipped") for entry in notifications),
+    )
+    return {
+        "generated_at": _now_iso(),
+        "decision": serialized,
+        "audit_trail": logs,
+        "notifications": notifications,
+        "outcome_review": _serialize_row(dict(outcome)) if outcome else {
+            "enabled": False,
+            "reason": "Outcome measurement has not yet been recorded for this RCM decision.",
+        },
+    }
+
+
+def promote_recovery_item(
+    source_item_id: str,
+    *,
+    performed_by: str = "portal_user",
+    performed_by_role: str = "rcm_supervisor",
+) -> dict[str, Any]:
+    queue_payload = recovery_queue({"search": source_item_id})
+    items = list(queue_payload.get("items") or queue_payload.get("queue_items") or [])
+    match = next(
+        (
+            item
+            for item in items
+            if source_item_id in {
+                str(item.get("opportunity_id") or ""),
+                str(item.get("claim_ref") or ""),
+                str(item.get("claim_id") or ""),
+            }
+        ),
+        None,
+    )
+    if not match:
+        raise ValueError("Recovery item not found for promotion")
+
+    ensure_decision_schema()
+    with connect() as conn:
+        existing = _find_existing_rcm_decision(conn, match)
+        if existing and _lower_text(existing.get("status")) not in {"completed", "dismissed", "expired", "closed", "rejected"}:
+            return {
+                "created": False,
+                "decision": _serialize_rcm_decision_row(_serialize_row(existing)),
+            }
+        candidate = _decision_candidate_preview(match, force=True)
+        if not candidate:
+            raise ValueError("Recovery item cannot be promoted to a governed decision")
+        inserted = _insert_rcm_decision_candidate(conn, match, candidate)
+        _rcm_log_transition(
+            conn,
+            int(inserted["id"]),
+            str(inserted["status"]),
+            str(inserted["status"]),
+            "promoted",
+            performed_by=performed_by,
+            performed_by_role=performed_by_role,
+            notes="Promoted from Recovery Queue into governed Decision Queue.",
+        )
+    return {
+        "created": True,
+        "decision": _serialize_rcm_decision_row(_serialize_row(inserted)),
+    }
+
+
+def transition_rcm_decision(
+    decision_id: int,
+    action: str,
+    payload: dict[str, Any] | None = None,
+    *,
+    performed_by: str = "portal_user",
+    performed_by_role: str = "rcm_supervisor",
+) -> dict[str, Any] | None:
+    ensure_decision_schema()
+    action_payload = payload or {}
+    with connect() as conn:
+        current_row = conn.execute(
+            "select * from decision.decision_queue where use_case = %s and id = %s for update",
+            (USE_CASE_ID, decision_id),
+        ).fetchone()
+        if not current_row:
+            return None
+        current = _serialize_row(dict(current_row))
+        current_status = str(current.get("status") or "recommended")
+        if not _decision_transition_allowed(current_status, action):
+            raise ValueError(f"{_decision_status_label(current_status)} decisions cannot {action.replace('_', ' ')}.")
+        if action == "dispatch" and current.get("approval_required") and current_status not in {"approved", "revised"}:
+            raise ValueError("Approval is required before dispatch.")
+
+        next_status = current_status
+        transition_reason = str(action_payload.get("reason") or "").strip() or None
+        notes = str(action_payload.get("notes") or "").strip() or None
+        metadata = dict(action_payload.get("metadata") or {})
+
+        if action == "approve":
+            next_status = "approved"
+            conn.execute(
+                """
+                update decision.decision_queue
+                set status = %s, approved_by = %s, approved_at = now(), updated_at = now()
+                where id = %s
+                """,
+                (next_status, performed_by, decision_id),
+            )
+        elif action == "reject":
+            next_status = "rejected"
+            conn.execute(
+                """
+                update decision.decision_queue
+                set status = %s, outcome_status = %s, closed_at = now(), updated_at = now()
+                where id = %s
+                """,
+                (next_status, "not_measurable", decision_id),
+            )
+        elif action == "revise":
+            next_status = "revised"
+            conn.execute(
+                """
+                update decision.decision_queue
+                set status = %s,
+                    decision_reason = coalesce(%s, decision_reason),
+                    recommended_action = coalesce(%s, recommended_action),
+                    updated_at = now()
+                where id = %s
+                """,
+                (
+                    next_status,
+                    action_payload.get("decision_reason"),
+                    action_payload.get("recommended_action"),
+                    decision_id,
+                ),
+            )
+        elif action == "dispatch":
+            next_status = "dispatched"
+            assignee_user = action_payload.get("assignee_user") or current.get("assignee_user") or current.get("owner_user_id")
+            assignee_email = action_payload.get("assignee_email") or current.get("assignee_email")
+            conn.execute(
+                """
+                update decision.decision_queue
+                set status = %s,
+                    assignee_user = %s,
+                    assignee_email = %s,
+                    dispatched_at = now(),
+                    manual_action_required = true,
+                    updated_at = now()
+                where id = %s
+                """,
+                (next_status, assignee_user, assignee_email, decision_id),
+            )
+            _rcm_log_notification(
+                conn,
+                decision_id,
+                "dispatch",
+                recipient_team=str(current.get("recommended_owner") or current.get("owner_team") or ""),
+                recipient_user=str(assignee_user or ""),
+                recipient_email=str(assignee_email or "") or None,
+                delivery_status="skipped",
+                error_message="Manual action required until downstream RCM dispatch workflow is integrated.",
+            )
+        elif action == "escalate":
+            next_status = "awaiting_review"
+            conn.execute(
+                """
+                update decision.decision_queue
+                set status = %s,
+                    escalation_count = coalesce(escalation_count, 0) + 1,
+                    last_escalated_at = now(),
+                    updated_at = now()
+                where id = %s
+                """,
+                (next_status, decision_id),
+            )
+        elif action == "note":
+            next_status = current_status
+        elif action == "assign":
+            next_status = current_status if current_status in {"approved", "revised", "dispatched"} else "awaiting_review"
+            assignee_user = action_payload.get("assignee_user") or current.get("assignee_user") or performed_by
+            assignee_email = action_payload.get("assignee_email") or current.get("assignee_email")
+            conn.execute(
+                """
+                update decision.decision_queue
+                set status = %s,
+                    assignee_user = %s,
+                    assignee_email = %s,
+                    recommended_owner = coalesce(%s, recommended_owner),
+                    updated_at = now()
+                where id = %s
+                """,
+                (next_status, assignee_user, assignee_email, action_payload.get("recommended_owner"), decision_id),
+            )
+            _rcm_log_notification(
+                conn,
+                decision_id,
+                "assignment",
+                recipient_team=str(action_payload.get("recommended_owner") or current.get("recommended_owner") or current.get("owner_team") or ""),
+                recipient_user=str(assignee_user or ""),
+                recipient_email=str(assignee_email or "") or None,
+                delivery_status="skipped",
+                error_message="Assignment recorded, but notification delivery is not integrated for RCM yet.",
+            )
+        else:
+            raise ValueError(f"Unsupported RCM decision action: {action}")
+
+        _rcm_log_transition(
+            conn,
+            decision_id,
+            current_status,
+            next_status,
+            action,
+            performed_by=performed_by,
+            performed_by_role=performed_by_role,
+            reason=transition_reason,
+            notes=notes,
+            metadata=metadata,
+        )
+        updated = conn.execute("select * from decision.decision_queue where id = %s", (decision_id,)).fetchone()
+    return _serialize_rcm_decision_row(_serialize_row(dict(updated))) if updated else None
 
 
 def payer_control() -> dict[str, Any]:

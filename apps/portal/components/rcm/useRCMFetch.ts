@@ -14,6 +14,7 @@ const ENDPOINT_MAP: Record<string, string> = {
   "cash-command":        "/api/portal/api/v1/revenue-cycle/cash-command",
   "journey":             "/api/portal/api/v1/revenue-cycle/journey",
   "recovery-queue":      "/api/portal/api/v1/rcm/recovery-queue",
+  "decision-queue":      "/api/portal/api/v1/rcm/decision-queue",
   "payer-control":       "/api/portal/api/v1/revenue-cycle/payer-control",
   "revenue-leakage":     "/api/portal/api/v1/revenue-cycle/leakage",
   "team-performance":    "/api/portal/api/v1/revenue-cycle/team-performance",

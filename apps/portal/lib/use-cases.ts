@@ -196,6 +196,7 @@ export const bedPressureTabs = [
 export const revenueCycleTabs = [
   { key: "cash-command", label: "Cash Command", href: "/use-cases/revenue-cycle-management/cash-command" },
   { key: "recovery-queue", label: "Recovery Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },
+  { key: "decision-queue", label: "Decision Queue", href: "/use-cases/revenue-cycle-management/decision-queue" },
   { key: "payer-control", label: "Payer Control", href: "/use-cases/revenue-cycle-management/payer-control" },
   { key: "revenue-leakage", label: "Revenue Leakage", href: "/use-cases/revenue-cycle-management/revenue-leakage" },
   { key: "team-performance", label: "Team Performance", href: "/use-cases/revenue-cycle-management/team-performance" },
