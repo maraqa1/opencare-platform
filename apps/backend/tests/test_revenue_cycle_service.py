@@ -561,6 +561,222 @@ class RevenueCycleServiceTests(unittest.TestCase):
         self.assertEqual(payload["cash_impact"]["recoverable_cash_7d"], 50000.0)
         self.assertEqual(payload["recommended_actions"][0]["owner"], "rcm.manager")
 
+    def test_board_pack_payload_aggregates_live_sections(self):
+        with (
+            patch.object(
+                revenue_cycle_service,
+                "cash_command",
+                return_value={
+                    "currency": "SAR",
+                    "period": {
+                        "date_from": "2026-06-01",
+                        "date_to": "2026-06-30",
+                        "label": "Jun 2026",
+                    },
+                    "data_quality": {
+                        "generated_at": "2026-06-23T09:00:00Z",
+                        "source_tables": [
+                            {"table": "analytics.fct_revenue_cycle", "role": "cash_command", "loaded": True}
+                        ],
+                        "missing_metrics": [],
+                        "warnings": [],
+                        "limitations": [],
+                    },
+                    "headline": {
+                        "severity": "watch",
+                        "message": "Cash conversion pressure remains elevated.",
+                    },
+                    "cash_at_risk": 971700.0,
+                    "kpis": [
+                        {"key": "net_patient_revenue", "value": 2200000.0, "status": "healthy"},
+                        {"key": "cash_collected", "value": 1500000.0, "status": "healthy"},
+                        {"key": "collection_rate", "value": 68.2, "status": "critical"},
+                        {"key": "ar_days", "value": 54.0, "status": "watch", "target_label": "target 45 days"},
+                        {"key": "denial_rate", "value": 8.4, "status": "critical"},
+                    ],
+                },
+            ),
+            patch.object(
+                revenue_cycle_service,
+                "recovery_queue",
+                return_value={
+                    "currency": "SAR",
+                    "period": {
+                        "date_from": "2026-06-01",
+                        "date_to": "2026-06-30",
+                        "label": "Jun 2026",
+                    },
+                    "generated_at": "2026-06-23T10:00:00Z",
+                    "headline": {
+                        "severity": "critical",
+                        "message": "Recovery pressure is concentrated in aged balances.",
+                    },
+                    "total": 87,
+                    "kpis": [
+                        {"id": "recoverable_queue_value", "value": 542000.0, "status": "watch"},
+                        {"id": "expected_recovery", "value": 440000.0, "status": "healthy"},
+                        {"id": "due_this_week", "value": 110, "status": "critical"},
+                        {"id": "overdue_items", "value": 3, "status": "critical"},
+                        {"id": "high_priority_items", "value": 9, "status": "watch"},
+                        {"id": "recovery_effort_hours", "value": 556.0, "status": "watch"},
+                    ],
+                    "data_quality": {
+                        "source_tables": [
+                            {
+                                "table": "analytics.fct_cash_recovery_opportunity",
+                                "role": "recovery_queue",
+                                "loaded": True,
+                            }
+                        ],
+                        "metric_definitions": [
+                            {
+                                "label": "Priority Score",
+                                "definition": "Expected recovery per effort hour adjusted by urgency.",
+                            }
+                        ],
+                        "missing_metrics": [],
+                        "warnings": ["Closed work items are excluded from the operating queue."],
+                        "limitations": ["Outcome timestamps are not yet available for every payer workflow."],
+                    },
+                },
+            ),
+            patch.object(
+                revenue_cycle_service,
+                "decision_queue",
+                return_value={
+                    "currency": "SAR",
+                    "generated_at": "2026-06-23T10:30:00Z",
+                    "meta": {"empty": False},
+                    "headline": {
+                        "severity": "watch",
+                        "message": "Decision workflow is partially configured.",
+                        "decision_count": 14,
+                        "approval_required_count": 5,
+                    },
+                    "kpis": [
+                        {"id": "decisions_requiring_review", "value": 14, "status": "watch"},
+                        {"id": "approval_required", "value": 5, "status": "watch"},
+                        {"id": "expected_recovery_under_decision", "value": 210000.0, "status": "watch"},
+                        {"id": "dispatched_today", "value": 3, "status": "healthy"},
+                    ],
+                    "data_quality": {
+                        "source_tables": [
+                            {"table": "decision.decision_queue", "role": "decision_queue", "loaded": True}
+                        ],
+                        "scoring_logic": [
+                            "Approval is required when expected recovery exceeds policy thresholds."
+                        ],
+                        "missing_metrics": [],
+                        "warnings": [],
+                        "limitations": [],
+                    },
+                    "outcome_review": {
+                        "enabled": False,
+                        "reason": "Outcome measurement not yet wired.",
+                    },
+                },
+            ),
+        ):
+            payload = revenue_cycle_service.board_pack({"payer": "PAYER-A", "period": "month"})
+
+        self.assertEqual(payload["currency"], "SAR")
+        self.assertEqual(payload["filters_applied"], {"payer": "PAYER-A", "period": "month"})
+        self.assertEqual(payload["executive_cover"]["hero_cards"][0]["formatted_value"], "SAR 972K")
+        self.assertEqual(payload["storyline"]["cards"][0]["metric_value"], "SAR 2.2M")
+        self.assertEqual(payload["decision_layer"]["cards"][2]["message"], "Outcome measurement not yet wired.")
+        self.assertIn("analytics.fct_revenue_cycle", [item["table"] for item in payload["data_trust"]["source_tables"]])
+        self.assertIn("decision.decision_queue", [item["table"] for item in payload["data_trust"]["source_tables"]])
+        self.assertIn("SAR 542K", payload["board_talk_track"])
+        self.assertIn("110 items due this week", payload["board_talk_track"])
+
+    def test_board_pack_marks_missing_metrics_as_unavailable(self):
+        with (
+            patch.object(
+                revenue_cycle_service,
+                "cash_command",
+                return_value={
+                    "currency": "SAR",
+                    "period": {"label": "Jun 2026"},
+                    "data_quality": {
+                        "generated_at": "2026-06-23T09:00:00Z",
+                        "source_tables": [],
+                        "missing_metrics": [],
+                        "warnings": [],
+                        "limitations": [],
+                    },
+                    "headline": {"severity": "unknown", "message": "Missing values"},
+                    "cash_at_risk": None,
+                    "kpis": [
+                        {"key": "net_patient_revenue", "value": None, "status": "unknown"},
+                        {"key": "cash_collected", "value": None, "status": "unknown"},
+                        {"key": "collection_rate", "value": None, "status": "unknown"},
+                        {"key": "ar_days", "value": None, "status": "unknown"},
+                        {"key": "denial_rate", "value": None, "status": "unknown"},
+                    ],
+                },
+            ),
+            patch.object(
+                revenue_cycle_service,
+                "recovery_queue",
+                return_value={
+                    "currency": "SAR",
+                    "headline": {"severity": "unknown"},
+                    "kpis": [
+                        {"id": "recoverable_queue_value", "value": None, "status": "unknown"},
+                        {"id": "expected_recovery", "value": None, "status": "unknown"},
+                    ],
+                    "data_quality": {
+                        "source_tables": [],
+                        "metric_definitions": [],
+                        "missing_metrics": [],
+                        "warnings": [],
+                        "limitations": [],
+                    },
+                },
+            ),
+            patch.object(
+                revenue_cycle_service,
+                "decision_queue",
+                return_value={
+                    "meta": {"empty": True},
+                    "headline": {},
+                    "kpis": [],
+                    "data_quality": {
+                        "source_tables": [],
+                        "scoring_logic": [],
+                        "missing_metrics": [],
+                        "warnings": [],
+                        "limitations": [],
+                    },
+                    "outcome_review": {"enabled": False},
+                },
+            ),
+        ):
+            payload = revenue_cycle_service.board_pack()
+
+        self.assertEqual(payload["executive_cover"]["hero_cards"][0]["formatted_value"], "Metric unavailable")
+        self.assertIn("Net Patient Revenue", payload["data_trust"]["missing_metrics"])
+        self.assertIn("Revenue at Risk", payload["data_trust"]["missing_metrics"])
+        self.assertIn("Recoverable Queue Value", payload["data_trust"]["unavailable_fields"])
+
+    def test_board_pack_template_does_not_embed_fixed_kpi_values(self):
+        template = (ROOT.parent / "portal" / "lib" / "rcm-board-pack.ts").read_text(encoding="utf-8")
+
+        forbidden_literals = [
+            "SAR 971.7K",
+            "SAR 956.1K",
+            "SAR 422.9K",
+            "44.2%",
+            "454 days",
+            "33.3%",
+            "SAR 542K",
+            "SAR 440K",
+            "556h",
+        ]
+
+        for literal in forbidden_literals:
+            self.assertNotIn(literal, template)
+
 
 class RevenueCycleRouteTests(unittest.TestCase):
     def test_cash_command_route_delegates(self):
@@ -652,6 +868,43 @@ class RevenueCycleRouteTests(unittest.TestCase):
                 "sort_by": None,
                 "group_by": "owner",
                 "view": None,
+            }
+        )
+        self.assertEqual(payload, {"ok": True})
+
+    def test_board_pack_route_delegates_with_filters(self):
+        with patch.object(revenue_cycle_routes, "board_pack", return_value={"ok": True}) as mocked:
+            payload = revenue_cycle_routes.rcm_board_pack(
+                payer="PAYER-A",
+                priority="high",
+                due_window="Due This Week",
+                min_value="5000",
+                sort_by="expected_recovery",
+                group_by="owner",
+                view="grouped_cards",
+            )
+
+        mocked.assert_called_once_with(
+            {
+                "date_from": None,
+                "date_to": None,
+                "period": None,
+                "facility": None,
+                "payer": "PAYER-A",
+                "department": None,
+                "specialty": None,
+                "patient_type": None,
+                "claim_status": None,
+                "issue_type": None,
+                "owner": None,
+                "status": None,
+                "priority": "high",
+                "due_window": "Due This Week",
+                "min_value": "5000",
+                "search": None,
+                "sort_by": "expected_recovery",
+                "group_by": "owner",
+                "view": "grouped_cards",
             }
         )
         self.assertEqual(payload, {"ok": True})

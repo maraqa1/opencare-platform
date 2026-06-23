@@ -4066,6 +4066,342 @@ def executive_narrative() -> dict[str, Any]:
     }
 
 
+def _board_pack_currency(value: object, currency_code: str, *, compact: bool = False) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "Metric unavailable"
+    if compact:
+        absolute_value = abs(numeric_value)
+        if absolute_value >= 1_000_000:
+            return f"{currency_code} {numeric_value / 1_000_000:.1f}M"
+        if absolute_value >= 1_000:
+            return f"{currency_code} {numeric_value / 1_000:.0f}K"
+    return f"{currency_code} {numeric_value:,.0f}"
+
+
+def _board_pack_percent(value: object, digits: int = 1) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "Metric unavailable"
+    return f"{numeric_value:.{digits}f}%"
+
+
+def _board_pack_days(value: object) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "Metric unavailable"
+    return f"{round(numeric_value)} days"
+
+
+def _board_pack_hours(value: object) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "Metric unavailable"
+    if float(numeric_value).is_integer():
+        return f"{int(numeric_value)}h"
+    return f"{numeric_value:.1f}h"
+
+
+def _board_pack_count(value: object) -> str:
+    numeric_value = _currency_number(value)
+    if numeric_value is None:
+        return "Metric unavailable"
+    if float(numeric_value).is_integer():
+        return f"{int(numeric_value):,}"
+    return f"{numeric_value:,.1f}"
+
+
+def _cash_kpi(payload: dict[str, Any], key: str) -> dict[str, Any] | None:
+    return next((item for item in payload.get("kpis", []) if item.get("key") == key), None)
+
+
+def _queue_kpi(payload: dict[str, Any], key: str) -> dict[str, Any] | None:
+    return next((item for item in payload.get("kpis", []) if item.get("id") == key), None)
+
+
+def _board_pack_decision_filters(filters: dict[str, Any] | None) -> dict[str, Any]:
+    raw_filters = filters or {}
+    return {
+        "date_from": raw_filters.get("date_from"),
+        "date_to": raw_filters.get("date_to"),
+        "period": raw_filters.get("period"),
+        "facility": raw_filters.get("facility"),
+        "payer": raw_filters.get("payer"),
+        "department": raw_filters.get("department"),
+        "specialty": raw_filters.get("specialty"),
+        "patient_type": raw_filters.get("patient_type"),
+        "claim_status": raw_filters.get("claim_status"),
+        "owner": raw_filters.get("owner"),
+        "priority": raw_filters.get("priority"),
+        "due_window": raw_filters.get("due_window"),
+        "search": raw_filters.get("search"),
+        "sort_by": raw_filters.get("sort_by"),
+    }
+
+
+def board_pack(filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    raw_filters = {key: value for key, value in (filters or {}).items() if value not in (None, "")}
+    cash = cash_command(filters)
+    queue = recovery_queue(filters)
+    decision_payload = decision_queue(_board_pack_decision_filters(filters))
+
+    currency_code = str(
+        cash.get("currency")
+        or queue.get("currency")
+        or decision_payload.get("currency")
+        or RECOVERY_QUEUE_CURRENCY
+    )
+    period = cash.get("period") or queue.get("period") or decision_payload.get("period") or {}
+    generated_at = (
+        cash.get("data_quality", {}).get("generated_at")
+        or queue.get("generated_at")
+        or decision_payload.get("generated_at")
+        or _now_iso()
+    )
+
+    cash_risk_value = cash.get("cash_at_risk")
+    recoverable_queue_value = (_queue_kpi(queue, "recoverable_queue_value") or {}).get("value")
+    expected_recovery_value = (_queue_kpi(queue, "expected_recovery") or {}).get("value")
+    due_this_week_value = (_queue_kpi(queue, "due_this_week") or {}).get("value")
+    overdue_items_value = (_queue_kpi(queue, "overdue_items") or {}).get("value")
+    high_priority_value = (_queue_kpi(queue, "high_priority_items") or {}).get("value")
+    effort_hours_value = (_queue_kpi(queue, "recovery_effort_hours") or {}).get("value")
+    net_patient_revenue_value = (_cash_kpi(cash, "net_patient_revenue") or {}).get("value")
+    cash_collected_value = (_cash_kpi(cash, "cash_collected") or {}).get("value")
+    collection_rate_value = (_cash_kpi(cash, "collection_rate") or {}).get("value")
+    ar_days_value = (_cash_kpi(cash, "ar_days") or {}).get("value")
+    denial_rate_value = (_cash_kpi(cash, "denial_rate") or {}).get("value")
+
+    decision_count = decision_payload.get("headline", {}).get("decision_count")
+    approval_required_count = decision_payload.get("headline", {}).get("approval_required_count")
+    dispatched_decisions = (_queue_kpi(decision_payload, "dispatched_today") or {}).get("value")
+    outcome_review_enabled = bool(decision_payload.get("outcome_review", {}).get("enabled"))
+    workflow_configured = not bool(decision_payload.get("meta", {}).get("empty")) or bool(decision_payload.get("data_quality"))
+
+    executive_message = (
+        "Hospitals deliver care every day, but clinical activity does not automatically become cash. "
+        f"In the current reporting scope, the platform identifies {_board_pack_currency(cash_risk_value, currency_code, compact=True)} of revenue exposure "
+        f"and {_board_pack_currency(recoverable_queue_value, currency_code, compact=True)} of recoverable queue value. "
+        "Cash Command diagnoses the exposure; Recovery Queue converts it into ranked operational recovery work."
+    )
+
+    decision_message = (
+        f"{_board_pack_count(decision_count)} governed decisions are currently in review, with {_board_pack_count(approval_required_count)} requiring formal approval."
+        if workflow_configured and not decision_payload.get("meta", {}).get("empty")
+        else "Decision workflow not yet fully configured for the current scope."
+    )
+
+    story_cards = [
+        {
+            "title": "Care creates value",
+            "metric_label": "Net patient revenue",
+            "metric_value": _board_pack_currency(net_patient_revenue_value, currency_code, compact=True),
+            "status": (_cash_kpi(cash, "net_patient_revenue") or {}).get("status") or "unknown",
+            "message": "Clinical activity creates financial value only when the reporting platform can trace it through billing, insurer review, and collection.",
+        },
+        {
+            "title": "Cash gets trapped",
+            "metric_label": "Cash conversion pressure",
+            "metric_value": (
+                f"Collection {_board_pack_percent(collection_rate_value)} | "
+                f"Average payment days {_board_pack_days(ar_days_value)} | "
+                f"Rejected claim rate {_board_pack_percent(denial_rate_value)}"
+            ),
+            "status": cash.get("headline", {}).get("severity") or "unknown",
+            "message": "Working-capital pressure appears first in slower payment, weaker collection, and rising rejected-claim behaviour.",
+        },
+        {
+            "title": "Risk becomes work",
+            "metric_label": "Recovery queue",
+            "metric_value": (
+                f"{_board_pack_currency(recoverable_queue_value, currency_code, compact=True)} recoverable | "
+                f"{_board_pack_currency(expected_recovery_value, currency_code, compact=True)} expected"
+            ),
+            "status": queue.get("headline", {}).get("severity") or "unknown",
+            "message": "Once risk is quantified, the operating question becomes which work items should be handled first for the greatest cash return per effort hour.",
+        },
+        {
+            "title": "Work becomes decisions",
+            "metric_label": "Decision maturity",
+            "metric_value": decision_message,
+            "status": decision_payload.get("headline", {}).get("severity") or ("watch" if workflow_configured else "unknown"),
+            "message": (
+                "Execution ranking is the first maturity layer. Governed approval, dispatch, and measured outcome review are the next layer."
+                if workflow_configured
+                else "Decision workflow is not yet configured for governed approval, dispatch, and outcome review."
+            ),
+        },
+    ]
+
+    metric_definitions = [
+        {"label": "Collection Rate", "definition": "Cash collected divided by net patient revenue in the current reporting scope."},
+        {"label": "Rejected Claim Rate", "definition": "Rejected claim value divided by submitted claim value in the current reporting scope."},
+        {"label": "Revenue at Risk", "definition": "Composite exposure from rejected claims, balances overdue by more than 90 days, billing backlog proxy value, and underpayments."},
+        {"label": "Recoverable Queue Value", "definition": "Sum of recoverable value across live recovery work items."},
+        {"label": "Expected Recovery", "definition": "Sum of expected recovery across live recovery work items."},
+        {"label": "Priority Score", "definition": "Expected recovery per effort hour, adjusted by backend urgency multipliers and approval logic."},
+    ]
+
+    missing_metrics = {
+        item.get("label")
+        for item in (
+            list(cash.get("data_quality", {}).get("missing_metrics", []))
+            + list(queue.get("data_quality", {}).get("missing_metrics", []))
+            + list(decision_payload.get("data_quality", {}).get("missing_metrics", []))
+        )
+        if item.get("label")
+    }
+    if net_patient_revenue_value is None:
+        missing_metrics.add("Net Patient Revenue")
+    if cash_collected_value is None:
+        missing_metrics.add("Cash Collected")
+    if collection_rate_value is None:
+        missing_metrics.add("Collection Rate")
+    if ar_days_value is None:
+        missing_metrics.add("Average Payment Days")
+    if denial_rate_value is None:
+        missing_metrics.add("Rejected Claim Rate")
+    if cash_risk_value is None:
+        missing_metrics.add("Revenue at Risk")
+    if recoverable_queue_value is None:
+        missing_metrics.add("Recoverable Queue Value")
+    if expected_recovery_value is None:
+        missing_metrics.add("Expected Recovery")
+
+    source_tables_map: dict[str, dict[str, Any]] = {}
+    for source in (
+        list(cash.get("data_quality", {}).get("source_tables", []))
+        + list(queue.get("data_quality", {}).get("source_tables", []))
+        + list(decision_payload.get("data_quality", {}).get("source_tables", []))
+    ):
+        table_name = str(source.get("table") or "").strip()
+        if not table_name:
+            continue
+        source_tables_map[table_name] = {
+            "table": table_name,
+            "role": source.get("role"),
+            "loaded": source.get("loaded"),
+        }
+
+    board_talk_track = (
+        "This use case solves a real CFO problem: hospitals create revenue through care delivery, but that revenue often gets trapped before it becomes cash. "
+        f"Cash Command shows where the money is stuck across rejected claims, aged balances, billing backlog, underpayments, and collections. "
+        f"In the current reporting scope, net patient revenue is {_board_pack_currency(net_patient_revenue_value, currency_code, compact=True)}, "
+        f"cash collected is {_board_pack_currency(cash_collected_value, currency_code, compact=True)}, "
+        f"collection rate is {_board_pack_percent(collection_rate_value)}, "
+        f"average payment days are {_board_pack_days(ar_days_value)}, "
+        f"and revenue at risk is {_board_pack_currency(cash_risk_value, currency_code, compact=True)}. "
+        f"Recovery Queue then converts that financial risk into ranked recovery work: {_board_pack_currency(recoverable_queue_value, currency_code, compact=True)} recoverable value, "
+        f"{_board_pack_currency(expected_recovery_value, currency_code, compact=True)} expected recovery, "
+        f"{_board_pack_count(due_this_week_value)} items due this week, and {_board_pack_hours(effort_hours_value)} effort hours required. "
+        "This shifts revenue cycle management from passive reporting to active cash recovery execution."
+    )
+
+    return {
+        "generated_at": generated_at,
+        "currency": currency_code,
+        "period": period,
+        "filters_applied": raw_filters,
+        "meta": {
+            "use_case": USE_CASE_ID,
+            "section": "board-pack",
+            "empty": bool(cash.get("meta", {}).get("empty") and queue.get("meta", {}).get("empty")),
+            "message": "No revenue cycle data loaded yet" if cash.get("meta", {}).get("empty") and queue.get("meta", {}).get("empty") else None,
+        },
+        "executive_cover": {
+            "title": "From Cash Risk to Recovery Execution",
+            "subtitle": "Revenue Cycle Management board pack showing where hospital revenue is trapped, how much is recoverable, and what operational actions must be worked first.",
+            "message": executive_message,
+            "hero_cards": [
+                {"label": "Cash Risk Identified", "formatted_value": _board_pack_currency(cash_risk_value, currency_code, compact=True), "status": cash.get("headline", {}).get("severity") or "unknown"},
+                {"label": "Recoverable Queue Value", "formatted_value": _board_pack_currency(recoverable_queue_value, currency_code, compact=True), "status": queue.get("headline", {}).get("severity") or "unknown"},
+                {"label": "Expected Recovery", "formatted_value": _board_pack_currency(expected_recovery_value, currency_code, compact=True), "status": (_queue_kpi(queue, "expected_recovery") or {}).get("status") or "unknown"},
+                {"label": "Workload Due This Week", "formatted_value": f"{_board_pack_count(due_this_week_value)} items", "status": (_queue_kpi(queue, "due_this_week") or {}).get("status") or "unknown"},
+            ],
+        },
+        "storyline": {
+            "title": "The business problem is cash conversion, not dashboard reporting",
+            "subtitle": "The board pack moves from financial exposure to operational action and then into governed decision maturity.",
+            "cards": story_cards,
+        },
+        "cash_command": cash,
+        "recovery_queue": queue,
+        "decision_layer": {
+            "workflow_configured": workflow_configured,
+            "title": "Decision Queue - the next layer after execution ranking",
+            "subtitle": (
+                "The current recovery queue is an execution queue. Governed approval, dispatch, audit trail, and outcome measurement are not yet fully configured."
+                if not outcome_review_enabled
+                else "Governed approval, dispatch, audit trail, and outcome review are populated from the live decision layer."
+            ),
+            "message": decision_payload.get("headline", {}).get("message")
+            or "The current recovery queue is an execution queue. Governed decision workflow is not yet configured.",
+            "kpis": [
+                {"label": "Decisions requiring review", "formatted_value": _board_pack_count((_queue_kpi(decision_payload, "decisions_requiring_review") or {}).get("value")), "status": (_queue_kpi(decision_payload, "decisions_requiring_review") or {}).get("status") or "unknown"},
+                {"label": "Approval required", "formatted_value": _board_pack_count(approval_required_count), "status": (_queue_kpi(decision_payload, "approval_required") or {}).get("status") or "unknown"},
+                {"label": "Expected recovery under decision", "formatted_value": _board_pack_currency((_queue_kpi(decision_payload, "expected_recovery_under_decision") or {}).get("value"), currency_code, compact=True), "status": (_queue_kpi(decision_payload, "expected_recovery_under_decision") or {}).get("status") or "unknown"},
+                {"label": "Dispatched decisions", "formatted_value": _board_pack_count(dispatched_decisions), "status": (_queue_kpi(decision_payload, "dispatched_today") or {}).get("status") or "unknown"},
+            ],
+            "cards": [
+                {
+                    "title": "Observation Queue",
+                    "status": queue.get("headline", {}).get("severity") or "unknown",
+                    "message": f"Recovery Work Queue currently holds {_board_pack_currency(recoverable_queue_value, currency_code, compact=True)} across {_board_pack_count(queue.get('total'))} visible work items.",
+                },
+                {
+                    "title": "Decision Review Queue",
+                    "status": decision_payload.get("headline", {}).get("severity") or "unknown",
+                    "message": decision_message,
+                },
+                {
+                    "title": "Outcome Review",
+                    "status": "watch" if not outcome_review_enabled else "healthy",
+                    "message": (
+                        str(decision_payload.get("outcome_review", {}).get("reason"))
+                        if decision_payload.get("outcome_review")
+                        else "Outcome review not yet available."
+                    ),
+                },
+            ],
+            "payload": decision_payload,
+        },
+        "board_talk_track": board_talk_track,
+        "data_trust": {
+            "generated_at": generated_at,
+            "period": period,
+            "currency": currency_code,
+            "filters_applied": raw_filters,
+            "source_tables": list(source_tables_map.values()),
+            "source_freshness": [
+                {"label": "Cash Command", "status": cash.get("data_freshness", {}).get("status")},
+                {"label": "Recovery Queue", "status": queue.get("data_freshness", {}).get("status")},
+                {"label": "Decision Queue", "status": decision_payload.get("data_freshness", {}).get("status")},
+            ],
+            "metric_definitions": metric_definitions,
+            "missing_metrics": sorted(missing_metrics),
+            "unavailable_fields": sorted(missing_metrics),
+            "warnings": list(dict.fromkeys(
+                list(cash.get("data_quality", {}).get("warnings", []))
+                + list(queue.get("data_quality", {}).get("warnings", []))
+                + list(decision_payload.get("data_quality", {}).get("warnings", []))
+            )),
+            "limitations": list(dict.fromkeys(
+                list(cash.get("data_quality", {}).get("limitations", []))
+                + list(queue.get("data_quality", {}).get("limitations", []))
+                + list(decision_payload.get("data_quality", {}).get("limitations", []))
+            )),
+            "scoring_logic": list(dict.fromkeys(
+                [
+                    item.get("definition")
+                    for item in list(queue.get("data_quality", {}).get("metric_definitions", []))
+                    if isinstance(item, dict) and item.get("definition")
+                ]
+                + list(decision_payload.get("data_quality", {}).get("scoring_logic", []))
+            )),
+        },
+    }
+
+
 def summary() -> dict[str, Any]:
     cash = cash_command()
     queue = recovery_queue()

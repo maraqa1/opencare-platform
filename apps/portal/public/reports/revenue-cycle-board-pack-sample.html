@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Revenue Cycle Board Pack Sample</title>
+  <style>
+    :root {
+      --navy: #10284f;
+      --blue: #2b67d0;
+      --slate: #5d6878;
+      --panel: #ffffff;
+      --bg: #f4f7fb;
+      --line: #dbe3f2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      background: var(--bg);
+      color: #10203c;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .report {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+    .hero,
+    .section {
+      background: var(--panel);
+      border: 1px solid rgba(16, 40, 79, 0.08);
+      border-radius: 24px;
+      box-shadow: 0 18px 36px rgba(16, 40, 79, 0.06);
+      padding: 24px;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(13, 39, 82, 0.98), rgba(31, 91, 177, 0.92));
+      color: white;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.72);
+    }
+    .hero h1,
+    .section h2 {
+      margin: 0;
+    }
+    .hero-grid,
+    .card-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+    .card,
+    .hero-card {
+      border-radius: 18px;
+      padding: 16px;
+      border: 1px solid rgba(16, 40, 79, 0.08);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 248, 253, 0.96));
+    }
+    .hero-card {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .placeholder {
+      color: var(--slate);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    .table th,
+    .table td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px 10px;
+      text-align: left;
+      font-size: 13px;
+    }
+    .table th {
+      color: var(--slate);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+    code {
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+    @media (max-width: 920px) {
+      .hero-grid,
+      .card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 640px) {
+      body { padding: 18px; }
+      .hero-grid,
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="report">
+    <section class="hero">
+      <p class="eyebrow">Reference Sample Only</p>
+      <h1>Revenue Cycle Board Pack Sample</h1>
+      <p class="placeholder">
+        This sample shows the expected structure only. Values must be populated from the live
+        <code>/api/v1/rcm/board-pack</code> payload at generation time.
+      </p>
+      <div class="hero-grid">
+        <div class="hero-card"><strong>{cash_risk_identified}</strong><div class="placeholder">Cash Risk Identified</div></div>
+        <div class="hero-card"><strong>{recoverable_queue_value}</strong><div class="placeholder">Recoverable Queue Value</div></div>
+        <div class="hero-card"><strong>{expected_recovery}</strong><div class="placeholder">Expected Recovery</div></div>
+        <div class="hero-card"><strong>{due_this_week_count}</strong><div class="placeholder">Workload Due This Week</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Business Storyline</h2>
+      <div class="card-grid">
+        <div class="card"><strong>Care creates value</strong><p class="placeholder">{net_patient_revenue}</p></div>
+        <div class="card"><strong>Cash gets trapped</strong><p class="placeholder">{collection_rate} · {ar_days} · {denial_rate}</p></div>
+        <div class="card"><strong>Risk becomes work</strong><p class="placeholder">{recoverable_queue_value} · {expected_recovery}</p></div>
+        <div class="card"><strong>Work becomes decisions</strong><p class="placeholder">{decision_layer_status}</p></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Cash Command</h2>
+      <p class="placeholder">Use live KPI cards, charges-vs-cash trend, aging buckets, rejected-claim pipeline, and risk concentration.</p>
+    </section>
+
+    <section class="section">
+      <h2>Recovery Queue</h2>
+      <p class="placeholder">Use live queue KPIs, workload mix, insurer recovery, due window, and ranked work items.</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Claim</th>
+            <th>Insurer</th>
+            <th>Issue</th>
+            <th>Priority</th>
+            <th>Recoverable</th>
+            <th>Expected</th>
+            <th>Effort</th>
+            <th>Owner</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{claim_ref}</td>
+            <td>{payer}</td>
+            <td>{issue_type}</td>
+            <td>{priority}</td>
+            <td>{recoverable_value}</td>
+            <td>{expected_recovery}</td>
+            <td>{effort_hours}</td>
+            <td>{owner}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Decision Queue</h2>
+      <p class="placeholder">Show live decision review counts when available. Otherwise state clearly that governed decision workflow is not yet fully configured.</p>
+    </section>
+
+    <section class="section">
+      <h2>Board Talk Track</h2>
+      <p class="placeholder">{board_talk_track}</p>
+    </section>
+
+    <section class="section">
+      <h2>Data Trust</h2>
+      <p class="placeholder">List generated_at, period, currency, filters, source tables, freshness, definitions, missing metrics, warnings, limitations, and scoring logic here.</p>
+    </section>
+  </main>
+</body>
+</html>

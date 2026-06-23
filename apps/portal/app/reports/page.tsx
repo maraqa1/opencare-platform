@@ -16,17 +16,38 @@ export default async function ReportsPage() {
     fallback: { items: [] },
   });
 
-  const rows =
-    (reports.items?.length ? reports.items : [
-      { title: "Forecast CSV", format: "csv", path: "/api/v1/reports/export/forecast" },
-      { title: "Anomaly CSV", format: "csv", path: "/api/v1/reports/export/anomaly" },
-      { title: "Ward Summary PDF", format: "pdf", path: "/api/v1/reports/export/ward-summary" },
-    ]).map((report) => ({
+  const baseReports = reports.items?.length
+    ? reports.items
+    : [
+        { title: "Forecast CSV", format: "csv", path: "/api/v1/reports/export/forecast" },
+        { title: "Anomaly CSV", format: "csv", path: "/api/v1/reports/export/anomaly" },
+        { title: "Ward Summary PDF", format: "pdf", path: "/api/v1/reports/export/ward-summary" },
+      ];
+
+  const boardPackReports = [
+    {
+      title: "Revenue Cycle Board Pack",
+      format: "html",
+      path: "/api/v1/revenue-cycle/board-pack",
+    },
+    {
+      title: "Revenue Cycle Board Pack Prompt",
+      format: "md",
+      path: "/reports/revenue-cycle-board-pack-prompt.md",
+    },
+    {
+      title: "Revenue Cycle Board Pack Sample",
+      format: "html",
+      path: "/reports/revenue-cycle-board-pack-sample.html",
+    },
+  ];
+
+  const rows = [...baseReports, ...boardPackReports].map((report) => ({
       name: report.title,
       format: report.format.toUpperCase(),
       href: report.path,
       updated: report.path.startsWith("/api/") ? "Download available" : report.path,
-    })) || [];
+    }));
 
   return (
     <PageFrame
@@ -63,10 +84,10 @@ export default async function ReportsPage() {
         <p className="eyebrow">Scheduled Reports</p>
         <div className="compact-feed">
           <div className="compact-alert">
-            <span className="status-dot stale" />
+            <span className="status-dot success" />
             <div>
               <strong>Weekly board pack</strong>
-              <p>Future: summary PDF with occupancy trends, breach decisions, and outcomes.</p>
+              <p>Revenue Cycle board pack is now available as a live HTML export with reusable prompt and sample assets.</p>
             </div>
           </div>
           <div className="compact-alert">

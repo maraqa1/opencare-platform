@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import APIRouter, Body, HTTPException
 
 from app.services.revenue_cycle_service import (
+    board_pack,
     cash_command,
     decision_queue,
     decision_workspace,
@@ -231,6 +232,53 @@ def rcm_recovery_queue(
     view: Optional[str] = None,
 ) -> dict[str, object]:
     return recovery_queue(
+        _recovery_queue_filters(
+            date_from=date_from,
+            date_to=date_to,
+            period=period,
+            facility=facility,
+            payer=payer,
+            department=department,
+            specialty=specialty,
+            patient_type=patient_type,
+            claim_status=claim_status,
+            issue_type=issue_type,
+            owner=owner,
+            status=status,
+            priority=priority,
+            due_window=due_window,
+            min_value=min_value,
+            search=search,
+            sort_by=sort_by,
+            group_by=group_by,
+            view=view,
+        )
+    )
+
+
+@rcm_router.get("/board-pack")
+def rcm_board_pack(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    period: Optional[str] = None,
+    facility: Optional[str] = None,
+    payer: Optional[str] = None,
+    department: Optional[str] = None,
+    specialty: Optional[str] = None,
+    patient_type: Optional[str] = None,
+    claim_status: Optional[str] = None,
+    issue_type: Optional[str] = None,
+    owner: Optional[str] = None,
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    due_window: Optional[str] = None,
+    min_value: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    group_by: Optional[str] = None,
+    view: Optional[str] = None,
+) -> dict[str, object]:
+    return board_pack(
         _recovery_queue_filters(
             date_from=date_from,
             date_to=date_to,

@@ -529,6 +529,85 @@ export type RCMDecisionQueuePayload = {
   };
 };
 
+export type RevenueCycleBoardPackStatus =
+  | "critical"
+  | "watch"
+  | "healthy"
+  | "unknown"
+  | string;
+
+export type RevenueCycleBoardPackCard = {
+  title?: string | null;
+  metric_label?: string | null;
+  metric_value?: string | null;
+  message?: string | null;
+  status?: RevenueCycleBoardPackStatus;
+};
+
+export type RevenueCycleBoardPackKpi = {
+  label?: string | null;
+  formatted_value?: string | null;
+  interpretation?: string | null;
+  target_label?: string | null;
+  status?: RevenueCycleBoardPackStatus;
+};
+
+export type RevenueCycleBoardPackPayload = {
+  generated_at?: string | null;
+  currency?: string | null;
+  period?: {
+    date_from?: string | null;
+    date_to?: string | null;
+    label?: string | null;
+  };
+  filters_applied?: Record<string, unknown>;
+  meta?: RCMMeta & {
+    use_case?: string | null;
+    section?: string | null;
+  };
+  executive_cover?: {
+    title?: string | null;
+    subtitle?: string | null;
+    message?: string | null;
+    hero_cards?: RevenueCycleBoardPackKpi[];
+  };
+  storyline?: {
+    title?: string | null;
+    subtitle?: string | null;
+    cards?: RevenueCycleBoardPackCard[];
+  };
+  cash_command?: CashCommandPayload;
+  recovery_queue?: RecoveryQueuePayload;
+  decision_layer?: {
+    workflow_configured?: boolean;
+    title?: string | null;
+    subtitle?: string | null;
+    message?: string | null;
+    kpis?: RevenueCycleBoardPackKpi[];
+    cards?: RevenueCycleBoardPackCard[];
+    payload?: RCMDecisionQueuePayload;
+  };
+  board_talk_track?: string | null;
+  data_trust?: {
+    generated_at?: string | null;
+    period?: {
+      date_from?: string | null;
+      date_to?: string | null;
+      label?: string | null;
+    };
+    currency?: string | null;
+    filters_applied?: Record<string, unknown>;
+    source_tables?: Array<{ table: string; role?: string | null; loaded?: boolean | null }>;
+    source_freshness?: Array<{ label: string; status?: string | null }>;
+    metric_definitions?: Array<{ label: string; definition: string }>;
+    missing_metrics?: string[];
+    unavailable_fields?: string[];
+    warnings?: string[];
+    limitations?: string[];
+    scoring_logic?: string[];
+  };
+};
+
 export type RCMDecisionWorkspacePayload = {
   generated_at?: string | null;
   decision?: RCMDecision | null;

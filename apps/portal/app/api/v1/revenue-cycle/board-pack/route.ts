@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import type { CashCommandPayload, RecoveryQueuePayload } from "@/components/rcm/types";
+import type { RevenueCycleBoardPackPayload } from "@/components/rcm/types";
 import { getApiUrl } from "@/lib/api";
 import { buildRevenueCycleBoardPack } from "@/lib/rcm-board-pack";
 
@@ -55,12 +55,9 @@ export async function GET(request: NextRequest) {
   const queryString = request.nextUrl.searchParams.toString();
   const suffix = queryString ? `?${queryString}` : "";
 
-  const [cash, queue] = await Promise.all([
-    fetchJson<CashCommandPayload>(`/api/v1/revenue-cycle/cash-command${suffix}`),
-    fetchJson<RecoveryQueuePayload>(`/api/v1/rcm/recovery-queue${suffix}`),
-  ]);
+  const boardPack = await fetchJson<RevenueCycleBoardPackPayload>(`/api/v1/rcm/board-pack${suffix}`);
 
-  if (!cash || !queue) {
+  if (!boardPack) {
     return new Response("Unable to load the revenue cycle board pack data.", {
       status: 502,
       headers: {
@@ -70,8 +67,7 @@ export async function GET(request: NextRequest) {
   }
 
   const html = buildRevenueCycleBoardPack({
-    cash,
-    queue,
+    boardPack,
     requestLabel: describeScope(request.nextUrl.searchParams),
   });
 
