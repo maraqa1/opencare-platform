@@ -84,7 +84,7 @@ export const useCases: UseCaseModule[] = [
     defaultHref: "/use-cases/revenue-cycle-management/cash-command",
     kpis: [
       { label: "Recoverable Cash 7d", value: "Live", note: "From loaded recovery opportunities" },
-      { label: "Payer Control", value: "Live", note: "Contract breaches and underpayment flags" },
+      { label: "Insurance Performance", value: "Live", note: "Contract breaches and underpayment flags" },
       { label: "Execution Queue", value: "Live", note: "Owner-led recovery actions" },
     ],
     shell: {
@@ -194,13 +194,13 @@ export const bedPressureTabs = [
 ];
 
 export const revenueCycleTabs = [
-  { key: "cash-command", label: "Cash Command", href: "/use-cases/revenue-cycle-management/cash-command" },
-  { key: "recovery-queue", label: "Recovery Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },
-  { key: "decision-queue", label: "Decision Queue", href: "/use-cases/revenue-cycle-management/decision-queue" },
-  { key: "payer-control", label: "Payer Control", href: "/use-cases/revenue-cycle-management/payer-control" },
-  { key: "revenue-leakage", label: "Revenue Leakage", href: "/use-cases/revenue-cycle-management/revenue-leakage" },
+  { key: "cash-command", label: "Cash Overview", href: "/use-cases/revenue-cycle-management/cash-command" },
+  { key: "recovery-queue", label: "Recovery Work Queue", href: "/use-cases/revenue-cycle-management/recovery-queue" },
+  { key: "decision-queue", label: "Decision Review Queue", href: "/use-cases/revenue-cycle-management/decision-queue" },
+  { key: "payer-control", label: "Insurance Performance", href: "/use-cases/revenue-cycle-management/payer-control" },
+  { key: "revenue-leakage", label: "Revenue Loss", href: "/use-cases/revenue-cycle-management/revenue-leakage" },
   { key: "team-performance", label: "Team Performance", href: "/use-cases/revenue-cycle-management/team-performance" },
-  { key: "executive-narrative", label: "Executive Narrative", href: "/use-cases/revenue-cycle-management/executive-narrative" },
+  { key: "executive-narrative", label: "Executive Summary", href: "/use-cases/revenue-cycle-management/executive-narrative" },
 ];
 
 export const talemiaTabs = [

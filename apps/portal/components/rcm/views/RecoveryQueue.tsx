@@ -181,7 +181,7 @@ function filterChipLabel(key: keyof DraftFilters, value: string) {
   };
   const labels: Record<keyof DraftFilters, string> = {
     issue_type: "Issue",
-    payer: "Payer",
+    payer: "Insurer",
     owner: "Owner",
     status: "Status",
     priority: "Priority",
@@ -221,7 +221,7 @@ function filtersFromSearchParams(searchParams: URLSearchParams): DraftFilters {
 function downloadQueueCsv(items: RecoveryQueueItem[]) {
   const header = [
     "Claim",
-    "Payer",
+    "Insurer",
     "Recovery Issue",
     "Priority",
     "Recoverable Value",
@@ -230,7 +230,7 @@ function downloadQueueCsv(items: RecoveryQueueItem[]) {
     "Priority Score",
     "Owner",
     "Due Date",
-    "SLA Risk",
+    "Deadline Risk",
     "Status",
     "Next Action",
   ];
@@ -256,7 +256,7 @@ function downloadQueueCsv(items: RecoveryQueueItem[]) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "recovery-queue.csv";
+  link.download = "recovery-work-queue.csv";
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -392,7 +392,7 @@ function TableView({
         <thead>
           <tr>
             <th>Claim</th>
-            <th>Payer</th>
+            <th>Insurer</th>
             <th>Recovery Issue</th>
             <th>Priority</th>
             <th>Recoverable Value</th>
@@ -402,7 +402,7 @@ function TableView({
             <th>Owner</th>
             <th>Due Date</th>
             <th>Days to Due</th>
-            <th>SLA Risk</th>
+            <th>Deadline Risk</th>
             <th>Status</th>
             <th>Decision</th>
             <th>Next Action</th>
@@ -416,7 +416,7 @@ function TableView({
                   {item.claim_ref ?? "--"}
                 </button>
               </td>
-              <td>{item.payer_label ?? "Payer pending"}</td>
+              <td>{item.payer_label ?? "Insurer pending"}</td>
               <td>{item.issue_label ?? "Issue pending"}</td>
               <td>
                 <span className={priorityClass(item.priority)}>{item.priority ?? "Routine"}</span>
@@ -491,7 +491,7 @@ function GroupedCardsView({
             </div>
           </div>
           <div className={styles.groupDetails}>
-            <span>{`Top payer: ${group.top_payer ?? "Pending"}`}</span>
+            <span>{`Top insurer: ${group.top_payer ?? "Pending"}`}</span>
             <span>{`Top owner: ${group.top_owner ?? "Pending"}`}</span>
             <span>{`Due pressure: ${group.due_pressure ?? "Future"}`}</span>
           </div>
@@ -531,7 +531,7 @@ function DataTrustDrawer({
         <div className={styles.drawerHeader}>
           <div>
             <p className={styles.drawerEyebrow}>Data Trust</p>
-            <h3>Recovery Queue data contract</h3>
+            <h3>Recovery work queue data contract</h3>
           </div>
           <button type="button" className={styles.secondaryButton} onClick={onClose}>
             Close
@@ -646,8 +646,8 @@ function DetailDrawer({
             <strong>{item.formatted_priority_score ?? "-"}</strong>
           </div>
           <div>
-            <span>Payer</span>
-            <strong>{item.payer_label ?? "Payer pending"}</strong>
+            <span>Insurer</span>
+            <strong>{item.payer_label ?? "Insurer pending"}</strong>
           </div>
           <div>
             <span>Recovery issue</span>
@@ -670,7 +670,7 @@ function DetailDrawer({
             <strong>{item.due_date ? shortDate(item.due_date) : "No due date"}</strong>
           </div>
           <div>
-            <span>SLA risk</span>
+            <span>Deadline risk</span>
             <strong>{item.sla_risk ?? "No due date"}</strong>
           </div>
           <div>
@@ -726,7 +726,7 @@ function DetailDrawer({
               Promote to Decision
             </button>
           ) : null}
-          {["Start action", "Mark in progress", "Add note", "Assign owner", "Open payer control"].map((label) => (
+          {["Start action", "Mark in progress", "Add note", "Assign owner", "Open insurer performance"].map((label) => (
             <button
               key={label}
               type="button"
@@ -820,7 +820,7 @@ export function RecoveryQueue() {
       return;
     }
     const payload = await response.json() as { decision?: { decision_id?: string | null } };
-    setWorkflowMessage(`Promoted ${item.claim_ref ?? sourceId} into the governed Decision Queue.`);
+    setWorkflowMessage(`Promoted ${item.claim_ref ?? sourceId} into the governed Decision Review Queue.`);
     refetch();
     router.push(
       `/use-cases/revenue-cycle-management/decision-queue${payload.decision?.decision_id ? `?decision_id=${payload.decision.decision_id}` : ""}`,
@@ -872,7 +872,7 @@ export function RecoveryQueue() {
         Download Board Pack
       </a>
       <Link href="/use-cases/revenue-cycle-management/cash-command" className={styles.primaryLink}>
-        View Cash Command
+        View Cash Overview
       </Link>
     </div>
   );
@@ -881,8 +881,8 @@ export function RecoveryQueue() {
     <div className={styles.page}>
       <RCMPageHeader
         eyebrow="Revenue Cycle Management"
-        title="Recovery Queue - Cash Recovery Execution Board"
-        subtitle="Ranked operating queue for revenue recovery actions prioritised by value, urgency, payer risk, due date, and expected cash per effort hour."
+        title="Recovery Work Queue - Cash Recovery Board"
+        subtitle="Ranked operating queue for revenue recovery actions prioritised by value, urgency, insurer risk, due date, and expected cash per effort hour."
         contextLine={`Period: ${data?.period?.label ?? "Active scope"} | Scope: ${scopeLabel} | Refreshed: ${timestamp(data?.generated_at ?? data?.as_of)}`}
         badges={[
           { label: `Freshness: ${freshnessLabel}`, color: stale ? "amber" : "green" },
@@ -940,15 +940,15 @@ export function RecoveryQueue() {
           <section className={styles.intelligenceGrid}>
             <article className={styles.panelCard}>
               <div className={styles.panelHeader}>
-                <h3>Recovery Mix by Issue Type</h3>
+                <h3>Recovery value by work type</h3>
                 <span>Value + count</span>
               </div>
               <RollupList rows={data?.intelligence?.issue_mix ?? []} kind="issue" currencyCode={currencyCode} />
             </article>
             <article className={styles.panelCard}>
               <div className={styles.panelHeader}>
-                <h3>Recovery Value by Payer</h3>
-                <span>Top payers</span>
+                <h3>Recovery value by insurer</h3>
+                <span>Top insurers</span>
               </div>
               <RollupList rows={data?.intelligence?.payer_recovery ?? []} kind="payer" currencyCode={currencyCode} />
             </article>
@@ -961,7 +961,7 @@ export function RecoveryQueue() {
             </article>
             <article className={styles.panelCard}>
               <div className={styles.panelHeader}>
-                <h3>Due Window / SLA Risk</h3>
+                <h3>Due Window / Deadline Risk</h3>
                 <span>Pressure view</span>
               </div>
               <DueWindowPanel rows={data?.intelligence?.due_window ?? []} currencyCode={currencyCode} />
@@ -977,7 +977,7 @@ export function RecoveryQueue() {
                 onChange={(value) => setDraftFilters((current) => ({ ...current, issue_type: value }))}
               />
               <FilterSelect
-                label="Payer"
+                label="Insurer"
                 value={draftFilters.payer}
                 options={filterOptions.payer ?? []}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, payer: value }))}
@@ -1031,7 +1031,7 @@ export function RecoveryQueue() {
                   { value: "expected_recovery", label: "Expected Recovery" },
                   { value: "due_date", label: "Due Date" },
                   { value: "effort_hours", label: "Effort Hours" },
-                  { value: "payer", label: "Payer" },
+                  { value: "payer", label: "Insurer" },
                 ]}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, sort_by: value }))}
               />
@@ -1041,7 +1041,7 @@ export function RecoveryQueue() {
                 options={[
                   { value: "none", label: "None" },
                   { value: "issue_type", label: "Issue Type" },
-                  { value: "payer", label: "Payer" },
+                  { value: "payer", label: "Insurer" },
                   { value: "owner", label: "Owner" },
                   { value: "due_window", label: "Due Window" },
                   { value: "status", label: "Status" },

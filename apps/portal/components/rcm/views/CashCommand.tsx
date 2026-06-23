@@ -237,9 +237,9 @@ function PayerRow({
       </div>
       <div className={styles.payerMeta}>
         <span>Collection {collectionRate != null ? `${collectionRate.toFixed(1)}%` : "-"}</span>
-        <span>Denial {denialRate != null ? `${denialRate.toFixed(1)}%` : "-"}</span>
+        <span>Rejected claims {denialRate != null ? `${denialRate.toFixed(1)}%` : "-"}</span>
         <span>Days to pay {avgDaysToPay != null ? `${Math.round(avgDaysToPay)}d` : "-"}</span>
-        <span>AR {formatSarCompact(arExposure)}</span>
+        <span>Unpaid balance {formatSarCompact(arExposure)}</span>
       </div>
       <div className={styles.barTrack}>
         <span className={barFillClass(status)} style={{ width: `${width}%` }} />
@@ -284,7 +284,7 @@ function ActionTable({ rows }: { rows: CashCommandGroupedAction[] }) {
           <tr>
             <th>Priority</th>
             <th>Issue Type</th>
-            <th>Payer / Department</th>
+            <th>Insurer / Department</th>
             <th>Claims</th>
             <th>Recoverable Amount</th>
             <th>Expected Recovery</th>
@@ -374,8 +374,8 @@ export function CashCommand() {
   return (
     <div className={styles.page}>
       <RCMPageHeader
-        title="Cash Command"
-        subtitle="CFO landing page for reconciled cash performance, revenue risk, and grouped recovery actions."
+        title="Cash Overview"
+        subtitle="Executive landing page for reconciled cash performance, revenue risk, and grouped recovery actions."
         arDays={arDaysKpi?.value ?? undefined}
         arTarget={40}
         badges={[
@@ -476,10 +476,10 @@ export function CashCommand() {
             <article className={`${styles.chartCard} ${styles.span4}`}>
               <div className={styles.chartHeader}>
                 <div>
-                  <p className={styles.sectionEyebrow}>AR Aging</p>
-                  <h3 className={styles.chartTitle}>Aged receivables by bucket</h3>
+                  <p className={styles.sectionEyebrow}>Unpaid Balance Aging</p>
+                  <h3 className={styles.chartTitle}>Unpaid balances by age band</h3>
                   <p className={styles.chartNote}>
-                    Total AR {formatSarCompact(data.charts?.ar_total)} - AR &gt;90 {formatSarCompact(data.charts?.ar_over_90)}
+                    Total unpaid balance {formatSarCompact(data.charts?.ar_total)} - overdue 90+ days {formatSarCompact(data.charts?.ar_over_90)}
                   </p>
                 </div>
               </div>
@@ -500,15 +500,15 @@ export function CashCommand() {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <ChartEmpty message="No AR aging data is available for the selected filters." />
+                <ChartEmpty message="No unpaid-balance aging data is available for the selected filters." />
               )}
             </article>
 
             <article className={`${styles.chartCard} ${styles.span6}`}>
               <div className={styles.chartHeader}>
                 <div>
-                  <p className={styles.sectionEyebrow}>Denial & Recovery Pipeline</p>
-                  <h3 className={styles.chartTitle}>Denied claim value vs expected recovery</h3>
+                  <p className={styles.sectionEyebrow}>Rejected Claims & Recovery Pipeline</p>
+                  <h3 className={styles.chartTitle}>Rejected claim value vs expected recovery</h3>
                   <p className={styles.chartNote}>Both series are shown in SAR.</p>
                 </div>
               </div>
@@ -527,16 +527,16 @@ export function CashCommand() {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <ChartEmpty message="No denial or recovery pipeline trend is available for the selected filters." />
+                <ChartEmpty message="No rejected-claim or recovery trend is available for the selected filters." />
               )}
             </article>
 
             <article className={`${styles.chartCard} ${styles.span6}`}>
               <div className={styles.chartHeader}>
                 <div>
-                  <p className={styles.sectionEyebrow}>Payer Performance</p>
-                  <h3 className={styles.chartTitle}>Worst financial risk first</h3>
-                  <p className={styles.chartNote}>Collection rate, denial rate, AR exposure, and average days to pay.</p>
+                  <p className={styles.sectionEyebrow}>Insurer Performance</p>
+                  <h3 className={styles.chartTitle}>Highest financial risk first</h3>
+                  <p className={styles.chartNote}>Collection rate, rejected-claim rate, unpaid balance exposure, and average days to pay.</p>
                 </div>
               </div>
               {payerPerformance.length > 0 ? (
@@ -562,8 +562,8 @@ export function CashCommand() {
             <article className={`${styles.chartCard} ${styles.span12}`}>
               <div className={styles.chartHeader}>
                 <div>
-                  <p className={styles.sectionEyebrow}>Leakage by Payer</p>
-                  <h3 className={styles.chartTitle}>Ranked leakage exposure</h3>
+                  <p className={styles.sectionEyebrow}>Revenue Loss by Insurer</p>
+                  <h3 className={styles.chartTitle}>Ranked revenue-loss exposure</h3>
                 </div>
               </div>
               {leakageByPayer.length > 0 ? (
@@ -589,7 +589,7 @@ export function CashCommand() {
                 <p className={styles.sectionEyebrow}>Today's Recovery Actions</p>
                 <h2 className={styles.sectionTitle}>Grouped action board</h2>
                 <p className={styles.sectionSubtext}>
-                  Repeated actions are grouped by issue type, payer, department, owner, and due-date bucket.
+                  Repeated actions are grouped by issue type, insurer, department, owner, and due-date bucket.
                 </p>
               </div>
             </div>
@@ -634,7 +634,7 @@ export function CashCommand() {
                   <ul className={styles.trustList}>
                     <li>Date from: {data.data_quality?.filters_applied?.date_from ?? "Auto"}</li>
                     <li>Date to: {data.data_quality?.filters_applied?.date_to ?? "Auto"}</li>
-                    <li>Payer: {(data.data_quality?.filters_applied?.payer ?? []).join(", ") || "All"}</li>
+                    <li>Insurer: {(data.data_quality?.filters_applied?.payer ?? []).join(", ") || "All"}</li>
                     <li>Department: {(data.data_quality?.filters_applied?.department ?? []).join(", ") || "All"}</li>
                     <li>Claim status: {(data.data_quality?.filters_applied?.claim_status ?? []).join(", ") || "All"}</li>
                   </ul>

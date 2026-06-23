@@ -80,13 +80,13 @@ function buildNarrative(cash: CashCommandPayload, queue: RecoveryQueuePayload) {
   const expectedRecovery = queueKpiById(queue.kpis, "expected_recovery")?.value ?? 0;
   const dueThisWeek = queueKpiById(queue.kpis, "due_this_week")?.value ?? 0;
   const queueItems = queue.total ?? queue.queue_items?.length ?? queue.items?.length ?? 0;
-  const cashStory = cash.headline?.message ?? "Cash Command narrative unavailable.";
-  const queueStory = queue.headline?.message ?? "Recovery Queue narrative unavailable.";
+  const cashStory = cash.headline?.message ?? "Cash overview narrative unavailable.";
+  const queueStory = queue.headline?.message ?? "Recovery work queue narrative unavailable.";
 
   return {
     summary:
-      `Cash Command identifies ${formatSarCompact(cashAtRisk)} at risk and ${formatSarCompact(recoverable7d)} recoverable inside the next 7 days. ` +
-      `Recovery Queue translates that exposure into ${formatCount(queueItems)} ranked actions, ${formatSarCompact(queueValue)} of visible recoverable value, and ${formatCount(dueThisWeek)} items due this week.`,
+      `Cash Overview identifies ${formatSarCompact(cashAtRisk)} at risk and ${formatSarCompact(recoverable7d)} recoverable inside the next 7 days. ` +
+      `Recovery Work Queue translates that exposure into ${formatCount(queueItems)} ranked actions, ${formatSarCompact(queueValue)} of visible recoverable value, and ${formatCount(dueThisWeek)} items due this week.`,
     cashStory,
     queueStory,
     execution:
@@ -597,7 +597,7 @@ export function buildRevenueCycleBoardPack({
       <div class="hero-top">
         <div>
           <p class="eyebrow">Revenue Cycle Management</p>
-          <h1>Cash Command to Recovery Queue Board Pack</h1>
+          <h1>Cash Overview to Recovery Work Queue Board Pack</h1>
           <p>${escapeHtml(narrative.summary)}</p>
         </div>
         <div class="pill-row">
@@ -629,8 +629,8 @@ export function buildRevenueCycleBoardPack({
       <div class="section-head">
         <div>
           <p class="eyebrow" style="color:var(--slate)">Screen 1</p>
-          <h2>Cash Command</h2>
-          <p>${escapeHtml(cash.headline?.message ?? "Cash Command narrative unavailable.")}</p>
+          <h2>Cash Overview</h2>
+          <p>${escapeHtml(cash.headline?.message ?? "Cash overview narrative unavailable.")}</p>
         </div>
       </div>
       <div class="kpi-grid">
@@ -667,20 +667,20 @@ export function buildRevenueCycleBoardPack({
           </div>
         </article>
         <article class="chart-card span-4">
-          <p class="eyebrow" style="color:var(--slate)">AR Aging</p>
-          <h3>Where receivables are getting older</h3>
-          <p>AR days ${escapeHtml(arDaysKpi ? `${Math.round(arDaysKpi.value ?? 0)}d` : "-")} and denial rate ${escapeHtml(denialRateKpi ? `${denialRateKpi.value?.toFixed(1) ?? "-"}%` : "-")} define the pressure posture.</p>
+          <p class="eyebrow" style="color:var(--slate)">Unpaid Balance Aging</p>
+          <h3>Where unpaid balances are getting older</h3>
+          <p>Average payment days ${escapeHtml(arDaysKpi ? `${Math.round(arDaysKpi.value ?? 0)}d` : "-")} and rejected claim rate ${escapeHtml(denialRateKpi ? `${denialRateKpi.value?.toFixed(1) ?? "-"}%` : "-")} define the pressure posture.</p>
           ${svgBarChart(cash.charts?.ar_aging_buckets ?? [], "value", (row) => agingColor(row.risk_band), 420, 220)}
         </article>
         <article class="chart-card span-6">
-          <p class="eyebrow" style="color:var(--slate)">Denial & Recovery Pipeline</p>
-          <h3>Denied value versus recoverable value</h3>
-          <p>Collection rate ${escapeHtml(collectionRateKpi ? `${collectionRateKpi.value?.toFixed(1) ?? "-"}%` : "-")} only improves when denial value is converted into real recovery.</p>
+          <p class="eyebrow" style="color:var(--slate)">Rejected Claims & Recovery Pipeline</p>
+          <h3>Rejected claim value versus recoverable value</h3>
+          <p>Collection rate ${escapeHtml(collectionRateKpi ? `${collectionRateKpi.value?.toFixed(1) ?? "-"}%` : "-")} only improves when rejected-claim value is converted into real recovery.</p>
           ${svgBarChart(cash.charts?.denial_recovery_pipeline ?? [], "denied_value", () => "rgba(183,28,28,0.86)", 560, 220)}
         </article>
         <article class="chart-card span-6">
-          <p class="eyebrow" style="color:var(--slate)">Leakage by Payer</p>
-          <h3>Where commercial leakage is concentrated</h3>
+          <p class="eyebrow" style="color:var(--slate)">Revenue Loss by Insurer</p>
+          <h3>Where commercial revenue loss is concentrated</h3>
           <div>${(cash.charts?.leakage_by_payer ?? [])
             .slice(0, 5)
             .map((row) => `
@@ -702,8 +702,8 @@ export function buildRevenueCycleBoardPack({
       <div class="section-head">
         <div>
           <p class="eyebrow" style="color:var(--slate)">Screen 2</p>
-          <h2>Recovery Queue</h2>
-          <p>${escapeHtml(queue.story ?? queue.headline?.message ?? "Recovery Queue narrative unavailable.")}</p>
+          <h2>Recovery Work Queue</h2>
+          <p>${escapeHtml(queue.story ?? queue.headline?.message ?? "Recovery work queue narrative unavailable.")}</p>
         </div>
       </div>
       <div class="kpi-grid">
@@ -716,8 +716,8 @@ export function buildRevenueCycleBoardPack({
           ${progressList(issueMix, "recoverable_value", currencyCode)}
         </article>
         <article class="chart-card">
-          <p class="eyebrow" style="color:var(--slate)">Payer Recovery</p>
-          <h3>Expected recovery by payer</h3>
+          <p class="eyebrow" style="color:var(--slate)">Insurer Recovery</p>
+          <h3>Expected recovery by insurer</h3>
           ${progressList(payerRecovery, "expected_recovery", currencyCode)}
         </article>
         <article class="chart-card">
@@ -754,7 +754,7 @@ export function buildRevenueCycleBoardPack({
             <thead>
               <tr>
                 <th>Claim</th>
-                <th>Payer</th>
+                <th>Insurer</th>
                 <th>Issue</th>
                 <th>Priority</th>
                 <th>Recoverable</th>
@@ -763,7 +763,7 @@ export function buildRevenueCycleBoardPack({
                 <th>Score</th>
                 <th>Owner</th>
                 <th>Due</th>
-                <th>SLA Risk</th>
+                <th>Deadline Risk</th>
                 <th>Status</th>
               </tr>
             </thead>

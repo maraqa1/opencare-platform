@@ -685,8 +685,8 @@ def _build_cash_command_payload(
             if headline_severity == "watch"
             else "Revenue conversion is within benchmark."
         )
-        + f" AR Days are {round(ar_days or 0)} against a target of <=40, denial rate is {round(denial_rate or 0, 1)}%, "
-        + f"and SAR {revenue_at_risk:,.0f} is exposed through aged receivables, denials, DNFB, and underpayments."
+        + f" Average payment days are {round(ar_days or 0)} against a target of <=40, rejected claim rate is {round(denial_rate or 0, 1)}%, "
+        + f"and SAR {revenue_at_risk:,.0f} is exposed through overdue balances, rejected claims, billing backlog, and underpayments."
     )
 
     kpis = [
@@ -719,7 +719,7 @@ def _build_cash_command_payload(
         },
         {
             "key": "ar_days",
-            "label": "AR Days",
+            "label": "Average Payment Days",
             "value": ar_days,
             "unit": "days",
             "status": ar_status,
@@ -728,7 +728,7 @@ def _build_cash_command_payload(
         },
         {
             "key": "denial_rate",
-            "label": "Denial Rate",
+            "label": "Rejected Claim Rate",
             "value": denial_rate,
             "unit": "percent",
             "status": denial_status,
@@ -742,7 +742,7 @@ def _build_cash_command_payload(
             "unit": "currency",
             "status": risk_status,
             "target_label": "Healthy < 10% of NPR",
-            "interpretation": "Composite exposure from denials, aged AR >90, DNFB proxy, and underpayments.",
+            "interpretation": "Composite exposure from rejected claims, balances overdue by 90+ days, billing backlog proxy, and underpayments.",
         },
     ]
 
@@ -773,10 +773,10 @@ def _build_cash_command_payload(
             "key": "discharge_coding",
             "title": "Discharge & Coding",
             "status": _kpi_status_for_revenue_at_risk(dnfb_value, net_patient_revenue),
-            "why_it_matters": "DNFB is proxied by open claims because discharge-to-bill timestamps are not modeled separately.",
+            "why_it_matters": "Billing backlog is proxied by open claims because discharge-to-bill timestamps are not modeled separately.",
             "metrics": [
                 {"label": "Open claims", "value": dnfb_count, "unit": "count"},
-                {"label": "DNFB proxy value", "value": dnfb_value, "unit": "currency"},
+                {"label": "Billing backlog proxy value", "value": dnfb_value, "unit": "currency"},
                 {"label": "Open age", "value": dnfb_average_days, "unit": "days"},
             ],
         },
@@ -807,24 +807,24 @@ def _build_cash_command_payload(
         {
             "stage_number": 5,
             "key": "payer_adjudication",
-            "title": "Payer Adjudication",
+            "title": "Insurer Review",
             "status": denial_status,
-            "why_it_matters": "Denial pressure is the cleanest leading signal of preventable revenue drag.",
+            "why_it_matters": "Rejected-claim pressure is the clearest early sign of preventable revenue drag.",
             "metrics": [
-                {"label": "Denied claims", "value": denied_claim_count, "unit": "count"},
-                {"label": "Denial rate", "value": denial_rate, "unit": "percent"},
-                {"label": "Denied value", "value": denied_claim_value, "unit": "currency"},
+                {"label": "Rejected claims", "value": denied_claim_count, "unit": "count"},
+                {"label": "Rejected claim rate", "value": denial_rate, "unit": "percent"},
+                {"label": "Rejected claim value", "value": denied_claim_value, "unit": "currency"},
             ],
         },
         {
             "stage_number": 6,
             "key": "ar_recovery",
-            "title": "AR & Recovery",
+            "title": "Outstanding Balances & Recovery",
             "status": risk_status if _severity_rank(risk_status) >= _severity_rank(ar_status) else ar_status,
-            "why_it_matters": "Aged receivables and open recovery work determine how much cash stays trapped in the ledger.",
+            "why_it_matters": "Older unpaid balances and open recovery work determine how much cash stays trapped in the ledger.",
             "metrics": [
-                {"label": "Total AR", "value": ar_total, "unit": "currency"},
-                {"label": "AR >90", "value": ar_over_90_value, "unit": "currency"},
+                {"label": "Total unpaid balance", "value": ar_total, "unit": "currency"},
+                {"label": "Balance overdue 90+ days", "value": ar_over_90_value, "unit": "currency"},
                 {"label": "Open recovery actions", "value": open_recovery_actions, "unit": "count"},
             ],
         },
@@ -845,23 +845,23 @@ def _build_cash_command_payload(
     concentration_components = [
         {
             "key": "ar_over_90",
-            "label": "Aged receivables >90d",
+            "label": "Balances overdue 90+ days",
             "amount": ar_over_90_value,
             "claims": len(ar_over_90_rows),
             "status": _kpi_status_for_revenue_at_risk(ar_over_90_value, net_patient_revenue),
-            "note": "Older receivables are the heaviest drag on AR Days.",
+            "note": "Older unpaid balances create the biggest drag on average payment days.",
         },
         {
             "key": "denials",
-            "label": "Denied claim value",
+            "label": "Rejected claim value",
             "amount": denied_claim_value,
             "claims": denied_claim_count,
             "status": denial_status,
-            "note": "Denied balances need appeal or write-off governance.",
+            "note": "Rejected balances need appeal or write-off governance.",
         },
         {
             "key": "dnfb",
-            "label": "DNFB proxy",
+            "label": "Billing backlog proxy",
             "amount": dnfb_value,
             "claims": dnfb_count,
             "status": _kpi_status_for_revenue_at_risk(dnfb_value, net_patient_revenue),
@@ -1076,7 +1076,7 @@ def _build_cash_command_payload(
         },
         {
             "table": f"{settings.analytics_schema}.fct_claim_aging",
-            "role": "Current AR snapshot and aging buckets.",
+            "role": "Current unpaid-balance snapshot and aging buckets.",
             "loaded": True,
         },
         {
@@ -1110,8 +1110,8 @@ def _build_cash_command_payload(
             "severity": headline_severity,
             "message": headline_message,
             "metrics": [
-                {"label": "AR Days", "value": ar_days, "unit": "days"},
-                {"label": "Denial Rate", "value": denial_rate, "unit": "percent"},
+                {"label": "Average Payment Days", "value": ar_days, "unit": "days"},
+                {"label": "Rejected Claim Rate", "value": denial_rate, "unit": "percent"},
                 {"label": "Collection Rate", "value": collection_rate, "unit": "percent"},
                 {"label": "Revenue at Risk", "value": revenue_at_risk, "unit": "currency"},
             ],
@@ -1174,7 +1174,7 @@ def _build_cash_command_payload(
             "warnings": warnings,
             "limitations": [
                 "Facility, specialty, and patient type filters are accepted but ignored because those dimensions are not present on the live marts.",
-                "DNFB is proxied with open-claim contractual value rather than a discharge-specific queue table.",
+                "Billing backlog is proxied with open-claim contractual value rather than a discharge-specific queue table.",
                 "Cash collected is measured on the filtered claim cohort instead of a standalone posting-period ledger slice so KPI cards and journey totals stay reconciled.",
             ],
         },
@@ -1195,7 +1195,7 @@ def _build_cash_command_payload(
         "dashboard": {
             "subtitle": _format_period_label(period_start, period_end, rolling_default),
             "status": {
-                "label": "AR Days",
+                "label": "Average Payment Days",
                 "value": round(ar_days or 0),
                 "target": "<=40",
                 "band": _risk_band_from_status(ar_status),
@@ -1498,13 +1498,13 @@ def _decision_action_plan(decision_type: str) -> list[dict[str, Any]]:
 def _decision_recommended_owner(decision_type: str, item: dict[str, Any]) -> str:
     mapping = {
         "assign_owner": item.get("owner_label") or item.get("owner_team") or "Revenue Recovery Team",
-        "appeal_denial": "Payer Relations Team",
+        "appeal_denial": "Insurer Relations Team",
         "resubmit_claim": "Claims Submission Team",
         "request_documentation": "Clinical Documentation Team",
-        "payer_contract_review": "Payer Relations Lead",
+        "payer_contract_review": "Insurer Relations Lead",
         "manager_review": "RCM Manager",
         "writeoff_review": "CFO Delegate",
-        "escalate_payer": "Payer Relations Lead",
+        "escalate_payer": "Insurer Relations Lead",
     }
     return str(mapping.get(decision_type, "Revenue Recovery Team"))
 
@@ -1512,13 +1512,13 @@ def _decision_recommended_owner(decision_type: str, item: dict[str, Any]) -> str
 def _decision_recommended_channel(decision_type: str) -> str:
     mapping = {
         "assign_owner": "Revenue Recovery Workqueue",
-        "appeal_denial": "Payer Workqueue",
+        "appeal_denial": "Insurer Work Queue",
         "resubmit_claim": "Claims Workqueue",
         "request_documentation": "Clinical Review Queue",
         "payer_contract_review": "Supervisor Review",
         "manager_review": "Supervisor Review",
         "writeoff_review": "Executive Review",
-        "escalate_payer": "Payer Escalation Queue",
+        "escalate_payer": "Insurer Escalation Queue",
     }
     return mapping.get(decision_type, "Revenue Recovery Workqueue")
 
@@ -1594,7 +1594,7 @@ def _decision_approval(decision_type: str, item: dict[str, Any]) -> tuple[bool, 
     if expected_recovery >= RECOVERY_QUEUE_HIGH_VALUE_THRESHOLD:
         return True, "CFO Delegate"
     if decision_type == "payer_contract_review":
-        return True, "Payer Relations Lead"
+        return True, "Insurer Relations Lead"
     if decision_type in {"manager_review", "writeoff_review"}:
         return True, "RCM Manager"
     if owner_missing:
@@ -1889,7 +1889,7 @@ def _find_existing_rcm_decision(conn: Any, item: dict[str, Any]) -> dict[str, An
 def _insert_rcm_decision_candidate(conn: Any, item: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any]:
     entity_id = str(candidate["source_item_id"] or item.get("claim_ref") or item.get("claim_id") or item.get("opportunity_id"))
     claim_ref = str(item.get("claim_ref") or item.get("claim_id") or item.get("opportunity_id") or "Recovery item")
-    payer_label = str(item.get("payer_label") or item.get("payer_id") or "Unknown payer")
+    payer_label = str(item.get("payer_label") or item.get("payer_id") or "Unknown insurer")
     inserted = conn.execute(
         """
         insert into decision.decision_queue (
@@ -2262,7 +2262,7 @@ def _queue_group_label(item: dict[str, Any], group_by: str) -> str:
     if group_by == "issue_type":
         return str(item.get("issue_label") or "Unknown issue")
     if group_by == "payer":
-        return str(item.get("payer_label") or "Payer pending")
+        return str(item.get("payer_label") or "Insurer pending")
     if group_by == "owner":
         return str(item.get("owner_label") or "Unassigned")
     if group_by == "due_window":
@@ -2281,7 +2281,7 @@ def _build_recovery_queue_story(
     top_payer_label: str | None,
 ) -> str:
     issue_segment = top_issue_label or "the current recovery queue"
-    payer_segment = top_payer_label or "the visible payer mix"
+    payer_segment = top_payer_label or "the visible insurer mix"
     return (
         f"Most recoverable value is currently concentrated in {issue_segment} for {payer_segment}. "
         f"The queue contains {_format_queue_currency_compact(total_value)} of recoverable value, "
@@ -2415,7 +2415,7 @@ def _build_recovery_queue_payload(
             payer_key,
             {
                 "payer": payer_key,
-                "label": item.get("payer_label") or "Payer pending",
+                "label": item.get("payer_label") or "Insurer pending",
                 "count": 0,
                 "recoverable_value": 0.0,
                 "expected_recovery": 0.0,
@@ -2466,7 +2466,7 @@ def _build_recovery_queue_payload(
                 "effort_hours": 0.0,
                 "high_priority_items": 0,
                 "overdue_items": 0,
-                "top_payer": item.get("payer_label") or "Payer pending",
+                "top_payer": item.get("payer_label") or "Insurer pending",
                 "top_owner": item.get("owner_label") or "Unassigned",
             },
         )
@@ -2547,7 +2547,7 @@ def _build_recovery_queue_payload(
         },
         {
             "table": f"{settings.analytics_schema}.fct_denials",
-            "role": "Denial recovery queue mix and comparable denial pipeline trends.",
+            "role": "Rejected-claim recovery queue mix and comparable rejected-claim pipeline trends.",
             "loaded": True,
         },
         {
@@ -3355,7 +3355,7 @@ def decision_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
             },
             "headline": {
                 "severity": "healthy",
-                "message": "Recovery Queue still holds the full backlog. No governed subset requires action for the current filters.",
+                "message": "Recovery Work Queue still holds the full backlog. No governed subset requires action for the current filters.",
                 "decision_count": 0,
                 "approval_required_count": 0,
                 "expected_recovery": 0,
@@ -3387,7 +3387,7 @@ def decision_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
                     "Confidence blends issue-type recoverability priors, evidence coverage, due pressure, and owner readiness.",
                 ],
                 "approval_rules": [
-                    "Payer contract review, manager review, overdue interventions, and high-value cash exposure require human approval.",
+                    "Insurer contract review, manager review, overdue interventions, and high-value cash exposure require human approval.",
                 ],
                 "missing_fields": [],
                 "warnings": ["Comparable-case support uses seeded benchmarks until RCM outcome history accumulates."],
@@ -3407,7 +3407,7 @@ def decision_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
         "headline": {
             "severity": severity,
             "message": (
-                f"Recovery Queue shows all recoverable work. Decision Queue narrows that to {len(filtered)} governed interventions, "
+                f"Recovery Work Queue shows all recoverable work. Decision Review Queue narrows that to {len(filtered)} governed interventions, "
                 f"with {approval_required_count} requiring formal approval and {_format_queue_currency_compact(expected_recovery)} under decision."
             ),
             "decision_count": len(filtered),
@@ -3443,7 +3443,7 @@ def decision_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
             "filters_applied": {key: value for key, value in raw_filters.items() if value not in (None, "")},
             "scoring_logic": [
                 "decision_score = expected_recovery_value * recoverability_probability * urgency_multiplier * policy_weight * confidence_weight / effort_hours",
-                "Urgency multiplier reuses the Recovery Queue due-date pressure bands.",
+                "Urgency multiplier reuses the Recovery Work Queue due-date pressure bands.",
                 "Critical / High / Medium priority thresholds reuse the existing recovery priority score breakpoints.",
             ],
             "decision_thresholds": [
@@ -3457,7 +3457,7 @@ def decision_queue(filters: dict[str, Any] | None = None) -> dict[str, Any]:
                 "Confidence blends issue-type recoverability priors, evidence coverage, due pressure, and owner readiness.",
             ],
             "approval_rules": [
-                "Payer contract review, manager review, overdue interventions, missing-owner interventions, and high-value exposure require human approval.",
+                "Insurer contract review, manager review, overdue interventions, missing-owner interventions, and high-value exposure require human approval.",
             ],
             "missing_fields": [],
             "warnings": [
@@ -3564,7 +3564,7 @@ def promote_recovery_item(
             "promoted",
             performed_by=performed_by,
             performed_by_role=performed_by_role,
-            notes="Promoted from Recovery Queue into governed Decision Queue.",
+            notes="Promoted from Recovery Work Queue into governed Decision Review Queue.",
         )
     return {
         "created": True,
@@ -4025,7 +4025,7 @@ def executive_narrative() -> dict[str, Any]:
     ]
     risks = [
         {
-            "risk": f"Payer {item.get('payer_id')} underpayment and SLA exposure",
+            "risk": f"Insurer {item.get('payer_id')} underpayment and deadline exposure",
             "cash_impact": item.get("underpayment_amount"),
         }
         for item in payer_breaches

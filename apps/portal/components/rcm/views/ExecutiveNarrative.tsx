@@ -497,7 +497,7 @@ export function ExecutiveNarrative() {
                 border: "1px solid rgba(46, 125, 50, 0.22)",
               }}
             >
-              AR Days: 38d (target 40d)
+              Average payment days: 38d (target 40d)
             </span>
             <div style={{ display: "flex", gap: 8 }}>
               <button

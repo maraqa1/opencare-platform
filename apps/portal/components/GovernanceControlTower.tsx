@@ -153,7 +153,7 @@ function businessNodeLabel(node: BusinessTrustNode) {
     "Analytics Mart: fct_revenue_cycle": "Revenue Cycle Fact",
     "Analytics Mart: Recovery Opportunities": "Recovery Opportunity Fact",
     "Cash Forecast Output": "Cash Forecast Runtime",
-    "Portal KPI: Cash Command": "Cash Command KPI",
+    "Portal KPI: Cash Overview": "Cash Overview KPI",
     "Superset CFO Dashboard": "CFO Dashboard",
     "Recovery Action Queue": "Recovery Decision Action",
   };

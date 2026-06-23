@@ -3,12 +3,12 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
   denial_coding_error: "Coding error denial",
   denial_clinical: "Clinical denial",
   denial_eligibility: "Eligibility denial",
-  denial_appeal_priority: "Denial appeal priority",
+  denial_appeal_priority: "Rejected claim appeal priority",
   payer_underpayment_review: "Underpayment review",
   underpayment: "Underpayment",
-  missing_authorization: "Missing authorisation",
-  unbilled_encounter: "Unbilled encounter",
-  unbilled_encounters: "Unbilled encounters",
+  missing_authorization: "Missing approval",
+  unbilled_encounter: "Encounter waiting for billing",
+  unbilled_encounters: "Encounters waiting for billing",
   denied_not_appealed: "Denied claims not yet appealed",
   undercoding: "Undercoding",
   underpayments: "Underpayments",
@@ -36,12 +36,12 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const OWNER_LABELS: Record<string, string> = {
-  "j.mitchell": "J. Mitchell - Denials",
-  "s.okafor": "S. Okafor - AR",
+  "j.mitchell": "J. Mitchell - Claim Reviews",
+  "s.okafor": "S. Okafor - Outstanding Balances",
   "t.brennan": "T. Brennan - Coding",
   "revenue.integrity": "Revenue Integrity Team",
-  "payer.relations": "Payer Relations Team",
-  "denials.lead": "Denials Lead",
+  "payer.relations": "Insurer Relations Team",
+  "denials.lead": "Claim Review Lead",
   "coding.lead": "Coding Lead",
   "patient.access": "Patient Access Team",
   "finance.control": "Finance Control",
@@ -71,13 +71,13 @@ const DEPARTMENT_LABELS: Record<string, string> = {
 };
 
 const LEAKAGE_GUIDANCE: Record<string, string> = {
-  denied_not_appealed: "~65% recoverable via appeal - highest ROI category",
+  denied_not_appealed: "~65% recoverable through appeal - highest return category",
   late_submissions: "Preventable with submission deadline tracking",
-  underpayments: "Requires EOB audit against contracted rates",
-  unbilled_encounters: "Trace to department - charge capture failure",
+  underpayments: "Requires payment review against contracted rates",
+  unbilled_encounters: "Trace to department - billing not completed",
   writeoffs: "Separate charity care from recoverable bad debt",
   missing_authorization: "Preventable at point of registration",
-  undercoding: "Requires CDI and coding team review",
+  undercoding: "Requires clinical documentation and coding review",
 };
 
 const RECOVERABILITY: Record<string, string> = {
@@ -94,9 +94,9 @@ const NEXT_STEPS: Record<string, string> = {
   late_submission_risk:  "Submit claim before filing deadline",
   denial_coding_error:   "Correct CPT/ICD code and resubmit",
   denial_clinical:       "Obtain clinical documentation and appeal",
-  underpayment:          "Request EOB and log underpayment dispute",
-  denial_eligibility:    "Verify eligibility and resubmit",
-  missing_authorization: "Obtain retroactive authorisation",
+  underpayment:          "Request payment detail and log the dispute",
+  denial_eligibility:    "Verify coverage eligibility and resubmit",
+  missing_authorization: "Obtain retroactive approval",
   unbilled_encounter:    "Route to charge capture for billing",
 };
 
@@ -126,7 +126,7 @@ export function ownerLabel(value?: string | null) {
 }
 
 export function payerLabel(value?: string | null) {
-  if (!value) return "Payer pending";
+  if (!value) return "Insurer pending";
   return PAYER_LABELS[value] ?? value;
 }
 

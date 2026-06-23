@@ -136,7 +136,7 @@ function storyStripSeverityClass(value?: string | null) {
 function filterChipLabel(key: keyof DraftFilters, value: string) {
   const labels: Record<keyof DraftFilters, string> = {
     decision_type: "Decision Type",
-    payer: "Payer",
+    payer: "Insurer",
     approval_role: "Approval Role",
     owner: "Owner",
     priority: "Priority",
@@ -246,7 +246,7 @@ function DataTrustDrawer({
         <div className={styles.drawerHeader}>
           <div>
             <p className={styles.drawerEyebrow}>Data Trust</p>
-            <h3>Decision Queue contract</h3>
+            <h3>Decision review queue contract</h3>
           </div>
           <button type="button" className={styles.secondaryButton} onClick={onClose}>
             Close
@@ -420,7 +420,7 @@ function DecisionDrawer({
               <strong>Evidence</strong>
               <ul>
                 <li>{`Source item: ${decision.source_item_id ?? "Unavailable"}`}</li>
-                <li>{`Payer: ${decision.payer ?? "Unavailable"}`}</li>
+                <li>{`Insurer: ${decision.payer ?? "Unavailable"}`}</li>
                 <li>{`Issue: ${decision.issue_label ?? decision.issue_type ?? "Unavailable"}`}</li>
                 <li>{`Due date: ${decision.due_at ? shortDate(decision.due_at) : "No due date"}`}</li>
                 <li>{`Evidence: ${decision.source_evidence ?? "No evidence summary loaded."}`}</li>
@@ -593,17 +593,17 @@ export function DecisionQueue() {
       const reason = window.prompt("Revise the recommendation narrative:", workspace?.decision?.decision_reason ?? "");
       if (!reason?.trim()) return;
       body.decision_reason = reason.trim();
-      body.notes = "Recommendation revised from Decision Queue.";
+      body.notes = "Recommendation revised from the decision review queue.";
     }
     if (action === "assign") {
       const owner = window.prompt("Assign to owner/team:", workspace?.decision?.recommended_owner ?? "");
       if (!owner?.trim()) return;
       body.recommended_owner = owner.trim();
       body.assignee_user = owner.trim();
-      body.notes = "Owner assignment updated from Decision Queue.";
+      body.notes = "Owner assignment updated from the decision review queue.";
     }
     if (action === "dispatch") {
-      body.notes = "Dispatched from Decision Queue. Manual downstream handoff required.";
+      body.notes = "Dispatched from the decision review queue. Manual downstream handoff required.";
     }
 
     const response = await fetch(`/api/portal/api/v1/rcm/decisions/${selectedDecision.id}/${action}`, {
@@ -635,7 +635,7 @@ export function DecisionQueue() {
         Refresh
       </button>
       <Link href="/use-cases/revenue-cycle-management/recovery-queue" className={styles.secondaryButton}>
-        Open Recovery Queue
+        Open Recovery Work Queue
       </Link>
       <button type="button" className={styles.primaryButton} onClick={() => setTrustOpen(true)}>
         Open Data Trust
@@ -651,13 +651,13 @@ export function DecisionQueue() {
 
       <RCMPageHeader
         eyebrow="USE CASE WORKSPACE"
-        title="Decision Queue - Governed Recovery Interventions"
+        title="Decision Review Queue - Governed Recovery Interventions"
         subtitle="Curated recovery decisions requiring approval, routing, escalation, or policy judgement before execution."
         badges={[
           { label: `Freshness: ${data?.data_freshness?.status ?? "unknown"}`, color: stale ? "amber" : "green" },
           { label: "Live decision queue", color: "blue" },
         ]}
-        contextLine="Recovery Queue shows the full recoverable backlog. Decision Queue shows only the governed subset that requires a human or policy decision."
+        contextLine="Recovery Work Queue shows the full recoverable backlog. Decision Review Queue shows only the governed subset that requires a human or policy decision."
         actions={headerActions}
       />
 
@@ -685,8 +685,8 @@ export function DecisionQueue() {
               </div>
               <p className={styles.storyMessage}>{data?.headline?.message}</p>
               <p className={styles.storyNarrative}>
-                Decision Queue isolates only the interventions that need approval, routing, escalation, or explicit policy judgement.
-                Operators continue to work the full Recovery Queue while supervisors resolve this governed subset.
+                Decision Review Queue isolates only the interventions that need approval, routing, escalation, or explicit policy judgement.
+                Operators continue to work the full Recovery Work Queue while supervisors resolve this governed subset.
               </p>
               <button type="button" className={styles.storyAction} onClick={() => setTrustOpen(true)}>
                 Review scoring and approval rules
@@ -721,7 +721,7 @@ export function DecisionQueue() {
           <section className={styles.intelligenceGrid}>
             <RollupPanel title="Decisions by Type" subtitle="Routing and intervention mix" rows={data?.decision_mix?.by_decision_type ?? []} currencyCode={currencyCode} />
             <RollupPanel title="By Approval Role" subtitle="Who needs to authorise next" rows={data?.decision_mix?.by_approval_role ?? []} currencyCode={currencyCode} />
-            <RollupPanel title="By Payer" subtitle="Cash exposure under decision" rows={data?.decision_mix?.by_payer ?? []} currencyCode={currencyCode} />
+            <RollupPanel title="By Insurer" subtitle="Cash exposure under decision" rows={data?.decision_mix?.by_payer ?? []} currencyCode={currencyCode} />
             <RollupPanel title="Status Mix" subtitle="Review, approval, and dispatch state" rows={data?.decision_mix?.by_status ?? []} currencyCode={currencyCode} />
           </section>
 
@@ -730,7 +730,7 @@ export function DecisionQueue() {
               <div>
                 <p className={styles.sectionEyebrow}>Control Bar</p>
                 <h3>Governed decision filters</h3>
-                <p className={styles.sectionSubtext}>Filter by decision type, payer, approval role, confidence, or value before opening the workspace.</p>
+                <p className={styles.sectionSubtext}>Filter by decision type, insurer, approval role, confidence, or value before opening the workspace.</p>
               </div>
               <div className={styles.sectionMeta}>
                 <span>{scopeLabel}</span>
@@ -740,7 +740,7 @@ export function DecisionQueue() {
             <div className={styles.controlsGrid}>
               {([
                 { key: "decision_type", label: "Decision Type" },
-                { key: "payer", label: "Payer" },
+                { key: "payer", label: "Insurer" },
                 { key: "approval_role", label: "Approval Role" },
                 { key: "owner", label: "Owner" },
                 { key: "priority", label: "Priority" },
@@ -793,7 +793,7 @@ export function DecisionQueue() {
                 <input
                   value={draftFilters.search}
                   onChange={(event) => setDraftFilters((current) => ({ ...current, search: event.target.value }))}
-                  placeholder="Search decision, claim, payer, action, or approval role"
+                  placeholder="Search decision, claim, insurer, action, or approval role"
                 />
               </label>
             </div>
@@ -821,7 +821,7 @@ export function DecisionQueue() {
                   <tr>
                     <th>Decision</th>
                     <th>Source Item</th>
-                    <th>Payer</th>
+                    <th>Insurer</th>
                     <th>Recommended Action</th>
                     <th>Why Now</th>
                     <th>Expected Recovery</th>
@@ -842,7 +842,7 @@ export function DecisionQueue() {
                         </button>
                       </td>
                       <td>{decision.source_label ?? decision.source_item_id ?? "--"}</td>
-                      <td>{decision.payer ?? "Unknown payer"}</td>
+                      <td>{decision.payer ?? "Unknown insurer"}</td>
                       <td>{decision.recommended_action ?? "Review decision"}</td>
                       <td style={{ minWidth: 260 }}>{decision.why_now ?? "-"}</td>
                       <td>{decision.formatted_expected_recovery ?? "-"}</td>

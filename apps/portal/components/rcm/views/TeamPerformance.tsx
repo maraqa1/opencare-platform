@@ -105,7 +105,7 @@ function formatSlaComparison(avgHours: number | null, slaHours: number | null) {
     return { text: "Resolution time unavailable", color: "var(--oc-gray-600)" };
   }
   if (slaHours == null) {
-    return { text: `${hours(avgHours)} vs SLA target not configured`, color: "var(--oc-gray-600)" };
+    return { text: `${hours(avgHours)} vs turnaround target not configured`, color: "var(--oc-gray-600)" };
   }
   const delta = avgHours - slaHours;
   const color =
@@ -151,7 +151,7 @@ export function TeamPerformance() {
 
   return (
     <div style={{ fontFamily: "var(--font-body)", color: "var(--oc-gray-900)" }}>
-      <RCMPageHeader subtitle="Owner-level recovery execution tracking for completion, yield, and SLA performance." />
+      <RCMPageHeader subtitle="Owner-level recovery execution tracking for completion, yield, and turnaround-target performance." />
       <RCMNavTabs active="team-performance" />
 
       {stale && <StaleBanner />}
@@ -219,7 +219,7 @@ export function TeamPerformance() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(31, 56, 100, 0.06)" }}>
-                  {["Owner", "Assigned", "Completed", "Overdue", "Completion %", "Recovered", "Expected vs Actual", "Avg Resolution", "vs SLA"].map((label) => (
+                  {["Owner", "Assigned", "Completed", "Overdue", "Completion %", "Recovered", "Expected vs Actual", "Avg Resolution", "vs Target"].map((label) => (
                     <th
                       key={label}
                       style={{
@@ -371,7 +371,7 @@ export function TeamPerformance() {
             border: "1px solid rgba(46, 125, 50, 0.22)",
           }}
         >
-          AR Days: 38d (target 40d)
+          Average payment days: 38d (target 40d)
         </span>
       </div>
     </div>

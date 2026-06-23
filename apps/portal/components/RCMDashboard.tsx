@@ -270,7 +270,7 @@ export function RCMDashboard() {
           <p className={`rcm-kpi-subtext ${cashDelta?.className ?? "neutral"}`}>{cashDelta?.text ?? "No prior comparison"} vs prior year</p>
         </article>
         <article className="rcm-kpi-card">
-          <span className="eyebrow">Denial Rate</span>
+          <span className="eyebrow">Rejected Claim Rate</span>
           <strong>{percent(kpis?.denial_rate_pct)}</strong>
           <p className={`rcm-kpi-subtext ${denialDelta?.className ?? "neutral"}`}>{denialDelta?.text ?? "No prior comparison"} - target &lt;5%</p>
         </article>
@@ -316,8 +316,8 @@ export function RCMDashboard() {
         <article className="panel rcm-chart-card span-6">
           <div className="panel-header">
             <div>
-              <p className="eyebrow">AR Aging</p>
-              <h3>AR aging buckets</h3>
+              <p className="eyebrow">Unpaid Balance Aging</p>
+              <h3>Unpaid balance age bands</h3>
             </div>
           </div>
           <div className="chart-stage">
@@ -336,7 +336,7 @@ export function RCMDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <ChartUnavailable message="A/R aging is unavailable for the current filter set." />
+              <ChartUnavailable message="Unpaid-balance aging is unavailable for the current filter set." />
             )}
           </div>
         </article>
@@ -344,8 +344,8 @@ export function RCMDashboard() {
         <article className="panel rcm-chart-card span-8">
           <div className="panel-header">
             <div>
-              <p className="eyebrow">Denial Pipeline</p>
-              <h3>Denial &amp; recovery pipeline</h3>
+              <p className="eyebrow">Rejected Claims Pipeline</p>
+              <h3>Rejected claims &amp; recovery pipeline</h3>
             </div>
           </div>
           <div className="chart-stage">
@@ -364,7 +364,7 @@ export function RCMDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <ChartUnavailable message="Denial pipeline history is unavailable for the current data slice." />
+              <ChartUnavailable message="Rejected-claim pipeline history is unavailable for the current data slice." />
             )}
           </div>
           <div className="rcm-action-grid">
@@ -386,8 +386,8 @@ export function RCMDashboard() {
         <article className="panel rcm-chart-card span-4">
           <div className="panel-header">
             <div>
-              <p className="eyebrow">Payer Performance</p>
-              <h3>Payer performance</h3>
+              <p className="eyebrow">Insurer Performance</p>
+              <h3>Insurer performance</h3>
             </div>
             <div className="button-row">
               <button className={`filter-chip ${payerView === "collection" ? "active" : ""}`} type="button" onClick={() => setPayerView("collection")}>
@@ -414,11 +414,11 @@ export function RCMDashboard() {
                   </div>
                 </div>
               );
-            }) : <ChartUnavailable message="Payer performance is unavailable until the latest monthly payer mart is materialized." />}
+            }) : <ChartUnavailable message="Insurer performance is unavailable until the latest monthly insurer summary is available." />}
           </div>
           <div className="button-row" style={{ marginTop: "1rem" }}>
             <Link className="secondary-link" href="/use-cases/revenue-cycle-management/payer-control">
-              Open Payer Control
+              Open Insurance Performance
             </Link>
           </div>
         </article>
@@ -427,7 +427,7 @@ export function RCMDashboard() {
           <div className="panel-header">
             <div>
               <p className="eyebrow">Leakage Mix</p>
-              <h3>Leakage by payer</h3>
+              <h3>Revenue loss by insurer</h3>
             </div>
           </div>
           <div className="rcm-leakage-layout">
@@ -464,7 +464,7 @@ export function RCMDashboard() {
                 </div>
               </>
             ) : (
-              <ChartUnavailable message="Leakage-by-payer distribution is unavailable until payer leakage rows are present." />
+              <ChartUnavailable message="Revenue-loss distribution by insurer is unavailable until insurer rows are present." />
             )}
           </div>
         </article>

@@ -68,8 +68,8 @@ export function RevenueCycleJourney({ filters }: { filters?: Record<string, stri
         <p className={styles.eyebrow}>Revenue Cycle Journey</p>
         <h2 className={styles.title}>From Care Delivered to Cash Collected - Revenue Cycle Journey</h2>
         <p className={styles.subtitle}>
-          Follow every riyal from clinical activity through coding, billing, payer adjudication,
-          receivables, recovery, and final cash collection.
+          Follow every riyal from clinical activity through coding, billing, insurer review,
+          unpaid balances, recovery, and final cash collection.
         </p>
         <p className={styles.generatedAt}>
           {`Generated ${timestamp(data.generated_at)}${stale ? " - freshness warning" : ""}`}
@@ -116,7 +116,7 @@ export function RevenueCycleJourney({ filters }: { filters?: Record<string, stri
         <p className={styles.eyebrow}>Current Revenue Risk Concentration</p>
         <h3 className={styles.riskHeading}>Current Revenue Risk Concentration</h3>
         <p className={styles.riskCopy}>
-          Revenue risk is concentrated in denied claims, aged receivables, DNFB backlog, and underpayments.
+          Revenue risk is concentrated in rejected claims, overdue unpaid balances, billing backlog, and underpayments.
         </p>
         <div className={styles.riskChips}>
           {data.risk_concentration.map((chip) => (

@@ -27,7 +27,7 @@ async function fetchJson<T>(path: string) {
 function describeScope(searchParams: URLSearchParams) {
   const labels: Record<string, string> = {
     period: "Period",
-    payer: "Payer",
+    payer: "Insurer",
     owner: "Owner",
     issue_type: "Issue",
     status: "Status",

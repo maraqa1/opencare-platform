@@ -111,7 +111,7 @@ export function RCMPageHeader({
                 border: `1px solid ${arBreached ? "rgba(183,28,28,0.2)" : "rgba(46,125,50,0.2)"}`,
               }}
             >
-              AR Days: {arDays}d {arBreached ? "!" : "OK"} (target {arTarget}d)
+              Average payment days: {arDays}d {arBreached ? "!" : "OK"} (target {arTarget}d)
             </span>
           )}
           {showCFOButton && cfoHref ? (

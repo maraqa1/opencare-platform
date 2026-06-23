@@ -282,7 +282,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
 
         <section className="panel pressure-strip">
           <div>
-            <p className="eyebrow">Cash Command</p>
+            <p className="eyebrow">Cash Overview</p>
             <h3>How much cash can we recover this week?</h3>
             <p className="section-subtitle">
               The command view ranks recoverable cash by effort, owner, and deadline so revenue leaders can move from retrospective reporting into operational execution.
@@ -374,7 +374,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
       <>
         <section className="panel pressure-strip">
           <div>
-            <p className="eyebrow">Recovery Queue</p>
+            <p className="eyebrow">Recovery Work Queue</p>
             <h3>Operational queue ranked by impact</h3>
             <p className="section-subtitle">
               This is the working backlog for revenue recovery, sorted by expected cash recovery per hour of effort.
@@ -449,7 +449,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
 
   if (view === "payer-control" && payer) {
     if (payer.meta?.empty) {
-      return <EmptyState message={payer.meta.message ?? "Payer control appears once contract performance marts are loaded."} />;
+      return <EmptyState message={payer.meta.message ?? "Insurance performance appears once contract performance summaries are loaded."} />;
     }
     return (
       <>
@@ -460,28 +460,28 @@ export function RevenueCycleConsole({ view }: { view: View }) {
             <p>Visible contract underpayment across the latest payer period.</p>
           </article>
           <article className="metric-card">
-            <span className="eyebrow">SLA Breaches</span>
+            <span className="eyebrow">Missed Payment Targets</span>
             <strong>{payer.summary?.sla_breaches ?? 0}</strong>
             <p>Late-payment breaches affecting working capital timing.</p>
           </article>
           <article className="metric-card">
             <span className="eyebrow">Breach Flags</span>
             <strong>{payer.summary?.breach_flag_count ?? 0}</strong>
-            <p>Payers requiring contract enforcement or renegotiation review.</p>
+            <p>Insurers requiring contract enforcement or renegotiation review.</p>
           </article>
         </section>
         <section className="panel">
-          <p className="eyebrow">Payer Control</p>
-          <h3>Payer accountability and contract enforcement</h3>
+          <p className="eyebrow">Insurance Performance</p>
+          <h3>Insurer accountability and contract enforcement</h3>
           <div style={{ marginTop: "1rem", overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th align="left">Payer</th>
+                  <th align="left">Insurer</th>
                   <th align="left">Underpayment</th>
                   <th align="left">Contract Rate</th>
                   <th align="left">Actual Collection</th>
-                  <th align="left">SLA Breaches</th>
+                  <th align="left">Missed Targets</th>
                   <th align="left">Payment Delay</th>
                   <th align="left">Renegotiation Flag</th>
                 </tr>
@@ -494,7 +494,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
                     <td style={{ padding: "0.5rem 0.25rem" }}>{percentFromRatio(item.contract_rate_pct)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{percentFromRatio(item.actual_collection_rate)}</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.sla_breach_count ?? 0}</td>
-                    <td style={{ padding: "0.5rem 0.25rem" }}>{item.actual_payment_days ?? "-"}d vs SLA {item.payment_sla_days ?? "-"}d</td>
+                    <td style={{ padding: "0.5rem 0.25rem" }}>{item.actual_payment_days ?? "-"}d actual vs {item.payment_sla_days ?? "-"}d target</td>
                     <td style={{ padding: "0.5rem 0.25rem" }}>{item.renegotiation_flag ? "Flagged" : "No"}</td>
                   </tr>
                 ))}
@@ -508,7 +508,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
 
   if (view === "revenue-leakage" && leakage) {
     if (leakage.meta?.empty) {
-      return <EmptyState message={leakage.meta.message ?? "Leakage decomposition appears once revenue leakage marts are loaded."} />;
+      return <EmptyState message={leakage.meta.message ?? "Revenue-loss decomposition appears once revenue-loss summaries are loaded."} />;
     }
     return (
       <>
@@ -530,8 +530,8 @@ export function RevenueCycleConsole({ view }: { view: View }) {
           ))}
         </section>
         <section className="panel">
-          <p className="eyebrow">Leakage</p>
-          <h3>Leakage decomposition</h3>
+          <p className="eyebrow">Revenue Loss</p>
+          <h3>Revenue-loss decomposition</h3>
           <div style={{ marginTop: "1rem", overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -633,7 +633,7 @@ export function RevenueCycleConsole({ view }: { view: View }) {
       <>
         <section className="panel pressure-strip">
           <div>
-            <p className="eyebrow">Executive Narrative</p>
+            <p className="eyebrow">Executive Summary</p>
             <h3>{narrative.headline}</h3>
             <p className="section-subtitle">
               This platform turns hospital revenue from retrospective reporting into real-time cash control.
