@@ -611,6 +611,15 @@ function readinessThesis(value: number | null) {
 function parseMarkdownReport(markdown: string): MarkdownBlock[] {
   const blocks: MarkdownBlock[] = [];
   let pendingList: { type: "ul" | "ol"; items: string[] } | null = null;
+  const cleanMarkdown = markdown
+    .replace(/<!--\s*opencare:evidence[\s\S]*?-->/gi, "")
+    .replace(/<!--\s*opencare:evidence[\s\S]*$/gi, "")
+    .replace(/\u00e2\u20ac\u201d/g, "-")
+    .replace(/\u00e2\u20ac\u201c/g, "-")
+    .replace(/\u00e2\u20ac\u2122/g, "'")
+    .replace(/\u00e2\u20ac\u0153/g, "\"")
+    .replace(/\u00e2\u20ac\u009d/g, "\"")
+    .replace(/\u00c2\u00a0/g, " ");
 
   const flushList = () => {
     if (pendingList?.items.length) {
@@ -619,9 +628,9 @@ function parseMarkdownReport(markdown: string): MarkdownBlock[] {
     pendingList = null;
   };
 
-  markdown.split(/\r?\n/).forEach((rawLine) => {
+  cleanMarkdown.split(/\r?\n/).forEach((rawLine) => {
     const line = rawLine.trim();
-    if (!line) {
+    if (!line || line.startsWith("<!--")) {
       flushList();
       return;
     }
@@ -680,10 +689,13 @@ function parseMarkdownReport(markdown: string): MarkdownBlock[] {
 }
 
 function renderInlineMarkdown(text: string): ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return parts.map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return <em key={`${part}-${index}`}>{part.slice(1, -1)}</em>;
     }
     return part;
   });

@@ -243,6 +243,7 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
     .replace(/```/g, "")
     .replace(/\r\n/g, "\n")
     .trim();
+  markdown = normalizeMarkdownArtifacts(markdown);
 
   const firstHeading = markdown.search(/^#\s+/m);
   if (firstHeading > 0) {
@@ -269,9 +270,26 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   return markdown;
 }
 
+function normalizeMarkdownArtifacts(markdown: string) {
+  return markdown
+    .replace(/<!--\s*opencare:evidence[\s\S]*?-->/gi, "")
+    .replace(/<!--\s*opencare:evidence[\s\S]*$/gi, "")
+    .replace(/\u00e2\u20ac\u201d/g, "-")
+    .replace(/\u00e2\u20ac\u201c/g, "-")
+    .replace(/\u00e2\u20ac\u2122/g, "'")
+    .replace(/\u00e2\u20ac\u0153/g, "\"")
+    .replace(/\u00e2\u20ac\u009d/g, "\"")
+    .replace(/\u00c3\u00a9/g, "e")
+    .replace(/\u00c2\u00a0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function stripEchoedPromptOrJson(markdown: string) {
   let cleaned = markdown;
   const cutPatterns = [
+    /\n\s*<!--\s*opencare:evidence/i,
     /\n\s*Facts:\s*[\[{]/i,
     /\n\s*```(?:json)?\s*[\[{]/i,
     /\n\s*[\[{]\s*"customerContext"\s*:/i,
