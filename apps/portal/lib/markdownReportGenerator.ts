@@ -253,6 +253,9 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   if (!markdown.startsWith("#")) {
     throw new Error("Markdown report did not start with a report heading.");
   }
+  if (!/^#\s+Data\s+&\s+AI\s+Capability\s+Diagnostic\b/im.test(markdown)) {
+    throw new Error("Markdown report did not use the required diagnostic report heading.");
+  }
   markdown = removeInventedCustomerAcronym(markdown, payload);
   markdown = convertMarkdownTables(markdown);
   markdown = stripEchoedPromptOrJson(markdown);
@@ -339,6 +342,17 @@ async function readMarkdownResponse(response: Response) {
     return unwrapPossibleJsonText(content);
   }
   return unwrapPossibleJsonText(await response.text());
+}
+
+function uniqueUrls(urls: string[]) {
+  const seen = new Set<string>();
+  return urls.filter((url) => {
+    if (seen.has(url)) {
+      return false;
+    }
+    seen.add(url);
+    return true;
+  });
 }
 
 async function fetchMarkdownContent(
@@ -449,6 +463,52 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
 
     if (!response.ok) {
       throw new Error(`Local AI markdown report failed at the gateway (${response.status}).`);
+    }
+
+    let validationError: Error | undefined;
+    try {
+      const markdown = sanitizeMarkdown(response.markdown, args.payload);
+      return {
+        markdown,
+        source: "llm",
+        model: args.modelConfig.model,
+        durationMs: Date.now() - startedAt,
+        inputTokenEstimate,
+      };
+    } catch (error) {
+      validationError = error instanceof Error ? error : new Error("Markdown report failed validation.");
+    }
+
+    const retryUrls = uniqueUrls([
+      nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl),
+      ai2DirectChatUrl,
+    ]);
+
+    for (const retryUrl of retryUrls) {
+      const retryResponse = await fetchMarkdownContent(
+        retryUrl,
+        nativeChatRequest(prompt, args.modelConfig.headers),
+        args.modelConfig.timeoutMs,
+      );
+      if (!retryResponse.ok) {
+        continue;
+      }
+      try {
+        const markdown = sanitizeMarkdown(retryResponse.markdown, args.payload);
+        return {
+          markdown,
+          source: "llm",
+          model: args.modelConfig.model,
+          durationMs: Date.now() - startedAt,
+          inputTokenEstimate,
+        };
+      } catch (error) {
+        validationError = error instanceof Error ? error : validationError;
+      }
+    }
+
+    if (validationError) {
+      throw validationError;
     }
 
     const markdown = sanitizeMarkdown(response.markdown, args.payload);
