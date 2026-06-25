@@ -114,7 +114,33 @@ fi
 
 echo "Restarting local AI gateway"
 "${KUBECTL[@]}" rollout restart deployment/local-ai-gateway >/dev/null
-"${KUBECTL[@]}" rollout status deployment/local-ai-gateway --timeout=600s
+echo "Clearing existing local-ai-gateway pods to avoid single-node rollout stalls"
+"${KUBECTL[@]}" scale deployment/local-ai-gateway --replicas=0
+"${KUBECTL[@]}" delete pod -l "app=local-ai-gateway" --grace-period=0 --force --wait=false >/dev/null 2>&1 || true
+sleep 10
+"${KUBECTL[@]}" scale deployment/local-ai-gateway --replicas=1
+
+echo "Waiting for deployment/local-ai-gateway to become available"
+deadline=$((SECONDS + 600))
+available=false
+while (( SECONDS < deadline )); do
+  if "${KUBECTL[@]}" wait --for=condition=available deployment/local-ai-gateway --timeout=20s; then
+    available=true
+    break
+  fi
+  echo "Still waiting for deployment/local-ai-gateway; current pods:"
+  "${KUBECTL[@]}" get pods -l "app=local-ai-gateway" -o wide || true
+done
+
+if [[ "$available" != true ]]; then
+  echo "ERROR: deployment/local-ai-gateway did not become available." >&2
+  "${KUBECTL[@]}" get deployment local-ai-gateway -o wide >&2 || true
+  "${KUBECTL[@]}" get rs -l "app=local-ai-gateway" -o wide >&2 || true
+  "${KUBECTL[@]}" get pods -l "app=local-ai-gateway" -o wide >&2 || true
+  "${KUBECTL[@]}" describe pods -l "app=local-ai-gateway" >&2 || true
+  "${KUBECTL[@]}" logs -l "app=local-ai-gateway" --tail=120 --all-containers=true >&2 || true
+  exit 1
+fi
 
 if "${KUBECTL[@]}" get deployment portal >/dev/null 2>&1; then
   echo "Restarting portal so local AI environment changes are visible to Next.js server routes"
