@@ -257,6 +257,9 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   if (!/^#\s+Data\s+&\s+AI\s+Capability\s+Diagnostic\b/im.test(markdown)) {
     throw new Error("Markdown report did not use the required diagnostic report heading.");
   }
+  if (containsPlaceholderClient(markdown)) {
+    throw new Error("Markdown report used placeholder client language.");
+  }
   markdown = removeInventedCustomerAcronym(markdown, payload);
   markdown = convertMarkdownTables(markdown);
   markdown = stripEchoedPromptOrJson(markdown);
@@ -266,8 +269,27 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   if (markdown.length < 700) {
     throw new Error("Markdown report is too short to use as an executive report.");
   }
+  if (hasIncompleteMarkdown(markdown)) {
+    throw new Error("Markdown report appears truncated or has incomplete formatting.");
+  }
 
   return markdown;
+}
+
+function containsPlaceholderClient(markdown: string) {
+  return /\b(sample|example|demo)\s+(client|customer|organisation|organization)\b/i.test(markdown)
+    || /\bSample Client Organisation\b/i.test(markdown);
+}
+
+function hasIncompleteMarkdown(markdown: string) {
+  const trimmed = markdown.trim();
+  const lastLine = trimmed.split("\n").at(-1)?.trim() ?? "";
+  const emphasisMarkers = (trimmed.match(/(?<!\\)\*/g) ?? []).length;
+
+  return emphasisMarkers % 2 === 1
+    || /\*\*?\s*$/.test(trimmed)
+    || /^[-*]\s*$/.test(lastLine)
+    || /\b(Priorit|Recommend|Execut|Govern|Manag)$/i.test(lastLine);
 }
 
 function normalizeMarkdownArtifacts(markdown: string) {

@@ -61,6 +61,8 @@ assert(markdownSource.includes("response_format: \"markdown\""));
 assert(markdownSource.includes("strict_json: false"));
 assert(markdownSource.includes("readMarkdownResponse"));
 assert(markdownSource.includes("removeInventedCustomerAcronym"));
+assert(markdownSource.includes("containsPlaceholderClient"));
+assert(markdownSource.includes("hasIncompleteMarkdown"));
 assert(markdownSource.includes("convertMarkdownTables"));
 assert(markdownSource.includes("buildDeterministicMarkdown"));
 assert(markdownSource.includes("enableLlmMarkdown?: boolean"));
