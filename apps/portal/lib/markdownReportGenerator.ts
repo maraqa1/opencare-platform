@@ -2,6 +2,8 @@ import type { DiagnosticReportRequest, GeneratedConsultingReport } from "@/lib/d
 import { contextLabel, evidenceCoveragePct, formatScore } from "@/lib/deterministicReportBuilders";
 import { estimateTokens } from "@/lib/mistralNemoInteractionPolicy";
 
+const ai2DirectChatUrl = "https://ai2.opendatalake.com/api/chat";
+
 type GenerateMarkdownReportArgs = {
   payload: DiagnosticReportRequest;
   deterministicReport: GeneratedConsultingReport;
@@ -10,6 +12,7 @@ type GenerateMarkdownReportArgs = {
     headers: Record<string, string>;
     model: string;
     timeoutMs: number;
+    enableLlmMarkdown?: boolean;
   };
 };
 
@@ -101,7 +104,7 @@ function buildMarkdownPrompt(payload: DiagnosticReportRequest) {
     "Do not copy the workbook as a table or question list. Synthesize the implications.",
     "Every section must explain what the finding means for management decisions.",
     "Use a premium consulting tone: concise, board-ready, specific, and action-oriented.",
-    "Write around 1200 to 1600 words.",
+    "Write around 700 to 950 words.",
     "",
     "Writing standard:",
     "- Start with the commercial and operating implication, then cite the supporting score pattern.",
@@ -210,6 +213,30 @@ function convertMarkdownTables(markdown: string) {
   return converted.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function nativeChatUrlFromGateway(gatewayBaseUrl: string) {
+  try {
+    const url = new URL(gatewayBaseUrl);
+    url.pathname = "/api/chat";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return gatewayBaseUrl.replace(/\/v1\/?$/, "").replace(/\/+$/, "") + "/api/chat";
+  }
+}
+
+function shouldTryNativeChat(status: number) {
+  return status === 404 || status === 405 || status === 502 || status === 503 || status === 504;
+}
+
+function isAi2Url(url: string) {
+  try {
+    return new URL(url).hostname.toLowerCase() === "ai2.opendatalake.com";
+  } catch {
+    return url.toLowerCase().includes("ai2.opendatalake.com");
+  }
+}
+
 function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   let markdown = raw
     .replace(/```(?:markdown|md)?/gi, "")
@@ -240,12 +267,15 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
 async function readMarkdownResponse(response: Response) {
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
-    const body = await response.json() as {
+    const body = await response.json() as string | {
       choices?: Array<{ message?: { content?: string }; text?: string }>;
       answer?: string;
       content?: string;
       message?: string;
     };
+    if (typeof body === "string") {
+      return body;
+    }
     return body.choices?.[0]?.message?.content
       ?? body.choices?.[0]?.text
       ?? body.answer
@@ -256,19 +286,69 @@ async function readMarkdownResponse(response: Response) {
   return response.text();
 }
 
+async function fetchMarkdownContent(
+  url: string,
+  init: Omit<RequestInit, "signal">,
+  timeoutMs: number,
+): Promise<{ ok: true; status: number; markdown: string } | { ok: false; status: number; markdown: "" }> {
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: abortController.signal,
+    });
+    if (!response.ok) {
+      return { ok: false, status: response.status, markdown: "" };
+    }
+    const markdown = await readMarkdownResponse(response);
+    return { ok: true, status: response.status, markdown };
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Local AI markdown report timed out after ${Math.round(timeoutMs / 1000)} seconds.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function nativeChatRequest(prompt: string, headers: Record<string, string>): Omit<RequestInit, "signal"> {
+  return {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    }),
+    cache: "no-store",
+  };
+}
+
 export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): Promise<MarkdownReportGeneration> {
   const prompt = buildMarkdownPrompt(args.payload);
   const inputTokenEstimate = estimateTokens(prompt);
   const startedAt = Date.now();
-  const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), args.modelConfig.timeoutMs);
   const fallbackMarkdown = buildDeterministicMarkdown(args.payload, args.deterministicReport);
 
+  if (!args.modelConfig.enableLlmMarkdown) {
+    return {
+      markdown: fallbackMarkdown,
+      source: "fallback",
+      model: args.modelConfig.model,
+      durationMs: Date.now() - startedAt,
+      inputTokenEstimate,
+    };
+  }
+
   try {
-    const response = await fetch(`${args.modelConfig.gatewayBaseUrl}/chat/completions`, {
+    const openAiResponse = await fetchMarkdownContent(`${args.modelConfig.gatewayBaseUrl}/chat/completions`, {
       method: "POST",
       headers: args.modelConfig.headers,
-      signal: abortController.signal,
       body: JSON.stringify({
         model: args.modelConfig.model,
         response_format: "markdown",
@@ -293,13 +373,30 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
         ],
       }),
       cache: "no-store",
-    });
+    }, args.modelConfig.timeoutMs);
+
+    let response = openAiResponse;
+    if (!openAiResponse.ok && shouldTryNativeChat(openAiResponse.status)) {
+      response = await fetchMarkdownContent(
+        nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl),
+        nativeChatRequest(prompt, args.modelConfig.headers),
+        args.modelConfig.timeoutMs,
+      );
+    }
+
+    if (!response.ok && shouldTryNativeChat(response.status) && !isAi2Url(args.modelConfig.gatewayBaseUrl)) {
+      response = await fetchMarkdownContent(
+        ai2DirectChatUrl,
+        nativeChatRequest(prompt, args.modelConfig.headers),
+        args.modelConfig.timeoutMs,
+      );
+    }
 
     if (!response.ok) {
       throw new Error(`Local AI markdown report failed at the gateway (${response.status}).`);
     }
 
-    const markdown = sanitizeMarkdown(await readMarkdownResponse(response), args.payload);
+    const markdown = sanitizeMarkdown(response.markdown, args.payload);
     return {
       markdown,
       source: "llm",
@@ -316,7 +413,5 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
       error: error instanceof Error ? error.message : "Markdown report generation failed.",
       inputTokenEstimate,
     };
-  } finally {
-    clearTimeout(timeout);
   }
 }

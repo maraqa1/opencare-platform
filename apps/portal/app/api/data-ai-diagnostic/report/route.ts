@@ -162,6 +162,7 @@ export async function POST(request: Request) {
   const maxFieldWords = Math.max(40, Math.min(numberEnv("LOCAL_LLM_MAX_FIELD_WORDS", defaultMaxFieldWords), 180));
   const reportMode = reportModeEnv();
   const enableFieldEnrichment = booleanEnv("LOCAL_LLM_ENABLE_FIELD_ENRICHMENT", false);
+  const enableLlmMarkdown = booleanEnv("LOCAL_LLM_ENABLE_MARKDOWN_GENERATION", true);
 
   if (reportMode === "json_section") {
     return NextResponse.json(
@@ -193,6 +194,7 @@ export async function POST(request: Request) {
         headers,
         model,
         timeoutMs: markdownTimeoutMs,
+        enableLlmMarkdown,
       },
     });
     const generationMetadata = {
@@ -225,7 +227,9 @@ export async function POST(request: Request) {
         ? "Report JSON was built deterministically. Some optional narrative fields used deterministic fallback because local LLM enrichment was unavailable or invalid."
         : assembled.enrichedFields.length > 0
           ? "Report JSON was built deterministically and selected narrative fields were safely enriched by the local model."
-          : `AI2 Markdown generation did not complete, so the portal used deterministic Markdown fallback. ${markdownReport.error ?? ""}`.trim(),
+          : markdownReport.error
+            ? `AI2 Markdown generation did not complete, so the portal used deterministic Markdown fallback. ${markdownReport.error}`.trim()
+            : "Deterministic Markdown report generated locally. Full AI Markdown generation is disabled by LOCAL_LLM_ENABLE_MARKDOWN_GENERATION.",
     });
   } catch (error) {
     return NextResponse.json(
