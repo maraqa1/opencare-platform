@@ -43,6 +43,8 @@ export function sanitizePlainTextField(raw: string, options: SanitizePlainTextOp
     .replace(/^\s*\d+[.)]\s+/gm, "")
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^(?:board narrative|narrative|advisory narrative|board scorecard advisory)\s*:\s*/i, "")
+    .replace(/\s+\(([A-Z]{2,8})\)/g, "")
     .replace(/^["']|["']$/g, "")
     .replace(/\s+/g, " ")
     .trim();
