@@ -54,7 +54,7 @@ export function sanitizePlainTextField(raw: string, options: SanitizePlainTextOp
   if (/^\s*[{[]/.test(text) || /[}\]]\s*$/.test(text)) {
     return fallback(fallbackText, "json_like_output");
   }
-  if (/^\s*executive summary\b/i.test(text) || /\b(board asks|roadmap|priority gap register)\b/i.test(text)) {
+  if (/^\s*(executive summary|board asks|roadmap|priority gap register)\b/i.test(text)) {
     return fallback(fallbackText, "markdown_report_structure");
   }
   if (text.includes("{") || text.includes("}")) {
