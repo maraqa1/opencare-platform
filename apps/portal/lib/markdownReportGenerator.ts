@@ -248,13 +248,15 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   if (firstHeading > 0) {
     markdown = markdown.slice(firstHeading).trim();
   }
+  markdown = stripEchoedPromptOrJson(markdown);
 
   if (!markdown.startsWith("#")) {
     throw new Error("Markdown report did not start with a report heading.");
   }
   markdown = removeInventedCustomerAcronym(markdown, payload);
   markdown = convertMarkdownTables(markdown);
-  if (markdown.includes("{") && markdown.includes("}")) {
+  markdown = stripEchoedPromptOrJson(markdown);
+  if (/^\s*[\[{]/.test(markdown) || /^\s*["']?(customerContext|overallScore|topGapDomains|priorityGaps|gartnerPillars)["']?\s*:/m.test(markdown)) {
     throw new Error("Markdown report contains JSON-like output.");
   }
   if (markdown.length < 700) {
@@ -262,6 +264,56 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   }
 
   return markdown;
+}
+
+function stripEchoedPromptOrJson(markdown: string) {
+  let cleaned = markdown;
+  const cutPatterns = [
+    /\n\s*Facts:\s*[\[{]/i,
+    /\n\s*```(?:json)?\s*[\[{]/i,
+    /\n\s*[\[{]\s*"customerContext"\s*:/i,
+    /\n\s*"customerContext"\s*:/i,
+  ];
+
+  for (const pattern of cutPatterns) {
+    const match = pattern.exec(cleaned);
+    if (match?.index && match.index > 300) {
+      cleaned = cleaned.slice(0, match.index).trim();
+    }
+  }
+
+  return cleaned
+    .split("\n")
+    .filter((line) => !/^\s*["']?(overallScore|overallGap|scoredQuestions|evidenceBackedItems|topGapDomains|priorityGaps|gartnerPillars)["']?\s*:/.test(line))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function unwrapPossibleJsonText(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+    return value;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      choices?: Array<{ message?: { content?: string }; text?: string }>;
+      answer?: string;
+      content?: string;
+      message?: string;
+      response?: string;
+    };
+    return parsed.choices?.[0]?.message?.content
+      ?? parsed.choices?.[0]?.text
+      ?? parsed.answer
+      ?? parsed.content
+      ?? parsed.response
+      ?? parsed.message
+      ?? value;
+  } catch {
+    return value;
+  }
 }
 
 async function readMarkdownResponse(response: Response) {
@@ -272,18 +324,21 @@ async function readMarkdownResponse(response: Response) {
       answer?: string;
       content?: string;
       message?: string;
+      response?: string;
     };
     if (typeof body === "string") {
-      return body;
+      return unwrapPossibleJsonText(body);
     }
-    return body.choices?.[0]?.message?.content
+    const content = body.choices?.[0]?.message?.content
       ?? body.choices?.[0]?.text
       ?? body.answer
       ?? body.content
+      ?? body.response
       ?? body.message
       ?? "";
+    return unwrapPossibleJsonText(content);
   }
-  return response.text();
+  return unwrapPossibleJsonText(await response.text());
 }
 
 async function fetchMarkdownContent(
