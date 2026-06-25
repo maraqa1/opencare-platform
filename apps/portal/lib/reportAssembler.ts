@@ -65,6 +65,7 @@ function buildFacts(payload: DiagnosticReportRequest) {
     `Business domain: ${contextLabel(payload, "businessDomain", "the stated business domain")}`,
     `Operating scope: ${contextLabel(payload, "operatingScope", "the assessed operating scope")}`,
     `Overall maturity: ${payload.overallScore ?? "not scored"} / 4`,
+    `Overall gap: ${payload.overallGap ?? "not calculated"}`,
     `Questions scored: ${payload.scoredQuestions}/${payload.totalQuestions}`,
     `Evidence-backed items: ${payload.evidenceBackedItems}/${payload.totalQuestions}`,
     `Top gap domains: ${payload.topGapDomains.slice(0, 4).map((domain) => domain.nameEn).join(", ") || "not loaded"}`,
@@ -76,6 +77,13 @@ function buildFacts(payload: DiagnosticReportRequest) {
 function fieldConfigs(payload: DiagnosticReportRequest, report: GeneratedConsultingReport, maxFieldWords: number): FieldConfig[] {
   const facts = buildFacts(payload);
   return [
+    {
+      fieldPath: "boardScorecard.advisoryNarrative",
+      fallbackText: report.boardScorecardNarrative,
+      facts,
+      maxWords: Math.min(maxFieldWords + 40, 220),
+      apply: (current, text) => ({ ...current, boardScorecardNarrative: text }),
+    },
     {
       fieldPath: "overallAdvisory.helicopterView",
       fallbackText: report.overallAdvisoryNarrative,
@@ -127,12 +135,12 @@ export async function assembleDiagnosticReport(
 ): Promise<AssembledDiagnosticReport> {
   let report = buildDeterministicReport(payload);
   const fields: Record<string, NarrativeFieldGeneration> = {};
-  const mode = config.reportMode === "narrative_enrichment" && config.enableFieldEnrichment
-    ? "narrative_enrichment"
-    : "deterministic";
+  const canUseNarrativeModel = config.reportMode === "narrative_enrichment";
+  const mode = canUseNarrativeModel ? "narrative_enrichment" : "deterministic";
 
-  if (mode === "narrative_enrichment") {
-    const configs = fieldConfigs(payload, report, config.maxFieldWords);
+  if (canUseNarrativeModel) {
+    const configs = fieldConfigs(payload, report, config.maxFieldWords)
+      .filter((field) => field.fieldPath === "boardScorecard.advisoryNarrative" || config.enableFieldEnrichment);
     const generations = await runWithConcurrency(configs, config.concurrency, async (field) => ({
       field,
       generation: await generateNarrativeField({

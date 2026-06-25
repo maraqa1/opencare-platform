@@ -45,6 +45,7 @@ assert(!routeSource.includes("sectionSchema"));
 
 assert(assemblerSource.includes("executiveSummary.summaryText"));
 assert(assemblerSource.includes("overallAdvisory.helicopterView"));
+assert(assemblerSource.includes("boardScorecard.advisoryNarrative"));
 assert(assemblerSource.includes("aiReadinessGate.readinessNarrative"));
 assert(assemblerSource.includes("generateNarrativeField"));
 
@@ -55,6 +56,7 @@ assert(deterministicSource.includes("dataSourceStatus"));
 
 assert(markdownSource.includes("Return Markdown only."));
 assert(markdownSource.includes("Overall advisory synthesis"));
+assert(markdownSource.includes("Board scorecard advisory"));
 assert(markdownSource.includes("Do not return JSON."));
 assert(markdownSource.includes("Do not use Markdown tables."));
 assert(markdownSource.includes("Synthesize the implications."));

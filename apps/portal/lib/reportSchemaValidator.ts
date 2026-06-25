@@ -12,6 +12,7 @@ export function validateFlatDiagnosticReport(report: GeneratedConsultingReport) 
   return Boolean(
     hasText(report.executiveSummary) &&
     hasText(report.overallAdvisoryNarrative) &&
+    hasText(report.boardScorecardNarrative) &&
     hasText(report.headlineAssessment) &&
     hasText(report.readinessThesis) &&
     hasText(report.boardMessage) &&
@@ -40,6 +41,7 @@ export function validateStructuredDiagnosticReport(report: StructuredDiagnosticR
     hasText(report.sections.executiveSummary.summaryText) &&
     hasText(report.sections.overallAdvisory.helicopterView) &&
     hasText(report.sections.overallAdvisory.advisoryConclusion) &&
+    hasText(report.sections.boardScorecard.advisoryNarrative) &&
     report.sections.useCasePortfolio.every((useCase) =>
       hasText(useCase.id) &&
       analyticsTypes.has(useCase.analyticsType) &&

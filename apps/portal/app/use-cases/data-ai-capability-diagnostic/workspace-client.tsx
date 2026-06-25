@@ -41,6 +41,7 @@ type CustomerContext = {
 type GeneratedConsultingReport = {
   executiveSummary?: string;
   overallAdvisoryNarrative?: string;
+  boardScorecardNarrative?: string;
   headlineAssessment?: string;
   readinessThesis?: string;
   boardMessage?: string;
@@ -424,6 +425,7 @@ function normaliseGeneratedReport(report: unknown): GeneratedConsultingReport {
   return {
     executiveSummary: asText(candidate.executiveSummary),
     overallAdvisoryNarrative: asText(candidate.overallAdvisoryNarrative),
+    boardScorecardNarrative: asText(candidate.boardScorecardNarrative),
     headlineAssessment: asText(candidate.headlineAssessment),
     readinessThesis: asText(candidate.readinessThesis),
     boardMessage: asText(candidate.boardMessage),
@@ -1843,7 +1845,7 @@ export function DataAiDiagnosticWorkspace() {
             </section>
             <div className="data-ai-board-postures">
               {[
-                ["decision", "Decision posture", readinessThesis(overallScore)],
+                ["decision", "Decision posture", generatedReport?.boardScorecardNarrative || readinessThesis(overallScore)],
                 ["evidence", "Evidence posture", `${evidenceCoveragePct}% of questions currently have evidence strength and evidence notes. Unsupported high scores remain provisional until documents, system records, audit trails, or owner confirmations are attached.`],
                 ["assessment", "Assessment completeness", `${assessedCoveragePct}% of workbook questions have been scored. Unscored items should remain outside the approved baseline and be tracked as evidence gaps.`],
               ].map(([tone, title, text]) => (
@@ -1854,9 +1856,20 @@ export function DataAiDiagnosticWorkspace() {
               ))}
             </div>
             <div className="data-ai-report-decision-strip">
-              <div><span>Board ask</span><strong>Approve baseline</strong><p>Confirm score standard and evidence requirements.</p></div>
-              <div><span>Management ask</span><strong>Assign owners</strong><p>Close priority domains through named remediation owners.</p></div>
-              <div><span>AI ask</span><strong>Gate use cases</strong><p>Proceed only where data, privacy, and model risk controls are ready.</p></div>
+              {(generatedReport?.boardAsks?.length ? generatedReport.boardAsks : [
+                "Approve baseline: Confirm score standard and evidence requirements.",
+                "Assign owners: Close priority domains through named remediation owners.",
+                "Gate use cases: Proceed only where data, privacy, and model risk controls are ready.",
+              ]).slice(0, 3).map((ask, index) => {
+                const [label, ...rest] = ask.split(":");
+                return (
+                  <div key={`${label}-${index}`}>
+                    <span>{index === 0 ? "Board ask" : index === 1 ? "Management ask" : "AI ask"}</span>
+                    <strong>{label || `Ask ${index + 1}`}</strong>
+                    <p>{rest.join(":").trim() || ask}</p>
+                  </div>
+                );
+              })}
             </div>
           </article>
 
@@ -1875,6 +1888,10 @@ export function DataAiDiagnosticWorkspace() {
               <section className="data-ai-report-callout">
                 <h3>Overall advisory synthesis</h3>
                 <p>{generatedReport.overallAdvisoryNarrative || generatedReport.boardMessage}</p>
+              </section>
+              <section className="data-ai-report-callout">
+                <h3>Board scorecard advisory</h3>
+                <p>{generatedReport.boardScorecardNarrative || generatedReport.readinessThesis}</p>
               </section>
               <div className="data-ai-report-two-col">
                 <section>

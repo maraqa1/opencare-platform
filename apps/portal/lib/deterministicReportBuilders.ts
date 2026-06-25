@@ -51,6 +51,7 @@ export type DiagnosticReportRequest = {
 export type GeneratedConsultingReport = {
   executiveSummary: string;
   overallAdvisoryNarrative: string;
+  boardScorecardNarrative: string;
   headlineAssessment: string;
   readinessThesis: string;
   boardMessage: string;
@@ -84,6 +85,11 @@ export type StructuredDiagnosticReport = {
     overallAdvisory: {
       helicopterView: string;
       advisoryConclusion: string;
+    };
+    boardScorecard: {
+      advisoryNarrative: string;
+      readinessScore: number | null;
+      evidenceCoveragePct: number | null;
     };
     boardAsks: Array<{
       ask: string;
@@ -308,6 +314,8 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
       `${client} is assessed at ${score} / 4 maturity across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions for ${domain}. The evidence posture is ${evidencePct === null ? "not calculated" : `${evidencePct}% evidence-backed`}, with material gaps concentrated in ${weakest}. The immediate executive implication is to treat the baseline as decision-useful but provisional where evidence is incomplete, then move quickly from assessment to owned remediation.`,
     overallAdvisoryNarrative:
       `The helicopter view is that ${client} has enough evidence to move from diagnostic discussion into controlled execution, but not enough maturity to scale data and AI autonomously. The report sections point to one advisory conclusion: strengthen ownership, quality, source traceability, and roadmap discipline first, then use those controls to sequence reporting, analytics, and AI use cases. Management should treat ${weakest} as the first wave of intervention because these domains determine whether board reporting can be trusted, whether AI candidates can be approved, and whether benefits can be measured. The recommended posture is therefore pragmatic: proceed with governed reporting and human-approved AI support, pilot more advanced analytics only where evidence is certified, and hold sensitive automation until the control environment is demonstrably operating.`,
+    boardScorecardNarrative:
+      `The board scorecard should be read as a readiness signal, not a maturity badge. A ${score} / 4 score means ${client} has a usable baseline for steering committee decisions, but the ${evidencePct === null ? "current" : `${evidencePct}%`} evidence coverage and gaps in ${weakest} mean approvals should focus on ownership, evidence certification, and remediation funding before broader AI scaling. The practical board posture is to approve the baseline, assign accountable owners, and use the scorecard as the control point for deciding what can proceed, what needs a controlled pilot, and what must remain on hold.`,
     headlineAssessment:
       `The diagnostic indicates an early-stage capability profile for ${scope}. Current priorities are ${priorities}, but the operating pain points - ${painPoints} - show that governance, ownership, evidence quality, and roadmap discipline need to be strengthened before advanced AI use cases are scaled.`,
     readinessThesis:
@@ -397,6 +405,11 @@ export function buildStructuredReport(
       overallAdvisory: {
         helicopterView: report.overallAdvisoryNarrative,
         advisoryConclusion: report.boardMessage,
+      },
+      boardScorecard: {
+        advisoryNarrative: report.boardScorecardNarrative,
+        readinessScore: payload.overallScore,
+        evidenceCoveragePct: evidencePct,
       },
       boardAsks: report.boardAsks.map((ask) => ({
         ask,
