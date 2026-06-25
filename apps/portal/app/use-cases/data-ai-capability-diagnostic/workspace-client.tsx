@@ -40,6 +40,7 @@ type CustomerContext = {
 
 type GeneratedConsultingReport = {
   executiveSummary?: string;
+  overallAdvisoryNarrative?: string;
   headlineAssessment?: string;
   readinessThesis?: string;
   boardMessage?: string;
@@ -422,6 +423,7 @@ function normaliseGeneratedReport(report: unknown): GeneratedConsultingReport {
   const candidate = report as Record<string, unknown>;
   return {
     executiveSummary: asText(candidate.executiveSummary),
+    overallAdvisoryNarrative: asText(candidate.overallAdvisoryNarrative),
     headlineAssessment: asText(candidate.headlineAssessment),
     readinessThesis: asText(candidate.readinessThesis),
     boardMessage: asText(candidate.boardMessage),
@@ -1869,6 +1871,10 @@ export function DataAiDiagnosticWorkspace() {
               <section className="data-ai-report-callout">
                 <h3>Executive summary</h3>
                 <p>{generatedReport.executiveSummary}</p>
+              </section>
+              <section className="data-ai-report-callout">
+                <h3>Overall advisory synthesis</h3>
+                <p>{generatedReport.overallAdvisoryNarrative || generatedReport.boardMessage}</p>
               </section>
               <div className="data-ai-report-two-col">
                 <section>

@@ -77,6 +77,13 @@ function fieldConfigs(payload: DiagnosticReportRequest, report: GeneratedConsult
   const facts = buildFacts(payload);
   return [
     {
+      fieldPath: "overallAdvisory.helicopterView",
+      fallbackText: report.overallAdvisoryNarrative,
+      facts,
+      maxWords: Math.min(maxFieldWords + 80, 260),
+      apply: (current, text) => ({ ...current, overallAdvisoryNarrative: text }),
+    },
+    {
       fieldPath: "executiveSummary.summaryText",
       fallbackText: report.executiveSummary,
       facts,

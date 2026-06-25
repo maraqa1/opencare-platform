@@ -11,6 +11,7 @@ function hasList(value: unknown, minimum = 1) {
 export function validateFlatDiagnosticReport(report: GeneratedConsultingReport) {
   return Boolean(
     hasText(report.executiveSummary) &&
+    hasText(report.overallAdvisoryNarrative) &&
     hasText(report.headlineAssessment) &&
     hasText(report.readinessThesis) &&
     hasText(report.boardMessage) &&
@@ -37,6 +38,8 @@ export function validateStructuredDiagnosticReport(report: StructuredDiagnosticR
     (report.generationMode === "deterministic" || report.generationMode === "narrative_enrichment") &&
     hasText(report.model) &&
     hasText(report.sections.executiveSummary.summaryText) &&
+    hasText(report.sections.overallAdvisory.helicopterView) &&
+    hasText(report.sections.overallAdvisory.advisoryConclusion) &&
     report.sections.useCasePortfolio.every((useCase) =>
       hasText(useCase.id) &&
       analyticsTypes.has(useCase.analyticsType) &&

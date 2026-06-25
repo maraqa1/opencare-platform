@@ -50,6 +50,7 @@ export type DiagnosticReportRequest = {
 
 export type GeneratedConsultingReport = {
   executiveSummary: string;
+  overallAdvisoryNarrative: string;
   headlineAssessment: string;
   readinessThesis: string;
   boardMessage: string;
@@ -79,6 +80,10 @@ export type StructuredDiagnosticReport = {
       maturityScore: number | null;
       scoredQuestions: string;
       evidenceCoveragePct: number | null;
+    };
+    overallAdvisory: {
+      helicopterView: string;
+      advisoryConclusion: string;
     };
     boardAsks: Array<{
       ask: string;
@@ -301,6 +306,8 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
   return {
     executiveSummary:
       `${client} is assessed at ${score} / 4 maturity across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions for ${domain}. The evidence posture is ${evidencePct === null ? "not calculated" : `${evidencePct}% evidence-backed`}, with material gaps concentrated in ${weakest}. The immediate executive implication is to treat the baseline as decision-useful but provisional where evidence is incomplete, then move quickly from assessment to owned remediation.`,
+    overallAdvisoryNarrative:
+      `The helicopter view is that ${client} has enough evidence to move from diagnostic discussion into controlled execution, but not enough maturity to scale data and AI autonomously. The report sections point to one advisory conclusion: strengthen ownership, quality, source traceability, and roadmap discipline first, then use those controls to sequence reporting, analytics, and AI use cases. Management should treat ${weakest} as the first wave of intervention because these domains determine whether board reporting can be trusted, whether AI candidates can be approved, and whether benefits can be measured. The recommended posture is therefore pragmatic: proceed with governed reporting and human-approved AI support, pilot more advanced analytics only where evidence is certified, and hold sensitive automation until the control environment is demonstrably operating.`,
     headlineAssessment:
       `The diagnostic indicates an early-stage capability profile for ${scope}. Current priorities are ${priorities}, but the operating pain points - ${painPoints} - show that governance, ownership, evidence quality, and roadmap discipline need to be strengthened before advanced AI use cases are scaled.`,
     readinessThesis:
@@ -386,6 +393,10 @@ export function buildStructuredReport(
         maturityScore: payload.overallScore,
         scoredQuestions: `${payload.scoredQuestions}/${payload.totalQuestions}`,
         evidenceCoveragePct: evidencePct,
+      },
+      overallAdvisory: {
+        helicopterView: report.overallAdvisoryNarrative,
+        advisoryConclusion: report.boardMessage,
       },
       boardAsks: report.boardAsks.map((ask) => ({
         ask,
