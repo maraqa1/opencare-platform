@@ -13590,8 +13590,8 @@ code {
 
 @media print {
   @page {
-    size: A4 landscape;
-    margin: 10mm;
+    size: 13.333in 7.5in;
+    margin: 0;
   }
 
   .sidebar,
@@ -13609,10 +13609,6 @@ code {
     display: none !important;
   }
 
-  .data-ai-markdown-report {
-    display: none !important;
-  }
-
   .portal-shell,
   .main,
   .page,
@@ -13624,7 +13620,7 @@ code {
 
   .data-ai-report-pack {
     display: block;
-    font-size: 9pt;
+    font-size: 8.6pt;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
@@ -13634,9 +13630,12 @@ code {
     border-radius: 0;
     box-shadow: none;
     break-after: page;
+    box-sizing: border-box;
     min-height: auto;
     page-break-after: always;
-    padding: 10mm;
+    width: 13.333in;
+    min-height: 7.5in;
+    padding: 0.34in;
   }
 
   .data-ai-report-cover {
@@ -13644,15 +13643,15 @@ code {
       radial-gradient(circle at 73% 46%, rgba(255, 255, 255, 0.08), transparent 100mm),
       linear-gradient(135deg, #101a2a 0%, #121a2b 50%, #16223a 100%) !important;
     color: #ffffff !important;
-    grid-template-columns: minmax(0, 1fr) 82mm !important;
-    min-height: 170mm;
-    padding: 22mm 24mm !important;
+    grid-template-columns: minmax(0, 1fr) 3.15in !important;
+    min-height: 7.5in;
+    padding: 0.78in 0.9in !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
   .data-ai-report-cover h2 {
-    font-size: 42pt;
+    font-size: 40pt;
     font-weight: 500;
     line-height: 1.04;
     max-width: 13ch;
@@ -13663,17 +13662,17 @@ code {
   }
 
   .data-ai-report-cover-gauge {
-    height: 72mm;
-    width: 72mm;
+    height: 2.65in;
+    width: 2.65in;
   }
 
   .data-ai-report-cover-gauge strong {
-    font-size: 30pt;
+    font-size: 28pt;
   }
 
   .data-ai-report-cover-pills {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    max-width: 150mm;
+    max-width: 5.9in;
   }
 
   .data-ai-report-cover .data-ai-report-facts {
@@ -13691,12 +13690,12 @@ code {
   }
 
   .data-ai-board-grid {
-    grid-template-columns: minmax(56mm, 0.85fr) repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: minmax(2.25in, 0.85fr) repeat(3, minmax(0, 1fr)) !important;
   }
 
   .data-ai-board-postures section {
-    grid-template-columns: 42mm 1fr !important;
-    padding: 5mm !important;
+    grid-template-columns: 1.6in 1fr !important;
+    padding: 0.18in !important;
   }
 
   .data-ai-report-two-col,
@@ -13721,12 +13720,38 @@ code {
   }
 
   .data-ai-report-page-header h2 {
-    font-size: 17pt;
+    font-size: 16pt;
   }
 
   .data-ai-report-kpis strong,
   .data-ai-readiness-gauge strong {
+    font-size: 20pt;
+  }
+
+  .data-ai-markdown-report {
+    display: grid !important;
+    min-height: 7.5in;
+  }
+
+  .data-ai-markdown-body {
+    gap: 0.12in;
+    line-height: 1.42;
+    max-width: none;
+  }
+
+  .data-ai-markdown-body h2 {
     font-size: 22pt;
+  }
+
+  .data-ai-markdown-body h3 {
+    font-size: 12.5pt;
+    margin-top: 0.08in;
+    padding-top: 0.08in;
+  }
+
+  .data-ai-markdown-body p,
+  .data-ai-markdown-body li {
+    font-size: 8.4pt;
   }
 
   .data-ai-board-scorecard-hero {
