@@ -73,9 +73,12 @@ else
   apply_file "$ROOT_DIR/manifests/local-ai/gateway.yaml"
 fi
 
-log "Waiting for deployment/local-ai-gateway"
-kubectl -n "$NAMESPACE" rollout status deployment/local-ai-gateway --timeout="${LOCAL_AI_GATEWAY_TIMEOUT_SECONDS:-600}s"
-
-run_cluster_http_check local-ai-gateway-health http://local-ai-gateway:8080/health 3 5
+if [[ "${LOCAL_AI_GATEWAY_WAIT:-true}" == "true" ]]; then
+  log "Waiting for deployment/local-ai-gateway"
+  kubectl -n "$NAMESPACE" rollout status deployment/local-ai-gateway --timeout="${LOCAL_AI_GATEWAY_TIMEOUT_SECONDS:-600}s"
+  run_cluster_http_check local-ai-gateway-health http://local-ai-gateway:8080/health 3 5
+else
+  log_skip "Skipping deployment/local-ai-gateway wait via LOCAL_AI_GATEWAY_WAIT=false"
+fi
 
 log_success "Local AI runtime ready"

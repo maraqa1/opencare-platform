@@ -84,6 +84,7 @@ sudo env \
   LOCAL_AI_CHAT_API_URL="$LOCAL_AI_CHAT_API_URL" \
   LOCAL_AI_HEALTH_URL="$LOCAL_AI_HEALTH_URL" \
   LOCAL_AI_GATEWAY_IMAGE="$image" \
+  LOCAL_AI_GATEWAY_WAIT=false \
   bash scripts/local-ai/apply_local_ai.sh
 
 echo "Pinning deployment/local-ai-gateway to local image: $image"
@@ -141,6 +142,8 @@ if [[ "$available" != true ]]; then
   "${KUBECTL[@]}" logs -l "app=local-ai-gateway" --tail=120 --all-containers=true >&2 || true
   exit 1
 fi
+
+run_cluster_http_check local-ai-gateway-health http://local-ai-gateway:8080/health 3 5
 
 if "${KUBECTL[@]}" get deployment portal >/dev/null 2>&1; then
   echo "Restarting portal so local AI environment changes are visible to Next.js server routes"
