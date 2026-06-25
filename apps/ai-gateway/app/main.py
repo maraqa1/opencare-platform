@@ -75,32 +75,41 @@ def root() -> dict[str, str]:
 
 @app.get("/health")
 async def health() -> JSONResponse:
+    payload: dict[str, Any] = {
+        "status": "ok",
+        "service": SERVICE_NAME,
+        "provider": "chat-api" if LOCAL_AI_CHAT_API_URL else "ollama",
+        "model": LOCAL_AI_MODEL,
+        "keep_alive": LOCAL_AI_KEEP_ALIVE,
+        "chat_api_url": LOCAL_AI_CHAT_API_URL or None,
+    }
+
+    if not LOCAL_AI_HEALTH_URL and not OLLAMA_ROOT_URL:
+        return JSONResponse(payload)
+
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.get(LOCAL_AI_HEALTH_URL or f"{OLLAMA_ROOT_URL}/api/tags")
-        return JSONResponse(
+        payload.update(
             {
-                "status": "ok" if response.is_success else "degraded",
-                "service": SERVICE_NAME,
-                "provider": "chat-api" if LOCAL_AI_CHAT_API_URL else "ollama",
-                "model": LOCAL_AI_MODEL,
-                "keep_alive": LOCAL_AI_KEEP_ALIVE,
                 "runtime_status": response.status_code,
-                "chat_api_url": LOCAL_AI_CHAT_API_URL or None,
-            },
-            status_code=200 if response.is_success else 503,
+                "runtime_health": "ok" if response.is_success else "degraded",
+            }
+        )
+        return JSONResponse(
+            payload,
+            status_code=200,
         )
     except httpx.HTTPError as exc:
-        return JSONResponse(
+        payload.update(
             {
-                "status": "degraded",
-                "service": SERVICE_NAME,
-                "provider": "chat-api" if LOCAL_AI_CHAT_API_URL else "ollama",
-                "model": LOCAL_AI_MODEL,
-                "keep_alive": LOCAL_AI_KEEP_ALIVE,
+                "runtime_health": "degraded",
                 "message": str(exc),
-            },
-            status_code=503,
+            }
+        )
+        return JSONResponse(
+            payload,
+            status_code=200,
         )
 
 

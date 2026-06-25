@@ -10,8 +10,8 @@ DEPLOY_STEP_TIMEOUT_SECONDS="${DEPLOY_STEP_TIMEOUT_SECONDS:-1200}"
 AI_HOST="${AI_HOST:-ai.opendatalake.com}"
 LOCAL_AI_MODEL="${JAZAN_AI2_MODEL:-mistral-nemo:12b}"
 OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://168.119.156.124:11434/v1}"
-LOCAL_AI_CHAT_API_URL="${LOCAL_AI_CHAT_API_URL:-http://ai2.opendatalake.com:3000/api/chat}"
-LOCAL_AI_HEALTH_URL="${LOCAL_AI_HEALTH_URL:-http://ai2.opendatalake.com:3000/healthz}"
+LOCAL_AI_CHAT_API_URL="${LOCAL_AI_CHAT_API_URL:-https://ai2.opendatalake.com/api/chat}"
+LOCAL_AI_HEALTH_URL="${LOCAL_AI_HEALTH_URL:-https://ai2.opendatalake.com/healthz}"
 KUBECTL=(sudo env KUBECONFIG="$KUBECONFIG_PATH" kubectl -n "$NAMESPACE")
 
 if ! command -v git >/dev/null 2>&1; then
@@ -143,7 +143,11 @@ if [[ "$available" != true ]]; then
   exit 1
 fi
 
-run_cluster_http_check local-ai-gateway-health http://local-ai-gateway:8080/health 3 5
+echo "Checking local AI gateway health from inside the cluster"
+"${KUBECTL[@]}" run local-ai-gateway-health-check \
+  --rm -i --restart=Never \
+  --image=curlimages/curl:8.10.1 \
+  --command -- curl -fsS http://local-ai-gateway:8080/health >/dev/null
 
 if "${KUBECTL[@]}" get deployment portal >/dev/null 2>&1; then
   echo "Restarting portal so local AI environment changes are visible to Next.js server routes"
