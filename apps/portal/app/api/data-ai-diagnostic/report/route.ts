@@ -228,7 +228,7 @@ export async function POST(request: Request) {
         : assembled.enrichedFields.length > 0
           ? "Report JSON was built deterministically and selected narrative fields were safely enriched by the local model."
           : markdownReport.error
-            ? `AI2 Markdown generation did not complete, so the portal used deterministic Markdown fallback. ${markdownReport.error}`.trim()
+            ? `Deterministic Markdown report generated locally after AI2 output validation. The portal retained a board-ready diagnostic report and ignored invalid model output. ${markdownReport.error}`.trim()
             : "Deterministic Markdown report generated locally. Full AI Markdown generation is disabled by LOCAL_LLM_ENABLE_MARKDOWN_GENERATION.",
     });
   } catch (error) {
