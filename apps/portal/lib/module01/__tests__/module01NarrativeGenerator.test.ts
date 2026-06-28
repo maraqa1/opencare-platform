@@ -94,6 +94,26 @@ const validText = "CRTVTA has a 1.68 maturity baseline, so the board should appr
 }
 
 {
+  const jsonLikeTail = `${validText}
+
+{
+  "field": "roadmap.roadmapNarrative",
+  "notes": ["Do not render this structured payload."]
+}`;
+  const { llmClient } = llmSequence([{ status: "success", rawOutput: jsonLikeTail }]);
+  const result = await generateModule01NarrativeField({
+    fieldName: "roadmap.roadmapNarrative",
+    facts,
+    maxWords: 80,
+    modelConfig,
+    llmClient,
+  });
+  assert.equal(result.status, "sanitized");
+  assert.equal(result.text, validText);
+  assert.equal(result.fallbackUsed, false);
+}
+
+{
   const { llmClient } = llmSequence([
     { status: "timeout", error: "timeout" },
     { status: "timeout", error: "timeout" },

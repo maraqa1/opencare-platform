@@ -28,6 +28,28 @@ function fallback(fallbackText: string, rejectionReason: string): SanitizedPlain
   };
 }
 
+function stripTrailingStructuredPayload(text: string) {
+  const structuredMarkers = [
+    /\n\s*[{[]/,
+    /\n\s*"[^"]+"\s*:/,
+    /\n\s*(?:Field|Facts|Prompt|Response|Output)\s*:/i,
+  ];
+  const markerIndexes = structuredMarkers
+    .map((pattern) => text.search(pattern))
+    .filter((index) => index > 0);
+
+  if (!markerIndexes.length) {
+    return text;
+  }
+
+  const candidate = text.slice(0, Math.min(...markerIndexes)).trim();
+  const wordCount = candidate.split(/\s+/).filter(Boolean).length;
+  if (wordCount < 18 || candidate.includes("{") || candidate.includes("}")) {
+    return text;
+  }
+  return candidate;
+}
+
 export function sanitizePlainTextField(raw: string, options: SanitizePlainTextOptions): SanitizedPlainText {
   const fallbackText = options.fallbackText.trim();
   if (!raw || !raw.trim()) {
@@ -47,6 +69,9 @@ export function sanitizePlainTextField(raw: string, options: SanitizePlainTextOp
     .replace(/^(?:executive summary|board scorecard advisory(?: narrative)?|roadmap(?: narrative)?|overall advisory(?: synthesis)?|helicopter view)\s+(?=for\b|the\b|[A-Z])/i, "")
     .replace(/\s+\(([A-Z]{2,8})\)/g, "")
     .replace(/^["']|["']$/g, "")
+    .trim();
+
+  text = stripTrailingStructuredPayload(text)
     .replace(/\s+/g, " ")
     .trim();
 
