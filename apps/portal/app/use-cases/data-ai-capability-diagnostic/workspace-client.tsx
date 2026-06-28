@@ -937,13 +937,14 @@ function renderInlineMarkdown(text: string): ReactNode {
 
 function MarkdownReport({ markdown, source }: { markdown: string; source: "llm" | "fallback" | null }) {
   const blocks = parseMarkdownReport(markdown);
+  const isFallback = source === "fallback";
   return (
     <article className="data-ai-report-page data-ai-generated-report data-ai-markdown-report">
       <div className="data-ai-report-page-header">
-        <p className="eyebrow">AI-Authored Advisory</p>
-        <h2>Consulting report generated as Markdown</h2>
-        <span className={`data-ai-report-source ${source === "fallback" ? "fallback" : "llm"}`}>
-          {source === "fallback" ? "Deterministic fallback" : "AI2 model authored"}
+        <p className="eyebrow">{isFallback ? "Validated Advisory" : "AI-Authored Advisory"}</p>
+        <h2>{isFallback ? "Consulting report generated from controlled report data" : "Consulting report generated as Markdown"}</h2>
+        <span className={`data-ai-report-source ${isFallback ? "fallback" : "llm"}`}>
+          {isFallback ? "Deterministic Markdown" : "AI2 model authored"}
         </span>
       </div>
       <div className="data-ai-markdown-body">
