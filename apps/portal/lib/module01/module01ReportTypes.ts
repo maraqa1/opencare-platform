@@ -1,5 +1,5 @@
 export type Module01NarrativeSource = "ai2" | "fallback" | "deterministic";
-export type Module01ValidationStatus = "valid" | "fallback" | "rejected";
+export type Module01ValidationStatus = "valid" | "fallback" | "rejected" | "not_requested";
 
 export type Module01AiNarrativeField = {
   fieldName: string;
@@ -11,6 +11,21 @@ export type Module01AiNarrativeField = {
   generatedAt: string;
   rejectionReason?: string;
   retryAttempted?: boolean;
+};
+
+export type Module01NarrativeValidationMetadata = {
+  validationStatus: Module01ValidationStatus;
+  fallbackUsed: boolean;
+  rejectionReason?: string;
+  retryAttempted?: boolean;
+};
+
+export type Module01NarrativeSlot<TFacts extends Record<string, unknown> = Record<string, unknown>> = {
+  deterministicFacts: Readonly<TFacts>;
+  aiNarrative: Module01AiNarrativeField | null;
+  fallbackNarrative: string;
+  renderedText: string;
+  validationMetadata: Module01NarrativeValidationMetadata;
 };
 
 export type Module01EvidenceItem = {
@@ -30,7 +45,7 @@ export type Module01DomainScore = {
 };
 
 export type Module01StructuredReport = {
-  reportHeader: {
+  readonly reportHeader: {
     reportId: string;
     clientName: string;
     businessDomain: string;
@@ -38,52 +53,44 @@ export type Module01StructuredReport = {
     purpose: string;
     generatedAt: string;
   };
-  executiveSummary: {
-    deterministicFacts: Record<string, unknown>;
-    narrative: Module01AiNarrativeField;
+  readonly executiveSummary: Module01NarrativeSlot & {
+    readonly boardMessage?: string;
   };
-  clientContext: Record<string, unknown>;
-  overallMaturity: {
+  readonly clientContext: Readonly<Record<string, unknown>>;
+  readonly overallMaturity: {
     score: number | null;
     maturityBand: string;
     questionsScored: string;
     evidenceCoveragePct: number | null;
   };
-  domainHeatmap: Module01DomainScore[];
-  criticalGaps: Module01DomainScore[];
-  rootCauses: string[];
-  materialFindings: {
-    deterministicFacts: Record<string, unknown>;
-    narrative: Module01AiNarrativeField;
+  readonly domainHeatmap: readonly Module01DomainScore[];
+  readonly criticalGaps: readonly Module01DomainScore[];
+  readonly rootCauses: readonly string[];
+  readonly materialFindings: Module01NarrativeSlot & {
+    readonly findings: readonly string[];
   };
-  domainActionPlan: {
-    deterministicFacts: Record<string, unknown>;
-    narrative: Module01AiNarrativeField;
+  readonly domainActionPlan: Module01NarrativeSlot & {
+    readonly actions: readonly string[];
   };
-  aiReadinessGate: {
-    deterministicFacts: Record<string, unknown>;
-    narrative: Module01AiNarrativeField;
+  readonly aiReadinessGate: Module01NarrativeSlot & {
     proceed: string[];
     pilotWithControls: string[];
     hold: string[];
   };
-  candidateUseCases: Array<Record<string, unknown>>;
-  roadmap90Day: {
-    deterministicFacts: Record<string, unknown>;
-    narrative: Module01AiNarrativeField;
+  readonly candidateUseCases: readonly Readonly<Record<string, unknown>>[];
+  readonly roadmap90Day: Module01NarrativeSlot & {
     actions: string[];
   };
-  roadmap12Month: string[];
-  boardDecisions: {
-    deterministicFacts: Record<string, unknown>;
-    narrative: Module01AiNarrativeField;
+  readonly roadmap12Month: readonly string[];
+  readonly boardDecisions: Module01NarrativeSlot & {
     decisions: string[];
   };
-  evidenceAppendix: Module01EvidenceItem[];
-  aiNarratives: Record<string, Module01AiNarrativeField>;
-  generationMetadata: {
+  readonly evidenceAppendix: readonly Module01EvidenceItem[];
+  readonly aiNarratives: Readonly<Record<string, Module01AiNarrativeField>>;
+  readonly generationMetadata: {
     model: string;
     mode: "deterministic" | "narrative_enrichment";
+    renderedFromStructuredModel: true;
     validationSummary: {
       aiFields: number;
       fallbackFields: number;
@@ -91,4 +98,3 @@ export type Module01StructuredReport = {
     };
   };
 };
-
