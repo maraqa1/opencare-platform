@@ -66,13 +66,33 @@ async function runWithConcurrency<T, R>(
 
 type Module01Facts = ReturnType<typeof buildModule01Facts>;
 
+function textSnippet(value: string, maxCharacters = 360) {
+  return value.length <= maxCharacters ? value : `${value.slice(0, maxCharacters).trim()}...`;
+}
+
+function evidenceSummary(evidenceItems: Record<string, unknown>) {
+  return Object.entries(evidenceItems)
+    .slice(0, 5)
+    .map(([evidenceId, item]) => {
+      const record = item && typeof item === "object" ? item as Record<string, unknown> : {};
+      return {
+        evidenceId,
+        domain: record.domain,
+        evidenceStrength: record.evidenceStrength ?? record.evidence_strength,
+      };
+    });
+}
+
 function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsultingReport, maxFieldWords: number): FieldConfig[] {
   return [
     {
       fieldPath: "boardScorecard.advisoryNarrative",
       fallbackText: report.boardScorecardNarrative,
-      facts: facts.boardScorecardFacts,
-      maxWords: Math.min(maxFieldWords + 40, 220),
+      facts: {
+        ...facts.boardScorecardFacts,
+        boardAsks: report.boardAsks,
+      },
+      maxWords: Math.min(maxFieldWords, 120),
       apply: (current, text) => ({ ...current, boardScorecardNarrative: text }),
     },
     {
@@ -102,8 +122,21 @@ function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsulting
     {
       fieldPath: "roadmap.roadmapNarrative",
       fallbackText: report.roadmapPhases.join(" "),
-      facts: facts.roadmapFacts,
-      maxWords: Math.min(maxFieldWords, 90),
+      facts: {
+        ...facts.roadmapFacts,
+        deterministic90DayPhases: report.roadmapPhases,
+        criticalGaps: facts.boardScorecardFacts.topPriorityDomains,
+        ownerTypes: [
+          "Executive sponsor",
+          "Data Governance Lead",
+          "Data Quality Lead",
+          "Data Architecture Lead",
+          "Transformation PMO",
+        ],
+        keyEvidenceItems: evidenceSummary(facts.materialFindingsFacts.evidenceItems),
+        targetOutcomes: report.ninetyDayPlan,
+      },
+      maxWords: Math.min(maxFieldWords, 110),
       apply: (current, text) => ({ ...current, roadmapPhases: [text, ...current.roadmapPhases.slice(1)] }),
     },
     {
@@ -134,21 +167,14 @@ function overallAdvisoryFieldConfig(
         topPriorityDomains: facts.boardScorecardFacts.topPriorityDomains,
       },
       validatedNarratives: {
-        executiveSummary: validatedReport.executiveSummary,
-        boardScorecardNarrative: validatedReport.boardScorecardNarrative,
-        aiReadinessGate: validatedReport.aiReadinessGate,
-        roadmapPriorities: validatedReport.roadmapPhases.slice(0, 3),
-        boardDecisions: validatedReport.boardAsks,
+        executiveSummary: textSnippet(validatedReport.executiveSummary),
+        boardScorecardNarrative: textSnippet(validatedReport.boardScorecardNarrative),
+        aiReadinessGate: textSnippet(validatedReport.aiReadinessGate),
       },
-      deterministicFallbacks: {
-        executiveSummary: deterministicReport.executiveSummary,
-        boardScorecardNarrative: deterministicReport.boardScorecardNarrative,
-        aiReadinessGate: deterministicReport.aiReadinessGate,
-        roadmapPriorities: deterministicReport.roadmapPhases.slice(0, 3),
-        boardDecisions: deterministicReport.boardAsks,
-      },
+      roadmapPriorities: validatedReport.roadmapPhases.slice(0, 3).map((phase) => textSnippet(phase, 180)),
+      boardDecisions: validatedReport.boardAsks,
     },
-    maxWords: Math.min(maxFieldWords + 80, 260),
+    maxWords: Math.min(maxFieldWords + 20, 140),
     apply: (current, text) => ({ ...current, overallAdvisoryNarrative: text }),
   };
 }

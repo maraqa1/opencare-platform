@@ -75,6 +75,7 @@ export function buildModule01Facts(input: unknown) {
   const summary = asRecord(root.summary);
   const dependencyGraph = asRecord(root.dependency_graph ?? root.dependencyGraph);
   const domainRollup = asArray(root.domain_rollup ?? root.domainRollup ?? root.topGapDomains).map(normalizeDomain);
+  const strongestDomains = asArray(root.strongestDomains ?? root.strongest_domains).map(normalizeDomain);
   const responses = asArray(root.responses);
   const useCases = asArray(root.candidate_use_cases ?? root.candidateUseCases);
   const totalQuestions = numberOrNull(root.totalQuestions ?? summary.totalQuestions ?? summary.total_questions);
@@ -83,7 +84,7 @@ export function buildModule01Facts(input: unknown) {
   const computedEvidenceCoveragePct = totalQuestions && evidenceBackedCount !== null
     ? Math.round((evidenceBackedCount / totalQuestions) * 100)
     : null;
-  const criticalDomains = asArray(summary.criticalDomains ?? summary.critical_domains)
+  const suppliedCriticalDomains = asArray(summary.criticalDomains ?? summary.critical_domains)
     .map((value) => typeof value === "string" ? value : firstText(asRecord(value).domain, asRecord(value).name))
     .filter((value) => value !== missing);
   const topPriorityDomains = [...domainRollup].sort((left, right) =>
@@ -99,6 +100,7 @@ export function buildModule01Facts(input: unknown) {
     audience: firstText(customer.audience, customer.reportAudience, customer.targetAudience),
     purpose: firstText(customer.purpose, customer.reportPurpose),
     overallMaturity: numberOrNull(summary.overallMaturity ?? summary.overallScore ?? root.overallScore),
+    overallGap: numberOrNull(summary.overallGap ?? root.overallGap),
     maturityBand: firstText(summary.maturityBand, summary.maturity_label, summary.maturityLabel),
     questionsScored: firstText(
       summary.questionsScored,
@@ -111,7 +113,9 @@ export function buildModule01Facts(input: unknown) {
       evidenceBackedCount !== null && totalQuestions !== null ? `${evidenceBackedCount}/${totalQuestions}` : undefined,
     ),
     evidenceCoveragePct: numberOrNull(summary.evidenceCoveragePct ?? summary.evidence_coverage_pct ?? root.evidenceCoveragePct) ?? computedEvidenceCoveragePct,
-    criticalDomains: arrayOrMissing(criticalDomains),
+    criticalDomains: arrayOrMissing(suppliedCriticalDomains.length > 0
+      ? suppliedCriticalDomains
+      : topPriorityDomains.slice(0, 3).map((domain) => domain.domain).filter((domain) => domain !== missing)),
     topRootCauses: arrayOrMissing(asArray(
       summary.topRootCauses
       ?? summary.top_root_causes
@@ -123,6 +127,7 @@ export function buildModule01Facts(input: unknown) {
       ?? dependencyGraph.root_cause_ranking,
     )),
     topPriorityDomains,
+    strongestDomains: strongestDomains.slice(0, 3),
     useCases,
     evidenceItems: buildEvidenceIndex(responses),
     technologyLandscape: firstText(enterprise.technologyLandscape, enterprise.technology_landscape),
@@ -146,9 +151,14 @@ export function buildModule01Facts(input: unknown) {
       clientName: common.clientName,
       audience: common.audience,
       overallMaturity: common.overallMaturity,
+      overallGap: common.overallGap,
+      maturityBand: common.maturityBand,
       questionsScored: common.questionsScored,
       evidenceBacked: common.evidenceBacked,
       evidenceCoveragePct: common.evidenceCoveragePct,
+      strongestDomains: common.strongestDomains,
+      weakestDomains: common.topPriorityDomains.slice(0, 3),
+      criticalDomains: common.criticalDomains,
       topPriorityDomains: common.topPriorityDomains.slice(0, 5),
     },
     overallSynthesisFacts: {

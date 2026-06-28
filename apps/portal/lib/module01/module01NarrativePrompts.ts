@@ -21,6 +21,7 @@ type Module01NarrativePromptContract = {
   fieldName: string;
   fieldTask: string;
   expectedFacts: string;
+  outputInstruction?: string;
 };
 
 export const module01NarrativePromptContracts: Record<string, Module01NarrativePromptContract> = {
@@ -31,13 +32,15 @@ export const module01NarrativePromptContracts: Record<string, Module01NarrativeP
   },
   "boardScorecard.advisoryNarrative": {
     fieldName: "boardScorecard.advisoryNarrative",
-    fieldTask: "Interpret the board scorecard for steering committee action without changing any score.",
-    expectedFacts: "client name, audience, overall maturity, questions scored, evidence-backed count, evidence coverage, and top priority domains",
+    fieldTask: "Write one board-level interpretation paragraph explaining what the score means for management action.",
+    expectedFacts: "client name, overall score, overall gap, maturity band, evidence coverage, strongest domains, weakest domains, critical domains, and board asks",
+    outputInstruction: "Write one paragraph only. Do not title the paragraph. Do not start with the field name. Do not list scores as bullets.",
   },
   "overallAdvisory.helicopterView": {
     fieldName: "overallAdvisory.helicopterView",
-    fieldTask: "Write the helicopter view that connects validated section narratives into one advisory conclusion.",
-    expectedFacts: "business domain, critical domains, top root causes, pain points, and executive expectations",
+    fieldTask: "Write the executive helicopter view: the single management conclusion connecting the whole report.",
+    expectedFacts: "validated executive summary, validated board scorecard narrative, validated AI readiness narrative, deterministic critical domains, top root causes, board decisions, and roadmap priorities",
+    outputInstruction: "Write one concise paragraph only. Synthesize the conclusion; do not repeat full sections or create a heading.",
   },
   "materialFindings.findingsNarrative": {
     fieldName: "materialFindings.findingsNarrative",
@@ -61,8 +64,9 @@ export const module01NarrativePromptContracts: Record<string, Module01NarrativeP
   },
   "roadmap.roadmapNarrative": {
     fieldName: "roadmap.roadmapNarrative",
-    fieldTask: "Explain the 90-day roadmap priorities and dependencies.",
-    expectedFacts: "top priority domains, candidate use cases, technology landscape, dependencies, and sequencing facts",
+    fieldTask: "Write one short paragraph explaining why the 90-day roadmap is sequenced this way.",
+    expectedFacts: "deterministic 90-day phases, top priority domains, critical gaps, owner types, key evidence items, and target outcomes",
+    outputInstruction: "Do not repeat the full roadmap. Do not create phases, headings, tables, or bullets. Explain the sequencing logic only.",
   },
   "recommendedNextSteps.closingNarrative": {
     fieldName: "recommendedNextSteps.closingNarrative",
@@ -99,6 +103,7 @@ export function buildModule01NarrativePrompt({
     `Field: ${fieldName}`,
     `Field task: ${contract.fieldTask}`,
     `Expected facts for this field: ${contract.expectedFacts}.`,
+    contract.outputInstruction ? `Output instruction: ${contract.outputInstruction}` : "",
     "",
     "Section-specific facts:",
     factsText,
