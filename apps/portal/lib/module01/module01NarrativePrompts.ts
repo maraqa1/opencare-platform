@@ -23,7 +23,7 @@ type Module01NarrativePromptContract = {
   expectedFacts: string;
 };
 
-export const module01NarrativePromptContracts = {
+export const module01NarrativePromptContracts: Record<string, Module01NarrativePromptContract> = {
   "executiveSummary.summaryText": {
     fieldName: "executiveSummary.summaryText",
     fieldTask: "Summarise the diagnostic result, strongest management implication, and immediate advisory priority.",
@@ -69,7 +69,7 @@ export const module01NarrativePromptContracts = {
     fieldTask: "Close with the immediate next steps the board or steering committee should approve.",
     expectedFacts: "audience, purpose, top priority domains, candidate use cases, and board decision facts",
   },
-} satisfies Record<string, Module01NarrativePromptContract>;
+};
 
 export const module01NarrativeFieldNames = Object.keys(module01NarrativePromptContracts);
 
