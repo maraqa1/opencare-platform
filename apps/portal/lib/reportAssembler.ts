@@ -5,7 +5,10 @@ import {
   type GeneratedConsultingReport,
 } from "@/lib/deterministicReportBuilders";
 import { buildModule01Facts } from "@/lib/module01/module01FactsBuilder";
-import { generateModule01NarrativeField } from "@/lib/module01/module01NarrativeGenerator";
+import {
+  generateModule01NarrativeField,
+  type Module01LocalLlmClient,
+} from "@/lib/module01/module01NarrativeGenerator";
 import type { NarrativeFieldGeneration } from "@/lib/narrativeFieldGenerator";
 import { validateFlatDiagnosticReport, validateStructuredDiagnosticReport } from "@/lib/reportSchemaValidator";
 
@@ -18,6 +21,7 @@ type ReportAssemblerConfig = {
   fieldTimeoutMs: number;
   maxFieldWords: number;
   concurrency: number;
+  llmClient?: Module01LocalLlmClient;
 };
 
 type FieldConfig = {
@@ -60,8 +64,9 @@ async function runWithConcurrency<T, R>(
   return results;
 }
 
-function fieldConfigs(payload: DiagnosticReportRequest, report: GeneratedConsultingReport, maxFieldWords: number): FieldConfig[] {
-  const facts = buildModule01Facts(payload);
+type Module01Facts = ReturnType<typeof buildModule01Facts>;
+
+function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsultingReport, maxFieldWords: number): FieldConfig[] {
   return [
     {
       fieldPath: "boardScorecard.advisoryNarrative",
@@ -69,13 +74,6 @@ function fieldConfigs(payload: DiagnosticReportRequest, report: GeneratedConsult
       facts: facts.boardScorecardFacts,
       maxWords: Math.min(maxFieldWords + 40, 220),
       apply: (current, text) => ({ ...current, boardScorecardNarrative: text }),
-    },
-    {
-      fieldPath: "overallAdvisory.helicopterView",
-      fallbackText: report.overallAdvisoryNarrative,
-      facts: facts.overallSynthesisFacts,
-      maxWords: Math.min(maxFieldWords + 80, 260),
-      apply: (current, text) => ({ ...current, overallAdvisoryNarrative: text }),
     },
     {
       fieldPath: "executiveSummary.summaryText",
@@ -118,33 +116,80 @@ function fieldConfigs(payload: DiagnosticReportRequest, report: GeneratedConsult
   ];
 }
 
+function overallAdvisoryFieldConfig(
+  facts: Module01Facts,
+  deterministicReport: GeneratedConsultingReport,
+  validatedReport: GeneratedConsultingReport,
+  maxFieldWords: number,
+): FieldConfig {
+  return {
+    fieldPath: "overallAdvisory.helicopterView",
+    fallbackText: deterministicReport.overallAdvisoryNarrative,
+    facts: {
+      ...facts.overallSynthesisFacts,
+      deterministicFacts: {
+        overallMaturity: facts.executiveSummaryFacts.overallMaturity,
+        evidenceCoveragePct: facts.executiveSummaryFacts.evidenceCoveragePct,
+        criticalDomains: facts.executiveSummaryFacts.criticalDomains,
+        topPriorityDomains: facts.boardScorecardFacts.topPriorityDomains,
+      },
+      validatedNarratives: {
+        executiveSummary: validatedReport.executiveSummary,
+        boardScorecardNarrative: validatedReport.boardScorecardNarrative,
+        aiReadinessGate: validatedReport.aiReadinessGate,
+        roadmapPriorities: validatedReport.roadmapPhases.slice(0, 3),
+        boardDecisions: validatedReport.boardAsks,
+      },
+      deterministicFallbacks: {
+        executiveSummary: deterministicReport.executiveSummary,
+        boardScorecardNarrative: deterministicReport.boardScorecardNarrative,
+        aiReadinessGate: deterministicReport.aiReadinessGate,
+        roadmapPriorities: deterministicReport.roadmapPhases.slice(0, 3),
+        boardDecisions: deterministicReport.boardAsks,
+      },
+    },
+    maxWords: Math.min(maxFieldWords + 80, 260),
+    apply: (current, text) => ({ ...current, overallAdvisoryNarrative: text }),
+  };
+}
+
+async function generateNarrativeField(
+  field: FieldConfig,
+  config: ReportAssemblerConfig,
+): Promise<{ field: FieldConfig; generation: NarrativeFieldGeneration }> {
+  return {
+    field,
+    generation: await generateModule01NarrativeField({
+      fieldName: field.fieldPath,
+      facts: field.facts,
+      maxWords: field.maxWords,
+      fallbackText: field.fallbackText,
+      modelConfig: {
+        gatewayBaseUrl: config.gatewayBaseUrl,
+        headers: config.headers,
+        model: config.model,
+        timeoutMs: config.fieldTimeoutMs,
+      },
+      llmClient: config.llmClient,
+    }),
+  };
+}
+
 export async function assembleDiagnosticReport(
   payload: DiagnosticReportRequest,
   config: ReportAssemblerConfig,
 ): Promise<AssembledDiagnosticReport> {
-  let report = buildDeterministicReport(payload);
+  const deterministicReport = buildDeterministicReport(payload);
+  const module01Facts = buildModule01Facts(payload);
+  let report = deterministicReport;
   const fields: Record<string, NarrativeFieldGeneration> = {};
   const canUseNarrativeModel = config.reportMode === "narrative_enrichment";
   const mode = canUseNarrativeModel ? "narrative_enrichment" : "deterministic";
 
   if (canUseNarrativeModel) {
-    const configs = fieldConfigs(payload, report, config.maxFieldWords)
+    const configs = firstPassFieldConfigs(module01Facts, report, config.maxFieldWords)
       .filter((field) => field.fieldPath === "boardScorecard.advisoryNarrative" || config.enableFieldEnrichment);
-    const generations = await runWithConcurrency(configs, config.concurrency, async (field) => ({
-      field,
-      generation: await generateModule01NarrativeField({
-        fieldName: field.fieldPath,
-        facts: field.facts,
-        maxWords: field.maxWords,
-        fallbackText: field.fallbackText,
-        modelConfig: {
-          gatewayBaseUrl: config.gatewayBaseUrl,
-          headers: config.headers,
-          model: config.model,
-          timeoutMs: config.fieldTimeoutMs,
-        },
-      }),
-    }));
+    const generations = await runWithConcurrency(configs, config.concurrency, (field) => generateNarrativeField(field, config));
 
     generations.forEach(({ field, generation }) => {
       fields[field.fieldPath] = generation;
@@ -152,10 +197,19 @@ export async function assembleDiagnosticReport(
         report = field.apply(report, generation.text);
       }
     });
+
+    if (config.enableFieldEnrichment) {
+      const overallField = overallAdvisoryFieldConfig(module01Facts, deterministicReport, report, config.maxFieldWords);
+      const { generation } = await generateNarrativeField(overallField, config);
+      fields[overallField.fieldPath] = generation;
+      if (generation.status !== "fallback") {
+        report = overallField.apply(report, generation.text);
+      }
+    }
   }
 
   if (!validateFlatDiagnosticReport(report)) {
-    report = buildDeterministicReport(payload);
+    report = deterministicReport;
   }
 
   const structuredReport = buildStructuredReport(payload, report, mode, config.model);

@@ -4,7 +4,7 @@ import { validateModule01Narrative } from "@/lib/module01/module01NarrativeValid
 import type { NarrativeFieldGeneration } from "@/lib/narrativeFieldGenerator";
 import { sanitizePlainTextField } from "@/lib/textSanitizer";
 
-type Module01LocalLlmClient = typeof callLocalLlm;
+export type Module01LocalLlmClient = typeof callLocalLlm;
 
 type GenerateModule01NarrativeArgs = {
   fieldName: string;
