@@ -29,6 +29,7 @@ assert(policySource.includes("grounded_qa"));
 assert(sanitizerSource.includes("fallback_required"));
 assert(sanitizerSource.includes("unsafe_json_syntax"));
 assert(sanitizerSource.includes("markdown_report_structure"));
+assert(sanitizerSource.includes("generic_report_pack"));
 assert(sanitizerSource.includes("unsafe_preface"));
 
 assert(routeSource.includes("LOCAL_LLM_REPORT_MODE"));

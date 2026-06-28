@@ -46,9 +46,11 @@ try {
 const { callLocalLlm } = clientModule;
 const originalFetch = globalThis.fetch;
 const calls = [];
+const requestBodies = [];
 
-globalThis.fetch = async (url) => {
+globalThis.fetch = async (url, init) => {
   calls.push(String(url));
+  requestBodies.push(init?.body ? JSON.parse(String(init.body)) : null);
   if (calls.length === 1) {
     return new Response("", { status: 405 });
   }
@@ -75,6 +77,11 @@ try {
   assert.equal(calls.length, 2);
   assert.ok(calls[0].endsWith("/v1/chat/completions"));
   assert.ok(calls[1].endsWith("/api/chat"));
+  assert.equal(requestBodies[1].model, "mistral-nemo:12b");
+  assert.equal(requestBodies[1].options.temperature, 0.1);
+  assert.ok(requestBodies[1].options.stop.includes("Deliverable"));
+  assert.ok(requestBodies[1].options.stop.includes("{"));
+  assert.ok(requestBodies[1].options.num_predict <= 180);
   assert.ok(result.rawOutput.includes("CRTVTA"));
 } finally {
   globalThis.fetch = originalFetch;

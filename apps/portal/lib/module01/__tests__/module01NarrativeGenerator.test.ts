@@ -115,6 +115,23 @@ const validText = "CRTVTA has a 1.68 maturity baseline, so the board should appr
 
 {
   const { llmClient } = llmSequence([
+    { status: "success", rawOutput: "Deliverable 1: DMO operating model. Purpose and mandate. Establish the DMO as the enterprise function that coordinates data governance, ownership, stewardship, metadata, quality, sharing, classification and reporting." },
+    { status: "success", rawOutput: validText },
+  ]);
+  const result = await generateModule01NarrativeField({
+    fieldName: "overallAdvisory.helicopterView",
+    facts,
+    maxWords: 80,
+    modelConfig,
+    llmClient,
+  });
+  assert.equal(result.status, "ai_enriched");
+  assert.equal(result.text, validText);
+  assert.equal(result.retryAttempted, true);
+}
+
+{
+  const { llmClient } = llmSequence([
     { status: "timeout", error: "timeout" },
     { status: "timeout", error: "timeout" },
   ]);

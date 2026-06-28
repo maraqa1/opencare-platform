@@ -82,8 +82,11 @@ export function sanitizePlainTextField(raw: string, options: SanitizePlainTextOp
   if (/^\s*[{[]/.test(text) || /[}\]]\s*$/.test(text)) {
     return fallback(fallbackText, "json_like_output");
   }
-  if (/^\s*(executive summary|board asks|roadmap|priority gap register)\b/i.test(text)) {
+  if (/^\s*(executive summary|board asks|roadmap|priority gap register|deliverable\s+\d+|dmo operating model)\b/i.test(text)) {
     return fallback(fallbackText, "markdown_report_structure");
+  }
+  if (/\b(dmo operating model|purpose and mandate|metadata, quality, sharing, classification)\b/i.test(text)) {
+    return fallback(fallbackText, "generic_report_pack");
   }
   if (text.includes("{") || text.includes("}")) {
     return fallback(fallbackText, "unsafe_json_syntax");

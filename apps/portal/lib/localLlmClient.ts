@@ -75,11 +75,24 @@ function openAiChatRequest(args: LocalLlmClientArgs, policy: MistralNemoPolicy, 
   };
 }
 
-function nativeChatRequest(args: LocalLlmClientArgs): Omit<RequestInit, "signal"> {
+function nativeChatRequest(args: LocalLlmClientArgs, policy: MistralNemoPolicy): Omit<RequestInit, "signal"> {
   return {
     method: "POST",
     headers: args.modelConfig.headers,
     body: JSON.stringify({
+      model: args.modelConfig.model,
+      temperature: policy.temperature,
+      top_p: policy.topP,
+      max_tokens: Math.min(policy.maxOutputTokens, 180),
+      num_predict: Math.min(policy.maxOutputTokens, 180),
+      options: {
+        temperature: policy.temperature,
+        top_p: policy.topP,
+        repeat_penalty: policy.repeatPenalty,
+        num_ctx: policy.numCtx,
+        num_predict: Math.min(policy.maxOutputTokens, 180),
+        stop: ["```", "\n#", "\n##", "{", "}", "\nDeliverable", "Deliverable", "\nField:", "\nFacts:", "\nPrompt:"],
+      },
       messages: [
         {
           role: "user",
@@ -210,7 +223,7 @@ export async function callLocalLlm(args: LocalLlmClientArgs): Promise<LocalLlmCl
     });
     const finalResponse = !response.ok && shouldTryNativeChat(response.status)
       ? await fetch(nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl), {
-        ...nativeChatRequest(args),
+        ...nativeChatRequest(args, policy),
         signal: abortController.signal,
       })
       : response;
