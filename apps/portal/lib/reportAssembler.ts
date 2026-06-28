@@ -66,6 +66,10 @@ async function runWithConcurrency<T, R>(
 }
 
 type Module01Facts = ReturnType<typeof buildModule01Facts>;
+const priorityAiFieldPaths = new Set([
+  "boardScorecard.advisoryNarrative",
+  "roadmap.roadmapNarrative",
+]);
 
 function textSnippet(value: string, maxCharacters = 360) {
   return value.length <= maxCharacters ? value : `${value.slice(0, maxCharacters).trim()}...`;
@@ -238,7 +242,7 @@ export async function assembleDiagnosticReport(
 
   if (canUseNarrativeModel) {
     const configs = firstPassFieldConfigs(module01Facts, report, config.maxFieldWords)
-      .filter((field) => field.fieldPath === "boardScorecard.advisoryNarrative" || config.enableFieldEnrichment);
+      .filter((field) => field.fieldPath === "boardScorecard.advisoryNarrative" || (config.enableFieldEnrichment && priorityAiFieldPaths.has(field.fieldPath)));
     const generations = await runWithConcurrency(configs, config.concurrency, (field) => generateNarrativeField(field, config));
 
     generations.forEach(({ field, generation }) => {
