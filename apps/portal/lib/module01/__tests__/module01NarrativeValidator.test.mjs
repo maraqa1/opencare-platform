@@ -1,5 +1,24 @@
 import assert from "node:assert/strict";
-import { validateModule01Narrative } from "../module01NarrativeValidator";
+import { createRequire } from "node:module";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import ts from "typescript";
+
+const require = createRequire(import.meta.url);
+const sourcePath = new URL("../module01NarrativeValidator.ts", import.meta.url);
+const source = readFileSync(sourcePath, "utf8");
+const transpiled = ts.transpileModule(source, {
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+  },
+}).outputText;
+const tempDir = mkdtempSync(join(tmpdir(), "module01-validator-"));
+const tempFile = join(tempDir, "module01NarrativeValidator.cjs");
+writeFileSync(tempFile, transpiled);
+
+const { validateModule01Narrative } = require(tempFile);
 
 const context = {
   fieldName: "boardScorecard.advisoryNarrative",
@@ -40,3 +59,5 @@ assert.equal(
   ).valid,
   true,
 );
+
+console.log("module01 narrative validator tests passed");
