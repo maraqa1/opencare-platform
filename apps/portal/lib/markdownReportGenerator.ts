@@ -449,8 +449,6 @@ function nativeChatRequest(prompt: string, headers: Record<string, string>): Omi
 }
 
 export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): Promise<MarkdownReportGeneration> {
-  const prompt = buildMarkdownPrompt(args.payload);
-  const inputTokenEstimate = estimateTokens(prompt);
   const startedAt = Date.now();
   const fallbackMarkdown = buildDeterministicMarkdown(args.payload, args.deterministicReport);
 
@@ -460,9 +458,12 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
       source: "fallback",
       model: args.modelConfig.model,
       durationMs: Date.now() - startedAt,
-      inputTokenEstimate,
+      inputTokenEstimate: estimateTokens(fallbackMarkdown),
     };
   }
+
+  const prompt = buildMarkdownPrompt(args.payload);
+  const inputTokenEstimate = estimateTokens(prompt);
 
   try {
     const openAiResponse = await fetchMarkdownContent(`${args.modelConfig.gatewayBaseUrl}/chat/completions`, {

@@ -1,0 +1,38 @@
+{
+  "customer_context": {
+    "clientName": "CRTVTA",
+    "sector": "Technical and vocational training",
+    "businessDomain": "Training operations and workforce capability development",
+    "audience": "Executive leadership",
+    "purpose": "Confirm DMO readiness and data strategy priorities."
+  },
+  "enterprise_context": {
+    "technologyLandscape": "Training systems, reporting tools, integration files and operational data stores.",
+    "painPoints": "Fragmented reporting, inconsistent trainee identifiers and unclear source ownership.",
+    "executiveExpectations": "Clear decisions, owner accountability, evidence-backed roadmap and AI readiness gating.",
+    "regulatoryContext": "Not provided in diagnostic input."
+  },
+  "summary": {
+    "overallMaturity": 1.68,
+    "maturityBand": "Early-stage",
+    "questionsScored": "24/30",
+    "evidenceBacked": "14/30",
+    "evidenceCoveragePct": 47,
+    "criticalDomains": ["Data Quality & Master Data", "Execution, Roadmap & Value Measurement", "Data Sources & Data Flows"],
+    "topRootCauses": ["No unified identifier", "Weak source ownership", "No benefits-led roadmap"]
+  },
+  "domain_rollup": [
+    { "domain": "Execution, Roadmap & Value Measurement", "score": 1.0, "gap": 3.0, "priority": "Critical", "root_cause_rank": 2 },
+    { "domain": "Data Quality & Master Data", "score": 0.86, "gap": 3.14, "priority": "Critical", "root_cause_rank": 1 },
+    { "domain": "Data Sources & Data Flows", "score": 1.11, "gap": 2.89, "priority": "High", "root_cause_rank": 3 }
+  ],
+  "candidate_use_cases": [
+    { "id": "uc-01", "name": "Executive reporting rationalisation", "type": "descriptive" },
+    { "id": "uc-02", "name": "Data quality remediation cockpit", "type": "diagnostic" }
+  ],
+  "responses": [
+    { "evidence_id": "EVID-DQ-001", "domain": "Data Quality & Master Data", "question": "How is data quality measured?", "evidenceStrength": "None" },
+    { "evidence_id": "EVID-SRC-001", "domain": "Data Sources & Data Flows", "question": "What are the critical sources?", "evidenceStrength": "Interview" }
+  ]
+}
+

@@ -1,0 +1,35 @@
+{
+  "customer_context": {
+    "clientName": "Northstar Retail Group",
+    "sector": "Private sector retail",
+    "businessDomain": "Retail operations and customer analytics",
+    "audience": "Executive committee",
+    "purpose": "Assess data readiness for governed analytics and AI-assisted reporting."
+  },
+  "enterprise_context": {
+    "technologyLandscape": "ERP, CRM, ecommerce platform and warehouse management systems.",
+    "painPoints": "Inconsistent product hierarchy, delayed reporting and fragmented customer data.",
+    "executiveExpectations": "Trusted performance reporting and prioritised analytics use cases.",
+    "regulatoryContext": "Not provided in diagnostic input."
+  },
+  "summary": {
+    "overallMaturity": 2.1,
+    "maturityBand": "Developing",
+    "questionsScored": "20/30",
+    "evidenceBacked": "12/30",
+    "evidenceCoveragePct": 40,
+    "criticalDomains": ["Data Ownership", "Metadata and Lineage"],
+    "topRootCauses": ["Unclear owner accountability", "Limited lineage evidence"]
+  },
+  "domain_rollup": [
+    { "domain": "Data Ownership", "score": 1.2, "gap": 2.8, "priority": "Critical", "root_cause_rank": 1 },
+    { "domain": "Metadata and Lineage", "score": 1.5, "gap": 2.5, "priority": "High", "root_cause_rank": 2 }
+  ],
+  "candidate_use_cases": [
+    { "id": "uc-retail-01", "name": "Customer churn analytics", "type": "predictive" }
+  ],
+  "responses": [
+    { "evidence_id": "EVID-RET-001", "domain": "Data Ownership", "question": "Who owns product data?", "evidenceStrength": "Documented" }
+  ]
+}
+

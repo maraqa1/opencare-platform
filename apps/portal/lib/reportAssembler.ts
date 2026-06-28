@@ -1,11 +1,12 @@
 import {
   buildDeterministicReport,
   buildStructuredReport,
-  contextLabel,
   type DiagnosticReportRequest,
   type GeneratedConsultingReport,
 } from "@/lib/deterministicReportBuilders";
-import { generateNarrativeField, type NarrativeFieldGeneration } from "@/lib/narrativeFieldGenerator";
+import { buildModule01Facts } from "@/lib/module01/module01FactsBuilder";
+import { generateModule01NarrativeField } from "@/lib/module01/module01NarrativeGenerator";
+import type { NarrativeFieldGeneration } from "@/lib/narrativeFieldGenerator";
 import { validateFlatDiagnosticReport, validateStructuredDiagnosticReport } from "@/lib/reportSchemaValidator";
 
 type ReportAssemblerConfig = {
@@ -22,7 +23,7 @@ type ReportAssemblerConfig = {
 type FieldConfig = {
   fieldPath: string;
   fallbackText: string;
-  facts: string;
+  facts: Record<string, unknown>;
   maxWords: number;
   apply: (report: GeneratedConsultingReport, text: string) => GeneratedConsultingReport;
 };
@@ -59,70 +60,58 @@ async function runWithConcurrency<T, R>(
   return results;
 }
 
-function buildFacts(payload: DiagnosticReportRequest) {
-  return [
-    `Client: ${contextLabel(payload, "customerName", "the organisation")}`,
-    `Business domain: ${contextLabel(payload, "businessDomain", "the stated business domain")}`,
-    `Operating scope: ${contextLabel(payload, "operatingScope", "the assessed operating scope")}`,
-    `Overall maturity: ${payload.overallScore ?? "not scored"} / 4`,
-    `Overall gap: ${payload.overallGap ?? "not calculated"}`,
-    `Questions scored: ${payload.scoredQuestions}/${payload.totalQuestions}`,
-    `Evidence-backed items: ${payload.evidenceBackedItems}/${payload.totalQuestions}`,
-    `Top gap domains: ${payload.topGapDomains.slice(0, 4).map((domain) => domain.nameEn).join(", ") || "not loaded"}`,
-    `Strategic priorities: ${contextLabel(payload, "strategicPriorities", "not supplied")}`,
-    `Pain points: ${contextLabel(payload, "currentPainPoints", "not supplied")}`,
-  ].join("\n");
-}
-
 function fieldConfigs(payload: DiagnosticReportRequest, report: GeneratedConsultingReport, maxFieldWords: number): FieldConfig[] {
-  const facts = buildFacts(payload);
+  const facts = buildModule01Facts(payload);
   return [
     {
       fieldPath: "boardScorecard.advisoryNarrative",
       fallbackText: report.boardScorecardNarrative,
-      facts,
+      facts: facts.boardScorecardFacts,
       maxWords: Math.min(maxFieldWords + 40, 220),
       apply: (current, text) => ({ ...current, boardScorecardNarrative: text }),
     },
     {
       fieldPath: "overallAdvisory.helicopterView",
       fallbackText: report.overallAdvisoryNarrative,
-      facts,
+      facts: facts.overallSynthesisFacts,
       maxWords: Math.min(maxFieldWords + 80, 260),
       apply: (current, text) => ({ ...current, overallAdvisoryNarrative: text }),
     },
     {
       fieldPath: "executiveSummary.summaryText",
       fallbackText: report.executiveSummary,
-      facts,
+      facts: facts.executiveSummaryFacts,
       maxWords: maxFieldWords,
       apply: (current, text) => ({ ...current, executiveSummary: text }),
     },
     {
       fieldPath: "aiReadinessGate.readinessNarrative",
       fallbackText: report.aiReadinessGate,
-      facts,
+      facts: facts.aiReadinessFacts,
       maxWords: maxFieldWords,
       apply: (current, text) => ({ ...current, aiReadinessGate: text }),
     },
     {
       fieldPath: "capabilityDiagnosis.diagnosisNarrative",
       fallbackText: report.headlineAssessment,
-      facts,
+      facts: {
+        ...facts.materialFindingsFacts,
+        domainActionPlan: facts.domainActionPlanFacts,
+      },
       maxWords: maxFieldWords,
       apply: (current, text) => ({ ...current, headlineAssessment: text }),
     },
     {
       fieldPath: "roadmap.roadmapNarrative",
       fallbackText: report.roadmapPhases.join(" "),
-      facts,
+      facts: facts.roadmapFacts,
       maxWords: Math.min(maxFieldWords, 90),
       apply: (current, text) => ({ ...current, roadmapPhases: [text, ...current.roadmapPhases.slice(1)] }),
     },
     {
       fieldPath: "recommendedNextSteps.closingNarrative",
       fallbackText: report.nextSteps[0],
-      facts,
+      facts: facts.boardDecisionsFacts,
       maxWords: Math.min(maxFieldWords, 80),
       apply: (current, text) => ({ ...current, nextSteps: [text, ...current.nextSteps.slice(1)] }),
     },
@@ -143,8 +132,8 @@ export async function assembleDiagnosticReport(
       .filter((field) => field.fieldPath === "boardScorecard.advisoryNarrative" || config.enableFieldEnrichment);
     const generations = await runWithConcurrency(configs, config.concurrency, async (field) => ({
       field,
-      generation: await generateNarrativeField({
-        fieldPath: field.fieldPath,
+      generation: await generateModule01NarrativeField({
+        fieldName: field.fieldPath,
         facts: field.facts,
         maxWords: field.maxWords,
         fallbackText: field.fallbackText,

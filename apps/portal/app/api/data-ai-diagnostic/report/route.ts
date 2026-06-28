@@ -161,8 +161,8 @@ export async function POST(request: Request) {
   );
   const maxFieldWords = Math.max(40, Math.min(numberEnv("LOCAL_LLM_MAX_FIELD_WORDS", defaultMaxFieldWords), 180));
   const reportMode = reportModeEnv();
-  const enableFieldEnrichment = booleanEnv("LOCAL_LLM_ENABLE_FIELD_ENRICHMENT", false);
-  const enableLlmMarkdown = booleanEnv("LOCAL_LLM_ENABLE_MARKDOWN_GENERATION", true);
+  const enableFieldEnrichment = booleanEnv("LOCAL_LLM_ENABLE_FIELD_ENRICHMENT", true);
+  const enableLlmMarkdown = booleanEnv("LOCAL_LLM_ENABLE_MARKDOWN_GENERATION", false);
 
   if (reportMode === "json_section") {
     return NextResponse.json(
