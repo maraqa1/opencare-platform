@@ -18,6 +18,8 @@ type LocalLlmClientArgs = {
   };
 };
 
+type MistralNemoPolicy = ReturnType<typeof assertMistralNemoTaskAllowed>;
+
 export type LocalLlmClientResult = {
   status: "success" | "timeout" | "blocked" | "error";
   rawOutput: string;
@@ -27,6 +29,118 @@ export type LocalLlmClientResult = {
   outputTokenEstimate: number;
   error?: string;
 };
+
+function nativeChatUrlFromGateway(gatewayBaseUrl: string) {
+  try {
+    const url = new URL(gatewayBaseUrl);
+    url.pathname = "/api/chat";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return gatewayBaseUrl.replace(/\/v1\/?$/, "").replace(/\/+$/, "") + "/api/chat";
+  }
+}
+
+function shouldTryNativeChat(status: number) {
+  return status === 404 || status === 405 || status === 502 || status === 503 || status === 504;
+}
+
+function openAiChatRequest(args: LocalLlmClientArgs, policy: MistralNemoPolicy, model: string): Omit<RequestInit, "signal"> {
+  return {
+    method: "POST",
+    headers: args.modelConfig.headers,
+    body: JSON.stringify({
+      model,
+      temperature: policy.temperature,
+      top_p: policy.topP,
+      max_tokens: Math.min(policy.maxOutputTokens, 180),
+      num_predict: Math.min(policy.maxOutputTokens, 180),
+      options: {
+        temperature: policy.temperature,
+        top_p: policy.topP,
+        repeat_penalty: policy.repeatPenalty,
+        num_ctx: policy.numCtx,
+        num_predict: Math.min(policy.maxOutputTokens, 180),
+        stop: ["```", "\n#", "\n##", "{", "}"],
+      },
+      messages: [
+        {
+          role: "user",
+          content: args.prompt,
+        },
+      ],
+    }),
+    cache: "no-store",
+  };
+}
+
+function nativeChatRequest(args: LocalLlmClientArgs): Omit<RequestInit, "signal"> {
+  return {
+    method: "POST",
+    headers: args.modelConfig.headers,
+    body: JSON.stringify({
+      messages: [
+        {
+          role: "user",
+          content: args.prompt,
+        },
+      ],
+    }),
+    cache: "no-store",
+  };
+}
+
+function unwrapPossibleJsonText(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+    return value;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      choices?: Array<{ message?: { content?: string }; text?: string }>;
+      answer?: string;
+      content?: string;
+      message?: string;
+      response?: string;
+    };
+    return parsed.choices?.[0]?.message?.content
+      ?? parsed.choices?.[0]?.text
+      ?? parsed.answer
+      ?? parsed.content
+      ?? parsed.response
+      ?? parsed.message
+      ?? value;
+  } catch {
+    return value;
+  }
+}
+
+async function readLlmResponse(response: Response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const body = await response.json() as string | {
+      choices?: Array<{ message?: { content?: string }; text?: string }>;
+      answer?: string;
+      content?: string;
+      message?: string;
+      response?: string;
+    };
+    if (typeof body === "string") {
+      return unwrapPossibleJsonText(body);
+    }
+    const content = body.choices?.[0]?.message?.content
+      ?? body.choices?.[0]?.text
+      ?? body.answer
+      ?? body.content
+      ?? body.response
+      ?? body.message
+      ?? "";
+    return unwrapPossibleJsonText(content);
+  }
+  return unwrapPossibleJsonText(await response.text());
+}
 
 export async function callLocalLlm(args: LocalLlmClientArgs): Promise<LocalLlmClientResult> {
   const startedAt = Date.now();
@@ -91,36 +205,19 @@ export async function callLocalLlm(args: LocalLlmClientArgs): Promise<LocalLlmCl
 
   try {
     const response = await fetch(`${args.modelConfig.gatewayBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers: args.modelConfig.headers,
+      ...openAiChatRequest(args, policy, model),
       signal: abortController.signal,
-      body: JSON.stringify({
-        model,
-        temperature: policy.temperature,
-        top_p: policy.topP,
-        max_tokens: Math.min(policy.maxOutputTokens, 180),
-        num_predict: Math.min(policy.maxOutputTokens, 180),
-        options: {
-          temperature: policy.temperature,
-          top_p: policy.topP,
-          repeat_penalty: policy.repeatPenalty,
-          num_ctx: policy.numCtx,
-          num_predict: Math.min(policy.maxOutputTokens, 180),
-          stop: ["```", "\n#", "\n##", "{", "}"],
-        },
-        messages: [
-          {
-            role: "user",
-            content: args.prompt,
-          },
-        ],
-      }),
-      cache: "no-store",
     });
+    const finalResponse = !response.ok && shouldTryNativeChat(response.status)
+      ? await fetch(nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl), {
+        ...nativeChatRequest(args),
+        signal: abortController.signal,
+      })
+      : response;
 
-    if (!response.ok) {
+    if (!finalResponse.ok) {
       const durationMs = Date.now() - startedAt;
-      const error = `Local LLM gateway returned ${response.status}.`;
+      const error = `Local LLM gateway returned ${finalResponse.status}.`;
       logLocalLlmTelemetry({
         taskMode: args.taskMode,
         fieldPath: args.fieldPath,
@@ -143,8 +240,7 @@ export async function callLocalLlm(args: LocalLlmClientArgs): Promise<LocalLlmCl
       };
     }
 
-    const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const rawOutput = body.choices?.[0]?.message?.content ?? "";
+    const rawOutput = await readLlmResponse(finalResponse);
     const durationMs = Date.now() - startedAt;
     const outputTokenEstimate = estimateTokens(rawOutput);
     logLocalLlmTelemetry({
