@@ -102,6 +102,41 @@ export function buildModule01NarrativePrompt({
 }) {
   const contract = promptContractFor(fieldName);
   const factsText = typeof facts === "string" ? facts : JSON.stringify(facts, null, 2);
+  if (fieldName === "ninetyDaySequencingNarrative") {
+    return [
+      "You are writing one narrative field for a board-ready AI and data diagnostic report.",
+      "",
+      "You are not chatting with the user.",
+      "Do not introduce yourself.",
+      "Do not mention the model.",
+      "Do not describe your capabilities.",
+      "Do not ask the user what they want.",
+      "Do not write generic advisory text.",
+      "Use only the supplied facts.",
+      "Do not invent client facts, systems, evidence IDs, scores, dates, owners, use cases, or regulatory claims.",
+      "Do not claim official regulatory compliance unless official source evidence is supplied.",
+      "",
+      "Return plain text only.",
+      "No Markdown headings.",
+      "No bullets unless explicitly requested.",
+      "If the facts are insufficient, return exactly SECTION_CONTEXT_MISSING.",
+      `Maximum ${maxWords} words.`,
+      "",
+      "Return exactly one plain-text paragraph.",
+      "Do not write a heading, title, table, JSON, list, bullets, phases, deliverables, operating model, or full report section.",
+      "Do not use the words Deliverable or DMO operating model.",
+      "",
+      "Field: ninetyDaySequencingNarrative",
+      `Field task: ${contract.fieldTask}`,
+      `Expected facts for this field: ${contract.expectedFacts}.`,
+      "",
+      "Section-specific facts:",
+      factsText,
+      "",
+      "Use only the section-specific facts above. Write the field text only.",
+      "Write the paragraph only. Start with the client name. Explain why management should start with accountable owners and evidence, then remediate the largest gaps, then scale only through controls.",
+    ].join("\n");
+  }
   return [
     ...module01SharedPromptInstructions,
     `Maximum ${maxWords} words.`,
