@@ -1,9 +1,28 @@
 import assert from "node:assert/strict";
-import {
+import { createRequire } from "node:module";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import ts from "typescript";
+
+const require = createRequire(import.meta.url);
+const sourcePath = new URL("../module01NarrativePrompts.ts", import.meta.url);
+const source = readFileSync(sourcePath, "utf8");
+const transpiled = ts.transpileModule(source, {
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+  },
+}).outputText;
+const tempDir = mkdtempSync(join(tmpdir(), "module01-prompts-"));
+const tempFile = join(tempDir, "module01NarrativePrompts.cjs");
+writeFileSync(tempFile, transpiled);
+
+const {
   buildModule01NarrativePrompt,
   module01NarrativeFieldNames,
   module01NarrativePromptContracts,
-} from "../module01NarrativePrompts";
+} = require(tempFile);
 
 const requiredFields = [
   "executiveSummary.summaryText",
@@ -29,6 +48,7 @@ for (const fieldName of module01NarrativeFieldNames) {
     facts,
     maxWords: 120,
   });
+
   assert.ok(prompt.includes("You are writing one narrative field for a board-ready AI and data diagnostic report."));
   assert.ok(prompt.includes("You are not chatting with the user."));
   assert.ok(prompt.includes("Do not introduce yourself."));
@@ -73,3 +93,5 @@ assert.throws(
   }),
   /Unsupported Module 01 narrative field/,
 );
+
+console.log("module01 narrative prompt tests passed");
