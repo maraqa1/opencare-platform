@@ -15,6 +15,9 @@ function text(value: unknown): string {
 }
 
 function numberOrNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
@@ -61,11 +64,16 @@ function buildEvidenceIndex(responses: unknown[]) {
   }, {});
 }
 
+function arrayOrMissing(values: unknown[]) {
+  return values.length > 0 ? values : [missing];
+}
+
 export function buildModule01Facts(input: unknown) {
   const root = asRecord(input);
   const enterprise = asRecord(root.enterprise_context ?? root.enterpriseContext);
   const customer = asRecord(root.customer_context ?? root.customerContext);
   const summary = asRecord(root.summary);
+  const dependencyGraph = asRecord(root.dependency_graph ?? root.dependencyGraph);
   const domainRollup = asArray(root.domain_rollup ?? root.domainRollup ?? root.topGapDomains).map(normalizeDomain);
   const responses = asArray(root.responses);
   const useCases = asArray(root.candidate_use_cases ?? root.candidateUseCases);
@@ -103,8 +111,17 @@ export function buildModule01Facts(input: unknown) {
       evidenceBackedCount !== null && totalQuestions !== null ? `${evidenceBackedCount}/${totalQuestions}` : undefined,
     ),
     evidenceCoveragePct: numberOrNull(summary.evidenceCoveragePct ?? summary.evidence_coverage_pct ?? root.evidenceCoveragePct) ?? computedEvidenceCoveragePct,
-    criticalDomains: criticalDomains.length ? criticalDomains : [missing],
-    topRootCauses: asArray(summary.topRootCauses ?? summary.top_root_causes ?? summary.rootCauseRanking ?? summary.root_cause_ranking),
+    criticalDomains: arrayOrMissing(criticalDomains),
+    topRootCauses: arrayOrMissing(asArray(
+      summary.topRootCauses
+      ?? summary.top_root_causes
+      ?? summary.rootCauseRanking
+      ?? summary.root_cause_ranking
+      ?? dependencyGraph.topRootCauses
+      ?? dependencyGraph.top_root_causes
+      ?? dependencyGraph.rootCauseRanking
+      ?? dependencyGraph.root_cause_ranking,
+    )),
     topPriorityDomains,
     useCases,
     evidenceItems: buildEvidenceIndex(responses),
