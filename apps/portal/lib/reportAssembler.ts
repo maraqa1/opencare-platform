@@ -26,6 +26,7 @@ type ReportAssemblerConfig = {
 
 type FieldConfig = {
   fieldPath: string;
+  promptFieldPath?: string;
   fallbackText: string;
   facts: Record<string, unknown> | string;
   maxWords: number;
@@ -171,6 +172,7 @@ function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsulting
     },
     {
       fieldPath: "roadmap.roadmapNarrative",
+      promptFieldPath: "ninetyDaySequencingNarrative",
       fallbackText: report.roadmapPhases.join(" "),
       facts: roadmapFactsText(facts, report),
       maxWords: Math.min(maxFieldWords, 100),
@@ -208,7 +210,7 @@ async function generateNarrativeField(
   return {
     field,
     generation: await generateModule01NarrativeField({
-      fieldName: field.fieldPath,
+      fieldName: field.promptFieldPath ?? field.fieldPath,
       facts: field.facts,
       maxWords: field.maxWords,
       fallbackText: field.fallbackText,

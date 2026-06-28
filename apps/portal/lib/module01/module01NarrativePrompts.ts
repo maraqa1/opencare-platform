@@ -68,6 +68,12 @@ export const module01NarrativePromptContracts: Record<string, Module01NarrativeP
     expectedFacts: "deterministic 90-day phases, top priority domains, critical gaps, owner types, key evidence items, and target outcomes",
     outputInstruction: "Start with the client name. Write 70 to 100 words. Do not repeat the full plan. Do not create phases, headings, tables, JSON, or bullets. Do not copy the facts block.",
   },
+  "ninetyDaySequencingNarrative": {
+    fieldName: "ninetyDaySequencingNarrative",
+    fieldTask: "Write one short paragraph explaining why the 90-day sequence starts with ownership and evidence before remediation and controlled scaling.",
+    expectedFacts: "deterministic 90-day sequence, top priority domains, critical gaps, owner types, key evidence items, and target outcomes",
+    outputInstruction: "Start with the client name. Write 70 to 100 words. Do not repeat the full plan. Do not create phases, headings, tables, JSON, or bullets. Do not copy the facts block.",
+  },
   "recommendedNextSteps.closingNarrative": {
     fieldName: "recommendedNextSteps.closingNarrative",
     fieldTask: "Close with the immediate next steps the board or steering committee should approve.",
