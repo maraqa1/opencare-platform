@@ -107,10 +107,16 @@ function domainList(domains: Array<Record<string, unknown>>, fallback = "none su
   return cleaned.length > 0 ? cleaned.join("; ") : fallback;
 }
 
+function safeSequencingPromptText(value: string) {
+  return value
+    .replace(/\broadmap\b/gi, "delivery plan")
+    .replace(/\bDMO\b/g, "data office");
+}
+
 function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingReport) {
   const evidence = evidenceSummary(facts.materialFindingsFacts.evidenceItems)
     .map((item) => `${item.evidenceId}${item.domain ? ` ${item.domain}` : ""}${item.evidenceStrength ? ` ${item.evidenceStrength}` : ""}`);
-  return [
+  return safeSequencingPromptText([
     `Client - ${facts.roadmapFacts.clientName}`,
     `Sequence - ${joinList(report.roadmapPhases)}`,
     `Priority domains - ${domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
@@ -118,7 +124,7 @@ function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingRepor
     "Owner types - Executive sponsor; Data Governance Lead; Data Quality Lead; Data Architecture Lead; Transformation PMO",
     `Evidence items - ${joinList(evidence)}`,
     `Target outcomes - ${joinList(report.ninetyDayPlan)}`,
-  ].join("\n");
+  ].join("\n"));
 }
 
 function overallFactsText(
