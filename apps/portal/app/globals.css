@@ -13885,6 +13885,39 @@ code {
   gap: 0.45rem;
 }
 
+.data-ai-seed-controls {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.data-ai-seed-controls label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.data-ai-seed-controls span {
+  color: #667085;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.data-ai-seed-controls select {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 12px;
+  color: #121a50;
+  font-size: 0.82rem;
+  font-weight: 800;
+  min-height: 2.45rem;
+  padding: 0.45rem 0.7rem;
+}
+
+.data-ai-seed-controls p {
+  grid-column: 1 / -1;
+}
+
 .data-ai-demo-actions button {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.14);
@@ -14236,6 +14269,7 @@ code {
 @media (max-width: 760px) {
   .data-ai-capture-summary,
   .data-ai-context-grid,
+  .data-ai-seed-controls,
   .data-ai-rubric-grid,
   .data-ai-textarea-grid,
   .data-ai-diagnostic-page .data-ai-question-meta {

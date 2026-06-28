@@ -38,6 +38,19 @@ type CustomerContext = {
   reportPurpose: string;
 };
 
+type SeedProfileId = "nawah-real-estate" | "hayat-health-network" | "amana-utilities-group";
+type SeedDatasetLevel = "interview-light" | "evidence-enriched" | "board-ready";
+
+type DiagnosticSeedProfile = {
+  id: SeedProfileId;
+  label: string;
+  sector: string;
+  context: CustomerContext;
+  domainScores: Record<number, number>;
+  domainEvidence: Record<number, string>;
+  domainActions: Record<number, string>;
+};
+
 type GeneratedConsultingReport = {
   executiveSummary?: string;
   overallAdvisoryNarrative?: string;
@@ -253,18 +266,227 @@ const emptyCustomerContext = {
   reportPurpose: "",
 } satisfies CustomerContext;
 
-const demoCustomerContext = {
-  customerName: "Sample Client Organisation",
-  businessDomain: "public-sector services, operations, and institutional performance",
-  operatingScope: "multi-entity operating model covering leadership, operations, service teams, technology, and governance functions",
-  strategicPriorities:
-    "improve service effectiveness, strengthen data-driven planning, connect operational outcomes to institutional performance, and prepare governed AI use cases",
-  currentPainPoints:
-    "fragmented source data, inconsistent evidence for impact, limited lineage across operational datasets, and unclear AI readiness controls",
-  targetAudience: "executive leadership, data council, business operations, IT, and AI governance stakeholders",
-  reportPurpose:
-    "produce an executive-ready diagnostic that prioritises data and AI capability gaps, governance decisions, and the first 90 days of remediation",
-} satisfies CustomerContext;
+const seedDatasetOptions = [
+  {
+    id: "interview-light",
+    label: "Interview-light dataset",
+    description: "Lower evidence depth, interview notes, weaker ownership proof, and more ad hoc scores.",
+    scoreShift: -1,
+    evidenceCap: "interview",
+  },
+  {
+    id: "evidence-enriched",
+    label: "Evidence-enriched dataset",
+    description: "Balanced score pattern with documented evidence, named data domains, and actionable remediation notes.",
+    scoreShift: 0,
+    evidenceCap: "system",
+  },
+  {
+    id: "board-ready",
+    label: "Board-ready evidence pack",
+    description: "Richer evidence wording, better governance artefacts, and stronger board-reporting readiness.",
+    scoreShift: 1,
+    evidenceCap: "audited",
+  },
+] satisfies Array<{
+  id: SeedDatasetLevel;
+  label: string;
+  description: string;
+  scoreShift: -1 | 0 | 1;
+  evidenceCap: EvidenceStrength;
+}>;
+
+const seedProfiles = [
+  {
+    id: "nawah-real-estate",
+    label: "Nawah Real Estate Investment Company",
+    sector: "Real estate investment and development",
+    context: {
+      customerName: "Nawah Real Estate Investment Company",
+      businessDomain: "real estate investment and development",
+      operatingScope:
+        "Privately held real estate investor and developer covering income-generating commercial and residential assets, active development projects, SPVs, investment, asset management, leasing, finance, and IT.",
+      strategicPriorities:
+        "Improve investment portfolio visibility, strengthen project and capex performance reporting, certify executive portfolio dashboards, and introduce governed AI use cases for occupancy, leasing, valuation, and asset risk insight.",
+      currentPainPoints:
+        "Asset, lease, tenant, capex, and project data are fragmented across PMS, CRM, ERP, and project controls; no unified asset or tenant identifier; reporting relies on Excel handovers; data ownership and Data Council cadence are not yet embedded.",
+      targetAudience: "Board, Investment Committee, CEO, CFO, CIO, Head of Asset Management, Head of Development, proposed Data Council, and DMO Lead.",
+      reportPurpose:
+        "Establish a diagnostic baseline, prioritise 90-day DMO activation gaps, and define which analytics and AI use cases may proceed, pilot under controls, or be held.",
+    },
+    domainScores: {
+      1: 2,
+      2: 1,
+      3: 1,
+      4: 1,
+      5: 1,
+      6: 2,
+      7: 1,
+      8: 1,
+      9: 1,
+      10: 2,
+      11: 1,
+      12: 1,
+      13: 1,
+    },
+    domainEvidence: {
+      1: "portfolio KPI workshop notes, draft investment reporting value map, and partially approved analytics priorities",
+      2: "draft Data Council charter, informal asset data owner nominations, and unresolved decision-rights matrix",
+      3: "PMS, ERP, CRM, project-controls, valuation, and treasury system list with incomplete interface evidence",
+      4: "sample lease and asset extracts showing duplicate tenant records, missing unit IDs, and unresolved reconciliation defects",
+      5: "draft KPI glossary for occupancy, NOI, IRR, yield, and capex, but limited lineage evidence",
+      6: "executive portfolio dashboard prototype, Excel reconciliation samples, and competing KPI definitions",
+      7: "candidate AI use-case list for occupancy, leasing, valuation, and risk insight without approved model-risk gate",
+      8: "BI prototype, manual data extracts, and target reporting-layer options not yet approved",
+      9: "proposed data owner and steward role list with limited adoption evidence",
+      10: "access matrix and privacy checklist drafts for portfolio reporting datasets",
+      11: "partial source inventory covering PMS, ERP, CRM, project controls, BIM, valuation, and treasury",
+      12: "training needs notes for investment analysts, asset managers, finance users, and stewards",
+      13: "stalled BI initiative lessons, draft 90-day backlog, and benefits tracking not yet approved",
+    },
+    domainActions: {
+      1: "Confirm portfolio reporting outcomes, value cases, and investment committee decision metrics before sequencing DMO initiatives.",
+      2: "Approve Data Council cadence, assign asset, lease, tenant, project, and investment data owners, and publish decision rights.",
+      3: "Document current-state architecture and target reporting layer for PMS, ERP, CRM, and project controls integration.",
+      4: "Create critical data element rules for asset, lease, tenant, valuation, capex, and project cost records.",
+      5: "Publish KPI glossary and source-to-report lineage for occupancy, NOI, IRR, yield, and capex metrics.",
+      6: "Certify one executive portfolio dashboard and retire competing Excel-based versions through controlled change.",
+      7: "Gate AI candidates by business value, data readiness, lineage, explainability, model risk, and human review.",
+      8: "Prioritise governed integration for the highest-volume PMS, ERP, CRM, and project-control handovers.",
+      9: "Activate business data owner and steward responsibilities through a practical DMO operating cadence.",
+      10: "Embed access, privacy, retention, and sensitive-data restrictions into reporting and AI use-case approval.",
+      11: "Complete the source inventory with owners, refresh cadence, integration pattern, known issues, and reconciliation status.",
+      12: "Create role-based enablement for portfolio analysts, asset managers, finance teams, and appointed data stewards.",
+      13: "Convert gaps into a funded 0-30, 31-60, and 61-90 day DMO roadmap with owners and benefits tracking.",
+    },
+  },
+  {
+    id: "hayat-health-network",
+    label: "Hayat Health Services Network",
+    sector: "private healthcare operations",
+    context: {
+      customerName: "Hayat Health Services Network",
+      businessDomain: "private healthcare operations and patient services",
+      operatingScope:
+        "Multi-site healthcare provider covering outpatient clinics, diagnostics, patient access, revenue cycle, pharmacy, workforce operations, finance, and IT.",
+      strategicPriorities:
+        "Improve patient access visibility, reduce revenue leakage, strengthen clinical and operational reporting, and pilot governed AI for demand forecasting, coding review, and patient-flow insight.",
+      currentPainPoints:
+        "Patient, appointment, claim, physician, and service-line data are split across HIS, CRM, billing, laboratory, pharmacy, and finance systems; definitions vary across sites; dashboard trust is inconsistent.",
+      targetAudience: "Board, CEO, COO, CFO, Chief Medical Officer, CIO, Revenue Cycle Director, Operations Directors, Data Council, and DMO Lead.",
+      reportPurpose:
+        "Create a diagnostic baseline for data governance, operational reporting, and AI readiness across patient access, clinical operations, finance, and revenue-cycle decisions.",
+    },
+    domainScores: {
+      1: 2,
+      2: 2,
+      3: 1,
+      4: 1,
+      5: 1,
+      6: 2,
+      7: 1,
+      8: 2,
+      9: 2,
+      10: 2,
+      11: 1,
+      12: 2,
+      13: 1,
+    },
+    domainEvidence: {
+      1: "patient access KPI map, revenue-cycle improvement objectives, and draft service-line analytics priorities",
+      2: "governance forum minutes, informal data ownership list, and unresolved cross-site KPI approval workflow",
+      3: "HIS, CRM, billing, lab, pharmacy, and finance system landscape with partial integration evidence",
+      4: "duplicate patient samples, appointment-status inconsistencies, and claim coding defect examples",
+      5: "draft glossary for no-show rate, denial rate, average wait time, patient episode, and service-line margin",
+      6: "operations dashboard extracts, manual reconciliation workbooks, and inconsistent site-level KPI definitions",
+      7: "AI candidate list for demand forecasting, coding review, no-show prediction, and patient-flow support",
+      8: "BI workspace, billing extracts, HIS reports, and early data-mart design notes",
+      9: "role matrix for data owners, analysts, revenue-cycle SMEs, and operations champions",
+      10: "privacy and access-control checklists for patient and claims datasets",
+      11: "partial source inventory covering HIS, billing, CRM, lab, pharmacy, workforce, and finance",
+      12: "training plan notes for analysts, operations managers, and data stewards",
+      13: "improvement backlog and unresolved dependencies across patient access, revenue cycle, and reporting",
+    },
+    domainActions: {
+      1: "Prioritise data initiatives around patient access, revenue-cycle leakage, clinical operations, and service-line profitability.",
+      2: "Confirm Data Council authority for patient, appointment, claim, physician, and service-line definitions.",
+      3: "Map source-to-report architecture across HIS, billing, CRM, lab, pharmacy, workforce, and finance.",
+      4: "Stand up quality rules for patient identity, appointment status, claim code, service line, and physician master data.",
+      5: "Publish KPI glossary and lineage for patient access, no-show, denial, wait-time, and margin indicators.",
+      6: "Certify operational dashboards with owners, refresh cadence, and reconciliation rules across sites.",
+      7: "Apply AI readiness gates before demand forecasting, coding review, no-show prediction, or patient-flow pilots.",
+      8: "Define the governed reporting layer and retire unsupported manual extracts in priority workflows.",
+      9: "Name accountable data owners and operational stewards for each high-value domain.",
+      10: "Apply privacy, access, retention, and human-review controls to patient and claim data products.",
+      11: "Complete the source inventory and refresh cadence for systems feeding board and operations dashboards.",
+      12: "Train analysts, stewards, and operations leaders on definitions, evidence, and dashboard certification.",
+      13: "Create a benefits-led 90-day roadmap tied to access, denial reduction, and reporting trust outcomes.",
+    },
+  },
+  {
+    id: "amana-utilities-group",
+    label: "Amana Utilities Operations Group",
+    sector: "utilities and municipal operations",
+    context: {
+      customerName: "Amana Utilities Operations Group",
+      businessDomain: "utilities, field operations, and municipal service delivery",
+      operatingScope:
+        "Regional utilities operator covering network assets, field maintenance, customer service, outage response, contractors, billing, finance, and operational control rooms.",
+      strategicPriorities:
+        "Improve asset reliability, outage response visibility, contractor performance, customer-service reporting, and governed AI for work-order prioritisation and demand forecasting.",
+      currentPainPoints:
+        "Asset, meter, work-order, outage, contractor, customer, and billing data are fragmented across EAM, GIS, SCADA, CRM, billing, and field-service platforms; lineage and ownership are weak.",
+      targetAudience: "Board, CEO, COO, CFO, CIO, Network Operations, Customer Service, Field Maintenance, Data Council, and DMO Lead.",
+      reportPurpose:
+        "Assess data and AI capability for operational reliability, customer service, asset reporting, and controlled analytics use-case activation.",
+    },
+    domainScores: {
+      1: 2,
+      2: 1,
+      3: 2,
+      4: 1,
+      5: 1,
+      6: 2,
+      7: 1,
+      8: 2,
+      9: 1,
+      10: 2,
+      11: 1,
+      12: 1,
+      13: 1,
+    },
+    domainEvidence: {
+      1: "asset reliability objectives, outage KPI targets, and draft operational analytics value cases",
+      2: "informal owner nominations for asset, outage, meter, work-order, and customer data",
+      3: "EAM, GIS, SCADA, CRM, billing, and field-service architecture sketches with partial interface mapping",
+      4: "asset hierarchy defects, meter-location mismatches, and work-order closure inconsistencies",
+      5: "draft glossary for outage duration, response SLA, asset class, contractor productivity, and billing exceptions",
+      6: "control-room reports, field-service dashboards, and Excel reconciliations for SLA and outage indicators",
+      7: "candidate analytics for work-order priority, outage prediction, demand forecasting, and contractor performance",
+      8: "BI workspace, operational data extracts, and integration backlog for EAM, GIS, SCADA, and CRM",
+      9: "draft operating model for data owners, dispatch analysts, field supervisors, and stewards",
+      10: "access matrix and operational data security review notes",
+      11: "partial inventory of EAM, GIS, SCADA, CRM, billing, and contractor data flows",
+      12: "training needs for field supervisors, analysts, and data stewards",
+      13: "roadmap backlog with unresolved dependency and benefits tracking gaps",
+    },
+    domainActions: {
+      1: "Prioritise data work around asset reliability, outage response, customer service, contractor productivity, and billing trust.",
+      2: "Approve ownership for asset, outage, meter, work-order, customer, contractor, and billing data.",
+      3: "Map target architecture across EAM, GIS, SCADA, CRM, billing, and field-service workflows.",
+      4: "Define quality rules for asset hierarchy, meter location, outage event, work-order closure, and SLA records.",
+      5: "Publish operational glossary and source lineage for reliability, SLA, contractor, and billing indicators.",
+      6: "Certify control-room and executive operations dashboards with refresh cadence and reconciliation rules.",
+      7: "Gate AI candidates for work-order priority, outage prediction, demand forecasting, and contractor risk.",
+      8: "Sequence integration fixes for EAM, GIS, SCADA, CRM, billing, and field-service data flows.",
+      9: "Activate steward roles across network operations, customer service, field maintenance, finance, and IT.",
+      10: "Embed security, access, audit, and human-review controls into operational analytics workflows.",
+      11: "Complete source inventory and lineage for priority outage, asset, customer, and billing reports.",
+      12: "Train operations analysts and stewards on definitions, evidence standards, and dashboard certification.",
+      13: "Convert reliability and customer-service gaps into a funded 90-day roadmap with measurable benefits.",
+    },
+  },
+] satisfies DiagnosticSeedProfile[];
 
 function initialState() {
   return Object.fromEntries(
@@ -281,27 +503,6 @@ function initialState() {
   ) as Record<string, QuestionState>;
 }
 
-function demoScoreForQuestion(question: DataAiDiagnosticQuestion) {
-  const baseByDomain: Record<number, number> = {
-    1: 2,
-    2: 2,
-    3: 2,
-    4: 1,
-    5: 1,
-    6: 3,
-    7: 1,
-    8: 2,
-    9: 2,
-    10: 2,
-    11: 1,
-    12: 2,
-    13: 1,
-  };
-  const base = baseByDomain[question.domainId] ?? 1;
-  const variation = question.number % 6 === 0 ? 1 : question.number % 5 === 0 ? -1 : 0;
-  return Math.max(0, Math.min(4, base + variation));
-}
-
 function evidenceStrengthForScore(score: number): EvidenceStrength {
   if (score >= 4) return "audited";
   if (score >= 3) return "system";
@@ -310,17 +511,39 @@ function evidenceStrengthForScore(score: number): EvidenceStrength {
   return "none";
 }
 
-function demoEvidenceForQuestion(question: DataAiDiagnosticQuestion, score: number) {
-  if (score === 0) {
-    return "Demo evidence: no approved artifact was available during the walkthrough.";
+function evidenceRank(value: EvidenceStrength) {
+  return evidenceStrengthOptions.findIndex((option) => option.value === value);
+}
+
+function capEvidenceStrength(value: EvidenceStrength, cap: EvidenceStrength) {
+  return evidenceRank(value) > evidenceRank(cap) ? cap : value;
+}
+
+function seedScoreForQuestion(profile: DiagnosticSeedProfile, dataset: typeof seedDatasetOptions[number], question: DataAiDiagnosticQuestion) {
+  const base = profile.domainScores[question.domainId] ?? 1;
+  const variation = question.number % 7 === 0 ? -1 : question.number % 6 === 0 ? 1 : 0;
+  const score = base + dataset.scoreShift + variation;
+  return Math.max(0, Math.min(4, score));
+}
+
+function evidenceStrengthForSeed(score: number, dataset: typeof seedDatasetOptions[number]) {
+  return capEvidenceStrength(evidenceStrengthForScore(score), dataset.evidenceCap);
+}
+
+function seededEvidenceForQuestion(
+  profile: DiagnosticSeedProfile,
+  dataset: typeof seedDatasetOptions[number],
+  question: DataAiDiagnosticQuestion,
+  score: number,
+) {
+  const domainEvidence = profile.domainEvidence[question.domainId] ?? "workshop notes and open evidence requests";
+  if (dataset.id === "interview-light") {
+    return `Interview seed: ${domainEvidence}. Evidence is mostly workshop-confirmed and still needs approved artefacts for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
   }
-  const artifact =
-    score >= 3
-      ? "dashboard extract, policy sample, owner confirmation, and implementation record"
-      : score === 2
-        ? "draft procedure, workshop notes, and sample evidence request"
-        : "interview confirmation and open evidence request";
-  return `Demo evidence: ${artifact} for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
+  if (dataset.id === "board-ready") {
+    return `Board-ready seed: ${domainEvidence}, owner sign-off, dated evidence register entry, and steering-review trace. Score ${score}/4 reflects the available evidence for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
+  }
+  return `Evidence-enriched seed: ${domainEvidence}, draft owner confirmation, sample artefact, and remediation note for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
 }
 
 function seededActionByDomain(domainName: string) {
@@ -361,29 +584,36 @@ function seededActionByDomain(domainName: string) {
   return "Assign an accountable owner, confirm required evidence, define target state, and track closure through the governance cadence.";
 }
 
-function demoActionForQuestion(question: DataAiDiagnosticQuestion, score: number) {
+function seededActionForQuestion(profile: DiagnosticSeedProfile, dataset: typeof seedDatasetOptions[number], question: DataAiDiagnosticQuestion, score: number) {
   const gap = Math.max(question.target - score, 0);
+  const action = profile.domainActions[question.domainId] ?? seededActionByDomain(question.domainEn);
+  const datasetPrefix =
+    dataset.id === "interview-light"
+      ? "Confirm evidence and ownership first:"
+      : dataset.id === "board-ready"
+        ? "Move from diagnostic to governed execution:"
+        : "Prioritise the next remediation wave:";
   if (gap >= 2) {
-    return `Seeded action: ${seededActionByDomain(question.domainEn)}`;
+    return `${datasetPrefix} ${action}`;
   }
   if (gap === 1) {
-    return `Seeded action: strengthen the evidence pack for ${question.domainEn}, confirm accountable owner sign-off, and move the control from defined to managed maturity.`;
+    return `${datasetPrefix} strengthen evidence completeness for ${question.domainEn}, confirm accountable sign-off, and move the control from defined to managed maturity.`;
   }
-  return `Seeded action: maintain evidence and review ${question.domainEn} in the next assessment cycle.`;
+  return `${datasetPrefix} maintain evidence, monitor benefits, and review ${question.domainEn} in the next assessment cycle.`;
 }
 
-function dummyState() {
+function seededState(profile: DiagnosticSeedProfile, dataset: typeof seedDatasetOptions[number]) {
   return Object.fromEntries(
     dataAiDiagnosticQuestions.map((question) => {
-      const score = demoScoreForQuestion(question);
+      const score = seedScoreForQuestion(profile, dataset, question);
       return [
         question.id,
         {
           score,
-          evidenceStrength: evidenceStrengthForScore(score),
-          evidenceAvailable: demoEvidenceForQuestion(question, score),
-          notes: "Seeded dummy response for proposal walkthrough. Replace with real interview notes and evidence links.",
-          actionPlan: demoActionForQuestion(question, score),
+          evidenceStrength: evidenceStrengthForSeed(score, dataset),
+          evidenceAvailable: seededEvidenceForQuestion(profile, dataset, question, score),
+          notes: `${dataset.label} for ${profile.label}. Replace with validated interview notes, artefact links, and owner approvals before production use.`,
+          actionPlan: seededActionForQuestion(profile, dataset, question, score),
         } satisfies QuestionState,
       ];
     }),
@@ -774,6 +1004,8 @@ export function DataAiDiagnosticWorkspace() {
     details: string[];
   } | null>(null);
   const [handoffMessage, setHandoffMessage] = useState("");
+  const [selectedSeedProfileId, setSelectedSeedProfileId] = useState<SeedProfileId>("nawah-real-estate");
+  const [selectedSeedDatasetLevel, setSelectedSeedDatasetLevel] = useState<SeedDatasetLevel>("evidence-enriched");
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
   const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion), [stateByQuestion]);
@@ -826,10 +1058,19 @@ export function DataAiDiagnosticWorkspace() {
     }));
   };
 
+  const selectedSeedProfile = seedProfiles.find((profile) => profile.id === selectedSeedProfileId) ?? seedProfiles[0];
+  const selectedSeedDataset = seedDatasetOptions.find((dataset) => dataset.id === selectedSeedDatasetLevel) ?? seedDatasetOptions[1];
+
   const seedDummyData = () => {
-    setStateByQuestion(dummyState());
-    setCustomerContext(demoCustomerContext);
-    setHandoffMessage("");
+    setStateByQuestion(seededState(selectedSeedProfile, selectedSeedDataset));
+    setCustomerContext(selectedSeedProfile.context);
+    setGeneratedReport(null);
+    setGeneratedMarkdownReport(null);
+    setGeneratedMarkdownReportSource(null);
+    setReportStatus("idle");
+    setReportMessage("");
+    setReportFailureLog(null);
+    setHandoffMessage(`Seeded ${selectedSeedProfile.label} with ${selectedSeedDataset.label.toLowerCase()}.`);
   };
 
   const resetCapture = () => {
@@ -854,16 +1095,20 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   const downloadDummyDataFile = () => {
-    const seededState = dummyState();
-    const contextRows = Object.entries(demoCustomerContext).map(([field, value]) => ({
+    const seededStateByQuestion = seededState(selectedSeedProfile, selectedSeedDataset);
+    const contextRows = Object.entries(selectedSeedProfile.context).map(([field, value]) => ({
       record_type: "customer_context",
+      profile: selectedSeedProfile.label,
+      dataset_level: selectedSeedDataset.label,
       field,
       value,
     }));
     const rows = dataAiDiagnosticQuestions.map((question) => {
-      const state = seededState[question.id];
+      const state = seededStateByQuestion[question.id];
       return {
         record_type: "assessment_question",
+        profile: selectedSeedProfile.label,
+        dataset_level: selectedSeedDataset.label,
         field: question.id,
         value: "",
         question_id: question.id,
@@ -891,7 +1136,7 @@ export function DataAiDiagnosticWorkspace() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "data-ai-diagnostic-dummy-data.csv";
+    link.download = `data-ai-diagnostic-${selectedSeedProfile.id}-${selectedSeedDataset.id}.csv`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -1204,15 +1449,44 @@ export function DataAiDiagnosticWorkspace() {
             </div>
             <div className="data-ai-demo-actions" aria-label="Demo data actions">
               <div>
-                <span className="data-ai-mode-chip">Demo seed</span>
-                <p>Populate deterministic dummy customer context, scores, evidence notes, and action plans for a walkthrough.</p>
+                <span className="data-ai-mode-chip">Seed catalogue</span>
+                <p>Select a fictitious customer profile and dataset depth, then populate deterministic context, scores, evidence notes, and action plans for a walkthrough.</p>
+              </div>
+              <div className="data-ai-seed-controls">
+                <label>
+                  <span>Customer profile</span>
+                  <select
+                    value={selectedSeedProfileId}
+                    onChange={(event) => setSelectedSeedProfileId(event.target.value as SeedProfileId)}
+                  >
+                    {seedProfiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.label} - {profile.sector}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Dataset depth</span>
+                  <select
+                    value={selectedSeedDatasetLevel}
+                    onChange={(event) => setSelectedSeedDatasetLevel(event.target.value as SeedDatasetLevel)}
+                  >
+                    {seedDatasetOptions.map((dataset) => (
+                      <option key={dataset.id} value={dataset.id}>
+                        {dataset.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p>{selectedSeedDataset.description}</p>
               </div>
               <div>
                 <button type="button" onClick={seedDummyData}>
-                  Seed dummy data
+                  Seed selected data
                 </button>
                 <button type="button" onClick={downloadDummyDataFile}>
-                  Download dummy data file
+                  Download selected seed
                 </button>
                 <button type="button" onClick={resetCapture}>
                   Reset capture
@@ -1239,7 +1513,7 @@ export function DataAiDiagnosticWorkspace() {
                   <input
                     value={customerContext.customerName}
                     onChange={(event) => updateCustomerContext("customerName", event.target.value)}
-                    placeholder="Example: Sample Client Organisation"
+                    placeholder="Example: Nawah Real Estate Investment Company"
                   />
                 </label>
                 <label>
