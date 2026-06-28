@@ -27,7 +27,7 @@ type ReportAssemblerConfig = {
 type FieldConfig = {
   fieldPath: string;
   fallbackText: string;
-  facts: Record<string, unknown>;
+  facts: Record<string, unknown> | string;
   maxWords: number;
   apply: (report: GeneratedConsultingReport, text: string) => GeneratedConsultingReport;
 };
@@ -83,6 +83,56 @@ function evidenceSummary(evidenceItems: Record<string, unknown>) {
     });
 }
 
+function joinList(values: unknown[], fallback = "none supplied") {
+  const cleaned = values
+    .map((value) => typeof value === "string" ? value : JSON.stringify(value))
+    .filter(Boolean);
+  return cleaned.length > 0 ? cleaned.join("; ") : fallback;
+}
+
+function domainList(domains: Array<Record<string, unknown>>, fallback = "none supplied") {
+  const cleaned = domains
+    .map((domain) => {
+      const name = domain.domain ?? domain.nameEn ?? domain.name;
+      const score = domain.score ?? domain.avgScore;
+      const gap = domain.gap ?? domain.avgGap;
+      return `${name}${score !== undefined && score !== null ? ` score ${score}` : ""}${gap !== undefined && gap !== null ? ` gap ${gap}` : ""}`;
+    })
+    .filter((value) => value && !value.startsWith("undefined"));
+  return cleaned.length > 0 ? cleaned.join("; ") : fallback;
+}
+
+function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingReport) {
+  const evidence = evidenceSummary(facts.materialFindingsFacts.evidenceItems)
+    .map((item) => `${item.evidenceId}${item.domain ? ` ${item.domain}` : ""}${item.evidenceStrength ? ` ${item.evidenceStrength}` : ""}`);
+  return [
+    `Client: ${facts.roadmapFacts.clientName}`,
+    `90-day phases already built deterministically: ${joinList(report.roadmapPhases)}`,
+    `Top priority domains: ${domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
+    `Critical gaps: ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
+    "Owner types: Executive sponsor; Data Governance Lead; Data Quality Lead; Data Architecture Lead; Transformation PMO",
+    `Key evidence items: ${joinList(evidence)}`,
+    `Target outcomes: ${joinList(report.ninetyDayPlan)}`,
+  ].join("\n");
+}
+
+function overallFactsText(
+  facts: Module01Facts,
+  validatedReport: GeneratedConsultingReport,
+) {
+  return [
+    `Client: ${facts.overallSynthesisFacts.clientName}`,
+    `Business domain: ${facts.overallSynthesisFacts.businessDomain}`,
+    `Validated executive summary: ${textSnippet(validatedReport.executiveSummary, 260)}`,
+    `Validated board scorecard narrative: ${textSnippet(validatedReport.boardScorecardNarrative, 260)}`,
+    `Validated AI readiness narrative: ${textSnippet(validatedReport.aiReadinessGate, 240)}`,
+    `Deterministic critical domains: ${joinList(facts.overallSynthesisFacts.criticalDomains as unknown[])}`,
+    `Top root causes: ${joinList(facts.overallSynthesisFacts.topRootCauses as unknown[])}`,
+    `Board decisions: ${joinList(validatedReport.boardAsks)}`,
+    `Roadmap priorities: ${joinList(validatedReport.roadmapPhases.slice(0, 3).map((phase) => textSnippet(phase, 160)))}`,
+  ].join("\n");
+}
+
 function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsultingReport, maxFieldWords: number): FieldConfig[] {
   return [
     {
@@ -122,20 +172,7 @@ function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsulting
     {
       fieldPath: "roadmap.roadmapNarrative",
       fallbackText: report.roadmapPhases.join(" "),
-      facts: {
-        ...facts.roadmapFacts,
-        deterministic90DayPhases: report.roadmapPhases,
-        criticalGaps: facts.boardScorecardFacts.topPriorityDomains,
-        ownerTypes: [
-          "Executive sponsor",
-          "Data Governance Lead",
-          "Data Quality Lead",
-          "Data Architecture Lead",
-          "Transformation PMO",
-        ],
-        keyEvidenceItems: evidenceSummary(facts.materialFindingsFacts.evidenceItems),
-        targetOutcomes: report.ninetyDayPlan,
-      },
+      facts: roadmapFactsText(facts, report),
       maxWords: Math.min(maxFieldWords, 110),
       apply: (current, text) => ({ ...current, roadmapPhases: [text, ...current.roadmapPhases.slice(1)] }),
     },
@@ -158,23 +195,8 @@ function overallAdvisoryFieldConfig(
   return {
     fieldPath: "overallAdvisory.helicopterView",
     fallbackText: deterministicReport.overallAdvisoryNarrative,
-    facts: {
-      ...facts.overallSynthesisFacts,
-      deterministicFacts: {
-        overallMaturity: facts.executiveSummaryFacts.overallMaturity,
-        evidenceCoveragePct: facts.executiveSummaryFacts.evidenceCoveragePct,
-        criticalDomains: facts.executiveSummaryFacts.criticalDomains,
-        topPriorityDomains: facts.boardScorecardFacts.topPriorityDomains,
-      },
-      validatedNarratives: {
-        executiveSummary: textSnippet(validatedReport.executiveSummary),
-        boardScorecardNarrative: textSnippet(validatedReport.boardScorecardNarrative),
-        aiReadinessGate: textSnippet(validatedReport.aiReadinessGate),
-      },
-      roadmapPriorities: validatedReport.roadmapPhases.slice(0, 3).map((phase) => textSnippet(phase, 180)),
-      boardDecisions: validatedReport.boardAsks,
-    },
-    maxWords: Math.min(maxFieldWords + 20, 140),
+    facts: overallFactsText(facts, validatedReport),
+    maxWords: Math.min(maxFieldWords, 120),
     apply: (current, text) => ({ ...current, overallAdvisoryNarrative: text }),
   };
 }
