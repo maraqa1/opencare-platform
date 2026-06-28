@@ -83,4 +83,41 @@ try {
   globalThis.fetch = originalFetch;
 }
 
+calls.length = 0;
+requestBodies.length = 0;
+globalThis.fetch = async (url, init) => {
+  calls.push(String(url));
+  requestBodies.push(init?.body ? JSON.parse(String(init.body)) : null);
+  if (calls.length === 1) {
+    return new Response("", { status: 404 });
+  }
+  return new Response("CRTVTA should use the first ninety days to confirm ownership and evidence before scaling AI reporting.", {
+    status: 200,
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
+};
+
+try {
+  const result = await callLocalLlm({
+    taskMode: "narrative_field",
+    fieldPath: "roadmap.roadmapNarrative",
+    prompt: "Write one roadmap sequencing paragraph for CRTVTA.",
+    modelConfig: {
+      gatewayBaseUrl: "http://local-ai-gateway:8080/v1",
+      headers: { "content-type": "application/json" },
+      model: "mistral-nemo:12b",
+      timeoutMs: 1000,
+    },
+  });
+
+  assert.equal(result.status, "success");
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0], "http://local-ai-gateway:8080/api/chat");
+  assert.equal(calls[1], "https://ai2.opendatalake.com/api/chat");
+  assert.equal(requestBodies[1].model, "mistral-nemo:12b");
+  assert.ok(result.rawOutput.includes("CRTVTA"));
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
 console.log("local LLM client tests passed");

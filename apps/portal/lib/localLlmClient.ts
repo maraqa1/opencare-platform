@@ -19,6 +19,7 @@ type LocalLlmClientArgs = {
 };
 
 type MistralNemoPolicy = ReturnType<typeof assertMistralNemoTaskAllowed>;
+const ai2DirectChatUrl = "https://ai2.opendatalake.com/api/chat";
 
 export type LocalLlmClientResult = {
   status: "success" | "timeout" | "blocked" | "error";
@@ -44,6 +45,10 @@ function nativeChatUrlFromGateway(gatewayBaseUrl: string) {
 
 function shouldTryNativeChat(status: number) {
   return status === 404 || status === 405 || status === 502 || status === 503 || status === 504;
+}
+
+function uniqueUrls(urls: string[]) {
+  return Array.from(new Set(urls));
 }
 
 function openAiChatRequest(args: LocalLlmClientArgs, policy: MistralNemoPolicy, model: string): Omit<RequestInit, "signal"> {
@@ -218,7 +223,7 @@ export async function callLocalLlm(args: LocalLlmClientArgs): Promise<LocalLlmCl
 
   try {
     const preferNativeChat = args.taskMode === "narrative_field";
-    const response = preferNativeChat
+    let response = preferNativeChat
       ? await fetch(nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl), {
         ...nativeChatRequest(args, policy),
         signal: abortController.signal,
@@ -227,6 +232,19 @@ export async function callLocalLlm(args: LocalLlmClientArgs): Promise<LocalLlmCl
         ...openAiChatRequest(args, policy, model),
         signal: abortController.signal,
       });
+    if (preferNativeChat && !response.ok && shouldTryNativeChat(response.status)) {
+      const fallbackUrls = uniqueUrls([
+        nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl),
+        ai2DirectChatUrl,
+      ]).slice(1);
+      for (const url of fallbackUrls) {
+        response = await fetch(url, {
+          ...nativeChatRequest(args, policy),
+          signal: abortController.signal,
+        });
+        if (response.ok || !shouldTryNativeChat(response.status)) break;
+      }
+    }
     const finalResponse = !preferNativeChat && !response.ok && shouldTryNativeChat(response.status)
       ? await fetch(nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl), {
         ...nativeChatRequest(args, policy),
