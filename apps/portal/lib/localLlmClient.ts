@@ -217,11 +217,17 @@ export async function callLocalLlm(args: LocalLlmClientArgs): Promise<LocalLlmCl
   const timeout = setTimeout(() => abortController.abort(), timeoutMs);
 
   try {
-    const response = await fetch(`${args.modelConfig.gatewayBaseUrl}/chat/completions`, {
-      ...openAiChatRequest(args, policy, model),
-      signal: abortController.signal,
-    });
-    const finalResponse = !response.ok && shouldTryNativeChat(response.status)
+    const preferNativeChat = args.taskMode === "narrative_field";
+    const response = preferNativeChat
+      ? await fetch(nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl), {
+        ...nativeChatRequest(args, policy),
+        signal: abortController.signal,
+      })
+      : await fetch(`${args.modelConfig.gatewayBaseUrl}/chat/completions`, {
+        ...openAiChatRequest(args, policy, model),
+        signal: abortController.signal,
+      });
+    const finalResponse = !preferNativeChat && !response.ok && shouldTryNativeChat(response.status)
       ? await fetch(nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl), {
         ...nativeChatRequest(args, policy),
         signal: abortController.signal,

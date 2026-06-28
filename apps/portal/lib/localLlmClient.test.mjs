@@ -51,9 +51,6 @@ const requestBodies = [];
 globalThis.fetch = async (url, init) => {
   calls.push(String(url));
   requestBodies.push(init?.body ? JSON.parse(String(init.body)) : null);
-  if (calls.length === 1) {
-    return new Response("", { status: 405 });
-  }
   return new Response("CRTVTA has enough diagnostic context to prioritise data quality ownership before scaling AI reporting.", {
     status: 200,
     headers: { "content-type": "text/plain; charset=utf-8" },
@@ -74,14 +71,13 @@ try {
   });
 
   assert.equal(result.status, "success");
-  assert.equal(calls.length, 2);
-  assert.ok(calls[0].endsWith("/v1/chat/completions"));
-  assert.ok(calls[1].endsWith("/api/chat"));
-  assert.equal(requestBodies[1].model, "mistral-nemo:12b");
-  assert.equal(requestBodies[1].options.temperature, 0.1);
-  assert.ok(requestBodies[1].options.stop.includes("Deliverable"));
-  assert.ok(requestBodies[1].options.stop.includes("{"));
-  assert.ok(requestBodies[1].options.num_predict <= 180);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].endsWith("/api/chat"));
+  assert.equal(requestBodies[0].model, "mistral-nemo:12b");
+  assert.equal(requestBodies[0].options.temperature, 0.1);
+  assert.ok(requestBodies[0].options.stop.includes("Deliverable"));
+  assert.ok(requestBodies[0].options.stop.includes("{"));
+  assert.ok(requestBodies[0].options.num_predict <= 180);
   assert.ok(result.rawOutput.includes("CRTVTA"));
 } finally {
   globalThis.fetch = originalFetch;
