@@ -130,19 +130,29 @@ async function callAndValidate(args: GenerateModule01NarrativeArgs, prompt: stri
   });
 
   if (result.status !== "success") {
+    const durationMs = Date.now() - startedAt;
     logNarrative({
       field_name: args.fieldName,
       model: result.model,
       prompt_length: prompt.length,
       facts_length: factsLength(args.facts),
       response_length: 0,
-      latency_ms: Date.now() - startedAt,
+      latency_ms: durationMs,
       validation_status: "gateway_failure",
       fallback_used: true,
       rejection_reason: result.error ?? result.status,
       retry_attempted: retryAttempted,
     });
-    return { valid: false as const, reason: result.error ?? result.status, text: "" };
+    return {
+      valid: false as const,
+      reason: result.error ?? result.status,
+      text: "",
+      model: result.model,
+      durationMs,
+      responseLength: 0,
+      validationStatus: "gateway_failure" as const,
+      retryAttempted,
+    };
   }
 
   const sanitized = sanitizePlainTextField(result.rawOutput, {
@@ -162,23 +172,43 @@ async function callAndValidate(args: GenerateModule01NarrativeArgs, prompt: stri
     allowedUseCases: allowedValues.useCases,
   });
 
+  const durationMs = Date.now() - startedAt;
+  const validationStatus = validation.valid ? "valid" as const : "rejected" as const;
   logNarrative({
     field_name: args.fieldName,
     model: result.model,
     prompt_length: prompt.length,
     facts_length: factsLength(args.facts),
     response_length: result.rawOutput.length,
-    latency_ms: Date.now() - startedAt,
-    validation_status: validation.valid ? "valid" : "rejected",
+    latency_ms: durationMs,
+    validation_status: validationStatus,
     fallback_used: !validation.valid,
     rejection_reason: validation.reason,
     retry_attempted: retryAttempted,
   });
 
   if (!validation.valid) {
-    return { valid: false as const, reason: validation.reason ?? "invalid_output", text };
+    return {
+      valid: false as const,
+      reason: validation.reason ?? "invalid_output",
+      text,
+      model: result.model,
+      durationMs,
+      responseLength: result.rawOutput.length,
+      validationStatus,
+      retryAttempted,
+    };
   }
-  return { valid: true as const, text, sanitizedStatus: sanitized.status, model: result.model, durationMs: result.durationMs };
+  return {
+    valid: true as const,
+    text,
+    sanitizedStatus: sanitized.status,
+    model: result.model,
+    durationMs: result.durationMs,
+    responseLength: result.rawOutput.length,
+    validationStatus,
+    retryAttempted,
+  };
 }
 
 export async function generateModule01NarrativeField(args: GenerateModule01NarrativeArgs): Promise<NarrativeFieldGeneration> {
@@ -189,6 +219,11 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
       status: "fallback",
       model: args.modelConfig.model,
       durationMs: 0,
+      validationStatus: "missing_facts",
+      retryAttempted: false,
+      fallbackUsed: true,
+      responseLength: 0,
+      generatedAt: new Date().toISOString(),
       rejectionReason: "missing_facts",
     };
   }
@@ -205,6 +240,11 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
       status: first.sanitizedStatus === "clean" ? "ai_enriched" : "sanitized",
       model: first.model,
       durationMs: first.durationMs,
+      validationStatus: first.validationStatus,
+      retryAttempted: first.retryAttempted,
+      fallbackUsed: false,
+      responseLength: first.responseLength,
+      generatedAt: new Date().toISOString(),
       sanitizedOutputPreview: first.text.slice(0, 160),
     };
   }
@@ -222,6 +262,11 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
       status: retry.sanitizedStatus === "clean" ? "ai_enriched" : "sanitized",
       model: retry.model,
       durationMs: retry.durationMs,
+      validationStatus: retry.validationStatus,
+      retryAttempted: true,
+      fallbackUsed: false,
+      responseLength: retry.responseLength,
+      generatedAt: new Date().toISOString(),
       sanitizedOutputPreview: retry.text.slice(0, 160),
     };
   }
@@ -230,7 +275,12 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
     text: fallbackText,
     status: "fallback",
     model: args.modelConfig.model,
-    durationMs: 0,
+    durationMs: retry.durationMs,
+    validationStatus: retry.validationStatus ?? "fallback",
+    retryAttempted: true,
+    fallbackUsed: true,
+    responseLength: retry.responseLength,
+    generatedAt: new Date().toISOString(),
     rejectionReason: retry.reason,
   };
 }

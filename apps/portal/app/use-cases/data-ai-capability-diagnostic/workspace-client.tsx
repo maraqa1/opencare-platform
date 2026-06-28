@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   dataAiDiagnosticDomains,
@@ -102,6 +102,11 @@ type DiagnosticReportApiResponse = {
       status?: string;
       model?: string;
       durationMs?: number;
+      validationStatus?: string;
+      retryAttempted?: boolean;
+      fallbackUsed?: boolean;
+      responseLength?: number;
+      generatedAt?: string;
       rejectionReason?: string;
     }>;
     markdownReport?: {
@@ -120,6 +125,8 @@ type DiagnosticReportApiResponse = {
     }>;
   };
 };
+
+type AiEnrichmentFieldStatus = NonNullable<NonNullable<DiagnosticReportApiResponse["generationMetadata"]>["fields"]>[string];
 
 type MarkdownBlock =
   | { type: "h1" | "h2" | "h3" | "p"; text: string }
@@ -983,6 +990,79 @@ function MarkdownReport({ markdown, source }: { markdown: string; source: "llm" 
   );
 }
 
+const module01AiNarrativeFields = [
+  "executiveSummary.summaryText",
+  "boardScorecard.advisoryNarrative",
+  "overallAdvisory.helicopterView",
+  "aiReadinessGate.readinessNarrative",
+  "capabilityDiagnosis.diagnosisNarrative",
+  "roadmap.roadmapNarrative",
+  "recommendedNextSteps.closingNarrative",
+];
+
+function boolLabel(value: boolean | undefined) {
+  if (value === undefined) return "Unknown";
+  return value ? "Yes" : "No";
+}
+
+function formatLatency(value: number | undefined) {
+  return typeof value === "number" ? `${Math.round(value)} ms` : "Not recorded";
+}
+
+function formatResponseLength(value: number | undefined) {
+  return typeof value === "number" ? `${value} chars` : "Not recorded";
+}
+
+function AiEnrichmentDebugPanel({
+  fields,
+  visible,
+}: {
+  fields?: Record<string, AiEnrichmentFieldStatus>;
+  visible: boolean;
+}) {
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <section className="data-ai-enrichment-debug no-print" aria-label="Internal AI enrichment status">
+      <div className="data-ai-enrichment-debug-header">
+        <div>
+          <p className="eyebrow">Internal debug</p>
+          <h3>AI2 enrichment status</h3>
+          <p>Visible only in debug/admin mode. Raw prompts, client facts, and rejected AI text are not displayed.</p>
+        </div>
+        <span>Hidden from print/PDF</span>
+      </div>
+      <div className="data-ai-enrichment-debug-grid">
+        {module01AiNarrativeFields.map((fieldName) => {
+          const field = fields?.[fieldName];
+          const source = field?.status ?? "not_requested";
+          const fallbackUsed = field?.fallbackUsed ?? source === "fallback";
+          return (
+            <article className={`data-ai-enrichment-field ${source}`} key={fieldName}>
+              <header>
+                <strong>{fieldName}</strong>
+                <span>{source}</span>
+              </header>
+              <dl>
+                <div><dt>Model</dt><dd>{field?.model ?? "Not requested"}</dd></div>
+                <div><dt>Validation</dt><dd>{field?.validationStatus ?? (field ? source : "not_requested")}</dd></div>
+                <div><dt>Rejection reason</dt><dd>{field?.rejectionReason ?? "None"}</dd></div>
+                <div><dt>Retry attempted</dt><dd>{boolLabel(field?.retryAttempted)}</dd></div>
+                <div><dt>Fallback used</dt><dd>{boolLabel(fallbackUsed)}</dd></div>
+                <div><dt>Latency</dt><dd>{formatLatency(field?.durationMs)}</dd></div>
+                <div><dt>Response length</dt><dd>{formatResponseLength(field?.responseLength)}</dd></div>
+                <div><dt>Generated</dt><dd>{field?.generatedAt ?? "Not recorded"}</dd></div>
+              </dl>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function DataAiDiagnosticWorkspace() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("capture");
   const [selectedDomain, setSelectedDomain] = useState<number | "all">("all");
@@ -992,6 +1072,8 @@ export function DataAiDiagnosticWorkspace() {
   const [generatedReport, setGeneratedReport] = useState<GeneratedConsultingReport | null>(null);
   const [generatedMarkdownReport, setGeneratedMarkdownReport] = useState<string | null>(null);
   const [generatedMarkdownReportSource, setGeneratedMarkdownReportSource] = useState<"llm" | "fallback" | null>(null);
+  const [reportGenerationMetadata, setReportGenerationMetadata] = useState<DiagnosticReportApiResponse["generationMetadata"] | null>(null);
+  const [debugPanelVisible, setDebugPanelVisible] = useState(false);
   const [reportStatus, setReportStatus] = useState<"idle" | "loading" | "ready" | "missing_key" | "error">("idle");
   const [reportMessage, setReportMessage] = useState("");
   const [reportStageIndex, setReportStageIndex] = useState(0);
@@ -1007,6 +1089,15 @@ export function DataAiDiagnosticWorkspace() {
   const [handoffMessage, setHandoffMessage] = useState("");
   const [selectedSeedProfileId, setSelectedSeedProfileId] = useState<SeedProfileId>("nawah-real-estate");
   const [selectedSeedDatasetLevel, setSelectedSeedDatasetLevel] = useState<SeedDatasetLevel>("evidence-enriched");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setDebugPanelVisible(
+      params.get("debug") === "1"
+      || params.get("admin") === "1"
+      || window.localStorage.getItem("module01Debug") === "true",
+    );
+  }, []);
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
   const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion), [stateByQuestion]);
@@ -1068,6 +1159,7 @@ export function DataAiDiagnosticWorkspace() {
     setGeneratedReport(null);
     setGeneratedMarkdownReport(null);
     setGeneratedMarkdownReportSource(null);
+    setReportGenerationMetadata(null);
     setReportStatus("idle");
     setReportMessage("");
     setReportFailureLog(null);
@@ -1080,6 +1172,7 @@ export function DataAiDiagnosticWorkspace() {
     setGeneratedReport(null);
     setGeneratedMarkdownReport(null);
     setGeneratedMarkdownReportSource(null);
+    setReportGenerationMetadata(null);
     setReportStatus("idle");
     setReportMessage("");
     setReportStageIndex(0);
@@ -1204,6 +1297,7 @@ export function DataAiDiagnosticWorkspace() {
     setReportMessage("");
     setReportStageIndex(0);
     setReportFailureLog(null);
+    setReportGenerationMetadata(null);
     setHandoffMessage("");
     let generationTimer: ReturnType<typeof setTimeout> | null = null;
     const startedAt = Date.now();
@@ -1213,7 +1307,7 @@ export function DataAiDiagnosticWorkspace() {
         stage: reportGenerationStages[Math.min(stageIndex, reportGenerationStages.length - 1)] ?? "Unknown stage",
         status,
         message,
-        model: "llama3.1:8b via ai.opendatalake.com",
+        model: "mistral-nemo:12b via AI2",
         endpoint: "/api/data-ai-diagnostic/report",
         details: [
           `Elapsed: ${Math.round((Date.now() - startedAt) / 1000)}s`,
@@ -1339,6 +1433,7 @@ export function DataAiDiagnosticWorkspace() {
         ? result.markdownReport
         : null);
       setGeneratedMarkdownReportSource(result.markdownReportSource ?? null);
+      setReportGenerationMetadata(result.generationMetadata ?? null);
       setReportStageIndex(5);
       setReportStatus("ready");
       const fallbackSections = result.sectionFallbacks ?? [];
@@ -1996,6 +2091,11 @@ export function DataAiDiagnosticWorkspace() {
               </details>
             </section>
           ) : null}
+
+          <AiEnrichmentDebugPanel
+            fields={reportGenerationMetadata?.fields}
+            visible={debugPanelVisible && Boolean(reportGenerationMetadata?.fields)}
+          />
 
           <article className="data-ai-report-page data-ai-report-cover" id="data-ai-report-cover">
             <div>
