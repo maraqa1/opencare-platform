@@ -106,13 +106,13 @@ function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingRepor
   const evidence = evidenceSummary(facts.materialFindingsFacts.evidenceItems)
     .map((item) => `${item.evidenceId}${item.domain ? ` ${item.domain}` : ""}${item.evidenceStrength ? ` ${item.evidenceStrength}` : ""}`);
   return [
-    `Client: ${facts.roadmapFacts.clientName}`,
-    `90-day phases already built deterministically: ${joinList(report.roadmapPhases)}`,
-    `Top priority domains: ${domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
-    `Critical gaps: ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
-    "Owner types: Executive sponsor; Data Governance Lead; Data Quality Lead; Data Architecture Lead; Transformation PMO",
-    `Key evidence items: ${joinList(evidence)}`,
-    `Target outcomes: ${joinList(report.ninetyDayPlan)}`,
+    `Client - ${facts.roadmapFacts.clientName}`,
+    `Sequence - ${joinList(report.roadmapPhases)}`,
+    `Priority domains - ${domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
+    `Critical gaps - ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
+    "Owner types - Executive sponsor; Data Governance Lead; Data Quality Lead; Data Architecture Lead; Transformation PMO",
+    `Evidence items - ${joinList(evidence)}`,
+    `Target outcomes - ${joinList(report.ninetyDayPlan)}`,
   ].join("\n");
 }
 
@@ -173,7 +173,7 @@ function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsulting
       fieldPath: "roadmap.roadmapNarrative",
       fallbackText: report.roadmapPhases.join(" "),
       facts: roadmapFactsText(facts, report),
-      maxWords: Math.min(maxFieldWords, 110),
+      maxWords: Math.min(maxFieldWords, 100),
       apply: (current, text) => ({ ...current, roadmapPhases: [text, ...current.roadmapPhases.slice(1)] }),
     },
     {

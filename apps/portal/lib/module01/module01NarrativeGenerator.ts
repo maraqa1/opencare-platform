@@ -22,7 +22,7 @@ type GenerateModule01NarrativeArgs = {
 
 function clientNameFromFacts(facts: Record<string, unknown> | string) {
   if (typeof facts === "string") {
-    const match = facts.match(/Client:\s*([^\n]+)/i);
+    const match = facts.match(/Client\s*[:\-]\s*([^\n]+)/i);
     return match?.[1]?.trim();
   }
   const value = facts.clientName;
