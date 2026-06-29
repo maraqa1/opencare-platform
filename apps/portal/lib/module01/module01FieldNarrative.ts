@@ -65,13 +65,29 @@ function normalizeFieldName(field: Module01FieldNarrativeField) {
   return field === "roadmapNarrative" ? "roadmap.roadmapNarrative" : field;
 }
 
+function cleanFactForEndpoint(fact: string) {
+  const cleaned = fact.trim().replace(/\s+/g, " ");
+  const match = cleaned.match(/^([A-Za-z][A-Za-z0-9 &/%.-]{1,80})\s*:\s*(.+)$/);
+  if (!match) return cleaned;
+  const label = match[1].trim().toLowerCase();
+  const value = match[2].trim();
+  if (label === "client") return "";
+  if (label === "board asks") return `leadership decisions include ${value}`;
+  if (label === "target outcomes") return `target outcomes include ${value}`;
+  if (label === "management order") return `management should ${value}`;
+  if (label === "validated executive summary") return `the validated executive summary says ${value}`;
+  if (label === "validated board scorecard narrative") return `the validated board scorecard narrative says ${value}`;
+  if (label === "validated ai readiness narrative") return `the validated AI readiness narrative says ${value}`;
+  return `${label} is ${value}`;
+}
+
 function fieldRequestBody(args: Module01FieldNarrativeArgs) {
   return JSON.stringify({
     field: normalizeFieldName(args.field),
     client_name: clientNameFromFacts(args.facts),
     max_words: args.maxWords,
     style: args.style ?? "board",
-    facts: args.facts,
+    facts: args.facts.map(cleanFactForEndpoint).filter(Boolean),
   });
 }
 

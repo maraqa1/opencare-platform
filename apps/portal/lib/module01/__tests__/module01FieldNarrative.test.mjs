@@ -82,7 +82,8 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.equal(bodies[0].body.field, "roadmap.roadmapNarrative");
   assert.equal(bodies[0].body.client_name, "CRTVTA");
   assert.equal(bodies[0].body.max_words, 90);
-  assert.deepEqual(bodies[0].body.facts, facts);
+  assert.ok(!bodies[0].body.facts.some((fact) => /^Client:/i.test(fact)));
+  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("priority domains")));
   assert.ok(!("messages" in bodies[0].body));
   assert.ok(!("options" in bodies[0].body));
 }
