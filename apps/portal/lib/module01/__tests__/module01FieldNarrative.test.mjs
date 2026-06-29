@@ -79,8 +79,12 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.equal(result.responseLength, validText.length);
   assert.equal(result.rawResponseLength, validText.length);
   assert.equal(result.sanitizedResponseLength, validText.length);
-  assert.ok(bodies[0].body.options.stop.includes("{"));
-  assert.ok(!bodies[0].body.messages[0].content.includes("DMO operating model"));
+  assert.equal(bodies[0].body.field, "roadmap.roadmapNarrative");
+  assert.equal(bodies[0].body.client_name, "CRTVTA");
+  assert.equal(bodies[0].body.max_words, 90);
+  assert.deepEqual(bodies[0].body.facts, facts);
+  assert.ok(!("messages" in bodies[0].body));
+  assert.ok(!("options" in bodies[0].body));
 }
 
 {

@@ -17,7 +17,8 @@ assert(routeSource.includes('booleanEnv("LOCAL_LLM_ENABLE_MARKDOWN_GENERATION", 
 assert(routeSource.includes('booleanEnv("LOCAL_LLM_ENABLE_FIELD_ENRICHMENT", true)'));
 assert(deploySource.includes('LOCAL_LLM_ENABLE_MARKDOWN_GENERATION="${LOCAL_LLM_ENABLE_MARKDOWN_GENERATION:-false}"'));
 assert(deploySource.includes('LOCAL_LLM_ENABLE_FIELD_ENRICHMENT="${LOCAL_LLM_ENABLE_FIELD_ENRICHMENT:-true}"'));
-assert(assemblerSource.includes("generateModule01NarrativeField"));
+assert(assemblerSource.includes("generateModule01FieldNarrative"));
+assert(!assemblerSource.includes("generateModule01NarrativeField({"));
 assert(factsSource.includes("Not provided in diagnostic input."));
 assert(factsSource.includes("topPriorityDomains"));
 assert(promptsSource.includes("You are not chatting with the user."));
@@ -30,4 +31,3 @@ assert(typesSource.includes("deterministicFacts"));
 assert(typesSource.includes("Module01AiNarrativeField"));
 
 console.log("module01 foundation policy tests passed");
-

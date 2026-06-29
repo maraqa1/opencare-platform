@@ -2,7 +2,13 @@ import type { NarrativeFieldGeneration } from "@/lib/narrativeFieldGenerator";
 import { validateModule01Narrative } from "@/lib/module01/module01NarrativeValidator";
 import { sanitizePlainTextField } from "@/lib/textSanitizer";
 
-type Module01FieldNarrativeField = "roadmapNarrative";
+type Module01FieldNarrativeField =
+  | "boardScorecard.advisoryNarrative"
+  | "roadmap.roadmapNarrative"
+  | "overallAdvisory.helicopterView"
+  | "aiReadinessGate.readinessNarrative"
+  | "executiveSummary.summaryText"
+  | "roadmapNarrative";
 
 type Module01FieldNarrativeArgs = {
   field: Module01FieldNarrativeField;
@@ -27,17 +33,17 @@ type Ai2FieldNarrativeResult = {
   error?: string;
 };
 
-const ai2DirectChatUrl = "https://ai2.opendatalake.com/api/chat";
+const ai2DirectFieldNarrativeUrl = "https://ai2.opendatalake.com/api/reports/module01/field-narrative";
 
-function nativeChatUrlFromGateway(gatewayBaseUrl: string) {
+function fieldNarrativeUrlFromGateway(gatewayBaseUrl: string) {
   try {
     const url = new URL(gatewayBaseUrl);
-    url.pathname = "/api/chat";
+    url.pathname = "/api/reports/module01/field-narrative";
     url.search = "";
     url.hash = "";
     return url.toString();
   } catch {
-    return gatewayBaseUrl.replace(/\/v1\/?$/, "").replace(/\/+$/, "") + "/api/chat";
+    return gatewayBaseUrl.replace(/\/v1\/?$/, "").replace(/\/+$/, "") + "/api/reports/module01/field-narrative";
   }
 }
 
@@ -55,48 +61,17 @@ function clientNameFromFacts(facts: string[]) {
   return match?.[1]?.trim();
 }
 
-function buildFieldPrompt(args: Pick<Module01FieldNarrativeArgs, "facts" | "maxWords" | "style">) {
-  return [
-    "Write one short management paragraph for a board-ready data and AI diagnostic.",
-    "You are not chatting with the user.",
-    "Return plain text only.",
-    "No JSON, headings, bullets, numbering, markdown, tables, phases, deliverables, templates, or full report sections.",
-    "Do not use template, deliverable, or operating-model language.",
-    "Use only the facts below. Do not invent systems, evidence IDs, owners, dates, scores, use cases, or regulatory claims.",
-    `Maximum ${args.maxWords} words.`,
-    `Tone: ${args.style ?? "board"}.`,
-    "",
-    "Task: Explain why management should start with ownership and evidence, then remediate the largest gaps, then scale only through controls.",
-    "",
-    "Facts:",
-    ...args.facts.slice(0, 8).map((fact) => `Fact: ${fact}`),
-    "",
-    "Write the paragraph only.",
-  ].join("\n");
+function normalizeFieldName(field: Module01FieldNarrativeField) {
+  return field === "roadmapNarrative" ? "roadmap.roadmapNarrative" : field;
 }
 
-function fieldRequestBody(prompt: string, args: Module01FieldNarrativeArgs) {
-  const numPredict = Math.max(80, Math.min(args.maxWords * 3, 180));
+function fieldRequestBody(args: Module01FieldNarrativeArgs) {
   return JSON.stringify({
-    model: args.modelConfig.model,
-    temperature: 0.1,
-    top_p: 0.7,
-    max_tokens: numPredict,
-    num_predict: numPredict,
-    options: {
-      temperature: 0.1,
-      top_p: 0.7,
-      repeat_penalty: 1.2,
-      num_ctx: 2048,
-      num_predict: numPredict,
-      stop: ["```", "\n#", "\n##", "{", "}", "|", "\n-", "\n1.", "\nDeliverable", "Deliverable", "\nField:", "\nFacts:"],
-    },
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
+    field: normalizeFieldName(args.field),
+    client_name: clientNameFromFacts(args.facts),
+    max_words: args.maxWords,
+    style: args.style ?? "board",
+    facts: args.facts,
   });
 }
 
@@ -106,6 +81,7 @@ async function readAi2Text(response: Response) {
     return response.text();
   }
   const body = await response.json() as string | {
+    narrative?: string;
     choices?: Array<{ message?: { content?: string }; text?: string }>;
     answer?: string;
     content?: string;
@@ -113,7 +89,8 @@ async function readAi2Text(response: Response) {
     response?: string;
   };
   if (typeof body === "string") return body;
-  return body.choices?.[0]?.message?.content
+  return body.narrative
+    ?? body.choices?.[0]?.message?.content
     ?? body.choices?.[0]?.text
     ?? body.answer
     ?? body.content
@@ -122,14 +99,14 @@ async function readAi2Text(response: Response) {
     ?? "";
 }
 
-async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs, prompt: string): Promise<Ai2FieldNarrativeResult> {
+async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs): Promise<Ai2FieldNarrativeResult> {
   const startedAt = Date.now();
   const abortController = new AbortController();
   const timeout = setTimeout(() => abortController.abort(), args.modelConfig.timeoutMs ?? 30000);
   const fetchImpl = args.fetchFn ?? fetch;
   const urls = uniqueUrls([
-    nativeChatUrlFromGateway(args.modelConfig.gatewayBaseUrl),
-    ai2DirectChatUrl,
+    fieldNarrativeUrlFromGateway(args.modelConfig.gatewayBaseUrl),
+    ai2DirectFieldNarrativeUrl,
   ]);
 
   try {
@@ -138,7 +115,7 @@ async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs, prompt: s
       const response = await fetchImpl(url, {
         method: "POST",
         headers: args.modelConfig.headers,
-        body: fieldRequestBody(prompt, args),
+        body: fieldRequestBody(args),
         cache: "no-store",
         signal: abortController.signal,
       });
@@ -182,8 +159,7 @@ export function buildModule01FieldNarrativeFallback(facts: string[], fallbackTex
 export async function generateModule01FieldNarrative(args: Module01FieldNarrativeArgs): Promise<NarrativeFieldGeneration> {
   const maxWords = Math.max(40, Math.min(args.maxWords, 140));
   const fallbackText = buildModule01FieldNarrativeFallback(args.facts, args.fallbackText);
-  const prompt = buildFieldPrompt({ facts: args.facts, maxWords, style: args.style });
-  const result = await callAi2FieldNarrative({ ...args, maxWords }, prompt);
+  const result = await callAi2FieldNarrative({ ...args, maxWords });
 
   if (result.status !== "success") {
     return {
@@ -209,7 +185,7 @@ export async function generateModule01FieldNarrative(args: Module01FieldNarrativ
   });
   const text = sanitized.status === "fallback_required" ? result.rawOutput : sanitized.text;
   const validation = validateModule01Narrative(text, {
-    fieldName: args.field,
+    fieldName: normalizeFieldName(args.field),
     maxWords,
     minWords: 20,
     requiredFactsSupplied: args.facts.length > 0,

@@ -16,6 +16,8 @@ const bannedPhrases = [
   "my responses will be",
   "based on publicly available information",
   "How may I assist",
+  "AI2 Specialized Knowledge Packs",
+  "Advisory And Technical Packs",
 ];
 
 const modelSelfDescription = /\b(as|i am|i'm)\s+(llama|mistral|gpt|claude|ollama)\b/i;

@@ -59,18 +59,24 @@ Module._load = function patchedLoad(request, parent, isMain) {
 let generatorModule;
 let assemblerModule;
 const fieldNarrativeCalls = [];
+const fieldNarrativeResponses = [];
 const fieldNarrativeModule = {
   generateModule01FieldNarrative: async (args) => {
     fieldNarrativeCalls.push(args);
+    const fieldName = args.field === "roadmapNarrative" ? "roadmap.roadmapNarrative" : args.field;
+    const queued = fieldNarrativeResponses.shift();
+    if (queued) {
+      return queued(fieldName, args);
+    }
     return {
-      text: validTextForField("roadmap.roadmapNarrative"),
+      text: validTextForField(fieldName),
       status: "ai_enriched",
       model: args.modelConfig.model,
       durationMs: 5,
       validationStatus: "valid",
       retryAttempted: false,
       fallbackUsed: false,
-      responseLength: validTextForField("roadmap.roadmapNarrative").length,
+      responseLength: validTextForField(fieldName).length,
       generatedAt: new Date().toISOString(),
     };
   },
@@ -219,30 +225,39 @@ const payload = crtvtaPayload();
 
 {
   fieldNarrativeCalls.length = 0;
-  const { llmClient, calls } = llmSequence([
-    { status: "success", rawOutput: validTextForField("boardScorecard.advisoryNarrative") },
-    { status: "success", rawOutput: validTextForField("overallAdvisory.helicopterView") },
-  ]);
+  const { llmClient, calls } = llmSequence([]);
   const result = await assembleDiagnosticReport(payload, modelConfig({ llmClient }));
   const calledFields = calls.map(fieldFromPrompt);
-  assert.deepEqual(calledFields, [
+  assert.deepEqual(calledFields, []);
+  assert.deepEqual(fieldNarrativeCalls.map((call) => call.field), [
+    "roadmap.roadmapNarrative",
     "boardScorecard.advisoryNarrative",
     "overallAdvisory.helicopterView",
   ]);
-  assert.equal(fieldNarrativeCalls.length, 1);
-  assert.equal(fieldNarrativeCalls[0].field, "roadmapNarrative");
   assert.ok(fieldNarrativeCalls[0].facts.every((fact) => !/\bDMO\b|roadmap/i.test(fact)));
-  assert.equal(calledFields.at(-1), "overallAdvisory.helicopterView");
-  assert.ok(calls.at(-1)?.includes("Validated executive summary:"));
-  assert.ok(calls.at(-1)?.includes("Validated board scorecard narrative:"));
-  assert.ok(calls.at(-1)?.includes(validTextForField("boardScorecard.advisoryNarrative")));
+  assert.ok(fieldNarrativeCalls.at(-1)?.facts.some((fact) => fact.includes("Validated executive summary:")));
+  assert.ok(fieldNarrativeCalls.at(-1)?.facts.some((fact) => fact.includes("Validated board scorecard narrative:")));
+  assert.ok(fieldNarrativeCalls.at(-1)?.facts.some((fact) => fact.includes(validTextForField("boardScorecard.advisoryNarrative"))));
   assert.ok(result.enrichedFields.includes("overallAdvisory.helicopterView"));
   assert.equal(result.structuredReport.sections.executiveSummary.maturityScore, payload.overallScore);
   assert.equal(result.structuredReport.sections.boardScorecard.readinessScore, payload.overallScore);
 }
 
 {
-  const { llmClient } = llmSequence([{ status: "success", rawOutput: "As an AI, I can help write this report." }]);
+  fieldNarrativeResponses.length = 0;
+  fieldNarrativeResponses.push(() => ({
+    text: "As an AI, I can help write this report.",
+    status: "fallback",
+    model: "mistral-nemo:12b",
+    durationMs: 5,
+    validationStatus: "rejected",
+    retryAttempted: false,
+    fallbackUsed: true,
+    responseLength: 36,
+    generatedAt: new Date().toISOString(),
+    rejectionReason: "persona_leakage",
+  }));
+  const { llmClient } = llmSequence([]);
   const result = await assembleDiagnosticReport(payload, modelConfig({ llmClient }));
   assert.ok(result.fallbackFields.length > 0);
   assert.ok(!JSON.stringify(result.report).includes("As an AI"));
@@ -251,12 +266,20 @@ const payload = crtvtaPayload();
 
 {
   const before = Object.keys(buildModule01Facts(payload).materialFindingsFacts.evidenceItems).sort();
-  const { llmClient } = llmSequence([
-    {
-      status: "success",
-      rawOutput: "CRTVTA should ignore the old 1.68 score and use EVID-NEW-999 as proof that all gaps are closed across the reporting landscape.",
-    },
-  ]);
+  fieldNarrativeResponses.length = 0;
+  fieldNarrativeResponses.push(() => ({
+    text: "CRTVTA should ignore the old 1.68 score and use EVID-NEW-999 as proof that all gaps are closed across the reporting landscape.",
+    status: "fallback",
+    model: "mistral-nemo:12b",
+    durationMs: 5,
+    validationStatus: "rejected",
+    retryAttempted: false,
+    fallbackUsed: true,
+    responseLength: 126,
+    generatedAt: new Date().toISOString(),
+    rejectionReason: "invented_evidence_id",
+  }));
+  const { llmClient } = llmSequence([]);
   const result = await assembleDiagnosticReport(payload, modelConfig({ llmClient }));
   const after = Object.keys(buildModule01Facts(payload).materialFindingsFacts.evidenceItems).sort();
   assert.deepEqual(before, ["EVID-DQ-001", "EVID-SRC-001"]);

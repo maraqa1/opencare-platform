@@ -5,10 +5,7 @@ import {
   type GeneratedConsultingReport,
 } from "@/lib/deterministicReportBuilders";
 import { buildModule01Facts } from "@/lib/module01/module01FactsBuilder";
-import {
-  generateModule01NarrativeField,
-  type Module01LocalLlmClient,
-} from "@/lib/module01/module01NarrativeGenerator";
+import type { Module01LocalLlmClient } from "@/lib/module01/module01NarrativeGenerator";
 import { generateModule01FieldNarrative } from "@/lib/module01/module01FieldNarrative";
 import type { NarrativeFieldGeneration } from "@/lib/narrativeFieldGenerator";
 import { validateFlatDiagnosticReport, validateStructuredDiagnosticReport } from "@/lib/reportSchemaValidator";
@@ -140,6 +137,20 @@ function roadmapFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsu
   ];
 }
 
+function boardFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsultingReport) {
+  return [
+    `Client: ${facts.boardScorecardFacts.clientName}`,
+    `Overall score: ${facts.boardScorecardFacts.overallScore}`,
+    `Overall gap: ${facts.boardScorecardFacts.overallGap}`,
+    `Maturity band: ${facts.boardScorecardFacts.maturityBand}`,
+    `Evidence coverage: ${facts.boardScorecardFacts.evidenceCoverage}`,
+    `Strongest domains: ${domainList(facts.boardScorecardFacts.strongestDomains as Array<Record<string, unknown>>)}`,
+    `Weakest domains: ${domainList(facts.boardScorecardFacts.weakestDomains as Array<Record<string, unknown>>)}`,
+    `Critical domains: ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
+    `Board asks: ${joinList(report.boardAsks)}`,
+  ];
+}
+
 function overallFactsText(
   facts: Module01Facts,
   validatedReport: GeneratedConsultingReport,
@@ -157,6 +168,16 @@ function overallFactsText(
   ].join("\n");
 }
 
+function overallFieldNarrativeFacts(
+  facts: Module01Facts,
+  validatedReport: GeneratedConsultingReport,
+) {
+  return overallFactsText(facts, validatedReport)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsultingReport, maxFieldWords: number): FieldConfig[] {
   return [
     {
@@ -166,6 +187,7 @@ function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsulting
         ...facts.boardScorecardFacts,
         boardAsks: report.boardAsks,
       },
+      fieldNarrativeFacts: boardFieldNarrativeFacts(facts, report),
       maxWords: Math.min(maxFieldWords, 120),
       apply: (current, text) => ({ ...current, boardScorecardNarrative: text }),
     },
@@ -222,6 +244,7 @@ function overallAdvisoryFieldConfig(
     fieldPath: "overallAdvisory.helicopterView",
     fallbackText: deterministicReport.overallAdvisoryNarrative,
     facts: overallFactsText(facts, validatedReport),
+    fieldNarrativeFacts: overallFieldNarrativeFacts(facts, validatedReport),
     maxWords: Math.min(maxFieldWords, 120),
     apply: (current, text) => ({ ...current, overallAdvisoryNarrative: text }),
   };
@@ -232,11 +255,11 @@ async function generateNarrativeField(
   config: ReportAssemblerConfig,
 ): Promise<{ field: FieldConfig; generation: NarrativeFieldGeneration }> {
   const criticalFieldTimeoutMs = Math.max(config.fieldTimeoutMs, 120000);
-  if (field.fieldPath === "roadmap.roadmapNarrative" && field.fieldNarrativeFacts?.length) {
+  if (field.fieldNarrativeFacts?.length) {
     return {
       field,
       generation: await generateModule01FieldNarrative({
-        field: "roadmapNarrative",
+        field: field.fieldPath as Parameters<typeof generateModule01FieldNarrative>[0]["field"],
         facts: field.fieldNarrativeFacts,
         maxWords: Math.min(field.maxWords, 90),
         style: "board",
@@ -253,19 +276,20 @@ async function generateNarrativeField(
 
   return {
     field,
-    generation: await generateModule01NarrativeField({
-      fieldName: field.promptFieldPath ?? field.fieldPath,
-      facts: field.facts,
-      maxWords: field.maxWords,
-      fallbackText: field.fallbackText,
-      modelConfig: {
-        gatewayBaseUrl: config.gatewayBaseUrl,
-        headers: config.headers,
-        model: config.model,
-        timeoutMs: criticalFieldTimeoutMs,
-      },
-      llmClient: config.llmClient,
-    }),
+    generation: {
+      text: field.fallbackText,
+      status: "fallback",
+      model: config.model,
+      durationMs: 0,
+      validationStatus: "missing_facts",
+      retryAttempted: false,
+      fallbackUsed: true,
+      responseLength: field.fallbackText.length,
+      rawResponseLength: 0,
+      sanitizedResponseLength: field.fallbackText.length,
+      generatedAt: new Date().toISOString(),
+      rejectionReason: "missing_field_narrative_facts",
+    },
   };
 }
 

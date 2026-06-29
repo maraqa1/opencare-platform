@@ -48,7 +48,8 @@ assert(assemblerSource.includes("executiveSummary.summaryText"));
 assert(assemblerSource.includes("overallAdvisory.helicopterView"));
 assert(assemblerSource.includes("boardScorecard.advisoryNarrative"));
 assert(assemblerSource.includes("aiReadinessGate.readinessNarrative"));
-assert(assemblerSource.includes("generateModule01NarrativeField"));
+assert(assemblerSource.includes("generateModule01FieldNarrative"));
+assert(!assemblerSource.includes("generateModule01NarrativeField({"));
 
 assert(deterministicSource.includes("analyticsType"));
 assert(deterministicSource.includes("\"descriptive\""));
