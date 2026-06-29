@@ -281,7 +281,12 @@ export async function assembleDiagnosticReport(
 
   if (canUseNarrativeModel) {
     const configs = firstPassFieldConfigs(module01Facts, report, config.maxFieldWords)
-      .filter((field) => field.fieldPath === "boardScorecard.advisoryNarrative" || (config.enableFieldEnrichment && priorityAiFieldPaths.has(field.fieldPath)));
+      .filter((field) => field.fieldPath === "boardScorecard.advisoryNarrative" || (config.enableFieldEnrichment && priorityAiFieldPaths.has(field.fieldPath)))
+      .sort((left, right) => {
+        if (left.fieldPath === "roadmap.roadmapNarrative") return -1;
+        if (right.fieldPath === "roadmap.roadmapNarrative") return 1;
+        return 0;
+      });
     const generations = await runWithConcurrency(configs, config.concurrency, (field) => generateNarrativeField(field, config));
 
     generations.forEach(({ field, generation }) => {
