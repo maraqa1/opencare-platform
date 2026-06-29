@@ -106,6 +106,8 @@ type DiagnosticReportApiResponse = {
       retryAttempted?: boolean;
       fallbackUsed?: boolean;
       responseLength?: number;
+      rawResponseLength?: number;
+      sanitizedResponseLength?: number;
       generatedAt?: string;
       rejectionReason?: string;
     }>;
@@ -1052,7 +1054,9 @@ function AiEnrichmentDebugPanel({
                 <div><dt>Retry attempted</dt><dd>{boolLabel(field?.retryAttempted)}</dd></div>
                 <div><dt>Fallback used</dt><dd>{boolLabel(fallbackUsed)}</dd></div>
                 <div><dt>Latency</dt><dd>{formatLatency(field?.durationMs)}</dd></div>
-                <div><dt>Response length</dt><dd>{formatResponseLength(field?.responseLength)}</dd></div>
+                <div><dt>Rendered length</dt><dd>{formatResponseLength(field?.responseLength)}</dd></div>
+                <div><dt>Raw AI2 length</dt><dd>{formatResponseLength(field?.rawResponseLength)}</dd></div>
+                <div><dt>Sanitized length</dt><dd>{formatResponseLength(field?.sanitizedResponseLength)}</dd></div>
                 <div><dt>Generated</dt><dd>{field?.generatedAt ?? "Not recorded"}</dd></div>
               </dl>
             </article>

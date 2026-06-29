@@ -27,6 +27,8 @@ export type NarrativeFieldGeneration = {
   retryAttempted?: boolean;
   fallbackUsed?: boolean;
   responseLength?: number;
+  rawResponseLength?: number;
+  sanitizedResponseLength?: number;
   generatedAt?: string;
   rawOutputPreview?: string;
   sanitizedOutputPreview?: string;
