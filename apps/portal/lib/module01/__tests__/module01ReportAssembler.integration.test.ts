@@ -137,25 +137,38 @@ const payload = crtvtaPayload();
 }
 
 {
+  const originalFetch = globalThis.fetch;
+  const fieldNarrativeBodies: Array<Record<string, unknown>> = [];
+  globalThis.fetch = async (_url, init) => {
+    fieldNarrativeBodies.push(JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>);
+    return new Response(validTextForField("roadmap.roadmapNarrative"), {
+      status: 200,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  };
   const { llmClient, calls } = llmSequence([
     { status: "success", rawOutput: validTextForField("boardScorecard.advisoryNarrative") },
-    { status: "success", rawOutput: validTextForField("roadmap.roadmapNarrative") },
     { status: "success", rawOutput: validTextForField("overallAdvisory.helicopterView") },
   ]);
-  const result = await assembleDiagnosticReport(payload, modelConfig({ llmClient }));
-  const calledFields = calls.map(fieldFromPrompt);
-  assert.deepEqual(calledFields, [
-    "boardScorecard.advisoryNarrative",
-    "ninetyDaySequencingNarrative",
-    "overallAdvisory.helicopterView",
-  ]);
-  assert.equal(calledFields.at(-1), "overallAdvisory.helicopterView");
-  assert.ok(calls.at(-1)?.includes("Validated executive summary:"));
-  assert.ok(calls.at(-1)?.includes("Validated board scorecard narrative:"));
-  assert.ok(calls.at(-1)?.includes(validTextForField("boardScorecard.advisoryNarrative")));
-  assert.ok(result.enrichedFields.includes("overallAdvisory.helicopterView"));
-  assert.equal(result.structuredReport.sections.executiveSummary.maturityScore, payload.overallScore);
-  assert.equal(result.structuredReport.sections.boardScorecard.readinessScore, payload.overallScore);
+  try {
+    const result = await assembleDiagnosticReport(payload, modelConfig({ llmClient }));
+    const calledFields = calls.map(fieldFromPrompt);
+    assert.deepEqual(calledFields, [
+      "boardScorecard.advisoryNarrative",
+      "overallAdvisory.helicopterView",
+    ]);
+    assert.equal(fieldNarrativeBodies.length, 1);
+    assert.ok(!JSON.stringify(fieldNarrativeBodies[0]).includes("DMO operating model"));
+    assert.equal(calledFields.at(-1), "overallAdvisory.helicopterView");
+    assert.ok(calls.at(-1)?.includes("Validated executive summary:"));
+    assert.ok(calls.at(-1)?.includes("Validated board scorecard narrative:"));
+    assert.ok(calls.at(-1)?.includes(validTextForField("boardScorecard.advisoryNarrative")));
+    assert.ok(result.enrichedFields.includes("overallAdvisory.helicopterView"));
+    assert.equal(result.structuredReport.sections.executiveSummary.maturityScore, payload.overallScore);
+    assert.equal(result.structuredReport.sections.boardScorecard.readinessScore, payload.overallScore);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 }
 
 {

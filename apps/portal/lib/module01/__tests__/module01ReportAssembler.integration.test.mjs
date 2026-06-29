@@ -58,12 +58,30 @@ Module._load = function patchedLoad(request, parent, isMain) {
 
 let generatorModule;
 let assemblerModule;
+const fieldNarrativeCalls = [];
+const fieldNarrativeModule = {
+  generateModule01FieldNarrative: async (args) => {
+    fieldNarrativeCalls.push(args);
+    return {
+      text: validTextForField("roadmap.roadmapNarrative"),
+      status: "ai_enriched",
+      model: args.modelConfig.model,
+      durationMs: 5,
+      validationStatus: "valid",
+      retryAttempted: false,
+      fallbackUsed: false,
+      responseLength: validTextForField("roadmap.roadmapNarrative").length,
+      generatedAt: new Date().toISOString(),
+    };
+  },
+};
 try {
   generatorModule = compileTs(join(root, "module01", "module01NarrativeGenerator.ts"), "generator.cjs");
   Module._load = function patchedLoadForAssembler(request, parent, isMain) {
     if (request === "@/lib/deterministicReportBuilders") return deterministicModule;
     if (request === "@/lib/module01/module01FactsBuilder") return factsModule;
     if (request === "@/lib/module01/module01NarrativeGenerator") return generatorModule;
+    if (request === "@/lib/module01/module01FieldNarrative") return fieldNarrativeModule;
     if (request === "@/lib/reportSchemaValidator") return schemaValidatorModule;
     return originalLoad.call(this, request, parent, isMain);
   };
@@ -200,18 +218,20 @@ const payload = crtvtaPayload();
 }
 
 {
+  fieldNarrativeCalls.length = 0;
   const { llmClient, calls } = llmSequence([
     { status: "success", rawOutput: validTextForField("boardScorecard.advisoryNarrative") },
-    { status: "success", rawOutput: validTextForField("roadmap.roadmapNarrative") },
     { status: "success", rawOutput: validTextForField("overallAdvisory.helicopterView") },
   ]);
   const result = await assembleDiagnosticReport(payload, modelConfig({ llmClient }));
   const calledFields = calls.map(fieldFromPrompt);
   assert.deepEqual(calledFields, [
     "boardScorecard.advisoryNarrative",
-    "ninetyDaySequencingNarrative",
     "overallAdvisory.helicopterView",
   ]);
+  assert.equal(fieldNarrativeCalls.length, 1);
+  assert.equal(fieldNarrativeCalls[0].field, "roadmapNarrative");
+  assert.ok(fieldNarrativeCalls[0].facts.every((fact) => !/\bDMO\b|roadmap/i.test(fact)));
   assert.equal(calledFields.at(-1), "overallAdvisory.helicopterView");
   assert.ok(calls.at(-1)?.includes("Validated executive summary:"));
   assert.ok(calls.at(-1)?.includes("Validated board scorecard narrative:"));

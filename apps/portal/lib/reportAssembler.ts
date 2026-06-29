@@ -9,6 +9,7 @@ import {
   generateModule01NarrativeField,
   type Module01LocalLlmClient,
 } from "@/lib/module01/module01NarrativeGenerator";
+import { generateModule01FieldNarrative } from "@/lib/module01/module01FieldNarrative";
 import type { NarrativeFieldGeneration } from "@/lib/narrativeFieldGenerator";
 import { validateFlatDiagnosticReport, validateStructuredDiagnosticReport } from "@/lib/reportSchemaValidator";
 
@@ -29,6 +30,7 @@ type FieldConfig = {
   promptFieldPath?: string;
   fallbackText: string;
   facts: Record<string, unknown> | string;
+  fieldNarrativeFacts?: string[];
   maxWords: number;
   apply: (report: GeneratedConsultingReport, text: string) => GeneratedConsultingReport;
 };
@@ -127,6 +129,17 @@ function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingRepor
   ].join("\n"));
 }
 
+function roadmapFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsultingReport) {
+  return [
+    `Client: ${facts.roadmapFacts.clientName}`,
+    `Priority domains: ${safeSequencingPromptText(domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>))}`,
+    `Largest gaps: ${safeSequencingPromptText(domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>))}`,
+    "Management order: confirm accountable owners and evidence first; remediate the largest gaps second; scale only through controls third.",
+    "Owner types: Executive sponsor; Data Governance Lead; Data Quality Lead; Data Architecture Lead; Transformation PMO.",
+    `Target outcomes: ${safeSequencingPromptText(joinList(report.ninetyDayPlan))}`,
+  ];
+}
+
 function overallFactsText(
   facts: Module01Facts,
   validatedReport: GeneratedConsultingReport,
@@ -185,6 +198,7 @@ function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsulting
       promptFieldPath: "ninetyDaySequencingNarrative",
       fallbackText: report.roadmapPhases.join(" "),
       facts: roadmapFactsText(facts, report),
+      fieldNarrativeFacts: roadmapFieldNarrativeFacts(facts, report),
       maxWords: Math.min(maxFieldWords, 100),
       apply: (current, text) => ({ ...current, roadmapPhases: [text, ...current.roadmapPhases.slice(1)] }),
     },
@@ -217,6 +231,25 @@ async function generateNarrativeField(
   field: FieldConfig,
   config: ReportAssemblerConfig,
 ): Promise<{ field: FieldConfig; generation: NarrativeFieldGeneration }> {
+  if (field.fieldPath === "roadmap.roadmapNarrative" && field.fieldNarrativeFacts?.length) {
+    return {
+      field,
+      generation: await generateModule01FieldNarrative({
+        field: "roadmapNarrative",
+        facts: field.fieldNarrativeFacts,
+        maxWords: Math.min(field.maxWords, 90),
+        style: "board",
+        fallbackText: field.fallbackText,
+        modelConfig: {
+          gatewayBaseUrl: config.gatewayBaseUrl,
+          headers: config.headers,
+          model: config.model,
+          timeoutMs: config.fieldTimeoutMs,
+        },
+      }),
+    };
+  }
+
   return {
     field,
     generation: await generateModule01NarrativeField({
