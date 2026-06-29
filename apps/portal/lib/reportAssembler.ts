@@ -244,7 +244,7 @@ async function generateNarrativeField(
           gatewayBaseUrl: config.gatewayBaseUrl,
           headers: config.headers,
           model: config.model,
-          timeoutMs: config.fieldTimeoutMs,
+          timeoutMs: Math.max(config.fieldTimeoutMs, 60000),
         },
       }),
     };
