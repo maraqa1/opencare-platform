@@ -224,7 +224,7 @@ export async function POST(request: Request) {
       message: markdownReport.source === "llm"
         ? "AI2 generated the Markdown consulting report. Deterministic JSON was retained for validation and Module 02 handoff."
         : assembled.fallbackFields.length > 0
-        ? "Report JSON was built deterministically. Some optional narrative fields used deterministic fallback because local LLM enrichment was unavailable or invalid."
+        ? `Report JSON was built deterministically. Optional narrative fallback fields: ${assembled.fallbackFields.join(", ")}.`
         : assembled.enrichedFields.length > 0
           ? "Report JSON was built deterministically and selected narrative fields were safely enriched by the local model."
           : markdownReport.error

@@ -1446,10 +1446,10 @@ export function DataAiDiagnosticWorkspace() {
       const enrichedFields = result.enrichedFields ?? [];
       setReportMessage(result.markdownReportSource === "llm"
         ? `${result.message ?? "AI2 generated the Markdown consulting report."} Strategy handoff saved locally.`
-        : result.fallback
-          ? `${result.message ?? "AI2 Markdown generation did not complete; deterministic report fallback was used."} Strategy handoff saved locally.`
         : fallbackFields.length > 0
           ? `Report JSON was built deterministically. ${fallbackFields.length} optional narrative field${fallbackFields.length === 1 ? "" : "s"} used fallback: ${fallbackFields.join(", ")}. Strategy handoff saved locally.`
+        : result.fallback
+          ? `${result.message ?? "AI2 Markdown generation did not complete; deterministic report fallback was used."} Strategy handoff saved locally.`
           : enrichedFields.length > 0
             ? `Report JSON was built deterministically and ${enrichedFields.length} narrative field${enrichedFields.length === 1 ? "" : "s"} were safely enriched by ${result.model ?? "configured local model"}. Strategy handoff saved locally.`
             : fallbackSections.length > 0
