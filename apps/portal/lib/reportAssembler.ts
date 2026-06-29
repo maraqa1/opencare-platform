@@ -140,10 +140,11 @@ function roadmapFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsu
 function boardFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsultingReport) {
   return [
     `Client: ${facts.boardScorecardFacts.clientName}`,
-    `Overall score: ${facts.boardScorecardFacts.overallScore}`,
+    `Overall score: ${facts.boardScorecardFacts.overallMaturity}`,
     `Overall gap: ${facts.boardScorecardFacts.overallGap}`,
     `Maturity band: ${facts.boardScorecardFacts.maturityBand}`,
-    `Evidence coverage: ${facts.boardScorecardFacts.evidenceCoverage}`,
+    `Evidence coverage: ${facts.boardScorecardFacts.evidenceBacked}`,
+    `Evidence coverage percent: ${facts.boardScorecardFacts.evidenceCoveragePct}`,
     `Strongest domains: ${domainList(facts.boardScorecardFacts.strongestDomains as Array<Record<string, unknown>>)}`,
     `Weakest domains: ${domainList(facts.boardScorecardFacts.weakestDomains as Array<Record<string, unknown>>)}`,
     `Critical domains: ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
