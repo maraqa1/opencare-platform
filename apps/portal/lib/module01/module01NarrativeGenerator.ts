@@ -150,6 +150,8 @@ async function callAndValidate(args: GenerateModule01NarrativeArgs, prompt: stri
       model: result.model,
       durationMs,
       responseLength: 0,
+      rawResponseLength: 0,
+      sanitizedResponseLength: 0,
       validationStatus: "gateway_failure" as const,
       retryAttempted,
     };
@@ -194,7 +196,9 @@ async function callAndValidate(args: GenerateModule01NarrativeArgs, prompt: stri
       text,
       model: result.model,
       durationMs,
-      responseLength: result.rawOutput.length,
+      responseLength: fallbackText.length,
+      rawResponseLength: result.rawOutput.length,
+      sanitizedResponseLength: fallbackText.length,
       validationStatus,
       retryAttempted,
     };
@@ -205,7 +209,9 @@ async function callAndValidate(args: GenerateModule01NarrativeArgs, prompt: stri
     sanitizedStatus: sanitized.status,
     model: result.model,
     durationMs: result.durationMs,
-    responseLength: result.rawOutput.length,
+    responseLength: text.length,
+    rawResponseLength: result.rawOutput.length,
+    sanitizedResponseLength: text.length,
     validationStatus,
     retryAttempted,
   };
@@ -223,6 +229,8 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
       retryAttempted: false,
       fallbackUsed: true,
       responseLength: 0,
+      rawResponseLength: 0,
+      sanitizedResponseLength: 0,
       generatedAt: new Date().toISOString(),
       rejectionReason: "missing_facts",
     };
@@ -244,6 +252,8 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
       retryAttempted: first.retryAttempted,
       fallbackUsed: false,
       responseLength: first.responseLength,
+      rawResponseLength: first.rawResponseLength,
+      sanitizedResponseLength: first.sanitizedResponseLength,
       generatedAt: new Date().toISOString(),
       sanitizedOutputPreview: first.text.slice(0, 160),
     };
@@ -266,6 +276,8 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
       retryAttempted: true,
       fallbackUsed: false,
       responseLength: retry.responseLength,
+      rawResponseLength: retry.rawResponseLength,
+      sanitizedResponseLength: retry.sanitizedResponseLength,
       generatedAt: new Date().toISOString(),
       sanitizedOutputPreview: retry.text.slice(0, 160),
     };
@@ -279,7 +291,9 @@ export async function generateModule01NarrativeField(args: GenerateModule01Narra
     validationStatus: retry.validationStatus ?? "fallback",
     retryAttempted: true,
     fallbackUsed: true,
-    responseLength: retry.responseLength,
+    responseLength: fallbackText.length,
+    rawResponseLength: retry.rawResponseLength,
+    sanitizedResponseLength: fallbackText.length,
     generatedAt: new Date().toISOString(),
     rejectionReason: retry.reason,
   };

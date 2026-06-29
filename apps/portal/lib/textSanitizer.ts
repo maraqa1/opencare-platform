@@ -65,6 +65,7 @@ export function sanitizePlainTextField(raw: string, options: SanitizePlainTextOp
     .replace(/^\s*\d+[.)]\s+/gm, "")
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^\s*[A-Za-z][A-Za-z0-9]*(?:Narrative|View|Summary|Paragraph)\s*:\s*/i, "")
     .replace(/^(?:executive summary|board narrative|narrative|advisory narrative|board scorecard advisory(?: narrative)?|roadmap(?: narrative)?|overall advisory(?: synthesis)?|helicopter view)\s*:\s*/i, "")
     .replace(/^(?:executive summary|board scorecard advisory(?: narrative)?|roadmap(?: narrative)?|overall advisory(?: synthesis)?|helicopter view)\s+(?=for\b|the\b|[A-Z])/i, "")
     .replace(/\s+\(([A-Z]{2,8})\)/g, "")

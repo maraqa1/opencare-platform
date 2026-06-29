@@ -56,6 +56,7 @@ const facts = [
 ];
 
 const validText = "CRTVTA should start by confirming accountable owners and evidence because the diagnostic shows material gaps in Data Quality & Master Data and execution discipline. Once ownership and evidence are clear, management can remediate the largest weaknesses with less ambiguity, then scale AI-enabled reporting only through controls that protect quality, lineage and decision accountability.";
+const labelledValidText = `BoardScoreNarrative: ${validText}`;
 
 {
   const bodies = [];
@@ -80,6 +81,23 @@ const validText = "CRTVTA should start by confirming accountable owners and evid
   assert.equal(result.sanitizedResponseLength, validText.length);
   assert.ok(bodies[0].body.options.stop.includes("{"));
   assert.ok(!bodies[0].body.messages[0].content.includes("DMO operating model"));
+}
+
+{
+  const result = await generateModule01FieldNarrative({
+    field: "roadmapNarrative",
+    facts,
+    maxWords: 90,
+    style: "board",
+    fallbackText: "Fallback sequencing paragraph.",
+    modelConfig,
+    fetchFn: async () => new Response(labelledValidText, { status: 200, headers: { "content-type": "text/plain; charset=utf-8" } }),
+  });
+  assert.equal(result.status, "sanitized");
+  assert.equal(result.validationStatus, "valid");
+  assert.equal(result.text, validText);
+  assert.equal(result.responseLength, validText.length);
+  assert.equal(result.rawResponseLength, labelledValidText.length);
 }
 
 {
