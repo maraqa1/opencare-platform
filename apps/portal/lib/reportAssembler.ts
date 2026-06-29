@@ -231,6 +231,7 @@ async function generateNarrativeField(
   field: FieldConfig,
   config: ReportAssemblerConfig,
 ): Promise<{ field: FieldConfig; generation: NarrativeFieldGeneration }> {
+  const criticalFieldTimeoutMs = Math.max(config.fieldTimeoutMs, 120000);
   if (field.fieldPath === "roadmap.roadmapNarrative" && field.fieldNarrativeFacts?.length) {
     return {
       field,
@@ -244,7 +245,7 @@ async function generateNarrativeField(
           gatewayBaseUrl: config.gatewayBaseUrl,
           headers: config.headers,
           model: config.model,
-          timeoutMs: Math.max(config.fieldTimeoutMs, 60000),
+          timeoutMs: criticalFieldTimeoutMs,
         },
       }),
     };
@@ -261,7 +262,7 @@ async function generateNarrativeField(
         gatewayBaseUrl: config.gatewayBaseUrl,
         headers: config.headers,
         model: config.model,
-        timeoutMs: config.fieldTimeoutMs,
+        timeoutMs: criticalFieldTimeoutMs,
       },
       llmClient: config.llmClient,
     }),

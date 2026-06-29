@@ -194,7 +194,9 @@ export async function generateModule01FieldNarrative(args: Module01FieldNarrativ
       validationStatus: "gateway_failure",
       retryAttempted: false,
       fallbackUsed: true,
-      responseLength: 0,
+      responseLength: fallbackText.length,
+      rawResponseLength: 0,
+      sanitizedResponseLength: fallbackText.length,
       generatedAt: new Date().toISOString(),
       rejectionReason: result.error ?? result.status,
     };

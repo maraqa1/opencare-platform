@@ -6,7 +6,7 @@ import { generateMarkdownReport } from "@/lib/markdownReportGenerator";
 
 const fallbackModel = "mistral-nemo:12b";
 const defaultGatewayTimeoutMs = 180000;
-const defaultFieldTimeoutMs = 30000;
+const defaultFieldTimeoutMs = 120000;
 const defaultMarkdownReportTimeoutMs = 180000;
 const defaultEnrichmentConcurrency = 1;
 const defaultMaxFieldWords = 120;
