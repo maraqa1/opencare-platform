@@ -23,7 +23,7 @@ export type NarrativeFieldGeneration = {
   status: "ai_enriched" | "sanitized" | "fallback";
   model: string;
   durationMs: number;
-  validationStatus?: "valid" | "rejected" | "gateway_failure" | "missing_facts" | "fallback";
+  validationStatus?: "valid" | "rejected" | "gateway_failure" | "missing_facts" | "fallback" | "fallback_valid";
   retryAttempted?: boolean;
   fallbackUsed?: boolean;
   responseLength?: number;
