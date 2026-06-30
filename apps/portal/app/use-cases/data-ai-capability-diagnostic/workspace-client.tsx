@@ -110,6 +110,11 @@ type DiagnosticReportApiResponse = {
       sanitizedResponseLength?: number;
       generatedAt?: string;
       rejectionReason?: string;
+      ai2FieldValidationStatus?: string;
+      ai2RejectionReason?: string;
+      ai2FallbackUsed?: boolean;
+      ai2RetrievalMode?: string;
+      ai2CitationCount?: number;
     }>;
     markdownReport?: {
       source?: "llm" | "fallback";
@@ -1057,6 +1062,11 @@ function AiEnrichmentDebugPanel({
                 <div><dt>Rendered length</dt><dd>{formatResponseLength(field?.responseLength)}</dd></div>
                 <div><dt>Raw AI2 length</dt><dd>{formatResponseLength(field?.rawResponseLength)}</dd></div>
                 <div><dt>Sanitized length</dt><dd>{formatResponseLength(field?.sanitizedResponseLength)}</dd></div>
+                <div><dt>AI2 validation</dt><dd>{field?.ai2FieldValidationStatus ?? "Not recorded"}</dd></div>
+                <div><dt>AI2 rejection</dt><dd>{field?.ai2RejectionReason ?? "None"}</dd></div>
+                <div><dt>AI2 fallback</dt><dd>{boolLabel(field?.ai2FallbackUsed)}</dd></div>
+                <div><dt>AI2 retrieval</dt><dd>{field?.ai2RetrievalMode ?? "Not recorded"}</dd></div>
+                <div><dt>AI2 citations</dt><dd>{typeof field?.ai2CitationCount === "number" ? field.ai2CitationCount : "Not recorded"}</dd></div>
                 <div><dt>Generated</dt><dd>{field?.generatedAt ?? "Not recorded"}</dd></div>
               </dl>
             </article>

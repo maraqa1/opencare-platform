@@ -79,22 +79,13 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.equal(result.responseLength, validText.length);
   assert.equal(result.rawResponseLength, validText.length);
   assert.equal(result.sanitizedResponseLength, validText.length);
-  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
-  assert.equal(bodies[0].body.task_type, "module01_field_narrative");
-  assert.equal(bodies[0].body.knowledge_pack_id, "module01-ai-assessment-reporting");
-  assert.equal(bodies[0].body.retrieval_mode, "hybrid");
+  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
   assert.equal(bodies[0].body.field, "roadmap.roadmapNarrative");
   assert.equal(bodies[0].body.client_name, "CRTVTA");
-  assert.match(bodies[0].body.question_or_prompt, /roadmap narrative/i);
-  assert.match(bodies[0].body.question_or_prompt, /sequencing logic/i);
-  assert.equal(bodies[0].body.output_contract.kind, "field_narrative");
-  assert.equal(bodies[0].body.output_contract.max_words, 90);
-  assert.equal(bodies[0].body.output_contract.max_sentences, 2);
-  assert.equal(bodies[0].body.max_chunks, 3);
-  assert.equal(bodies[0].body.require_citations, true);
-  assert.ok(bodies[0].body.facts.length <= 5);
+  assert.equal(bodies[0].body.max_words, 90);
+  assert.equal(bodies[0].body.style, "board");
   assert.ok(!bodies[0].body.facts.some((fact) => /^Client:/i.test(fact)));
-  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("priority domains")));
+  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("priority domain")));
   assert.ok(!("messages" in bodies[0].body));
   assert.ok(!("options" in bodies[0].body));
 }
@@ -117,8 +108,61 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     },
   });
   assert.equal(bodies[0].body.field, "overallAdvisory.helicopterView");
-  assert.match(bodies[0].body.question_or_prompt, /helicopter-view narrative/i);
-  assert.equal(bodies[0].body.output_contract.max_sentences, 3);
+  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
+  assert.equal(bodies[0].body.max_words, 110);
+  assert.equal(bodies[0].body.style, "board");
+}
+
+{
+  const bodies = [];
+  await generateModule01FieldNarrative({
+    field: "boardScorecard.advisoryNarrative",
+    facts: [
+      "Client: CRTVTA",
+      "Overall score: 1.68",
+      "Evidence coverage: 75/84 evidence-backed items",
+      "Board asks: approve owner assignment.",
+    ],
+    maxWords: 90,
+    style: "board",
+    fallbackText: "Fallback board scorecard paragraph.",
+    modelConfig,
+    fetchFn: async (url, init) => {
+      bodies.push({ url: String(url), body: JSON.parse(String(init?.body ?? "{}")) });
+      return new Response("CRTVTA has a 1.68 maturity baseline, so the board should treat the score as a readiness signal. The evidence posture supports a provisional baseline, and management should approve owner assignment before scaling AI use cases.", {
+        status: 200,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    },
+  });
+  assert.equal(bodies[0].body.field, "boardScorecard.advisoryNarrative");
+  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
+  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("score indicates")));
+  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("evidence posture")));
+  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("leadership decisions")));
+}
+
+{
+  let calls = 0;
+  const result = await generateModule01FieldNarrative({
+    field: "roadmapNarrative",
+    facts,
+    maxWords: 90,
+    style: "board",
+    fallbackText: "Fallback sequencing paragraph.",
+    modelConfig,
+    fetchFn: async (url) => {
+      calls += 1;
+      if (String(url).includes("local-ai-gateway")) {
+        throw new Error("getaddrinfo ENOTFOUND local-ai-gateway");
+      }
+      return new Response(validText, { status: 200, headers: { "content-type": "text/plain; charset=utf-8" } });
+    },
+  });
+  assert.equal(result.status, "ai_enriched");
+  assert.equal(result.validationStatus, "valid");
+  assert.equal(result.fallbackUsed, false);
+  assert.ok(calls >= 2);
 }
 
 {

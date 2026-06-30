@@ -85,26 +85,40 @@ function normalizeFieldName(field: Module01FieldNarrativeField) {
 
 function cleanFactForEndpoint(fact: string) {
   const cleaned = fact.trim().replace(/\s+/g, " ");
+  if (/^(Previous output was rejected|Rewrite one controlled paragraph)/i.test(cleaned)) return "";
   const match = cleaned.match(/^([A-Za-z][A-Za-z0-9 &/%.-]{1,80})\s*:\s*(.+)$/);
   if (!match) return cleaned;
   const label = match[1].trim().toLowerCase();
   const value = match[2].trim();
+  const proseValue = value.replace(/\s*;\s*/g, ", ").replace(/[.]+$/g, "");
   if (label === "client") return "";
-  if (label === "board asks") return `leadership decisions include ${value}`;
-  if (label === "target outcomes") return `target outcomes include ${value}`;
-  if (label === "management order") return `management should ${value}`;
-  if (label === "validated executive summary") return `the validated executive summary says ${value}`;
-  if (label === "validated board scorecard narrative") return `the validated board scorecard narrative says ${value}`;
-  if (label === "validated ai readiness narrative") return `the validated AI readiness narrative says ${value}`;
-  return `${label} is ${value}`;
+  if (label === "overall score") return `score indicates a ${proseValue} out of 4 early-stage maturity baseline that requires management action`;
+  if (label === "overall gap") return `remaining maturity gap of ${proseValue} shows that remediation should be governed as a board-level priority`;
+  if (label === "maturity band") return `maturity band is ${proseValue}`;
+  if (label === "evidence coverage") return `evidence posture includes ${proseValue}`;
+  if (label === "evidence coverage percent") return `evidence posture includes ${proseValue}% evidence coverage`;
+  if (label === "weighted evidence confidence percent") return `weighted evidence confidence is ${proseValue}% and should temper board confidence in the baseline`;
+  if (label === "strongest domains") return `stronger foundations are ${proseValue}`;
+  if (label === "weakest domains") return `largest gaps sit in ${proseValue}`;
+  if (label === "critical domains") return `critical management attention should focus on ${proseValue}`;
+  if (label === "priority domains") return `priority domain remediation covers ${proseValue}`;
+  if (label === "critical gaps") return `critical gaps require management controls in the priority domains`;
+  if (label === "owner types") return `accountable owners include ${proseValue}`;
+  if (label === "board asks") return `leadership decisions include ${proseValue}`;
+  if (label === "target outcomes") return `target outcomes include ${proseValue}`;
+  if (label === "management order") return `management should ${proseValue}, with analytics and AI scaling held behind a readiness gate`;
+  if (label === "validated executive summary") return `the validated executive summary says ${proseValue}`;
+  if (label === "validated board scorecard narrative") return `the validated board scorecard narrative says ${proseValue}`;
+  if (label === "validated ai readiness narrative") return `the validated AI readiness narrative says ${proseValue}`;
+  return `${label} is ${proseValue}`;
 }
 
 function fieldPrompt(field: Module01FieldNarrativeField) {
   const normalized = normalizeFieldName(field);
   const prompts: Record<string, string> = {
-    "boardScorecard.advisoryNarrative": "Write one short board scorecard advisory narrative for a Module 01 AI assessment report. Use one paragraph only and explain the management implication.",
-    "roadmap.roadmapNarrative": "Write one short roadmap narrative for a Module 01 AI assessment report. Use one paragraph only and describe sequencing logic.",
-    "overallAdvisory.helicopterView": "Write one short helicopter-view narrative for a Module 01 AI assessment report. Use one paragraph only and synthesise the enterprise-level implication.",
+    "boardScorecard.advisoryNarrative": "Write one short board scorecard advisory narrative for a Module 01 AI assessment report. Use one paragraph only. Include score meaning, evidence posture or evidence coverage, management implication, and the decision required.",
+    "roadmap.roadmapNarrative": "Write one short roadmap narrative for a Module 01 AI assessment report. Use one paragraph only. Include sequencing logic, owners, evidence certification, priority domains, and a control/readiness gate before scaling.",
+    "overallAdvisory.helicopterView": "Write one short helicopter-view narrative for a Module 01 AI assessment report. Use one paragraph only. Include an overall management conclusion and synthesise the enterprise-level implication.",
     "aiReadinessGate.readinessNarrative": "Write one short AI readiness gate narrative for a Module 01 AI assessment report. Use one paragraph only and describe the readiness gate.",
     "executiveSummary.summaryText": "Write one short executive summary narrative for a Module 01 AI assessment report. Use one paragraph only and focus on the board-level message.",
   };
@@ -206,15 +220,25 @@ async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs): Promise<
 
   try {
     let lastStatus = 0;
+    let lastError = "";
     for (const url of urls) {
       const isGroundedGenerate = url.includes("/v1/grounded-generate");
-      const response = await fetchImpl(url, {
-        method: "POST",
-        headers: args.modelConfig.headers,
-        body: isGroundedGenerate ? boundedGroundedRequestBody(args) : fieldRequestBody(args),
-        cache: "no-store",
-        signal: abortController.signal,
-      });
+      let response: Response;
+      try {
+        response = await fetchImpl(url, {
+          method: "POST",
+          headers: args.modelConfig.headers,
+          body: isGroundedGenerate ? boundedGroundedRequestBody(args) : fieldRequestBody(args),
+          cache: "no-store",
+          signal: abortController.signal,
+        });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          throw error;
+        }
+        lastError = error instanceof Error ? error.message : "field_narrative_fetch_error";
+        continue;
+      }
       lastStatus = response.status;
       if (!response.ok) {
         if (shouldTryNextUrl(response.status)) continue;
@@ -232,7 +256,7 @@ async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs): Promise<
       rawOutput: "",
       model: args.modelConfig.model,
       durationMs: Date.now() - startedAt,
-      error: `Field narrative gateway returned ${lastStatus}.`,
+      error: lastStatus > 0 ? `Field narrative gateway returned ${lastStatus}.` : lastError || "Field narrative gateway was unreachable.",
     };
   } catch (error) {
     const timeoutHit = error instanceof DOMException && error.name === "AbortError";
@@ -279,11 +303,8 @@ function sanitizeFieldText(rawOutput: string, fallbackText: string, maxWords: nu
 }
 
 function retryFacts(facts: string[], reason: string) {
-  return [
-    `Previous output was rejected: ${reason}.`,
-    "Rewrite one controlled paragraph. Do not use raw label stitching. Do not repeat lists. Finish every phrase.",
-    ...facts,
-  ];
+  void reason;
+  return facts;
 }
 
 export async function generateModule01FieldNarrative(args: Module01FieldNarrativeArgs): Promise<NarrativeFieldGeneration> {
