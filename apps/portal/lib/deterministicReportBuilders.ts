@@ -13,6 +13,8 @@ export type DiagnosticReportRequest = {
   scoredQuestions: number;
   totalQuestions: number;
   evidenceBackedItems: number;
+  evidenceStrengthCounts?: Partial<Record<"system" | "documented" | "interview" | "none" | "audited", number>>;
+  evidenceWeightedConfidencePct?: number | null;
   topGapDomains: Array<{
     nameEn: string;
     avgScore: number | null;
