@@ -94,14 +94,11 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.equal(result.responseLength, validText.length);
   assert.equal(result.rawResponseLength, validText.length);
   assert.equal(result.sanitizedResponseLength, validText.length);
-  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
-  assert.equal(bodies[0].body.task_type, "module01_field_narrative");
-  assert.equal(bodies[0].body.knowledge_pack_id, "module01-ai-assessment-reporting");
-  assert.equal(bodies[0].body.retrieval_mode, "hybrid");
+  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
   assert.equal(bodies[0].body.field, "roadmap.roadmapNarrative");
   assert.equal(bodies[0].body.client_name, "CRTVTA");
-  assert.equal(bodies[0].body.output_contract.max_words, 90);
-  assert.equal(bodies[0].body.output_contract.max_sentences, 2);
+  assert.equal(bodies[0].body.max_words, 90);
+  assert.equal(bodies[0].body.style, "board");
   assert.ok(!bodies[0].body.facts.some((fact) => /^Client:/i.test(fact)));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("priority domain")));
   assert.ok(!("messages" in bodies[0].body));
@@ -126,9 +123,9 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     },
   });
   assert.equal(bodies[0].body.field, "overallAdvisory.helicopterView");
-  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
-  assert.equal(bodies[0].body.output_contract.max_words, 110);
-  assert.equal(bodies[0].body.output_contract.max_sentences, 3);
+  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
+  assert.equal(bodies[0].body.max_words, 110);
+  assert.equal(bodies[0].body.style, "board");
 }
 
 {
@@ -154,7 +151,7 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     },
   });
   assert.equal(bodies[0].body.field, "boardScorecard.advisoryNarrative");
-  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
+  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("score indicates")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("evidence posture")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("leadership decisions")));

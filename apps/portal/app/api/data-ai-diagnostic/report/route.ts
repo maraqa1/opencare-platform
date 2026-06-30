@@ -5,10 +5,10 @@ import type { DiagnosticReportRequest } from "@/lib/deterministicReportBuilders"
 import { generateMarkdownReport } from "@/lib/markdownReportGenerator";
 
 const fallbackModel = "mistral-nemo:12b";
-const defaultGatewayTimeoutMs = 180000;
-const defaultFieldTimeoutMs = 120000;
-const defaultMarkdownReportTimeoutMs = 180000;
-const defaultEnrichmentConcurrency = 1;
+const defaultGatewayTimeoutMs = 45000;
+const defaultFieldTimeoutMs = 8000;
+const defaultMarkdownReportTimeoutMs = 10000;
+const defaultEnrichmentConcurrency = 2;
 const defaultMaxFieldWords = 120;
 
 function normaliseGatewayBaseUrl(value: string) {
@@ -65,6 +65,8 @@ function normaliseReportPayload(raw: unknown): DiagnosticReportRequest {
     scoredQuestions: finiteNumber(payload.scoredQuestions),
     totalQuestions: finiteNumber(payload.totalQuestions),
     evidenceBackedItems: finiteNumber(payload.evidenceBackedItems),
+    evidenceStrengthCounts: payload.evidenceStrengthCounts as DiagnosticReportRequest["evidenceStrengthCounts"],
+    evidenceWeightedConfidencePct: nullableNumber(payload.evidenceWeightedConfidencePct),
     topGapDomains: topGapDomains.map((entry) => {
       const domain = (entry ?? {}) as Record<string, unknown>;
       return {

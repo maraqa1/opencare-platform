@@ -106,6 +106,15 @@ function domainList(domains: Array<Record<string, unknown>>, fallback = "none su
   return cleaned.length > 0 ? cleaned.join("; ") : fallback;
 }
 
+function maturityBandFromScore(value: unknown) {
+  const score = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(score)) return "baseline not classified";
+  if (score < 1.5) return "early-stage maturity";
+  if (score < 2.5) return "developing maturity";
+  if (score < 3.5) return "managed maturity";
+  return "advanced maturity";
+}
+
 function safeSequencingPromptText(value: string) {
   return value
     .replace(/\broadmap\b/gi, "delivery plan")
@@ -130,25 +139,47 @@ function roadmapFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsu
   return [
     `Client: ${facts.roadmapFacts.clientName}`,
     `Priority domains: ${safeSequencingPromptText(domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>))}`,
-    `Largest gaps: ${safeSequencingPromptText(domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>))}`,
+    `Critical gaps: management controls are weakest in the priority domains above.`,
     "Management order: confirm accountable owners and evidence first; remediate the largest gaps second; scale only through controls third.",
     "Owner types: Executive sponsor; Data Governance Lead; Data Quality Lead; Data Architecture Lead; Transformation PMO.",
     `Target outcomes: ${safeSequencingPromptText(joinList(report.ninetyDayPlan))}`,
   ];
 }
 
+function roadmapFieldFallback(facts: Module01Facts) {
+  const domainNames = (facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>)
+    .slice(0, 3)
+    .map((domain) => String(domain.domain ?? domain.nameEn ?? domain.name ?? "").toLowerCase());
+  const foundationNames = domainNames.map((name) => {
+    if (name.includes("tool") || name.includes("platform")) return "platform integration";
+    if (name.includes("execution") || name.includes("roadmap")) return "roadmap execution";
+    if (name.includes("architecture")) return "data architecture";
+    if (name.includes("quality") || name.includes("master")) return "data quality and master data";
+    if (name.includes("source") || name.includes("flow")) return "source ownership and data flows";
+    if (name.includes("governance")) return "decision rights and governance";
+    return name || "priority data foundation";
+  });
+  const foundations = Array.from(new Set(foundationNames)).slice(0, 3).join(", ");
+  return `The 90-day roadmap should be sequenced around the three weakest foundations: ${foundations || "platform integration, roadmap execution and data architecture"}. Executive sponsors and domain owners should first validate evidence status and confirm Data Council decision rights, then remediate the priority domains through named owners and evidence sign-off. Analytics and AI scaling should remain behind a readiness gate until the control environment proves that source ownership, platform integration, delivery governance and data architecture are operating reliably.`;
+}
+
 function boardFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsultingReport) {
+  const maturityBand = String(facts.boardScorecardFacts.maturityBand ?? "").includes("Not provided")
+    ? maturityBandFromScore(facts.boardScorecardFacts.overallMaturity)
+    : facts.boardScorecardFacts.maturityBand;
+  const weightedConfidence = facts.boardScorecardFacts.evidenceWeightedConfidencePct;
   return [
     `Client: ${facts.boardScorecardFacts.clientName}`,
     `Overall score: ${facts.boardScorecardFacts.overallMaturity}`,
-    `Overall gap: ${facts.boardScorecardFacts.overallGap}`,
-    `Maturity band: ${facts.boardScorecardFacts.maturityBand}`,
-    `Evidence coverage: ${facts.boardScorecardFacts.evidenceBacked}`,
+    `Board asks: ${joinList(report.boardAsks)}`,
     `Evidence coverage percent: ${facts.boardScorecardFacts.evidenceCoveragePct}`,
+    `Weighted evidence confidence percent: ${weightedConfidence ?? "not calculated"}`,
+    `Critical domains: ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
+    `Overall gap: ${facts.boardScorecardFacts.overallGap}`,
+    `Maturity band: ${maturityBand}`,
+    `Evidence coverage: ${facts.boardScorecardFacts.evidenceBacked}`,
     `Strongest domains: ${domainList(facts.boardScorecardFacts.strongestDomains as Array<Record<string, unknown>>)}`,
     `Weakest domains: ${domainList(facts.boardScorecardFacts.weakestDomains as Array<Record<string, unknown>>)}`,
-    `Critical domains: ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
-    `Board asks: ${joinList(report.boardAsks)}`,
   ];
 }
 
@@ -219,7 +250,7 @@ function firstPassFieldConfigs(facts: Module01Facts, report: GeneratedConsulting
     {
       fieldPath: "roadmap.roadmapNarrative",
       promptFieldPath: "ninetyDaySequencingNarrative",
-      fallbackText: report.roadmapPhases.join(" "),
+      fallbackText: roadmapFieldFallback(facts),
       facts: roadmapFactsText(facts, report),
       fieldNarrativeFacts: roadmapFieldNarrativeFacts(facts, report),
       maxWords: Math.min(maxFieldWords, 100),
@@ -255,14 +286,14 @@ async function generateNarrativeField(
   field: FieldConfig,
   config: ReportAssemblerConfig,
 ): Promise<{ field: FieldConfig; generation: NarrativeFieldGeneration }> {
-  const criticalFieldTimeoutMs = Math.max(config.fieldTimeoutMs, 120000);
+  const criticalFieldTimeoutMs = config.fieldTimeoutMs;
   if (field.fieldNarrativeFacts?.length) {
     return {
       field,
       generation: await generateModule01FieldNarrative({
         field: field.fieldPath as Parameters<typeof generateModule01FieldNarrative>[0]["field"],
         facts: field.fieldNarrativeFacts,
-        maxWords: Math.min(field.maxWords, 90),
+        maxWords: field.maxWords,
         style: "board",
         fallbackText: field.fallbackText,
         modelConfig: {
@@ -317,18 +348,14 @@ export async function assembleDiagnosticReport(
 
     generations.forEach(({ field, generation }) => {
       fields[field.fieldPath] = generation;
-      if (generation.status !== "fallback") {
-        report = field.apply(report, generation.text);
-      }
+      report = field.apply(report, generation.status === "fallback" ? field.fallbackText : generation.text);
     });
 
     if (config.enableFieldEnrichment) {
       const overallField = overallAdvisoryFieldConfig(module01Facts, deterministicReport, report, config.maxFieldWords);
       const { generation } = await generateNarrativeField(overallField, config);
       fields[overallField.fieldPath] = generation;
-      if (generation.status !== "fallback") {
-        report = overallField.apply(report, generation.text);
-      }
+      report = overallField.apply(report, generation.status === "fallback" ? overallField.fallbackText : generation.text);
     }
   }
 
