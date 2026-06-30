@@ -97,7 +97,7 @@ function llmSequence(outputs) {
   return { llmClient, calls };
 }
 
-const validText = "CRTVTA has a 1.68 maturity baseline, so the board should approve accountable ownership, evidence certification and a sequenced remediation backlog before scaling governed AI use cases.";
+const validText = "CRTVTA has a 1.68 maturity baseline, so the board should treat the score as a readiness signal. The evidence posture supports a provisional baseline, and management should approve accountable ownership and evidence certification before scaling governed AI use cases.";
 
 {
   const { llmClient } = llmSequence([{ status: "success", rawOutput: validText }]);
