@@ -33,6 +33,11 @@ export type NarrativeFieldGeneration = {
   rawOutputPreview?: string;
   sanitizedOutputPreview?: string;
   rejectionReason?: string;
+  ai2FieldValidationStatus?: string;
+  ai2RejectionReason?: string;
+  ai2FallbackUsed?: boolean;
+  ai2RetrievalMode?: string;
+  ai2CitationCount?: number;
 };
 
 export async function generateNarrativeField(args: GenerateNarrativeFieldArgs): Promise<NarrativeFieldGeneration> {

@@ -4,6 +4,19 @@ import { generateModule01FieldNarrative } from "@/lib/module01/module01FieldNarr
 
 const fallbackModel = "mistral-nemo:12b";
 const defaultTimeoutMs = 30000;
+const supportedFields = new Set([
+  "boardScorecard.advisoryNarrative",
+  "roadmap.roadmapNarrative",
+  "overallAdvisory.helicopterView",
+  "aiReadinessGate.readinessNarrative",
+  "executiveSummary.summaryText",
+  "roadmapNarrative",
+]);
+
+function normalizeField(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value === "roadmapNarrative" ? "roadmap.roadmapNarrative" : value;
+}
 
 function normaliseGatewayBaseUrl(value: string) {
   const configured = value.replace(/\/+$/, "");
@@ -29,9 +42,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: "error", message: "Invalid field narrative payload." }, { status: 400 });
   }
 
-  const field = payload.field;
-  if (field !== "roadmapNarrative") {
-    return NextResponse.json({ status: "error", message: "Unsupported Module 01 field narrative." }, { status: 400 });
+  const field = normalizeField(payload.field);
+  if (!supportedFields.has(field)) {
+    return NextResponse.json({
+      status: "error",
+      message: "Unsupported Module 01 field narrative.",
+      supported_fields: Array.from(supportedFields).filter((item) => item !== "roadmapNarrative"),
+    }, { status: 400 });
   }
 
   const facts = textArray(payload.facts);
@@ -46,7 +63,7 @@ export async function POST(request: Request) {
   if (apiKey) headers.authorization = `Bearer ${apiKey}`;
 
   const generation = await generateModule01FieldNarrative({
-    field,
+    field: field as Parameters<typeof generateModule01FieldNarrative>[0]["field"],
     facts,
     maxWords: Math.min(numberValue(payload.max_words, 80), 140),
     style: payload.style === "executive" ? "executive" : "board",
