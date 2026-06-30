@@ -221,10 +221,10 @@ async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs): Promise<
   const timeout = setTimeout(() => abortController.abort(), args.modelConfig.timeoutMs ?? 30000);
   const fetchImpl = args.fetchFn ?? fetch;
   const urls = uniqueUrls([
-    fieldNarrativeUrlFromGateway(args.modelConfig.gatewayBaseUrl),
-    ai2DirectFieldNarrativeUrl,
     groundedGenerateUrlFromGateway(args.modelConfig.gatewayBaseUrl),
     ai2DirectGroundedGenerateUrl,
+    fieldNarrativeUrlFromGateway(args.modelConfig.gatewayBaseUrl),
+    ai2DirectFieldNarrativeUrl,
   ]);
 
   try {
@@ -310,7 +310,7 @@ export function buildModule01FieldNarrativeFallback(
   const evidencePhrase = evidence ? `the evidence posture of ${evidence}` : "the available evidence posture";
 
   if (normalizeFieldName(field) === "roadmap.roadmapNarrative") {
-    return `${client} should sequence the roadmap by confirming ${owners} and evidence certification first, then remediating ${priority} through named actions, and only then scaling analytics and AI through a control/readiness gate. This keeps execution tied to ownership, evidence quality and management accountability.`;
+    return `${client} should use sequencing logic that confirms ${owners} and evidence certification first, then remediates priority domains including ${priority} through named actions before scaling analytics and AI through a readiness gate. This keeps execution tied to ownership, evidence quality, controls and management accountability.`;
   }
   if (normalizeFieldName(field) === "boardScorecard.advisoryNarrative") {
     return `${client} should read the board scorecard as a readiness signal based on ${scorePhrase} and ${evidencePhrase}. The management implication is to treat priority gaps as owned remediation work, with the decision required to ${decision} before scaling AI-enabled reporting.`;
@@ -355,6 +355,7 @@ function retryFacts(facts: string[], reason: string) {
 export async function generateModule01FieldNarrative(args: Module01FieldNarrativeArgs): Promise<NarrativeFieldGeneration> {
   const maxWords = Math.max(40, Math.min(args.maxWords, 140));
   const fallbackText = buildModule01FieldNarrativeFallback(args.facts, args.fallbackText, args.field);
+  const fallbackValidation = validateFieldText(fallbackText, args, maxWords);
   const result = await callAi2FieldNarrative({ ...args, maxWords });
 
   if (result.status !== "success") {
@@ -363,14 +364,14 @@ export async function generateModule01FieldNarrative(args: Module01FieldNarrativ
       status: "fallback",
       model: result.model,
       durationMs: result.durationMs,
-      validationStatus: "gateway_failure",
+      validationStatus: fallbackValidation.valid ? "fallback_valid" : "gateway_failure",
       retryAttempted: false,
       fallbackUsed: true,
       responseLength: fallbackText.length,
       rawResponseLength: 0,
       sanitizedResponseLength: fallbackText.length,
       generatedAt: new Date().toISOString(),
-      rejectionReason: result.error ?? result.status,
+      rejectionReason: fallbackValidation.valid ? result.error ?? result.status : fallbackValidation.reason ?? result.error ?? result.status,
       ai2FieldValidationStatus: result.validationStatus,
       ai2RejectionReason: result.rejectionReason,
       ai2FallbackUsed: result.fallbackUsed,
@@ -419,7 +420,7 @@ export async function generateModule01FieldNarrative(args: Module01FieldNarrativ
         status: "fallback",
         model: retryResult.model,
         durationMs: result.durationMs + retryResult.durationMs,
-        validationStatus: "rejected",
+        validationStatus: fallbackValidation.valid ? "fallback_valid" : "rejected",
         retryAttempted: true,
         fallbackUsed: true,
         responseLength: fallbackText.length,
@@ -427,7 +428,7 @@ export async function generateModule01FieldNarrative(args: Module01FieldNarrativ
         sanitizedResponseLength: fallbackText.length,
         generatedAt: new Date().toISOString(),
         rawOutputPreview: retryResult.rawOutput.slice(0, 160),
-        rejectionReason: retryValidation.reason ?? validation.reason ?? "invalid_field_narrative",
+        rejectionReason: retryValidation.reason ?? validation.reason ?? fallbackValidation.reason ?? "invalid_field_narrative",
         ai2FieldValidationStatus: retryResult.validationStatus,
         ai2RejectionReason: retryResult.rejectionReason,
         ai2FallbackUsed: retryResult.fallbackUsed,
@@ -440,7 +441,7 @@ export async function generateModule01FieldNarrative(args: Module01FieldNarrativ
       status: "fallback",
       model: result.model,
       durationMs: result.durationMs + retryResult.durationMs,
-      validationStatus: "rejected",
+      validationStatus: fallbackValidation.valid ? "fallback_valid" : "rejected",
       retryAttempted: true,
       fallbackUsed: true,
       responseLength: fallbackText.length,
@@ -448,7 +449,7 @@ export async function generateModule01FieldNarrative(args: Module01FieldNarrativ
       sanitizedResponseLength: fallbackText.length,
       generatedAt: new Date().toISOString(),
       rawOutputPreview: result.rawOutput.slice(0, 160),
-      rejectionReason: validation.reason ?? sanitized.rejectionReason ?? "invalid_field_narrative",
+      rejectionReason: validation.reason ?? sanitized.rejectionReason ?? fallbackValidation.reason ?? "invalid_field_narrative",
       ai2FieldValidationStatus: result.validationStatus,
       ai2RejectionReason: result.rejectionReason,
       ai2FallbackUsed: result.fallbackUsed,

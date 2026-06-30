@@ -65,10 +65,11 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     "Owner types: executive sponsor, data owner, AI governance lead",
     "Management order: certify evidence, assign owners, remediate priority domains",
   ], "", "roadmap.roadmapNarrative");
-  assert.match(fallback, /^CRTVTA should sequence the roadmap/i);
+  assert.match(fallback, /^CRTVTA should use sequencing logic/i);
   assert.match(fallback, /owners/i);
   assert.match(fallback, /evidence certification/i);
-  assert.match(fallback, /control\/readiness gate/i);
+  assert.match(fallback, /readiness gate/i);
+  assert.match(fallback, /controls/i);
   assert.ok(!fallback.includes("Client:"));
   assert.ok(!fallback.includes("Owner types:"));
 }
@@ -94,11 +95,14 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.equal(result.responseLength, validText.length);
   assert.equal(result.rawResponseLength, validText.length);
   assert.equal(result.sanitizedResponseLength, validText.length);
-  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
+  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
+  assert.equal(bodies[0].body.task_type, "module01_field_narrative");
+  assert.equal(bodies[0].body.knowledge_pack_id, "module01-ai-assessment-reporting");
+  assert.equal(bodies[0].body.retrieval_mode, "hybrid");
   assert.equal(bodies[0].body.field, "roadmap.roadmapNarrative");
   assert.equal(bodies[0].body.client_name, "CRTVTA");
-  assert.equal(bodies[0].body.max_words, 90);
-  assert.equal(bodies[0].body.style, "board");
+  assert.equal(bodies[0].body.output_contract.max_words, 90);
+  assert.equal(bodies[0].body.output_contract.max_sentences, 2);
   assert.ok(!bodies[0].body.facts.some((fact) => /^Client:/i.test(fact)));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("priority domain")));
   assert.ok(!("messages" in bodies[0].body));
@@ -123,9 +127,9 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     },
   });
   assert.equal(bodies[0].body.field, "overallAdvisory.helicopterView");
-  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
-  assert.equal(bodies[0].body.max_words, 110);
-  assert.equal(bodies[0].body.style, "board");
+  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
+  assert.equal(bodies[0].body.output_contract.max_words, 110);
+  assert.equal(bodies[0].body.output_contract.max_sentences, 3);
 }
 
 {
@@ -151,7 +155,7 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     },
   });
   assert.equal(bodies[0].body.field, "boardScorecard.advisoryNarrative");
-  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
+  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("score indicates")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("evidence posture")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("leadership decisions")));
@@ -178,6 +182,32 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.equal(result.validationStatus, "valid");
   assert.equal(result.fallbackUsed, false);
   assert.ok(calls >= 2);
+}
+
+{
+  const result = await generateModule01FieldNarrative({
+    field: "roadmapNarrative",
+    facts: [
+      "Client: CRTVTA",
+      "Priority domains: Data Quality and Execution Roadmap",
+      "Owner types: executive sponsor, data owner, AI governance lead",
+      "Management order: certify evidence, assign owners, remediate priority domains",
+    ],
+    maxWords: 90,
+    style: "board",
+    fallbackText: "",
+    modelConfig,
+    fetchFn: async () => new Response('{"deliverable":"full DMO operating model"}', {
+      status: 200,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    }),
+  });
+  assert.equal(result.status, "fallback");
+  assert.equal(result.validationStatus, "fallback_valid");
+  assert.equal(result.fallbackUsed, true);
+  assert.equal(result.rejectionReason, "json_like_output");
+  assert.match(result.text, /readiness gate/i);
+  assert.ok(!result.text.includes("Client:"));
 }
 
 {
@@ -324,7 +354,7 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     }),
   });
   assert.equal(result.status, "fallback");
-  assert.equal(result.validationStatus, "rejected");
+  assert.equal(result.validationStatus, "fallback_valid");
   assert.equal(result.retryAttempted, true);
   assert.equal(result.fallbackUsed, true);
   assert.ok(!result.text.includes("Not provided in diagnostic input"));
