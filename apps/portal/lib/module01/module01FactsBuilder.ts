@@ -81,6 +81,11 @@ export function buildModule01Facts(input: unknown) {
   const totalQuestions = numberOrNull(root.totalQuestions ?? summary.totalQuestions ?? summary.total_questions);
   const scoredQuestionsCount = numberOrNull(root.scoredQuestions ?? summary.scoredQuestionsCount ?? summary.scored_questions_count);
   const evidenceBackedCount = numberOrNull(root.evidenceBackedItems ?? summary.evidenceBackedCount ?? summary.evidence_backed_count);
+  const evidenceWeightedConfidencePct = numberOrNull(
+    root.evidenceWeightedConfidencePct
+    ?? summary.evidenceWeightedConfidencePct
+    ?? summary.evidence_weighted_confidence_pct,
+  );
   const computedEvidenceCoveragePct = totalQuestions && evidenceBackedCount !== null
     ? Math.round((evidenceBackedCount / totalQuestions) * 100)
     : null;
@@ -113,6 +118,7 @@ export function buildModule01Facts(input: unknown) {
       evidenceBackedCount !== null && totalQuestions !== null ? `${evidenceBackedCount}/${totalQuestions}` : undefined,
     ),
     evidenceCoveragePct: numberOrNull(summary.evidenceCoveragePct ?? summary.evidence_coverage_pct ?? root.evidenceCoveragePct) ?? computedEvidenceCoveragePct,
+    evidenceWeightedConfidencePct,
     criticalDomains: arrayOrMissing(suppliedCriticalDomains.length > 0
       ? suppliedCriticalDomains
       : topPriorityDomains.slice(0, 3).map((domain) => domain.domain).filter((domain) => domain !== missing)),
@@ -146,6 +152,7 @@ export function buildModule01Facts(input: unknown) {
       maturityBand: common.maturityBand,
       criticalDomains: common.criticalDomains,
       evidenceCoveragePct: common.evidenceCoveragePct,
+      evidenceWeightedConfidencePct: common.evidenceWeightedConfidencePct,
     },
     boardScorecardFacts: {
       clientName: common.clientName,
@@ -156,6 +163,7 @@ export function buildModule01Facts(input: unknown) {
       questionsScored: common.questionsScored,
       evidenceBacked: common.evidenceBacked,
       evidenceCoveragePct: common.evidenceCoveragePct,
+      evidenceWeightedConfidencePct: common.evidenceWeightedConfidencePct,
       strongestDomains: common.strongestDomains,
       weakestDomains: common.topPriorityDomains.slice(0, 3),
       criticalDomains: common.criticalDomains,

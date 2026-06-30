@@ -58,7 +58,7 @@ export type GeneratedConsultingReport = {
   readinessThesis: string;
   boardMessage: string;
   boardAsks: string[];
-  gartnerPillarAssessment: string[];
+  capabilityPillarAssessment: string[];
   materialFindings: string[];
   domainActionPlan: string[];
   priorityGapRegister: string[];
@@ -92,6 +92,7 @@ export type StructuredDiagnosticReport = {
       advisoryNarrative: string;
       readinessScore: number | null;
       evidenceCoveragePct: number | null;
+      evidenceWeightedConfidencePct: number | null;
     };
     boardAsks: Array<{
       ask: string;
@@ -159,6 +160,20 @@ export function evidenceCoveragePct(payload: DiagnosticReportRequest) {
     : null;
 }
 
+export function evidenceConfidencePct(payload: DiagnosticReportRequest) {
+  if (payload.evidenceWeightedConfidencePct !== undefined) {
+    return payload.evidenceWeightedConfidencePct;
+  }
+  const counts = payload.evidenceStrengthCounts;
+  if (!counts || payload.totalQuestions <= 0) return null;
+  const weighted =
+    (counts.audited ?? 0) * 1
+    + (counts.system ?? 0) * 1
+    + (counts.documented ?? 0) * 0.75
+    + (counts.interview ?? 0) * 0.45;
+  return Math.round((weighted / payload.totalQuestions) * 100);
+}
+
 function gapDomainNames(payload: DiagnosticReportRequest) {
   return payload.topGapDomains
     .slice(0, 4)
@@ -179,7 +194,7 @@ function domainRemediationFocus(domainName: string) {
   }
   if (name.includes("source") || name.includes("flow")) {
     return {
-      decision: "Mandate a source-system inventory and flow certification before new reporting or AI use cases are approved.",
+      decision: "Mandate a source-system inventory and flow sign-off before new reporting or AI use cases are approved.",
       owner: "Data Architecture Lead with system owners",
       action: "Document critical sources, interfaces, refresh cadence, data contracts, and unsupported manual exchanges.",
       evidence: "Source catalogue, interface map, lineage record, refresh SLA, and accountable system-owner confirmation.",
@@ -240,7 +255,16 @@ function domainRemediationFocus(domainName: string) {
       outcome: "Controlled AI adoption without relying on unverified data or unsupported model outputs.",
     };
   }
-  if (name.includes("architecture") || name.includes("infrastructure") || name.includes("tools") || name.includes("platform")) {
+  if (name.includes("architecture") || name.includes("infrastructure")) {
+    return {
+      decision: "Establish the current-state and target-state data architecture for PMS, ERP, CRM and project-control integration, including source ownership, integration patterns, reporting-layer design and control points.",
+      owner: "Data Architecture Lead with IT and system owners",
+      action: "Document current-state flows, target integration patterns, system-of-record decisions, reporting-layer design, and architecture control points.",
+      evidence: "Current-state architecture, target-state blueprint, integration pattern register, source ownership map, and reporting-layer design.",
+      outcome: "A governed architecture path that separates source ownership, integration decisions, reporting controls, and platform enablement.",
+    };
+  }
+  if (name.includes("tools") || name.includes("platform")) {
     return {
       decision: "Define the target data platform path and stop tool decisions from outrunning governance readiness.",
       owner: "Enterprise/Data Architect with IT leadership",
@@ -251,9 +275,9 @@ function domainRemediationFocus(domainName: string) {
   }
   if (name.includes("report") || name.includes("dashboard") || name.includes("analytics")) {
     return {
-      decision: "Rationalise management dashboards around certified definitions, owners, and reporting cadence.",
+      decision: "Rationalise management dashboards around approved definitions, owners, and reporting cadence.",
       owner: "BI/Product Owner with business performance leads",
-      action: "Identify critical reports, remove duplicates, certify KPI definitions, and publish report ownership rules.",
+      action: "Identify critical reports, remove duplicates, approve KPI definitions, and publish report ownership rules.",
       evidence: "Certified KPI dictionary, report inventory, usage analytics, dashboard owner map, and release log.",
       outcome: "Trusted dashboards that can be used as evidence in executive decisions.",
     };
@@ -294,11 +318,14 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
   const client = contextLabel(payload, "customerName", "the organisation");
   const domain = contextLabel(payload, "businessDomain", "the stated business domain");
   const scope = contextLabel(payload, "operatingScope", "the assessed operating scope");
-  const audience = contextLabel(payload, "targetAudience", "the executive audience");
-  const priorities = contextLabel(payload, "strategicPriorities", "the stated strategic priorities");
-  const painPoints = contextLabel(payload, "currentPainPoints", "the stated operating pain points");
   const score = formatScore(payload.overallScore);
   const evidencePct = evidenceCoveragePct(payload);
+  const confidencePct = evidenceConfidencePct(payload);
+  const evidencePosture = evidencePct === null
+    ? "not calculated"
+    : confidencePct === null
+      ? `${evidencePct}% evidence-backed`
+      : `${evidencePct}% evidence-backed, but weighted confidence is only ${confidencePct}%`;
   const readinessPct = payload.overallScore === null ? null : Math.round((payload.overallScore / 4) * 100);
   const gaps = gapDomainNames(payload);
   const weakest = gaps.length > 0 ? gaps.join(", ") : "the lowest-scoring domains";
@@ -313,39 +340,39 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
 
   return {
     executiveSummary:
-      `${client} is assessed at ${score} / 4 maturity across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions for ${domain}. The evidence posture is ${evidencePct === null ? "not calculated" : `${evidencePct}% evidence-backed`}, with material gaps concentrated in ${weakest}. The immediate executive implication is to treat the baseline as decision-useful but provisional where evidence is incomplete, then move quickly from assessment to owned remediation.`,
+      `${client} is assessed at ${score} / 4 maturity across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions for ${domain}. The evidence posture is ${evidencePosture}, with material gaps concentrated in ${weakest}. The immediate executive implication is to treat the baseline as decision-useful but provisional where evidence is incomplete, then move quickly from assessment to owned remediation.`,
     overallAdvisoryNarrative:
-      `The helicopter view is that ${client} has enough evidence to move from diagnostic discussion into controlled execution, but not enough maturity to scale data and AI autonomously. The report sections point to one advisory conclusion: strengthen ownership, quality, source traceability, and roadmap discipline first, then use those controls to sequence reporting, analytics, and AI use cases. Management should treat ${weakest} as the first wave of intervention because these domains determine whether board reporting can be trusted, whether AI candidates can be approved, and whether benefits can be measured. The recommended posture is therefore pragmatic: proceed with governed reporting and human-approved AI support, pilot more advanced analytics only where evidence is certified, and hold sensitive automation until the control environment is demonstrably operating.`,
+      `The helicopter view is that ${client} has enough evidence to move from diagnostic discussion into controlled execution, but not enough maturity to scale data and AI autonomously. The report sections point to one advisory conclusion: strengthen ownership, quality, source traceability, and roadmap discipline first, then use those controls to sequence reporting, analytics, and AI use cases. Management should treat ${weakest} as the first wave of intervention because these domains determine whether board reporting can be trusted, whether AI candidates can be approved, and whether benefits can be measured. The recommended posture is therefore pragmatic: proceed with governed reporting and human-approved AI support, pilot more advanced analytics only where evidence is validated, ownership is confirmed and controls are operating, and hold sensitive automation until the control environment is demonstrably operating.`,
     boardScorecardNarrative:
-      `The board scorecard should be read as a readiness signal, not a maturity badge. A ${score} / 4 score means ${client} has a usable baseline for steering committee decisions, but the ${evidencePct === null ? "current" : `${evidencePct}%`} evidence coverage and gaps in ${weakest} mean approvals should focus on ownership, evidence certification, and remediation funding before broader AI scaling. The practical board posture is to approve the baseline, assign accountable owners, and use the scorecard as the control point for deciding what can proceed, what needs a controlled pilot, and what must remain on hold.`,
+      `The board scorecard should be read as a readiness signal, not a maturity badge. A ${score} / 4 score means ${client} has a usable baseline for steering committee decisions, while the evidence posture of ${evidencePosture} shows that management should not treat every evidence-backed answer as equally reliable. Because the largest gaps sit in ${weakest}, the decision required is to approve the baseline, assign accountable owners, confirm evidence sign-off, approve evidence exceptions where needed, and use the scorecard as the control point for deciding what can proceed, what needs a controlled pilot, and what must remain on hold.`,
     headlineAssessment:
-      `The diagnostic indicates an early-stage capability profile for ${scope}. Current priorities are ${priorities}, but the operating pain points - ${painPoints} - show that governance, ownership, evidence quality, and roadmap discipline need to be strengthened before advanced AI use cases are scaled.`,
+      `${client} shows an early-stage data and AI capability profile in ${domain}. Its operating model spans ${scope.replace(/^Privately held real estate investor and developer covering\s*/i, "").replace(/[.]+$/g, "")}. Management is seeking stronger portfolio visibility, improved project and capex reporting, certified executive dashboards and governed AI use cases for occupancy, leasing, valuation and asset risk insight. However, fragmented PMS, CRM, ERP and project-control data, the absence of unified asset and tenant identifiers, Excel-based handovers and an immature Data Council cadence show that governance, ownership, evidence quality and roadmap discipline must be strengthened before advanced AI use cases are scaled.`,
     readinessThesis:
-      "Proceed with governed descriptive diagnostics, dashboard rationalisation, and human-approved AI reporting. Pilot predictive or generative use cases only where source quality, privacy, lineage, ownership, and model-risk controls are evidenced. Hold autonomous decisioning and sensitive AI workflows until the control environment is certified.",
+      "Proceed with governed descriptive diagnostics, dashboard rationalisation, and human-approved AI reporting. Pilot predictive or generative use cases only where source quality, privacy, lineage, ownership, and model-risk controls are evidenced. Hold autonomous decisioning and sensitive AI workflows until the control environment is approved and operating.",
     boardMessage:
-      `${audience} should approve the diagnostic baseline, assign accountable owners for the highest gaps, and gate AI use cases through evidence-backed readiness controls.`,
+      "The board decision is to approve the diagnostic baseline as provisional, assign owners for the highest gaps, and require all AI candidates to pass evidence-backed readiness controls before pilot approval.",
     boardAsks: [
       "Approve baseline: confirm the diagnostic as the working baseline for data and AI capability improvement.",
       "Assign owners: nominate accountable owners for the priority domains and unresolved evidence gaps.",
       "Gate use cases: require every AI candidate to show data quality, privacy, lineage, and owner sign-off before pilot approval.",
     ],
-    gartnerPillarAssessment: gartnerActions.length > 0 ? gartnerActions : [
+    capabilityPillarAssessment: gartnerActions.length > 0 ? gartnerActions : [
       "Strategy and value: confirm the data ambition and business outcomes before prioritising initiatives.",
       "Governance and operating model: assign decision rights, data owners, and issue escalation routes.",
-      "Data management foundations: certify definitions, lineage, quality controls, and evidence before AI scaling.",
+      "Data management foundations: validate definitions, certify lineage, confirm quality controls, and obtain evidence sign-off before AI scaling.",
     ],
     materialFindings: [
       `Overall maturity is ${score} / 4, indicating that the organisation is not yet operating at a controlled, repeatable data capability level.`,
-      `Evidence coverage is ${evidencePct === null ? "not available" : `${evidencePct}%`}; unevidenced responses should be validated before board approval.`,
+      `Evidence coverage is ${evidencePct === null ? "not available" : `${evidencePct}%`} and weighted evidence confidence is ${confidencePct === null ? "not available" : `${confidencePct}%`}; interview-only evidence should be validated before board approval.`,
       `Priority gaps are concentrated in ${weakest}, which should drive the first remediation backlog.`,
-      `The current readiness score is ${readinessPct === null ? "not available" : `${readinessPct}%`}, so AI adoption should be gated rather than broad-based.`,
+      `The current readiness score stands at ${readinessPct === null ? "not available" : `${readinessPct}%`}, so AI adoption should be gated rather than broad-based.`,
     ],
     domainActionPlan: payload.topGapDomains.slice(0, 5).map(domainActionRecommendation),
     priorityGapRegister: priorityGapActions,
     recommendedDecisions: [
       "Confirm the diagnostic baseline and evidence exceptions in the next steering session.",
       "Approve a 90-day remediation backlog focused on ownership, data quality, metadata, lineage, and roadmap controls.",
-      "Nominate a data governance sponsor and working group to certify definitions, sources, and reports.",
+      "Nominate a data governance sponsor and working group to approve definitions, sources, and reports.",
       "Gate AI pilots until each candidate has an owner, approved data source, privacy review, and measurable success criteria.",
     ],
     ninetyDayPlan: [
@@ -355,7 +382,7 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
     ],
     roadmapPhases: [
       "Mobilise and validate: turn the diagnostic into an approved baseline and owner map.",
-      "Remediate and certify: close critical evidence, quality, and governance gaps.",
+      "Remediate and validate: close critical evidence, quality, and governance gaps.",
       "Scale with controls: sequence initiatives and AI use cases through readiness gates.",
     ],
     aiReadinessGate:
@@ -373,7 +400,7 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
       "Sensitive generative AI workflows without source controls, audit trail, or accountable approval.",
     ],
     risks: [
-      "Evidence risk: provisional scores may be challenged unless supporting evidence is captured and certified.",
+      "Evidence risk: provisional scores may be challenged unless supporting evidence is captured, validated and signed off by accountable owners.",
       "Ownership risk: gaps will persist if data owners and remediation owners are not formally assigned.",
       "AI risk: premature use-case scaling could create unreliable outputs if quality and privacy controls are weak.",
       "Delivery risk: roadmap benefits may not materialise without sequencing, funding, and governance cadence.",
@@ -393,6 +420,7 @@ export function buildStructuredReport(
   model: string,
 ): StructuredDiagnosticReport {
   const evidencePct = evidenceCoveragePct(payload);
+  const confidencePct = evidenceConfidencePct(payload);
   return {
     reportId: `data-ai-diagnostic-${Date.now()}`,
     generationMode,
@@ -412,6 +440,7 @@ export function buildStructuredReport(
         advisoryNarrative: report.boardScorecardNarrative,
         readinessScore: payload.overallScore,
         evidenceCoveragePct: evidencePct,
+        evidenceWeightedConfidencePct: confidencePct,
       },
       boardAsks: report.boardAsks.map((ask) => ({
         ask,
@@ -429,11 +458,11 @@ export function buildStructuredReport(
         domainActionPlan: report.domainActionPlan,
       },
       ndmoDmoAlignment: {
-        alignmentNarrative: "The diagnostic baseline should inform DMO design, governance controls, data ownership, and readiness gates before certification work proceeds.",
-        pillarAssessment: report.gartnerPillarAssessment,
+        alignmentNarrative: "The diagnostic baseline should inform DMO design, governance controls, data ownership, and readiness gates before approval work proceeds.",
+        pillarAssessment: report.capabilityPillarAssessment,
       },
       dataSources: {
-        dataSourceNarrative: "Source evidence should be certified before report automation or AI use-case scaling.",
+        dataSourceNarrative: "Source evidence should be approved before report automation or AI use-case scaling.",
         status: payload.evidenceBackedItems > 0 ? "assumed" : "unknown",
       },
       useCasePortfolio: [
@@ -463,12 +492,12 @@ export function buildStructuredReport(
         },
       ],
       roadmap: {
-        roadmapNarrative: "The first 90 days should turn the diagnostic into ownership, evidence certification, and a sequenced remediation backlog.",
+        roadmapNarrative: "The first 90 days should turn the diagnostic into ownership, evidence sign-off, and a sequenced remediation backlog.",
         phases: report.roadmapPhases,
         ninetyDayPlan: report.ninetyDayPlan,
       },
       risksAndDependencies: {
-        riskNarrative: "The main delivery risks are evidence quality, ownership clarity, and premature AI scaling before controls are certified.",
+        riskNarrative: "The main delivery risks are evidence quality, ownership clarity, and premature AI scaling before controls are approved and operating.",
         risks: report.risks,
       },
       recommendedNextSteps: {
