@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     facts,
     maxWords: Math.min(numberValue(payload.max_words, 80), 140),
     style: payload.style === "executive" ? "executive" : "board",
-    fallbackText: typeof payload.fallback === "string" ? payload.fallback : facts.join(" "),
+    fallbackText: typeof payload.fallback === "string" ? payload.fallback : "",
     modelConfig: {
       gatewayBaseUrl,
       headers,

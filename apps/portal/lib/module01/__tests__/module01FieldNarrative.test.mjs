@@ -40,7 +40,7 @@ try {
   Module._load = originalLoad;
 }
 
-const { generateModule01FieldNarrative } = fieldNarrativeModule;
+const { buildModule01FieldNarrativeFallback, generateModule01FieldNarrative } = fieldNarrativeModule;
 
 const modelConfig = {
   gatewayBaseUrl: "http://local-ai-gateway:8080/v1",
@@ -57,6 +57,21 @@ const facts = [
 
 const validText = "CRTVTA should sequence the 90-day roadmap by confirming accountable owners and evidence certification first, then remediating the priority domains with the highest gaps, and finally moving AI-enabled reporting through a control gate that protects quality, lineage and decision accountability.";
 const labelledValidText = `BoardScoreNarrative: ${validText}`;
+
+{
+  const fallback = buildModule01FieldNarrativeFallback([
+    "Client: CRTVTA",
+    "Priority domains: Data Quality and Execution Roadmap",
+    "Owner types: executive sponsor, data owner, AI governance lead",
+    "Management order: certify evidence, assign owners, remediate priority domains",
+  ], "", "roadmap.roadmapNarrative");
+  assert.match(fallback, /^CRTVTA should sequence the roadmap/i);
+  assert.match(fallback, /owners/i);
+  assert.match(fallback, /evidence certification/i);
+  assert.match(fallback, /control\/readiness gate/i);
+  assert.ok(!fallback.includes("Client:"));
+  assert.ok(!fallback.includes("Owner types:"));
+}
 
 {
   const bodies = [];
@@ -79,11 +94,14 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.equal(result.responseLength, validText.length);
   assert.equal(result.rawResponseLength, validText.length);
   assert.equal(result.sanitizedResponseLength, validText.length);
-  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
+  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
+  assert.equal(bodies[0].body.task_type, "module01_field_narrative");
+  assert.equal(bodies[0].body.knowledge_pack_id, "module01-ai-assessment-reporting");
+  assert.equal(bodies[0].body.retrieval_mode, "hybrid");
   assert.equal(bodies[0].body.field, "roadmap.roadmapNarrative");
   assert.equal(bodies[0].body.client_name, "CRTVTA");
-  assert.equal(bodies[0].body.max_words, 90);
-  assert.equal(bodies[0].body.style, "board");
+  assert.equal(bodies[0].body.output_contract.max_words, 90);
+  assert.equal(bodies[0].body.output_contract.max_sentences, 2);
   assert.ok(!bodies[0].body.facts.some((fact) => /^Client:/i.test(fact)));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("priority domain")));
   assert.ok(!("messages" in bodies[0].body));
@@ -108,9 +126,9 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     },
   });
   assert.equal(bodies[0].body.field, "overallAdvisory.helicopterView");
-  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
-  assert.equal(bodies[0].body.max_words, 110);
-  assert.equal(bodies[0].body.style, "board");
+  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
+  assert.equal(bodies[0].body.output_contract.max_words, 110);
+  assert.equal(bodies[0].body.output_contract.max_sentences, 3);
 }
 
 {
@@ -136,7 +154,7 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
     },
   });
   assert.equal(bodies[0].body.field, "boardScorecard.advisoryNarrative");
-  assert.ok(bodies[0].url.endsWith("/api/reports/module01/field-narrative"));
+  assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("score indicates")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("evidence posture")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("leadership decisions")));

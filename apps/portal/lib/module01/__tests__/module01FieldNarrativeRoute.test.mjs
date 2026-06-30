@@ -104,6 +104,7 @@ async function postJson(body) {
   assert.equal(response.status, 200);
   assert.equal(response.body.field, "roadmap.roadmapNarrative");
   assert.equal(calls.at(-1).field, "roadmap.roadmapNarrative");
+  assert.equal(calls.at(-1).fallbackText, "");
 }
 
 {

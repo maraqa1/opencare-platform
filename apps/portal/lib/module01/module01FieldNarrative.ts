@@ -89,7 +89,10 @@ function cleanFactForEndpoint(fact: string) {
   const match = cleaned.match(/^([A-Za-z][A-Za-z0-9 &/%.-]{1,80})\s*:\s*(.+)$/);
   if (!match) return cleaned;
   const label = match[1].trim().toLowerCase();
-  const value = match[2].trim();
+  const value = match[2]
+    .trim()
+    .replace(/\s+score\s+\d+(?:\.\d+)?\s+gap\s+\d+(?:\.\d+)?/gi, "")
+    .replace(/\s+score\s+\d+(?:\.\d+)?\s*\/\s*4,?\s*gap\s+\d+(?:\.\d+)?/gi, "");
   const proseValue = value.replace(/\s*;\s*/g, ", ").replace(/[.]+$/g, "");
   if (label === "client") return "";
   if (label === "overall score") return `score indicates a ${proseValue} out of 4 early-stage maturity baseline that requires management action`;
@@ -103,6 +106,11 @@ function cleanFactForEndpoint(fact: string) {
   if (label === "critical domains") return `critical management attention should focus on ${proseValue}`;
   if (label === "priority domains") return `priority domain remediation covers ${proseValue}`;
   if (label === "critical gaps") return `critical gaps require management controls in the priority domains`;
+  if (label === "business domain") return `business context covers ${proseValue}`;
+  if (label === "deterministic critical domains") return `critical management domains include ${proseValue}`;
+  if (label === "top root causes") return `root causes include ${proseValue}`;
+  if (label === "board decisions") return `board decisions include ${proseValue}`;
+  if (label === "roadmap priorities") return `roadmap priorities include ${proseValue}`;
   if (label === "owner types") return `accountable owners include ${proseValue}`;
   if (label === "board asks") return `leadership decisions include ${proseValue}`;
   if (label === "target outcomes") return `target outcomes include ${proseValue}`;
@@ -134,12 +142,13 @@ function fieldMaxSentences(field: Module01FieldNarrativeField, style?: "board" |
 }
 
 function fieldRequestBody(args: Module01FieldNarrativeArgs) {
+  const facts = args.facts.map(cleanFactForEndpoint).filter(Boolean).slice(0, 6);
   return JSON.stringify({
     field: normalizeFieldName(args.field),
     client_name: clientNameFromFacts(args.facts),
     max_words: args.maxWords,
     style: args.style ?? "board",
-    facts: args.facts.map(cleanFactForEndpoint).filter(Boolean),
+    facts,
   });
 }
 
@@ -212,10 +221,10 @@ async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs): Promise<
   const timeout = setTimeout(() => abortController.abort(), args.modelConfig.timeoutMs ?? 30000);
   const fetchImpl = args.fetchFn ?? fetch;
   const urls = uniqueUrls([
-    groundedGenerateUrlFromGateway(args.modelConfig.gatewayBaseUrl),
-    ai2DirectGroundedGenerateUrl,
     fieldNarrativeUrlFromGateway(args.modelConfig.gatewayBaseUrl),
     ai2DirectFieldNarrativeUrl,
+    groundedGenerateUrlFromGateway(args.modelConfig.gatewayBaseUrl),
+    ai2DirectGroundedGenerateUrl,
   ]);
 
   try {
@@ -272,8 +281,44 @@ async function callAi2FieldNarrative(args: Module01FieldNarrativeArgs): Promise<
   }
 }
 
-export function buildModule01FieldNarrativeFallback(facts: string[], fallbackText: string) {
-  return fallbackText.trim() || facts.slice(0, 3).join(" ");
+function factValue(facts: string[], labels: string[]) {
+  const wanted = new Set(labels.map((label) => label.toLowerCase()));
+  for (const fact of facts) {
+    const match = fact.trim().match(/^([A-Za-z][A-Za-z0-9 &/%.-]{1,80})\s*:\s*(.+)$/);
+    if (match && wanted.has(match[1].trim().toLowerCase())) {
+      return match[2].trim().replace(/\s*;\s*/g, ", ").replace(/[.]+$/g, "");
+    }
+  }
+  return "";
+}
+
+export function buildModule01FieldNarrativeFallback(
+  facts: string[],
+  fallbackText: string,
+  field: Module01FieldNarrativeField = "executiveSummary.summaryText",
+) {
+  const suppliedFallback = fallbackText.trim();
+  if (suppliedFallback) return suppliedFallback;
+
+  const client = clientNameFromFacts(facts) ?? "The client";
+  const score = factValue(facts, ["overall score"]);
+  const evidence = factValue(facts, ["evidence coverage", "evidence coverage percent"]);
+  const priority = factValue(facts, ["priority domains", "critical domains", "weakest domains"]) || "the priority domains";
+  const owners = factValue(facts, ["owner types"]) || "accountable owners";
+  const decision = factValue(facts, ["board asks", "management order"]) || "approve owner assignment, evidence certification and controlled remediation";
+  const scorePhrase = score ? `a ${score} maturity baseline` : "the current maturity baseline";
+  const evidencePhrase = evidence ? `the evidence posture of ${evidence}` : "the available evidence posture";
+
+  if (normalizeFieldName(field) === "roadmap.roadmapNarrative") {
+    return `${client} should sequence the roadmap by confirming ${owners} and evidence certification first, then remediating ${priority} through named actions, and only then scaling analytics and AI through a control/readiness gate. This keeps execution tied to ownership, evidence quality and management accountability.`;
+  }
+  if (normalizeFieldName(field) === "boardScorecard.advisoryNarrative") {
+    return `${client} should read the board scorecard as a readiness signal based on ${scorePhrase} and ${evidencePhrase}. The management implication is to treat priority gaps as owned remediation work, with the decision required to ${decision} before scaling AI-enabled reporting.`;
+  }
+  if (normalizeFieldName(field) === "overallAdvisory.helicopterView") {
+    return `${client} has a clear management conclusion from Module 01: the enterprise should strengthen ownership, evidence quality and ${priority} before scaling analytics or AI. This keeps the advisory posture practical, evidence-led and governed through accountable decisions.`;
+  }
+  return `${client} has enough Module 01 diagnostic evidence to move from assessment into controlled execution. Management should confirm accountable owners, certify evidence, remediate ${priority}, and keep analytics or AI scaling behind a readiness gate until controls are operating.`;
 }
 
 function validateFieldText(
@@ -309,7 +354,7 @@ function retryFacts(facts: string[], reason: string) {
 
 export async function generateModule01FieldNarrative(args: Module01FieldNarrativeArgs): Promise<NarrativeFieldGeneration> {
   const maxWords = Math.max(40, Math.min(args.maxWords, 140));
-  const fallbackText = buildModule01FieldNarrativeFallback(args.facts, args.fallbackText);
+  const fallbackText = buildModule01FieldNarrativeFallback(args.facts, args.fallbackText, args.field);
   const result = await callAi2FieldNarrative({ ...args, maxWords });
 
   if (result.status !== "success") {
