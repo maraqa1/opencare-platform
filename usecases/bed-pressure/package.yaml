@@ -49,6 +49,9 @@ entrypoints:
   portal_guide: docs/portal_implementation.md
   decision_workflow_guide: docs/decision_workflow.md
   governance_validation_guide: docs/governance_and_validation.md
+  handover_package: handover/README.md
+  handover_checklist: handover/handover_checklist.md
+  handover_file_manifest: handover/file_manifest.md
 modes:
   demo:
     supported: true

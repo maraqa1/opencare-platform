@@ -31,6 +31,7 @@ Read these in order when implementing the use case on another platform:
 - [Implementation Guide](docs/implementation_guide.md): step-by-step rebuild plan for a fresh environment.
 - [Demo Script](docs/demo_script.md): operator-facing demo path.
 - [Implementation Mapping](docs/implementation_mapping.md): concise file-to-layer mapping.
+- [Handover Package](handover/README.md): compact delivery brief, checklist, file manifest, and VM pull steps.
 
 ## Non-Negotiable Contracts
 
