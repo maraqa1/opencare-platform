@@ -1,0 +1,6 @@
+dashboard_rigidity_checks:
+  - Cash Command must show values from API payload, not static literals.
+  - Board Pack must consume /api/v1/rcm/board-pack.
+  - Data Trust must be last in the board pack.
+  - Decision mutations must be isolated to decision pages and endpoints.
+  - Undefined jargon must not appear in user-facing labels.

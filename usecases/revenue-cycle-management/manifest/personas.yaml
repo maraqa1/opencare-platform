@@ -1,0 +1,16 @@
+personas:
+  - id: cfo
+    name: Chief Financial Officer
+    primary_need: Board-ready view of cash collected, revenue at risk, and recovery execution.
+  - id: revenue_cycle_director
+    name: Revenue Cycle Director
+    primary_need: Ranked work queue with value, effort, owner, due date, and next action.
+  - id: payer_relations
+    name: Payer Relations Lead
+    primary_need: Payer underpayment, payment timing, and contract breach evidence.
+  - id: revenue_integrity
+    name: Revenue Integrity Lead
+    primary_need: Leakage causes, coding backlog, submission delay, and denial recovery.
+  - id: executive_board
+    name: Executive Board
+    primary_need: Plain-language story from financial exposure to governed recovery actions.

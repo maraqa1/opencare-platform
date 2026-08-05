@@ -1,0 +1,19 @@
+entities:
+  - id: claim
+    key: claim_id
+    description: Financial claim submitted or prepared for payment.
+  - id: encounter
+    key: encounter_id
+    description: Patient encounter linked to claim and referral evidence.
+  - id: payer
+    key: payer_id
+    description: Insurer or payer responsible for reimbursement.
+  - id: department
+    key: department_id
+    description: Service department or ward-like operational area.
+  - id: recovery_opportunity
+    key: opportunity_id
+    description: Ranked recoverable financial work item.
+  - id: rcm_decision
+    key: decision_id
+    description: Governed decision promoted from recovery evidence.

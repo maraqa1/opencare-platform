@@ -1,0 +1,42 @@
+action_lifecycle:
+  lifecycle_id: revenue_cycle_decision_action_lifecycle
+  scope: Revenue recovery decisions from opportunity promotion to action dispatch and outcome tracking.
+  states:
+    - recommended
+    - under_review
+    - approved
+    - rejected
+    - revision_requested
+    - assigned
+    - dispatched
+    - escalated
+    - completed
+    - measured
+  paths:
+    standard_recovery:
+      - recommended
+      - under_review
+      - approved
+      - dispatched
+      - completed
+      - measured
+    revise_before_action:
+      - recommended
+      - under_review
+      - revision_requested
+      - under_review
+      - approved
+      - dispatched
+    reject:
+      - recommended
+      - under_review
+      - rejected
+  foreign_keys:
+    decision_id: decision.decision_queue.id
+    source_item_id: analytics.fct_cash_recovery_opportunity.opportunity_id
+    audit_log: decision.decision_log.decision_id
+  rules:
+    - Recovery items must be promoted before they become governed decisions.
+    - Approval is required before dispatch.
+    - Notes and assignments are audit events.
+    - Decision pages may mutate decisions; intelligence and board-pack pages may not.

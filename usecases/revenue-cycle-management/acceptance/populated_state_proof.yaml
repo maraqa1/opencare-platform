@@ -1,0 +1,11 @@
+populated_state_proof:
+  demo_raw_data:
+    generator: scripts/demo/generate_demo_data.py
+    output_sql: raw-data/opencare_demo_mysql.sql
+    expected_rcm_claims: 216
+    expected_financial_postings: 126
+    expected_referrals: 216
+  required_marts:
+    - analytics.fct_cash_recovery_opportunity
+    - analytics.fct_cash_forecast
+    - analytics.fct_revenue_cycle

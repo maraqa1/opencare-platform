@@ -1,0 +1,9 @@
+governance_bindings:
+  registry_required: true
+  required_sections:
+    - classified_assets
+    - lineage
+    - freshness
+    - ownership
+    - quality
+    - decision_audit

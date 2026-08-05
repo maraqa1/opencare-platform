@@ -1,0 +1,37 @@
+decision_types:
+  - id: recover_cash_this_week
+    label: Recover cash this week
+    trigger: recoverable_cash_next_7d > 0
+    owner_team: Revenue Integrity
+    expected_outcome: Convert current recovery work into collected cash.
+    human_authorisation_required: true
+  - id: payer_underpayment_review
+    label: Payer underpayment review
+    trigger: paid amount is below contracted expectation
+    owner_team: Payer Relations
+    expected_outcome: Recover short payment or create payer dispute.
+    human_authorisation_required: true
+  - id: denial_appeal_priority
+    label: Rejected claim appeal priority
+    trigger: denied or appealed claim has recoverable value
+    owner_team: Denials Management
+    expected_outcome: Submit appeal or resolve root cause.
+    human_authorisation_required: true
+  - id: late_submission_risk
+    label: Late submission risk
+    trigger: claim submission missed internal SLA
+    owner_team: Revenue Integrity
+    expected_outcome: Clear billing backlog before payer deadline.
+    human_authorisation_required: true
+  - id: aged_ar_escalation
+    label: Aged receivable escalation
+    trigger: open or submitted claim remains outstanding beyond 90 days
+    owner_team: Payer Relations
+    expected_outcome: Escalate payer settlement and unblock cash collection.
+    human_authorisation_required: true
+  - id: coding_backlog_escalation
+    label: Coding backlog escalation
+    trigger: writeoff or coding-related backlog is recoverable
+    owner_team: Coding
+    expected_outcome: Correct coding and restore claim recoverability.
+    human_authorisation_required: true

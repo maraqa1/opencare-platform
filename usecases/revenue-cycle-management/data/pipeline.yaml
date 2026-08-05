@@ -1,0 +1,18 @@
+pipeline:
+  source_to_mart:
+    - raw.rcm_claims -> staging.stg_rcm_claims
+    - raw.rcm_financial_postings -> staging.stg_rcm_financial_postings
+    - raw.rcm_referrals -> staging.stg_rcm_referrals
+    - staging -> analytics revenue cycle marts
+  runtime_outputs:
+    - analytics revenue cycle marts -> backend revenue_cycle_service calculated payloads
+    - backend board_pack -> portal downloadable board report
+  decision_outputs:
+    - analytics.fct_cash_recovery_opportunity -> decision.decision_queue
+    - decision.decision_queue -> decision audit and transition history
+  dashboard_outputs:
+    - analytics.fct_cash_recovery_opportunity
+    - analytics.fct_cash_forecast
+    - analytics.fct_payer_contract_performance
+    - analytics.fct_revenue_leakage
+    - analytics.fct_team_recovery_performance

@@ -1,0 +1,22 @@
+actions:
+  - id: approve
+    label: Approve
+    endpoint: POST /api/v1/rcm/decisions/{decision_id}/approve
+  - id: reject
+    label: Reject
+    endpoint: POST /api/v1/rcm/decisions/{decision_id}/reject
+  - id: revise
+    label: Request revision
+    endpoint: POST /api/v1/rcm/decisions/{decision_id}/revise
+  - id: dispatch
+    label: Dispatch
+    endpoint: POST /api/v1/rcm/decisions/{decision_id}/dispatch
+  - id: escalate
+    label: Escalate
+    endpoint: POST /api/v1/rcm/decisions/{decision_id}/escalate
+  - id: assign
+    label: Assign
+    endpoint: POST /api/v1/rcm/decisions/{decision_id}/assign
+  - id: note
+    label: Add note
+    endpoint: POST /api/v1/rcm/decisions/{decision_id}/note

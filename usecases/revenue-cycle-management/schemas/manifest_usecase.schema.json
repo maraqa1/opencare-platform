@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Revenue Cycle Management Use Case Manifest",
+  "type": "object",
+  "required": ["id", "slug", "name", "domain", "owner"],
+  "properties": {
+    "id": {"type": "string"},
+    "slug": {"type": "string"},
+    "name": {"type": "string"},
+    "domain": {"type": "string"},
+    "owner": {"type": "string"}
+  }
+}

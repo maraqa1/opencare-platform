@@ -1,0 +1,15 @@
+components:
+  - name: RCMPageHeader
+    role: Page title, period, freshness, filters, and actions.
+  - name: RCMNavTabs
+    role: Workspace navigation.
+  - name: KPIGrid
+    role: Common KPI card layout.
+  - name: CashCommand
+    role: CFO cash command page.
+  - name: RecoveryQueue
+    role: Ranked work queue.
+  - name: DecisionQueue
+    role: Governed decision surface.
+  - name: RevenueCycleJourney
+    role: End-to-end journey from care to cash.

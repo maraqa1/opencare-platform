@@ -1,0 +1,36 @@
+screens:
+  - id: cash-command
+    title: Cash Command
+    route: /use-cases/revenue-cycle-management/cash-command
+    api: /api/v1/revenue-cycle/cash-command
+    purpose: CFO command surface for cash collected, risk, recovery, trend, and board-pack entry.
+  - id: recovery-queue
+    title: Recovery Queue
+    route: /use-cases/revenue-cycle-management/recovery-queue
+    api: /api/v1/revenue-cycle/recovery-queue
+    purpose: Ranked execution queue for recoverable work.
+  - id: decision-queue
+    title: Decision Queue
+    route: /use-cases/revenue-cycle-management/decision-queue
+    api: /api/v1/rcm/decision-queue
+    purpose: Governed approval and dispatch surface.
+  - id: payer-control
+    title: Payer Control
+    route: /use-cases/revenue-cycle-management/payer-control
+    api: /api/v1/revenue-cycle/payer-control
+    purpose: Payer accountability and contract performance.
+  - id: revenue-leakage
+    title: Revenue Leakage
+    route: /use-cases/revenue-cycle-management/revenue-leakage
+    api: /api/v1/revenue-cycle/leakage
+    purpose: Root-cause view of lost or exposed revenue.
+  - id: team-performance
+    title: Team Performance
+    route: /use-cases/revenue-cycle-management/team-performance
+    api: /api/v1/revenue-cycle/team-performance
+    purpose: Owner accountability for expected versus actual recovery.
+  - id: executive-narrative
+    title: Executive Narrative
+    route: /use-cases/revenue-cycle-management/executive-narrative
+    api: /api/v1/revenue-cycle/executive-narrative
+    purpose: CFO-readable storyline and board narrative.

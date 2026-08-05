@@ -1,0 +1,25 @@
+workspace:
+  base_path: /use-cases/revenue-cycle-management
+  default_tab: cash-command
+  tabs:
+    - id: cash-command
+      label: Cash Command
+      path: /use-cases/revenue-cycle-management/cash-command
+    - id: recovery-queue
+      label: Recovery Queue
+      path: /use-cases/revenue-cycle-management/recovery-queue
+    - id: decision-queue
+      label: Decision Queue
+      path: /use-cases/revenue-cycle-management/decision-queue
+    - id: payer-control
+      label: Payer Control
+      path: /use-cases/revenue-cycle-management/payer-control
+    - id: revenue-leakage
+      label: Revenue Leakage
+      path: /use-cases/revenue-cycle-management/revenue-leakage
+    - id: team-performance
+      label: Team Performance
+      path: /use-cases/revenue-cycle-management/team-performance
+    - id: executive-narrative
+      label: Executive Narrative
+      path: /use-cases/revenue-cycle-management/executive-narrative

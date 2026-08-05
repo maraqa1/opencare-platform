@@ -1,0 +1,7 @@
+quality:
+  required_checks:
+    - claim IDs are unique in staging.
+    - claim statuses are accepted values.
+    - recoverable and expected recovery amounts are non-negative.
+    - collection rates are within expected bounds.
+    - board-pack unavailable metrics are explicitly listed.

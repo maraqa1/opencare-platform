@@ -1,0 +1,28 @@
+models:
+  - name: stg_rcm_claims
+    path: dbt/opencare/models/revenue_cycle/staging/stg_rcm_claims.sql
+    role: normalized claim source
+  - name: stg_rcm_financial_postings
+    path: dbt/opencare/models/revenue_cycle/staging/stg_rcm_financial_postings.sql
+    role: normalized ERP posting source
+  - name: stg_rcm_referrals
+    path: dbt/opencare/models/revenue_cycle/staging/stg_rcm_referrals.sql
+    role: normalized referral or acquisition source
+  - name: fct_revenue_cycle
+    path: dbt/opencare/models/revenue_cycle/marts/fct_revenue_cycle.sql
+    role: claim lifecycle truth table
+  - name: fct_cash_recovery_opportunity
+    path: dbt/opencare/models/revenue_cycle/marts/fct_cash_recovery_opportunity.sql
+    role: ranked recovery queue
+  - name: fct_cash_forecast
+    path: dbt/opencare/models/revenue_cycle/marts/fct_cash_forecast.sql
+    role: deterministic expected cash and risk forecast
+  - name: fct_payer_contract_performance
+    path: dbt/opencare/models/revenue_cycle/marts/fct_payer_contract_performance.sql
+    role: payer underpayment and SLA performance
+  - name: fct_revenue_leakage
+    path: dbt/opencare/models/revenue_cycle/marts/fct_revenue_leakage.sql
+    role: leakage finding and root cause table
+  - name: fct_team_recovery_performance
+    path: dbt/opencare/models/revenue_cycle/marts/fct_team_recovery_performance.sql
+    role: owner and team accountability

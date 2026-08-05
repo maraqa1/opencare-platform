@@ -1,0 +1,8 @@
+labels:
+  cash_command: Cash Command
+  recovery_queue: Recovery Queue
+  decision_queue: Decision Queue
+  payer_control: Payer Control
+  revenue_leakage: Revenue Leakage
+  team_performance: Team Performance
+  executive_narrative: Executive Narrative

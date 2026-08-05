@@ -1,0 +1,11 @@
+classification:
+  raw.rcm_claims: financial
+  raw.rcm_financial_postings: financial
+  raw.rcm_referrals: commercial
+  analytics.fct_revenue_cycle: financial
+  analytics.fct_cash_recovery_opportunity: financial
+  decision.decision_queue: internal
+handling_rules:
+  - Patient-identifiable data must not be exposed unless explicitly approved.
+  - Board-pack values are executive confidential.
+  - Payer contract evidence is commercially sensitive.

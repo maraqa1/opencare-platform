@@ -1,0 +1,37 @@
+kpis:
+  - id: net_patient_revenue
+    label: Net patient revenue
+    formula: sum(expected_cash_amount) from analytics.fct_revenue_cycle
+    owner: Finance Analytics
+  - id: cash_collected
+    label: Cash collected
+    formula: sum(posted_cash_amount) from analytics.fct_revenue_cycle or analytics.fct_financial_posting
+    owner: Finance
+  - id: collection_rate
+    label: Collection rate
+    formula: cash_collected / net_patient_revenue
+    owner: Finance
+  - id: average_payment_days
+    label: Average payment days
+    formula: average payment_date - claim_date across paid or posted claims
+    owner: Revenue Cycle Command
+  - id: rejected_claim_rate
+    label: Rejected claim rate
+    formula: denied claims / total claims
+    owner: Revenue Integrity
+  - id: revenue_at_risk
+    label: Revenue at risk
+    formula: sum(revenue_at_risk) from analytics.fct_cash_recovery_opportunity and leakage marts
+    owner: Revenue Cycle Command
+  - id: recoverable_queue_value
+    label: Recoverable queue value
+    formula: sum(recoverable_amount) from analytics.fct_cash_recovery_opportunity
+    owner: Revenue Cycle Command
+  - id: expected_recovery
+    label: Expected recovery
+    formula: sum(expected_recovery_amount) from analytics.fct_cash_recovery_opportunity
+    owner: Revenue Cycle Command
+  - id: decision_recovery_under_review
+    label: Expected recovery under decision
+    formula: sum expected recovery for revenue_cycle_management rows in decision.decision_queue
+    owner: Revenue Cycle Command

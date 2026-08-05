@@ -1,0 +1,18 @@
+source_systems:
+  - id: hospital_his_erp
+    name: Hospital HIS and ERP source
+    tables:
+      - raw.rcm_claims
+      - raw.rcm_financial_postings
+    sensitivity: financial
+  - id: referral_crm
+    name: Referral or CRM source
+    tables:
+      - raw.rcm_referrals
+    sensitivity: commercial
+  - id: decision_store
+    name: OpenCare decision store
+    tables:
+      - decision.decision_queue
+      - decision.decision_log
+    sensitivity: internal

@@ -1,0 +1,11 @@
+schedules:
+  - id: dbt_revenue_cycle_refresh
+    cronjob: dbt-runner
+    schedule: platform configured
+    command: dbt build --select revenue_cycle
+  - id: board_pack_generation
+    schedule: on demand
+    command: GET /api/v1/rcm/board-pack
+  - id: decision_promotion
+    schedule: user initiated
+    command: POST /api/v1/rcm/recovery-items/{source_item_id}/promote

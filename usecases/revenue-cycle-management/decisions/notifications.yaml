@@ -1,0 +1,10 @@
+notifications:
+  default_channel: email
+  recipients:
+    - role: Revenue Cycle Director
+      event: approved
+    - role: Payer Relations Lead
+      event: payer_underpayment_review
+    - role: Denials Lead
+      event: denial_appeal_priority
+  rule: Notifications must be logged and traceable to decision_id.

@@ -1,0 +1,9 @@
+capabilities:
+  ingestion: required
+  dbt: required
+  backend_api: required
+  portal: required
+  decision_store: required
+  report_generation: required
+  superset_or_bi: optional
+  r_runtime: not_required_currently

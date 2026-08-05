@@ -1,0 +1,13 @@
+evidence:
+  - id: cash_command_payload
+    source: GET /api/v1/revenue-cycle/cash-command
+    purpose: CFO cash and risk command surface.
+  - id: board_pack_payload
+    source: GET /api/v1/rcm/board-pack
+    purpose: Downloadable board report source of truth.
+  - id: recovery_queue_payload
+    source: GET /api/v1/revenue-cycle/recovery-queue
+    purpose: Ranked recovery execution evidence.
+  - id: decision_queue_payload
+    source: GET /api/v1/rcm/decision-queue
+    purpose: Governed decision layer.

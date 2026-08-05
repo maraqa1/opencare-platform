@@ -1,0 +1,19 @@
+visual_grammar:
+  severity:
+    critical: red
+    warning: amber
+    healthy: green
+    informational: blue
+  layout:
+    command_pages: headline strip, KPI row, evidence grid, action table
+    decision_pages: decision KPI row, queue, workspace, audit
+    board_pack: printable report, data trust last
+  language:
+    avoid:
+      - AR
+      - DNFB
+    prefer:
+      - average payment days
+      - unbilled value
+      - rejected claims
+      - revenue at risk

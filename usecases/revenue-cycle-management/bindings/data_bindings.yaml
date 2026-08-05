@@ -1,0 +1,25 @@
+bindings:
+  cash_command:
+    reads:
+      - analytics.fct_revenue_cycle
+      - analytics.fct_cash_forecast
+      - analytics.fct_cash_recovery_opportunity
+  recovery_queue:
+    reads:
+      - analytics.fct_cash_recovery_opportunity
+  payer_control:
+    reads:
+      - analytics.fct_payer_contract_performance
+  leakage:
+    reads:
+      - analytics.fct_revenue_leakage
+  team_performance:
+    reads:
+      - analytics.fct_team_recovery_performance
+  decisions:
+    reads:
+      - decision.decision_queue
+      - decision.decision_log
+    writes:
+      - decision.decision_queue
+      - decision.decision_log

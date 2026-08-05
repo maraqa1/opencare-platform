@@ -1,0 +1,22 @@
+output_tables:
+  - table: analytics.fct_revenue_cycle
+    grain: One row per claim and encounter revenue lifecycle state.
+    owner: Finance Analytics
+  - table: analytics.fct_cash_recovery_opportunity
+    grain: One row per ranked recovery opportunity.
+    owner: Revenue Cycle Command
+  - table: analytics.fct_cash_forecast
+    grain: One row per forecast date and payer or department segment.
+    owner: Finance Analytics
+  - table: analytics.fct_payer_contract_performance
+    grain: One row per payer per month.
+    owner: Payer Relations
+  - table: analytics.fct_revenue_leakage
+    grain: One row per leakage finding.
+    owner: Revenue Integrity
+  - table: analytics.fct_team_recovery_performance
+    grain: One row per owner or team per reporting period.
+    owner: Revenue Cycle Command
+  - table: decision.decision_queue
+    grain: One row per governed decision.
+    owner: Revenue Cycle Command

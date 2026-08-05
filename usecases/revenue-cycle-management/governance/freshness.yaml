@@ -1,0 +1,11 @@
+freshness:
+  raw.rcm_claims:
+    warn_after_hours: 8
+  raw.rcm_financial_postings:
+    warn_after_hours: 8
+  raw.rcm_referrals:
+    warn_after_hours: 24
+  analytics:
+    refresh_after_source_load: true
+  board_pack:
+    generated_on_request: true

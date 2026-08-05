@@ -1,0 +1,12 @@
+promotion_contract:
+  required_before_demo:
+    - dbt revenue_cycle models build
+    - cash command API returns populated payload
+    - recovery queue API returns ranked work items
+    - board pack API returns generated payload
+    - decision promotion endpoint can create governed decision rows
+  required_before_production:
+    - source mapping approved by finance owner
+    - payer contract definitions reviewed
+    - patient-identifiable handling reviewed
+    - governance registry populated

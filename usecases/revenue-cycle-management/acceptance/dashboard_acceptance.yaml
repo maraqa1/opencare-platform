@@ -1,0 +1,6 @@
+acceptance:
+  - Cash Command shows live financial KPIs and no hard-coded sample values.
+  - Recovery Queue shows ranked, owned recovery items.
+  - Decision Queue supports governed promotion and approval flow.
+  - Executive Narrative and board pack are generated from backend payloads.
+  - Data Trust appears in the board pack and lists source freshness and missing metrics.

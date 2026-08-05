@@ -1,0 +1,16 @@
+id: revenue_cycle_management
+slug: revenue-cycle-management
+name: Revenue Cycle Management
+domain: Hospital Operations Intelligence
+owner: Revenue Cycle Command
+steward: Finance Analytics
+status: active
+default_route: /use-cases/revenue-cycle-management/cash-command
+summary: Real-time cash control, revenue recovery, payer accountability, leakage detection, and governed decision execution.
+business_question: From care delivered, how much cash is collected, at risk, recoverable, owned, and ready for decision?
+currency_default: SAR
+source_of_truth:
+  config: config/use_cases.yaml
+  dbt: dbt/opencare/models/revenue_cycle
+  backend: apps/backend/app/services/revenue_cycle_service.py
+  portal: apps/portal/app/use-cases/revenue-cycle-management

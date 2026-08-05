@@ -1,0 +1,8 @@
+story_flow:
+  - Cash is generated from care delivered.
+  - Some expected cash is collected, delayed, rejected, short-paid, or leaked.
+  - The platform quantifies exposure and recoverability.
+  - Recovery Queue assigns the work.
+  - Decision Queue governs higher-friction actions.
+  - Team Performance proves execution.
+  - Board Pack explains the story in executive language.

@@ -1,0 +1,16 @@
+workflows:
+  - id: cash_command_to_board_pack
+    title: Cash command to board pack
+    steps:
+      - Load governed finance marts.
+      - Calculate cash, risk, recovery, payer, and trend metrics.
+      - Generate board-pack payload from backend API.
+      - Render downloadable report in portal.
+  - id: recovery_to_decision
+    title: Recovery item to governed decision
+    steps:
+      - Identify recoverable item in analytics.fct_cash_recovery_opportunity.
+      - Promote item into decision.decision_queue.
+      - Review evidence and approve, reject, revise, dispatch, escalate, note, or assign.
+      - Track transition in audit log.
+      - Measure expected versus actual recovery when evidence is available.

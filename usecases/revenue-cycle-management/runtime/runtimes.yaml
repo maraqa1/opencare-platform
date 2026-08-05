@@ -1,0 +1,17 @@
+runtimes:
+  - id: rt_revenue_cycle_backend
+    name: Revenue Cycle Backend Runtime
+    service: backend
+    implementation: apps/backend/app/services/revenue_cycle_service.py
+    reads_from:
+      - analytics.fct_revenue_cycle
+      - analytics.fct_cash_recovery_opportunity
+      - analytics.fct_cash_forecast
+      - analytics.fct_payer_contract_performance
+      - analytics.fct_revenue_leakage
+      - analytics.fct_team_recovery_performance
+      - decision.decision_queue
+    writes_to:
+      - decision.decision_queue
+      - decision.decision_log
+    notes: RCM currently uses deterministic dbt marts plus backend runtime calculations. No separate R runtime image is required.

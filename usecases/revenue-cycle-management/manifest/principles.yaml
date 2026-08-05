@@ -1,0 +1,11 @@
+principles:
+  - id: live_financial_truth
+    statement: Financial metrics must be calculated from governed data marts or backend APIs.
+  - id: plain_language
+    statement: User-facing labels should use plain language and avoid unexplained finance jargon.
+  - id: decision_separation
+    statement: Insight screens may recommend but only decision screens may mutate governed decisions.
+  - id: board_pack_traceability
+    statement: Board-pack numbers must trace to API payload fields and data trust evidence.
+  - id: no_autonomous_external_action
+    statement: All external payer, billing, or recovery actions require human approval.

@@ -1,0 +1,7 @@
+lineage:
+  - raw.rcm_claims -> staging.stg_rcm_claims -> analytics.fct_revenue_cycle -> cash command
+  - raw.rcm_financial_postings -> staging.stg_rcm_financial_postings -> analytics.fct_financial_posting -> cash command
+  - analytics.fct_cash_recovery_opportunity -> recovery queue -> decision.decision_queue
+  - analytics.fct_payer_contract_performance -> payer control
+  - analytics.fct_revenue_leakage -> leakage page
+  - analytics marts -> backend board_pack -> downloadable board report

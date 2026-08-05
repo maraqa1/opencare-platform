@@ -1,0 +1,5 @@
+routes:
+  portal_base: /use-cases/revenue-cycle-management
+  api_base: /api/v1/revenue-cycle
+  api_rcm_base: /api/v1/rcm
+  board_pack: /api/v1/rcm/board-pack

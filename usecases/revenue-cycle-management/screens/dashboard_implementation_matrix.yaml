@@ -1,0 +1,28 @@
+matrix:
+  - screen: cash-command
+    required_components:
+      - headline story strip
+      - KPI cards
+      - collections trend
+      - risk concentration
+      - board-pack download
+  - screen: recovery-queue
+    required_components:
+      - recovery value strip
+      - filters
+      - ranked action table
+      - issue mix
+      - payer and owner summaries
+  - screen: decision-queue
+    required_components:
+      - decision KPI strip
+      - promoted decisions table
+      - approval workflow controls
+      - decision workspace drill-in
+      - audit history
+  - screen: executive-narrative
+    required_components:
+      - executive cover
+      - storyline
+      - board talk track
+      - data trust section

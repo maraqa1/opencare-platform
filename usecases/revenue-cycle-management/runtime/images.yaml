@@ -1,0 +1,12 @@
+images:
+  - id: backend
+    role: Revenue Cycle API and runtime calculation service
+    required: true
+  - id: portal
+    role: RCM workspace and board-pack rendering
+    required: true
+  - id: dbt-runner
+    role: Revenue-cycle mart materialization
+    required: true
+notes:
+  - No dedicated R runtime image is currently used for RCM.

@@ -1,0 +1,11 @@
+checks:
+  - id: rcm_bundle_roots
+    description: Required golden bundle roots exist.
+  - id: rcm_dbt_models
+    description: Revenue-cycle staging and mart models are present.
+  - id: rcm_api_contract
+    description: Required revenue-cycle API endpoints are declared.
+  - id: rcm_board_pack_contract
+    description: Board pack uses live backend payload and includes Data Trust.
+  - id: rcm_governance_contract
+    description: Classified assets, lineage, freshness, and ownership are populated.

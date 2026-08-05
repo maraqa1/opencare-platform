@@ -1,0 +1,11 @@
+states:
+  - recommended
+  - under_review
+  - approved
+  - rejected
+  - revision_requested
+  - assigned
+  - dispatched
+  - escalated
+  - completed
+  - measured

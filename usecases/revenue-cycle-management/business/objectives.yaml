@@ -1,0 +1,16 @@
+objectives:
+  - id: obj_cash_control
+    title: Improve cash visibility and controllability
+    description: Show care delivered, expected cash, collected cash, collection rate, payment timing, and revenue exposure in one executive surface.
+  - id: obj_recovery_execution
+    title: Convert revenue risk into owned recovery work
+    description: Rank recoverable opportunities by expected value, effort, due date, payer, issue type, and owner.
+  - id: obj_payer_accountability
+    title: Enforce payer accountability
+    description: Detect underpayment, slow payment, rejected claims, and contract breach patterns by payer.
+  - id: obj_leakage_detection
+    title: Detect and explain revenue leakage
+    description: Break down loss by root cause, operational area, and corrective action.
+  - id: obj_decision_governance
+    title: Govern financial decisions from recommendation to outcome
+    description: Promote recovery opportunities into decisions with approval, dispatch, audit, and expected recovery tracking.

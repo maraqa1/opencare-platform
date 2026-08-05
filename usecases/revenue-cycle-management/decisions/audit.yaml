@@ -1,0 +1,12 @@
+audit:
+  table: decision.decision_log
+  required_events:
+    - promoted
+    - approved
+    - rejected
+    - revision_requested
+    - dispatched
+    - escalated
+    - assigned
+    - note_added
+  append_only: true
