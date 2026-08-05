@@ -1,0 +1,27 @@
+components:
+  - id: occupancy_grid
+    file: apps/portal/components/bed-pressure/OccupancyGrid.tsx
+    binds_to:
+      - /api/v1/occupancy/current
+  - id: forecast_view
+    file: apps/portal/components/bed-pressure/ForecastView.tsx
+    binds_to:
+      - /api/v1/forecast
+  - id: anomaly_alerts
+    file: apps/portal/components/bed-pressure/AnomalyAlerts.tsx
+    binds_to:
+      - /api/v1/anomalies
+      - /api/v1/anomalies/summary
+  - id: analysis_canvas
+    file: apps/portal/components/bed-pressure/BedPressureAnalysisCanvas.tsx
+    binds_to:
+      - /api/v1/occupancy/current
+      - /api/v1/occupancy/historical
+      - /api/v1/anomalies
+  - id: decision_cards
+    file: apps/portal/components/DecisionCards.tsx
+    binds_to:
+      - /api/v1/decisions
+      - /api/v1/decisions/count
+      - /api/v1/decisions/resolved
+      - /api/v1/decisions/daily-log

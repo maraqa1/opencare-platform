@@ -1,0 +1,14 @@
+governance_bindings:
+  registry_file: apps/portal/lib/governance-registry.ts
+  use_case_id: bed_pressure
+  trust_map: Bed Pressure Data Trust Map
+  datasets:
+    - bed-occupancy
+    - bed-output-forecast
+    - bed-output-anomaly
+    - bed-decision-queue
+  terms:
+    - bp-occupancy-rate
+    - bp-forecast-occupancy
+    - bp-active-anomaly
+    - bp-decision-recommendation

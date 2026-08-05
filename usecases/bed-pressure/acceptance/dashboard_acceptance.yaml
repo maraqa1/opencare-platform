@@ -1,0 +1,16 @@
+acceptance:
+  - id: status_not_empty
+    screen_id: SCREEN-BP-STATUS
+    rule: Current Status must render ward cards or a clear governed empty state.
+  - id: predictions_show_threshold
+    screen_id: SCREEN-BP-PREDICTIONS
+    rule: Forecast view must show breach threshold context and distinguish forecast dates.
+  - id: analysis_demo_ready
+    screen_id: SCREEN-BP-ANALYSIS
+    rule: Analysis dashboard must show KPI cards, charts, executive actions, and governance evidence.
+  - id: decisions_demo_ready
+    screen_id: SCREEN-BP-DECISIONS
+    rule: Decision queue must be demoable even when live decision.decision_queue is empty, using clearly labelled preview candidates.
+  - id: no_fake_audit
+    screen_id: SCREEN-BP-DECISIONS
+    rule: Demo preview candidates must not write decision audit events.

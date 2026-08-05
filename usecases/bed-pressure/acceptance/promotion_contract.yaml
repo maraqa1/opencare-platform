@@ -1,0 +1,14 @@
+promotion_contract:
+  demo_ready_requires:
+    - screen catalog complete
+    - API bindings declared
+    - governance assets declared
+    - runtime images declared
+    - decision lifecycle declared
+    - demo fallback labelled if live queue is empty
+  production_ready_requires:
+    - source-system mapping signed off
+    - PHI handling reviewed
+    - runtime freshness checks passing
+    - decision audit log populated by real decisions
+    - outcome measurement enabled

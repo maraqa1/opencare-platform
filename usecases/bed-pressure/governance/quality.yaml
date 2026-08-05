@@ -1,0 +1,9 @@
+quality_controls:
+  - id: occupancy_bounds
+    rule: occupancy_rate must be between 0 and 1 in analytics.fct_bed_occupancy.
+  - id: staffed_beds_positive
+    rule: staffed_beds must be greater than zero for wards included in operational dashboards.
+  - id: forecast_capacity_alignment
+    rule: output.forecast.capacity_beds must align to ward capacity at runtime.
+  - id: decision_evidence_required
+    rule: decision.decision_queue rows must include signal_summary, rationale, and recommended_actions.

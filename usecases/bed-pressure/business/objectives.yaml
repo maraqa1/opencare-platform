@@ -1,0 +1,11 @@
+objectives:
+  - id: OBJ-BED-PRESSURE-01
+    title: Maintain safe bed capacity and prevent avoidable occupancy breaches.
+    description: Monitor ward pressure, forecast breach risk, surface anomalies, and drive auditable operational decisions.
+    executive_question: Which wards need action now, and which action releases the most capacity safely?
+    owner: Hospital Operations Command
+    success_measures:
+      - Reduce wards above 90 percent occupancy.
+      - Increase available staffed beds in high-pressure wards.
+      - Convert forecast and anomaly evidence into reviewed decisions.
+      - Measure outcome after operational action.

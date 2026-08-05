@@ -1,0 +1,11 @@
+populated_state_proof:
+  demo_expected:
+    current_status: wards render from seeded occupancy mart
+    predictions: forecast rows render from output.forecast
+    anomalies: anomaly rows render from output.anomaly
+    decisions: live rows render from decision.decision_queue or labelled demo preview candidates render when empty
+  production_expected:
+    current_status: live ward system feed
+    predictions: scheduled runtime outputs
+    anomalies: scheduled runtime outputs
+    decisions: generated and audited operational decisions

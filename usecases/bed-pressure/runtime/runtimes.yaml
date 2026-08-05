@@ -1,0 +1,19 @@
+runtimes:
+  - id: rt_bed_forecast
+    name: Bed Forecast Runtime
+    service: bed-forecast
+    endpoint: http://bed-forecast:8000/run
+    reads_from:
+      - analytics.fct_bed_occupancy
+    writes_to:
+      - output.forecast
+    schedule: "20 * * * *"
+  - id: rt_bed_anomaly
+    name: Bed Anomaly Runtime
+    service: anomaly
+    endpoint: http://anomaly:8000/run
+    reads_from:
+      - analytics.fct_bed_occupancy
+    writes_to:
+      - output.anomaly
+    schedule: "25 * * * *"

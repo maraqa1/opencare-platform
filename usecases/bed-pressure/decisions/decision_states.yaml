@@ -1,0 +1,11 @@
+states:
+  - recommended
+  - assigned
+  - in_progress
+  - completed
+  - dismissed
+  - expired
+terminal_states:
+  - completed
+  - dismissed
+  - expired

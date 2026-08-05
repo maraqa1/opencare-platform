@@ -1,0 +1,9 @@
+principles:
+  - id: operational_first
+    rule: Every screen must answer what pressure exists, why it matters, and what action should happen next.
+  - id: evidence_before_action
+    rule: Decision recommendations must cite occupancy, forecast, anomaly, or capacity evidence before action controls appear.
+  - id: human_authorisation
+    rule: External operational actions require human confirmation and append-only decision logging.
+  - id: demo_safe
+    rule: Demo fallback rows may explain the workflow but must not write fake audit events.

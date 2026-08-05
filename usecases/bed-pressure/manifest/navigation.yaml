@@ -1,0 +1,22 @@
+default_route: /use-cases/bed-pressure/status
+tabs:
+  - id: overview
+    label: Overview
+    route: /use-cases/bed-pressure/overview
+    screen_id: SCREEN-BP-OVERVIEW
+  - id: status
+    label: Current Status
+    route: /use-cases/bed-pressure/status
+    screen_id: SCREEN-BP-STATUS
+  - id: predictions
+    label: Predictions
+    route: /use-cases/bed-pressure/predictions
+    screen_id: SCREEN-BP-PREDICTIONS
+  - id: analysis
+    label: Analysis
+    route: /use-cases/bed-pressure/analysis
+    screen_id: SCREEN-BP-ANALYSIS
+  - id: decisions
+    label: Decisions
+    route: /use-cases/bed-pressure/decisions
+    screen_id: SCREEN-BP-DECISIONS

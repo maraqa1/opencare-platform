@@ -1,0 +1,50 @@
+api_version: opencare.io/v1
+kind: UseCaseManifest
+standard_version: golden-bundle-1.8.12-candidate
+use_case_slug: bed-pressure
+use_case_id: bed_pressure
+use_case_name: Bed Pressure Intelligence
+business_domain: Hospital Operations Intelligence
+owner: Hospital Operations Command
+steward: Clinical Operations Analytics
+lifecycle_stage: golden_structure_ready
+default_route: /use-cases/bed-pressure/status
+supported_modes:
+  - demo
+  - production
+visualization_engine: opencare_native_bi_and_superset
+runtime_required: true
+governance_required: true
+phi_sensitive: true
+materialization_mode: governed_platform_models
+business_summary: Ward-level command workspace for monitoring bed occupancy, forecasting pressure, detecting anomalies, and creating human-reviewed operational decisions.
+primary_objective_id: OBJ-BED-PRESSURE-01
+primary_kpis:
+  - KPI-BP-OCC-01
+  - KPI-BP-AVL-02
+  - KPI-BP-BREACH-03
+  - KPI-BP-ANOM-04
+  - KPI-BP-DEC-05
+runtime_ids:
+  - rt_bed_forecast
+  - rt_bed_anomaly
+screen_ids:
+  - SCREEN-BP-OVERVIEW
+  - SCREEN-BP-STATUS
+  - SCREEN-BP-PREDICTIONS
+  - SCREEN-BP-ANALYSIS
+  - SCREEN-BP-DECISIONS
+locale:
+  default: en
+  supported:
+    - en
+external_action_policy:
+  human_authorisation_required: true
+  applies_to:
+    - notification
+    - escalation
+    - discharge_action
+    - surge_activation
+    - elective_deferral
+  default_behavior: block_until_confirmed
+  audit_required: true

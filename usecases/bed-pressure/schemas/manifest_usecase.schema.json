@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bed Pressure Use Case Manifest",
+  "type": "object",
+  "required": ["api_version", "kind", "use_case_slug", "use_case_id", "default_route", "screen_ids"],
+  "properties": {
+    "api_version": { "type": "string" },
+    "kind": { "const": "UseCaseManifest" },
+    "use_case_slug": { "const": "bed-pressure" },
+    "use_case_id": { "const": "bed_pressure" },
+    "default_route": { "type": "string" },
+    "screen_ids": { "type": "array", "items": { "type": "string" } }
+  }
+}

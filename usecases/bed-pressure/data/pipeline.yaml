@@ -1,0 +1,15 @@
+pipeline:
+  source_to_mart:
+    - raw_demo.bed_events
+    - staging
+    - analytics.fct_bed_occupancy
+  runtime_outputs:
+    - analytics.fct_bed_occupancy -> output.forecast
+    - analytics.fct_bed_occupancy -> output.anomaly
+  decision_outputs:
+    - analytics.fct_bed_occupancy + output.forecast + output.anomaly -> decision.decision_queue
+  dashboard_outputs:
+    - analytics.fct_bed_pressure_daily_summary
+    - analytics.fct_bed_pressure_latest_snapshot
+    - analytics.fct_bed_pressure_distribution
+    - analytics.fct_bed_pressure_executive_actions

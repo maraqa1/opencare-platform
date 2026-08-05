@@ -1,0 +1,13 @@
+classification:
+  phi_sensitive:
+    - raw_demo.patients
+  restricted:
+    - raw_demo.bed_events
+    - analytics.fct_bed_occupancy
+  internal:
+    - output.forecast
+    - output.anomaly
+    - decision.decision_queue
+    - decision.decision_log
+  public:
+    - none

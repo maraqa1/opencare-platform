@@ -1,0 +1,19 @@
+personas:
+  - id: bed_manager
+    name: Bed Manager
+    primary_needs:
+      - See which wards are critical now.
+      - Understand likely breaches before they happen.
+      - Assign and track pressure-relief actions.
+  - id: site_manager
+    name: Site Manager
+    primary_needs:
+      - Balance admission pressure across wards.
+      - Decide when to activate surge or escalation pathways.
+      - Review decision audit trail and outcome evidence.
+  - id: clinical_ops_analyst
+    name: Clinical Operations Analyst
+    primary_needs:
+      - Validate data freshness and lineage.
+      - Monitor forecast and anomaly runtime health.
+      - Maintain KPI definitions and record specifications.

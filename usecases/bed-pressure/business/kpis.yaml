@@ -1,0 +1,31 @@
+kpis:
+  - id: KPI-BP-OCC-01
+    name: Network occupancy
+    definition: Occupied staffed beds divided by staffed beds across the visible ward footprint.
+    target: below 85 percent
+    source: analytics.fct_bed_occupancy.occupancy_rate
+    direction: lower_is_better
+  - id: KPI-BP-AVL-02
+    name: Available beds
+    definition: Staffed beds minus occupied beds at the latest snapshot.
+    target: maintain operational buffer above local ward threshold
+    source: analytics.fct_bed_occupancy
+    direction: higher_is_better
+  - id: KPI-BP-BREACH-03
+    name: Forecast breach count
+    definition: Count of wards forecast to cross 90 percent occupancy within the configured forecast horizon.
+    target: zero
+    source: output.forecast
+    direction: lower_is_better
+  - id: KPI-BP-ANOM-04
+    name: Active anomaly signals
+    definition: Current anomaly signals that crossed learned ward-pressure thresholds.
+    target: zero critical anomalies
+    source: output.anomaly
+    direction: lower_is_better
+  - id: KPI-BP-DEC-05
+    name: Active decision queue
+    definition: Recommended, assigned, and in-progress operational decisions for bed pressure.
+    target: all critical decisions assigned or actioned
+    source: decision.decision_queue
+    direction: lower_is_better

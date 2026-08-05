@@ -1,0 +1,11 @@
+evidence:
+  freshness_checks:
+    - output.forecast max(run_timestamp)
+    - output.anomaly max(run_timestamp)
+    - analytics.fct_bed_occupancy max(date_day)
+  runtime_health:
+    - /api/status/runtime
+    - /api/v1/admin/runtime-status
+  exports:
+    - /api/v1/reports/export/forecast
+    - /api/v1/reports/export/anomaly

@@ -1,0 +1,14 @@
+visual_grammar:
+  severity_colours:
+    critical: red
+    warning: amber
+    normal: green
+  chart_rules:
+    occupancy_threshold: 90 percent line must be visible where applicable
+    forecast_future: future forecast periods must be visually distinct from observed periods
+    executive_table: current occupancy and beds available should use readable gradient or status emphasis
+  density: operational_dashboard
+  avoid:
+    - empty decision queue during demo
+    - unexplained KPI values
+    - unlabelled runtime outputs

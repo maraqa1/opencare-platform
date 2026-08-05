@@ -1,0 +1,25 @@
+decision_types:
+  - id: expedite_discharge
+    label: Expedite discharge
+    trigger: occupancy >= 90
+    owner_team: Ward Lead
+    expected_outcome: release staffed beds through discharge-ready patient review
+    human_authorisation_required: true
+  - id: activate_surge
+    label: Activate surge capacity
+    trigger: occupancy >= 95 OR forecast breach within 12 hours
+    owner_team: Capacity Command
+    expected_outcome: open overflow capacity and redirect non-urgent admissions
+    human_authorisation_required: true
+  - id: defer_elective
+    label: Review elective deferrals
+    trigger: occupancy >= 90 AND forecast breach within 24 hours
+    owner_team: Site Operations
+    expected_outcome: preserve capacity by adjusting planned admission timing
+    human_authorisation_required: true
+  - id: escalate_to_manager
+    label: Escalate to capacity manager
+    trigger: critical anomaly AND occupancy >= 85 AND trend rising
+    owner_team: Site Manager
+    expected_outcome: accelerate management review of discharge or transfer blockers
+    human_authorisation_required: true

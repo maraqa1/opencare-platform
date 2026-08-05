@@ -1,0 +1,13 @@
+freshness:
+  - asset: analytics.fct_bed_occupancy
+    expected_max_age: 24h
+    check: max(date_day)
+  - asset: output.forecast
+    expected_max_age: 2h
+    check: max(run_timestamp)
+  - asset: output.anomaly
+    expected_max_age: 2h
+    check: max(run_timestamp)
+  - asset: decision.decision_queue
+    expected_max_age: 24h
+    check: max(updated_at)

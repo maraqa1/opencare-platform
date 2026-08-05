@@ -1,0 +1,21 @@
+source_systems:
+  - id: hospital_bed_management
+    name: Hospital bed management system
+    tables:
+      - raw_demo.bed_events
+      - raw_demo.wards
+      - raw_demo.patients
+    sensitivity: phi_sensitive
+  - id: runtime_outputs
+    name: OpenCare runtime outputs
+    tables:
+      - output.forecast
+      - output.anomaly
+    sensitivity: internal
+  - id: decision_store
+    name: OpenCare decision store
+    tables:
+      - decision.decision_queue
+      - decision.decision_log
+      - decision.decision_outcomes
+    sensitivity: internal

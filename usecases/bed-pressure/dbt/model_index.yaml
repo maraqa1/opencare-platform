@@ -1,0 +1,19 @@
+models:
+  - name: fct_bed_occupancy
+    path: dbt/opencare/models/marts/fct_bed_occupancy.sql
+    role: governed occupancy fact
+  - name: fact_bed_occupancy
+    path: dbt/opencare/models/marts/fact_bed_occupancy.sql
+    role: compatibility alias
+  - name: fct_bed_pressure_daily_summary
+    path: dbt/opencare/models/marts/fct_bed_pressure_daily_summary.sql
+    role: Superset and analysis daily trend
+  - name: fct_bed_pressure_latest_snapshot
+    path: dbt/opencare/models/marts/fct_bed_pressure_latest_snapshot.sql
+    role: current ward pressure snapshot
+  - name: fct_bed_pressure_distribution
+    path: dbt/opencare/models/marts/fct_bed_pressure_distribution.sql
+    role: pressure distribution visualizations
+  - name: fct_bed_pressure_executive_actions
+    path: dbt/opencare/models/marts/fct_bed_pressure_executive_actions.sql
+    role: executive action table for Superset

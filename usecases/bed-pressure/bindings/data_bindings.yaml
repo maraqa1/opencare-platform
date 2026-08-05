@@ -1,0 +1,23 @@
+data_bindings:
+  current_status:
+    endpoint: /api/v1/occupancy/current
+    reads:
+      - analytics.fct_bed_occupancy
+  historical_trend:
+    endpoint: /api/v1/occupancy/historical
+    reads:
+      - analytics.fct_bed_occupancy
+  forecast:
+    endpoint: /api/v1/forecast
+    reads:
+      - output.forecast
+  anomalies:
+    endpoint: /api/v1/anomalies
+    reads:
+      - output.anomaly
+  decisions:
+    endpoint: /api/v1/decisions?use_case=bed_pressure
+    reads:
+      - decision.decision_queue
+      - decision.decision_log
+      - decision.decision_outcomes

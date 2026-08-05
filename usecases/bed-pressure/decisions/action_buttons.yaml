@@ -1,0 +1,25 @@
+actions:
+  - id: assign
+    label: Assign Owner
+    allowed_from:
+      - recommended
+  - id: start
+    label: Mark In Progress
+    allowed_from:
+      - recommended
+      - assigned
+  - id: complete
+    label: Complete Selected Actions
+    allowed_from:
+      - assigned
+      - in_progress
+  - id: execute-all
+    label: Execute All
+    allowed_from:
+      - recommended
+  - id: dismiss
+    label: Dismiss with Reason
+    allowed_from:
+      - recommended
+      - assigned
+      - in_progress

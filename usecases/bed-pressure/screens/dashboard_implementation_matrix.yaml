@@ -1,0 +1,47 @@
+dashboards:
+  - screen_id: SCREEN-BP-STATUS
+    required_sections:
+      - current occupancy cards
+      - active anomaly signals
+      - record specification
+    api_bindings:
+      - /api/v1/occupancy/current
+      - /api/v1/anomalies
+      - /api/v1/anomalies/summary
+  - screen_id: SCREEN-BP-PREDICTIONS
+    required_sections:
+      - ward selector
+      - seven-day forecast
+      - breach threshold
+      - forecast export
+    api_bindings:
+      - /api/v1/forecast
+  - screen_id: SCREEN-BP-ANALYSIS
+    required_sections:
+      - KPI values with trend context
+      - network occupancy trend
+      - pressure mix
+      - highest occupancy wards
+      - admissions versus discharges
+      - executive action table
+      - governance evidence
+    data_bindings:
+      - analytics.fct_bed_pressure_daily_summary
+      - analytics.fct_bed_pressure_latest_snapshot
+      - analytics.fct_bed_pressure_distribution
+      - analytics.fct_bed_pressure_executive_actions
+  - screen_id: SCREEN-BP-DECISIONS
+    required_sections:
+      - active decision counts
+      - decision generation control
+      - decision candidate cards
+      - impact simulation
+      - action checklist
+      - decision audit log
+      - daily decision log
+      - resolved outcomes
+    api_bindings:
+      - /api/v1/decisions
+      - /api/v1/decisions/count
+      - /api/v1/decisions/resolved
+      - /api/v1/decisions/daily-log

@@ -1,0 +1,13 @@
+platform_capabilities:
+  portal_pages: true
+  backend_api: true
+  dbt_models: true
+  superset_dashboard: true
+  runtime_services: true
+  cron_refresh: true
+  decision_queue: true
+  decision_audit_log: true
+  outcome_measurement: true
+  governance_registry: true
+  record_spec: true
+  report_exports: true

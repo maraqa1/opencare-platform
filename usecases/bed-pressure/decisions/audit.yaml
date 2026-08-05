@@ -1,0 +1,12 @@
+audit:
+  queue_table: decision.decision_queue
+  log_table: decision.decision_log
+  outcome_table: decision.decision_outcomes
+  required_events:
+    - generated
+    - assigned
+    - started
+    - completed
+    - dismissed
+    - outcome_measured
+  append_only_log_required: true

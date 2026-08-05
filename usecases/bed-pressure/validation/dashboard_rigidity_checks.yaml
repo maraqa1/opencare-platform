@@ -1,0 +1,16 @@
+dashboard_rigidity_checks:
+  - screen_id: SCREEN-BP-ANALYSIS
+    must_include:
+      - KPI values with trend context
+      - network occupancy trend
+      - pressure mix
+      - executive action table
+      - governance evidence
+  - screen_id: SCREEN-BP-DECISIONS
+    must_include:
+      - decision counts
+      - decision candidate cards
+      - impact simulation
+      - action checklist
+      - audit log access
+      - outcome evidence

@@ -1,0 +1,16 @@
+story_flow:
+  - step: Monitor pressure now
+    screen_id: SCREEN-BP-STATUS
+    user_question: Which wards are unsafe or close to unsafe?
+  - step: Forecast the next breach
+    screen_id: SCREEN-BP-PREDICTIONS
+    user_question: Which wards will cross the threshold soon?
+  - step: Diagnose patterns
+    screen_id: SCREEN-BP-ANALYSIS
+    user_question: What is driving pressure across the hospital?
+  - step: Decide and act
+    screen_id: SCREEN-BP-DECISIONS
+    user_question: Which action should a human approve, assign, or complete?
+  - step: Measure outcome
+    screen_id: SCREEN-BP-DECISIONS
+    user_question: Did the action reduce pressure as predicted?

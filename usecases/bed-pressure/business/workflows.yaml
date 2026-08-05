@@ -1,0 +1,17 @@
+workflows:
+  - id: bed_pressure_monitor_to_decision
+    title: Monitor to decision
+    stages:
+      - current occupancy snapshot
+      - forecast breach evidence
+      - anomaly evidence
+      - decision candidate generation
+      - human assignment or execution
+      - 24 hour outcome measurement
+  - id: daily_bed_meeting
+    title: Daily bed meeting
+    stages:
+      - review critical wards
+      - compare forecasted and current pressure
+      - agree actions by owner
+      - review previous decisions and outcomes

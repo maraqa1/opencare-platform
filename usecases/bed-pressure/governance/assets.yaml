@@ -1,0 +1,21 @@
+assets:
+  - id: bed-occupancy
+    name: Bed Occupancy Fact
+    table: analytics.fct_bed_occupancy
+    classification: restricted
+    owner: Clinical Operations Analytics
+  - id: bed-output-forecast
+    name: Forecast Output
+    table: output.forecast
+    classification: internal
+    owner: Forecast Runtime
+  - id: bed-output-anomaly
+    name: Anomaly Output
+    table: output.anomaly
+    classification: internal
+    owner: Anomaly Runtime
+  - id: bed-decision-queue
+    name: Decision Queue
+    table: decision.decision_queue
+    classification: internal
+    owner: Hospital Operations Command

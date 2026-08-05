@@ -1,0 +1,16 @@
+entities:
+  - id: ward
+    primary_key: ward_id
+    display_name: Ward
+  - id: bed_snapshot
+    primary_key: ward_id + date_day
+    display_name: Ward occupancy snapshot
+  - id: forecast_signal
+    primary_key: ward_id + forecast_date + run_timestamp
+    display_name: Forecast signal
+  - id: anomaly_signal
+    primary_key: ward_id + anomaly_date + anomaly_type
+    display_name: Anomaly signal
+  - id: decision
+    primary_key: decision.decision_queue.id
+    display_name: Operational decision

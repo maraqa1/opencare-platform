@@ -1,0 +1,7 @@
+images:
+  - runtime_id: rt_bed_forecast
+    image: ghcr.io/maraqa1/opencare-runtime-bed-forecast:dev
+    manifest: manifests/runtimes/bed-forecast.yaml
+  - runtime_id: rt_bed_anomaly
+    image: ghcr.io/maraqa1/opencare-runtime-anomaly:dev
+    manifest: manifests/runtimes/anomaly.yaml

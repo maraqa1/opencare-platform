@@ -1,0 +1,6 @@
+ownership:
+  business_owner: Hospital Operations Command
+  data_steward: Clinical Operations Analytics
+  runtime_owner: Platform Runtime Team
+  decision_owner: Site Operations
+  governance_owner: Data Governance Office

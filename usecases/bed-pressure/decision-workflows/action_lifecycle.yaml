@@ -1,0 +1,42 @@
+action_lifecycle:
+  lifecycle_id: bed_pressure_decision_action_lifecycle
+  scope: Bed-pressure operational decisions from recommendation to outcome measurement.
+  states:
+    - generated
+    - recommended
+    - assigned
+    - in_progress
+    - completed
+    - dismissed
+    - expired
+    - measured
+  paths:
+    expedite_discharge:
+      - generated
+      - recommended
+      - assigned
+      - in_progress
+      - completed
+      - measured
+    activate_surge:
+      - generated
+      - recommended
+      - assigned
+      - in_progress
+      - completed
+      - measured
+    defer_elective:
+      - generated
+      - recommended
+      - assigned
+      - in_progress
+      - completed
+      - measured
+  foreign_keys:
+    decision_id: decision.decision_queue.id
+    audit_log: decision.decision_log.decision_id
+    outcome: decision.decision_outcomes.decision_id
+  rules:
+    - Demo fallback rows must not write audit events.
+    - Completion requires selected action evidence or execute-all confirmation.
+    - Outcome measurement runs after configured observation delay.

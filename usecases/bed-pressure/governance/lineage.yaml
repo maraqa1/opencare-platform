@@ -1,0 +1,20 @@
+lineage:
+  edges:
+    - from: raw_demo.bed_events
+      to: analytics.fct_bed_occupancy
+      label: occupancy mart
+    - from: analytics.fct_bed_occupancy
+      to: output.forecast
+      label: forecast features
+    - from: analytics.fct_bed_occupancy
+      to: output.anomaly
+      label: anomaly features
+    - from: output.forecast
+      to: decision.decision_queue
+      label: breach evidence
+    - from: output.anomaly
+      to: decision.decision_queue
+      label: anomaly evidence
+    - from: decision.decision_queue
+      to: apps/portal/components/DecisionCards.tsx
+      label: decision workspace

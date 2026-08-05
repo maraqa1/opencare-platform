@@ -1,0 +1,6 @@
+notifications:
+  default_team_email: admin@opendatalake.com
+  escalation_email: admin@opendatalake.com
+  escalation_threshold_minutes: 120
+  max_escalations: 3
+  external_action_policy: human_authorisation_required

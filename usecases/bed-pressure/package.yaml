@@ -1,0 +1,64 @@
+api_version: opencare.io/v1
+kind: UseCaseGoldenBundle
+package_standard_version: golden-bundle-1.8.12-candidate
+metadata:
+  slug: bed-pressure
+  name: Bed Pressure Intelligence
+  package_id: opencare.usecase.bed-pressure
+  business_domain: Hospital Operations Intelligence
+  owner: Hospital Operations Command
+  steward: Clinical Operations Analytics
+  language_support:
+    - en
+  country_context: reusable
+  client_context: hospital command centre and ward operations
+standard_intent:
+  bundle_type: canonical_golden_bundle
+  purpose: Repeatable OpenCare use-case bundle for occupancy monitoring, forecast evidence, anomaly detection, decision queue, outcome audit, and governance proof.
+  dashboard_source_of_truth: screens/screen_catalog.yaml, screens/dashboard_implementation_matrix.yaml, and acceptance/dashboard_acceptance.yaml.
+  runtime_images_declared: true
+  platform_capability_bindings_required: true
+  native_bi_materialization_target: true
+  dashboard_fidelity_required: true
+  decision_surface_scope_enforced: true
+entrypoints:
+  manifest: manifest/usecase.yaml
+  personas: manifest/personas.yaml
+  navigation: manifest/navigation.yaml
+  business_objectives: business/objectives.yaml
+  business_kpis: business/kpis.yaml
+  business_decisions: business/decisions.yaml
+  business_workflows: business/workflows.yaml
+  data_pipeline: data/pipeline.yaml
+  dbt_model_index: dbt/model_index.yaml
+  runtime_images: runtime/images.yaml
+  screen_catalog: screens/screen_catalog.yaml
+  platform_capabilities: bindings/platform_capabilities.yaml
+  data_bindings: bindings/data_bindings.yaml
+  governance_assets: governance/assets.yaml
+  action_lifecycle: decision-workflows/action_lifecycle.yaml
+  dashboard_acceptance: acceptance/dashboard_acceptance.yaml
+  validation_checks: validation/checks.yaml
+modes:
+  demo:
+    supported: true
+    notes: Demo mode may use seeded ward pressure and demo decision candidates when decision.decision_queue is empty.
+  production:
+    supported: true
+    requires_source_mapping: true
+    requires_platform_capability_review: true
+lifecycle:
+  installable: true
+  compilable: true
+  materializable: true
+  activation_requires_acceptance: true
+principles:
+  human_authorisation_required_for_external_actions: true
+  business_contract_is_source_of_truth: true
+  no_autonomous_external_action: true
+  no_fake_governance_pass_values: true
+  dashboard_components_must_bind_to_business_alignment_matrix: true
+  dashboard_fidelity_required: true
+package_version: 1.0.0
+opencare_golden_template_version: 1.8.12
+description: Golden use-case bundle structure for Bed Pressure Intelligence, mapped to the current OpenCare implementation and ready to repeat on fresh environments.

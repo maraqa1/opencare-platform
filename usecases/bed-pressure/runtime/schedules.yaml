@@ -1,0 +1,13 @@
+schedules:
+  - id: bed_forecast_refresh
+    cronjob: bed-forecast-refresh
+    schedule: "20 * * * *"
+    command: POST http://bed-forecast:8000/run
+  - id: anomaly_refresh
+    cronjob: anomaly-refresh
+    schedule: "25 * * * *"
+    command: POST http://anomaly:8000/run
+  - id: decision_generator
+    cronjob: decision-generator
+    schedule: platform configured
+    command: POST /api/v1/decisions/generate

@@ -1,0 +1,16 @@
+output_tables:
+  - table: analytics.fct_bed_occupancy
+    grain: One row per ward per day or snapshot.
+    owner: Clinical Operations Analytics
+  - table: output.forecast
+    grain: One row per ward per forecast date.
+    owner: Forecast Runtime
+  - table: output.anomaly
+    grain: One row per ward per anomaly event.
+    owner: Anomaly Runtime
+  - table: decision.decision_queue
+    grain: One row per generated operational decision.
+    owner: Hospital Operations Command
+  - table: decision.decision_log
+    grain: One row per decision state transition or action event.
+    owner: Hospital Operations Command

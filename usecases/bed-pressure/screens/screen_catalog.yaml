@@ -1,0 +1,31 @@
+screens:
+  - id: SCREEN-BP-OVERVIEW
+    route: /use-cases/bed-pressure/overview
+    purpose: Explain the use case, operational value, and workflow.
+    component_sources:
+      - apps/portal/app/use-cases/bed-pressure/overview/page.tsx
+  - id: SCREEN-BP-STATUS
+    route: /use-cases/bed-pressure/status
+    purpose: Show current ward occupancy, sorted by severity, with record-spec proof.
+    component_sources:
+      - apps/portal/app/use-cases/bed-pressure/status/page.tsx
+      - apps/portal/components/bed-pressure/OccupancyGrid.tsx
+      - apps/portal/components/bed-pressure/AnomalyAlerts.tsx
+  - id: SCREEN-BP-PREDICTIONS
+    route: /use-cases/bed-pressure/predictions
+    purpose: Show forecasted breach risk, confidence, and runtime evidence.
+    component_sources:
+      - apps/portal/app/use-cases/bed-pressure/predictions/page.tsx
+      - apps/portal/components/bed-pressure/ForecastView.tsx
+  - id: SCREEN-BP-ANALYSIS
+    route: /use-cases/bed-pressure/analysis
+    purpose: Show dashboard-style analysis, Superset embed, KPI cards, trends, pressure mix, and executive actions.
+    component_sources:
+      - apps/portal/app/use-cases/bed-pressure/analysis/page.tsx
+      - apps/portal/components/bed-pressure/BedPressureAnalysisCanvas.tsx
+  - id: SCREEN-BP-DECISIONS
+    route: /use-cases/bed-pressure/decisions
+    purpose: Show signal-to-decision workflow, action controls, audit log, daily log, and outcome measurement.
+    component_sources:
+      - apps/portal/app/use-cases/bed-pressure/decisions/page.tsx
+      - apps/portal/components/DecisionCards.tsx

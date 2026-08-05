@@ -1,0 +1,20 @@
+routes:
+  portal:
+    - /use-cases/bed-pressure/overview
+    - /use-cases/bed-pressure/status
+    - /use-cases/bed-pressure/predictions
+    - /use-cases/bed-pressure/analysis
+    - /use-cases/bed-pressure/decisions
+  backend:
+    - /api/v1/occupancy/current
+    - /api/v1/occupancy/historical
+    - /api/v1/forecast
+    - /api/v1/anomalies
+    - /api/v1/anomalies/summary
+    - /api/v1/decisions
+    - /api/v1/decisions/count
+    - /api/v1/decisions/resolved
+    - /api/v1/decisions/daily-log
+    - /api/v1/decisions/generate
+    - /api/v1/reports/export/forecast
+    - /api/v1/reports/export/anomaly

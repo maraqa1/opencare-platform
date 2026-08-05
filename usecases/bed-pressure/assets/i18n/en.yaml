@@ -1,0 +1,10 @@
+labels:
+  use_case_name: Bed Pressure Intelligence
+  overview: Overview
+  status: Current Status
+  predictions: Predictions
+  analysis: Analysis
+  decisions: Decisions
+  active_queue: Active Queue
+  generate_live_queue: Generate Live Queue
+  demo_decision_candidates: Demo Decision Candidates
