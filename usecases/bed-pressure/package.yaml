@@ -39,6 +39,16 @@ entrypoints:
   action_lifecycle: decision-workflows/action_lifecycle.yaml
   dashboard_acceptance: acceptance/dashboard_acceptance.yaml
   validation_checks: validation/checks.yaml
+  documentation_index: README.md
+  implementation_guide: docs/implementation_guide.md
+  architecture_guide: docs/architecture.md
+  data_contract_guide: docs/source_data_and_metadata.md
+  dbt_guide: docs/dbt_models.md
+  runtime_guide: docs/runtime_models.md
+  api_contract_guide: docs/backend_api_contract.md
+  portal_guide: docs/portal_implementation.md
+  decision_workflow_guide: docs/decision_workflow.md
+  governance_validation_guide: docs/governance_and_validation.md
 modes:
   demo:
     supported: true
