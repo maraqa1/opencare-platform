@@ -52,6 +52,7 @@ entrypoints:
   handover_package: handover/README.md
   handover_checklist: handover/handover_checklist.md
   handover_file_manifest: handover/file_manifest.md
+  handover_dependency_register: handover/dependency_gap_register.md
 modes:
   demo:
     supported: true

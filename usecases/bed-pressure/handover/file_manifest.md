@@ -124,3 +124,21 @@
 - `usecases/bed-pressure/docs/implementation_guide.md`
 - `usecases/bed-pressure/docs/demo_script.md`
 - `usecases/bed-pressure/docs/implementation_mapping.md`
+
+## Complete Handover Platform Plumbing
+
+These files are included in the complete handover archive for teams that want to run OpenCare-style scripts. They are not part of the Bed Pressure business contract and may be replaced on another platform.
+
+- `install/helpers.sh`
+- `scripts/airbyte/apply_airbyte.sh`
+- `scripts/airbyte/setup_mysql_demo.sh`
+- `scripts/airbyte/test_demo_sync.sh`
+- `manifests/postgres/statefulset.yaml`
+- `superset/superset_config.py`
+- `superset/custom_theme.css`
+- `sql/superset/superset_readonly.sql`
+- `manifests/platform-config.yaml` sanitized copy with secrets replaced by `SET_ME`
+
+## Known Dependency Register
+
+- `usecases/bed-pressure/handover/dependency_gap_register.md`

@@ -9,7 +9,7 @@ It should be read with the canonical bundle at `usecases/bed-pressure`. The bund
 ## Current Status
 
 - Branch: `dev`
-- Latest documentation commit: `99e9802 Complete bed pressure implementation documentation`
+- Archive commit: use the Git commit that produced the handover zip.
 - Use case package: `usecases/bed-pressure`
 - Package standard: `golden-bundle-1.8.12-candidate`
 - Use case status: demo-ready pattern, production-portable with source mapping and platform capability review
@@ -39,6 +39,7 @@ It should be read with the canonical bundle at `usecases/bed-pressure`. The bund
 10. `../docs/implementation_guide.md`
 11. `handover_checklist.md`
 12. `file_manifest.md`
+13. `dependency_gap_register.md`
 
 ## One-Line Implementation Story
 
@@ -51,3 +52,7 @@ Raw ward and bed-event data is normalized by dbt into governed occupancy facts, 
 - Do not allow autonomous external actions.
 - Do not hide empty decision queues without a labelled demo fallback.
 - Do not promote without governance assets, freshness, lineage, ownership, and validation evidence.
+
+## Rebuild Dependency Note
+
+The complete handover zip includes OpenCare reference plumbing for install helpers, Airbyte ingestion, PostgreSQL, and Superset. A target platform such as Click may replace those components with its own equivalents. See `dependency_gap_register.md` before running scripts directly.
