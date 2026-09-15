@@ -1,0 +1,122 @@
+.industry-profile-bar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.1fr) minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+  border-top: 1px solid #d9dde2;
+  border-bottom: 1px solid #d9dde2;
+}
+.industry-profile-bar label,
+.industry-profile-summary {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.industry-profile-bar label > span { font-weight: 600; }
+.industry-profile-bar label strong { color: #c52d2d; }
+.industry-profile-bar select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  background: #fff;
+  color: #212833;
+  border: 1px solid #aeb7c3;
+  border-radius: 6px;
+  font: inherit;
+}
+.industry-profile-summary span { font-size: 13px; color: #56616d; overflow-wrap: anywhere; }
+.industry-profile-bar button,
+.industry-profile-notice button,
+.industry-profile-modal button {
+  padding: 10px 14px;
+  border: 1px solid #b6bec8;
+  border-radius: 6px;
+  color: #252c35;
+  background: #fff;
+  cursor: pointer;
+}
+.data-ai-diagnostic-page button:disabled { opacity: 0.5; cursor: not-allowed; }
+.industry-profile-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border-left: 3px solid #a97511;
+  background: #fff9eb;
+  color: #544522;
+}
+.industry-profile-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 45%);
+}
+.industry-profile-modal section {
+  width: min(100%, 540px);
+  padding: 24px;
+  border-radius: 8px;
+  background: #fff;
+  color: #242b33;
+}
+.industry-profile-modal h2 { font-size: 22px; }
+.industry-profile-modal section > div { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.industry-profile-modal button:last-child { background: #bc3030; color: #fff; border-color: #bc3030; }
+.industry-evidence-ar { display: block; margin-top: 6px; line-height: 1.7; }
+.industry-review-tag { display: inline-block; margin-bottom: 8px; font-size: 12px; color: #875700; }
+.data-ai-report-cover .industry-report-label { font-size: 14px; }
+.data-ai-diagnostic-page .data-ai-tabs,
+.data-ai-diagnostic-page .data-ai-report-nav { position: static; }
+.data-ai-diagnostic-page .data-ai-report-cover p,
+.data-ai-diagnostic-page .data-ai-report-cover dt,
+.data-ai-diagnostic-page .data-ai-report-cover dd { color: #e4e9ef; }
+@media (max-width: 760px) {
+  .industry-profile-bar { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .industry-profile-bar button { justify-self: start; }
+  .industry-profile-modal section > div { flex-wrap: wrap; }
+}
+@media print {
+  .industry-profile-bar, .industry-profile-notice, .industry-profile-modal { display: none !important; }
+  .data-ai-handoff-status { display: none !important; }
+  .data-ai-diagnostic-page .data-ai-report-page {
+    min-height: 0 !important;
+    height: auto;
+    margin: 0 !important;
+    border: 0;
+    padding: 0.3in;
+    gap: 8px;
+    overflow: visible;
+  }
+  .data-ai-diagnostic-page .data-ai-report-cover {
+    min-height: 7.49in !important;
+    padding: 0.55in 0.7in !important;
+  }
+  .data-ai-diagnostic-page .data-ai-markdown-report,
+  .data-ai-diagnostic-page .data-ai-markdown-body { display: block !important; }
+  .data-ai-diagnostic-page .data-ai-markdown-body p,
+  .data-ai-diagnostic-page .data-ai-markdown-body ul { margin: 0 0 10px; }
+  .data-ai-diagnostic-page .data-ai-report-kpis div,
+  .data-ai-diagnostic-page .data-ai-report-two-col section,
+  .data-ai-diagnostic-page .data-ai-report-callout,
+  .data-ai-diagnostic-page .data-ai-gate-matrix section,
+  .data-ai-diagnostic-page .data-ai-board-grid section { padding: 4mm; }
+  .data-ai-diagnostic-page .data-ai-report-table-wrap { break-inside: auto; page-break-inside: auto; }
+}
+.industry-function-scope { border: 0; border-bottom: 1px solid #d8dde3; padding: 16px 0; margin: 0 0 20px; min-width: 0; }
+.industry-function-scope legend { font-size: 15px; font-weight: 700; }
+.industry-function-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.industry-function-options label { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 12px; border: 1px solid #d8dde3; border-radius: 6px; cursor: pointer; background: white; }
+.industry-function-options label:has(input:checked) { border-color: #c93532; background: #fff5f4; }
+.industry-function-options input { width: 18px; height: 18px; flex-shrink: 0; accent-color: #c93532; }
+.industry-function-options label > span { display: grid; flex: 1; min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.industry-function-options strong { font-size: 14px; }
+.industry-function-options span[lang] { font-size: 13px; color: #525b64; }
+.industry-function-options small { color: #59616b; }
+.industry-function-scope p { font-size: 13px; margin: 12px 0 0; color: #525b64; }
+.industry-function-tag { font-size: 12px; color: #a12826; font-weight: 700; }
+@media (max-width: 1000px) { .industry-function-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 540px) { .industry-function-options { grid-template-columns: minmax(0, 1fr); } }

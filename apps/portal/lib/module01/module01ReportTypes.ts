@@ -1,3 +1,6 @@
+import type { DiagnosticIndustryProfile } from "@/lib/deterministicReportBuilders";
+import type { FunctionalFinding } from "./module01FunctionalDomains";
+
 export type Module01NarrativeSource = "ai2" | "fallback" | "deterministic";
 export type Module01ValidationStatus = "valid" | "fallback" | "rejected" | "not_requested";
 
@@ -45,7 +48,9 @@ export type Module01DomainScore = {
 };
 
 export type Module01StructuredReport = {
+  readonly functionalFindings?: readonly FunctionalFinding[];
   readonly reportHeader: {
+    industryProfile?: DiagnosticIndustryProfile;
     reportId: string;
     clientName: string;
     businessDomain: string;

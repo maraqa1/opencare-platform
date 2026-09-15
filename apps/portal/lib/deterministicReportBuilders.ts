@@ -1,4 +1,19 @@
+import type { IndustryProfileId } from "@/lib/module01/module01IndustryProfiles";
+import { functionalFindings, type FunctionalFinding } from "@/lib/module01/module01FunctionalDomains";
+
+export type DiagnosticIndustryProfile = {
+  id: IndustryProfileId;
+  version: string;
+  labelEn: string;
+  labelAr: string;
+};
+
 export type DiagnosticReportRequest = {
+  selectedFunctions?: string[];
+  functionCatalogueVersion?: string;
+  industryProfile?: DiagnosticIndustryProfile;
+  responses?: unknown[];
+  evidence?: unknown;
   customerContext?: {
     customerName?: string;
     businessDomain?: string;
@@ -51,6 +66,8 @@ export type DiagnosticReportRequest = {
 };
 
 export type GeneratedConsultingReport = {
+  functionalFindings?: FunctionalFinding[];
+  industryProfile?: DiagnosticIndustryProfile;
   executiveSummary: string;
   overallAdvisoryNarrative: string;
   boardScorecardNarrative: string;
@@ -74,10 +91,16 @@ export type GeneratedConsultingReport = {
 };
 
 export type StructuredDiagnosticReport = {
+  reportHeader: {
+    industryProfile?: DiagnosticIndustryProfile;
+    clientName: string;
+    businessDomain: string;
+  };
   reportId: string;
   generationMode: "deterministic" | "narrative_enrichment";
   model: string;
   sections: {
+    functionalFindings?: FunctionalFinding[];
     executiveSummary: {
       summaryText: string;
       maturityScore: number | null;
@@ -152,6 +175,20 @@ export function contextLabel(
 
 export function formatScore(value: number | null) {
   return value === null ? "not scored" : value.toFixed(1);
+}
+
+export function maturityDescription(score: number | null) {
+  if (score === null || !Number.isFinite(score)) return "maturity not assessed";
+  if (score < 1) return "absent maturity";
+  if (score < 2) return "ad hoc maturity";
+  if (score < 3) return "defined maturity";
+  if (score < 3.6) return "managed maturity";
+  return "optimised maturity";
+}
+
+function contextSentence(label: string, value: string | undefined) {
+  const content = value?.trim().replace(/[.!?\u061f\u06d4]+$/u, "").trim();
+  return content ? `${label}: ${content}.` : "";
 }
 
 export function evidenceCoveragePct(payload: DiagnosticReportRequest) {
@@ -257,7 +294,7 @@ function domainRemediationFocus(domainName: string) {
   }
   if (name.includes("architecture") || name.includes("infrastructure")) {
     return {
-      decision: "Establish the current-state and target-state data architecture for PMS, ERP, CRM and project-control integration, including source ownership, integration patterns, reporting-layer design and control points.",
+      decision: "Establish the current-state and target-state data architecture for verified customer source systems, including source ownership, integration patterns, reporting-layer design and control points.",
       owner: "Data Architecture Lead with IT and system owners",
       action: "Document current-state flows, target integration patterns, system-of-record decisions, reporting-layer design, and architecture control points.",
       evidence: "Current-state architecture, target-state blueprint, integration pattern register, source ownership map, and reporting-layer design.",
@@ -317,7 +354,13 @@ function domainActionRecommendation(domain: DiagnosticReportRequest["topGapDomai
 export function buildDeterministicReport(payload: DiagnosticReportRequest): GeneratedConsultingReport {
   const client = contextLabel(payload, "customerName", "the organisation");
   const domain = contextLabel(payload, "businessDomain", "the stated business domain");
-  const scope = contextLabel(payload, "operatingScope", "the assessed operating scope");
+  const maturity = maturityDescription(payload.overallScore);
+  const customerFacts = [
+    contextSentence("Customer-stated business domain", payload.customerContext?.businessDomain),
+    contextSentence("Customer-stated operating scope", payload.customerContext?.operatingScope),
+    contextSentence("Customer-stated priorities", payload.customerContext?.strategicPriorities),
+    contextSentence("Customer-reported pain points", payload.customerContext?.currentPainPoints),
+  ].filter(Boolean).join(" ");
   const score = formatScore(payload.overallScore);
   const evidencePct = evidenceCoveragePct(payload);
   const confidencePct = evidenceConfidencePct(payload);
@@ -325,7 +368,7 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
     ? "not calculated"
     : confidencePct === null
       ? `${evidencePct}% evidence-backed`
-      : `${evidencePct}% evidence-backed, but weighted confidence is only ${confidencePct}%`;
+      : `${evidencePct}% evidence-backed, with weighted confidence of ${confidencePct}%`;
   const readinessPct = payload.overallScore === null ? null : Math.round((payload.overallScore / 4) * 100);
   const gaps = gapDomainNames(payload);
   const weakest = gaps.length > 0 ? gaps.join(", ") : "the lowest-scoring domains";
@@ -339,14 +382,16 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
     .map((gap) => `${gap.domain}: ${gap.question} - ${gap.actionPlan || "assign an owner and remediation action"}`);
 
   return {
+    ...(payload.industryProfile ? { industryProfile: { ...payload.industryProfile } } : {}),
+    functionalFindings: payload.industryProfile ? functionalFindings(payload.industryProfile.id, payload.selectedFunctions ?? [], payload.responses ?? []) : [],
     executiveSummary:
       `${client} is assessed at ${score} / 4 maturity across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions for ${domain}. The evidence posture is ${evidencePosture}, with material gaps concentrated in ${weakest}. The immediate executive implication is to treat the baseline as decision-useful but provisional where evidence is incomplete, then move quickly from assessment to owned remediation.`,
     overallAdvisoryNarrative:
-      `The helicopter view is that ${client} has enough evidence to move from diagnostic discussion into controlled execution, but not enough maturity to scale data and AI autonomously. The report sections point to one advisory conclusion: strengthen ownership, quality, source traceability, and roadmap discipline first, then use those controls to sequence reporting, analytics, and AI use cases. Management should treat ${weakest} as the first wave of intervention because these domains determine whether board reporting can be trusted, whether AI candidates can be approved, and whether benefits can be measured. The recommended posture is therefore pragmatic: proceed with governed reporting and human-approved AI support, pilot more advanced analytics only where evidence is validated, ownership is confirmed and controls are operating, and hold sensitive automation until the control environment is demonstrably operating.`,
+      `${client} records ${maturity} at ${score} / 4. Use the scored baseline and evidence posture (${evidencePosture}) to determine the scope of controlled execution; an aggregate maturity score alone does not establish readiness for autonomous AI. Validate ownership, quality, source traceability, and delivery controls before sequencing reporting, analytics, and AI use cases. Review ${weakest} against the supporting evidence to set improvement priorities. Proceed with governed reporting and human-approved AI support where controls are confirmed, and require use-case-specific approval before scaling.`,
     boardScorecardNarrative:
       `The board scorecard should be read as a readiness signal, not a maturity badge. A ${score} / 4 score means ${client} has a usable baseline for steering committee decisions, while the evidence posture of ${evidencePosture} shows that management should not treat every evidence-backed answer as equally reliable. Because the largest gaps sit in ${weakest}, the decision required is to approve the baseline, assign accountable owners, confirm evidence sign-off, approve evidence exceptions where needed, and use the scorecard as the control point for deciding what can proceed, what needs a controlled pilot, and what must remain on hold.`,
     headlineAssessment:
-      `${client} shows an early-stage data and AI capability profile in ${domain}. Its operating model spans ${scope.replace(/^Privately held real estate investor and developer covering\s*/i, "").replace(/[.]+$/g, "")}. Management is seeking stronger portfolio visibility, improved project and capex reporting, certified executive dashboards and governed AI use cases for occupancy, leasing, valuation and asset risk insight. However, fragmented PMS, CRM, ERP and project-control data, the absence of unified asset and tenant identifiers, Excel-based handovers and an immature Data Council cadence show that governance, ownership, evidence quality and roadmap discipline must be strengthened before advanced AI use cases are scaled.`,
+      `${client} records ${maturity}, based on ${score} / 4 across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions. ${customerFacts} Validate the reported gaps and supporting evidence before approving remediation or scaling AI.`.replace(/\s+/g, " ").trim(),
     readinessThesis:
       "Proceed with governed descriptive diagnostics, dashboard rationalisation, and human-approved AI reporting. Pilot predictive or generative use cases only where source quality, privacy, lineage, ownership, and model-risk controls are evidenced. Hold autonomous decisioning and sensitive AI workflows until the control environment is approved and operating.",
     boardMessage:
@@ -362,7 +407,7 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
       "Data management foundations: validate definitions, certify lineage, confirm quality controls, and obtain evidence sign-off before AI scaling.",
     ],
     materialFindings: [
-      `Overall maturity is ${score} / 4, indicating that the organisation is not yet operating at a controlled, repeatable data capability level.`,
+      `Overall maturity is ${score} / 4, indicating ${maturity}; this aggregate assessment does not certify individual controls.`,
       `Evidence coverage is ${evidencePct === null ? "not available" : `${evidencePct}%`} and weighted evidence confidence is ${confidencePct === null ? "not available" : `${confidencePct}%`}; interview-only evidence should be validated before board approval.`,
       `Priority gaps are concentrated in ${weakest}, which should drive the first remediation backlog.`,
       `The current readiness score stands at ${readinessPct === null ? "not available" : `${readinessPct}%`}, so AI adoption should be gated rather than broad-based.`,
@@ -422,10 +467,16 @@ export function buildStructuredReport(
   const evidencePct = evidenceCoveragePct(payload);
   const confidencePct = evidenceConfidencePct(payload);
   return {
+    reportHeader: {
+      clientName: contextLabel(payload, "customerName", "the organisation"),
+      businessDomain: contextLabel(payload, "businessDomain", "not supplied"),
+      ...(payload.industryProfile ? { industryProfile: { ...payload.industryProfile } } : {}),
+    },
     reportId: `data-ai-diagnostic-${Date.now()}`,
     generationMode,
     model,
     sections: {
+      functionalFindings: report.functionalFindings ?? [],
       executiveSummary: {
         summaryText: report.executiveSummary,
         maturityScore: payload.overallScore,

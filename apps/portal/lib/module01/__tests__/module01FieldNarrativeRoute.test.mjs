@@ -127,3 +127,14 @@ async function postJson(body) {
 }
 
 console.log("module01 field narrative route tests passed");
+
+{
+  const facts = Array.from({ length: 14 }, (_, index) => `Fact ${index}: evidence control`);
+  const response = await postJson({ field: "roadmapNarrative", client_name: "Fictional Health", facts, timeout_ms: 999999 });
+  assert.equal(response.status, 200);
+  assert.equal(calls.at(-1).facts.length, 15);
+  assert.equal(calls.at(-1).facts.at(-1), facts.at(-1));
+  assert.equal(calls.at(-1).modelConfig.timeoutMs, 55000);
+  assert.equal((await postJson(null)).status, 400);
+  assert.equal((await postJson({ field: "roadmapNarrative", facts: Array(33).fill("Fact") })).status, 400);
+}

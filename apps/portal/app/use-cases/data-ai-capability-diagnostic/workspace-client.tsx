@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   dataAiDiagnosticDomains,
@@ -15,43 +15,28 @@ import {
   clearLatestDiagnosticStrategyHandoff,
   saveLatestDiagnosticStrategyHandoff,
 } from "@/lib/data-ai-diagnostic-handoff";
+import {
+  emptyCustomerContext,
+  seedDatasetOptions,
+  type CustomerContext,
+  type EvidenceStrength,
+  type QuestionState,
+  type SeedDatasetLevel,
+} from "@/lib/module01/module01SeedData";
+import {
+  getIndustryProfile, industryProfiles, isIndustryProfileId, INDUSTRY_PROFILE_VERSION,
+  resolveIndustryDomains, resolveIndustryQuestions, type IndustryProfileId,
+} from "@/lib/module01/module01IndustryProfiles";
+import {
+  buildIndustrySeed, emptyIndustryAnswers, migrateIndustryAnswers, validateIndustryAnswers,
+} from "@/lib/module01/module01IndustryAssessment";
+import "./industry-profile.css";
+import { industryFunctions, normaliseFunctions, FUNCTION_CATALOGUE_VERSION, type FunctionalFinding } from "@/lib/module01/module01FunctionalDomains";
 
 type ActiveTab = "capture" | "dashboard" | "gartner" | "gaps" | "report" | "evidence";
 
-type QuestionState = {
-  score: number | null;
-  evidenceStrength: EvidenceStrength;
-  evidenceAvailable: string;
-  notes: string;
-  actionPlan: string;
-};
-
-type EvidenceStrength = "none" | "interview" | "documented" | "system" | "audited";
-
-type CustomerContext = {
-  customerName: string;
-  businessDomain: string;
-  operatingScope: string;
-  strategicPriorities: string;
-  currentPainPoints: string;
-  targetAudience: string;
-  reportPurpose: string;
-};
-
-type SeedProfileId = "nawah-real-estate" | "hayat-health-network" | "amana-utilities-group";
-type SeedDatasetLevel = "interview-light" | "evidence-enriched" | "board-ready";
-
-type DiagnosticSeedProfile = {
-  id: SeedProfileId;
-  label: string;
-  sector: string;
-  context: CustomerContext;
-  domainScores: Record<number, number>;
-  domainEvidence: Record<number, string>;
-  domainActions: Record<number, string>;
-};
-
 type GeneratedConsultingReport = {
+  functionalFindings?: FunctionalFinding[];
   executiveSummary?: string;
   overallAdvisoryNarrative?: string;
   boardScorecardNarrative?: string;
@@ -59,7 +44,7 @@ type GeneratedConsultingReport = {
   readinessThesis?: string;
   boardMessage?: string;
   boardAsks?: string[];
-  gartnerPillarAssessment?: string[];
+  capabilityPillarAssessment?: string[];
   materialFindings?: string[];
   domainActionPlan?: string[];
   priorityGapRegister?: string[];
@@ -173,7 +158,7 @@ type GartnerPillarSummary = GartnerPillar & {
 const tabs: Array<{ id: ActiveTab; label: string }> = [
   { id: "capture", label: "Data capture" },
   { id: "dashboard", label: "Maturity dashboard" },
-  { id: "gartner", label: "Gartner 7 pillars" },
+  { id: "gartner", label: "Capability pillars" },
   { id: "gaps", label: "Gap matrix" },
   { id: "report", label: "AI report" },
   { id: "evidence", label: "Evidence model" },
@@ -270,238 +255,6 @@ const evidenceStrengthOptions = [
   { value: "audited", label: "Audited", cap: 4, description: "Evidence has review history, controls, audit trail, or measured outcomes." },
 ] satisfies Array<{ value: EvidenceStrength; label: string; cap: number; description: string }>;
 
-const emptyCustomerContext = {
-  customerName: "",
-  businessDomain: "",
-  operatingScope: "",
-  strategicPriorities: "",
-  currentPainPoints: "",
-  targetAudience: "",
-  reportPurpose: "",
-} satisfies CustomerContext;
-
-const seedDatasetOptions = [
-  {
-    id: "interview-light",
-    label: "Interview-light dataset",
-    description: "Lower evidence depth, interview notes, weaker ownership proof, and more ad hoc scores.",
-    scoreShift: -1,
-    evidenceCap: "interview",
-  },
-  {
-    id: "evidence-enriched",
-    label: "Evidence-enriched dataset",
-    description: "Balanced score pattern with documented evidence, named data domains, and actionable remediation notes.",
-    scoreShift: 0,
-    evidenceCap: "system",
-  },
-  {
-    id: "board-ready",
-    label: "Board-ready evidence pack",
-    description: "Richer evidence wording, better governance artefacts, and stronger board-reporting readiness.",
-    scoreShift: 1,
-    evidenceCap: "audited",
-  },
-] satisfies Array<{
-  id: SeedDatasetLevel;
-  label: string;
-  description: string;
-  scoreShift: -1 | 0 | 1;
-  evidenceCap: EvidenceStrength;
-}>;
-
-const seedProfiles = [
-  {
-    id: "nawah-real-estate",
-    label: "Nawah Real Estate Investment Company",
-    sector: "Real estate investment and development",
-    context: {
-      customerName: "Nawah Real Estate Investment Company",
-      businessDomain: "real estate investment and development",
-      operatingScope:
-        "Privately held real estate investor and developer covering income-generating commercial and residential assets, active development projects, SPVs, investment, asset management, leasing, finance, and IT.",
-      strategicPriorities:
-        "Improve investment portfolio visibility, strengthen project and capex performance reporting, certify executive portfolio dashboards, and introduce governed AI use cases for occupancy, leasing, valuation, and asset risk insight.",
-      currentPainPoints:
-        "Asset, lease, tenant, capex, and project data are fragmented across PMS, CRM, ERP, and project controls; no unified asset or tenant identifier; reporting relies on Excel handovers; data ownership and Data Council cadence are not yet embedded.",
-      targetAudience: "Board, Investment Committee, CEO, CFO, CIO, Head of Asset Management, Head of Development, proposed Data Council, and DMO Lead.",
-      reportPurpose:
-        "Establish a diagnostic baseline, prioritise 90-day DMO activation gaps, and define which analytics and AI use cases may proceed, pilot under controls, or be held.",
-    },
-    domainScores: {
-      1: 2,
-      2: 1,
-      3: 1,
-      4: 1,
-      5: 1,
-      6: 2,
-      7: 1,
-      8: 1,
-      9: 1,
-      10: 2,
-      11: 1,
-      12: 1,
-      13: 1,
-    },
-    domainEvidence: {
-      1: "portfolio KPI workshop notes, draft investment reporting value map, and partially approved analytics priorities",
-      2: "draft Data Council charter, informal asset data owner nominations, and unresolved decision-rights matrix",
-      3: "PMS, ERP, CRM, project-controls, valuation, and treasury system list with incomplete interface evidence",
-      4: "sample lease and asset extracts showing duplicate tenant records, missing unit IDs, and unresolved reconciliation defects",
-      5: "draft KPI glossary for occupancy, NOI, IRR, yield, and capex, but limited lineage evidence",
-      6: "executive portfolio dashboard prototype, Excel reconciliation samples, and competing KPI definitions",
-      7: "candidate AI use-case list for occupancy, leasing, valuation, and risk insight without approved model-risk gate",
-      8: "BI prototype, manual data extracts, and target reporting-layer options not yet approved",
-      9: "proposed data owner and steward role list with limited adoption evidence",
-      10: "access matrix and privacy checklist drafts for portfolio reporting datasets",
-      11: "partial source inventory covering PMS, ERP, CRM, project controls, BIM, valuation, and treasury",
-      12: "training needs notes for investment analysts, asset managers, finance users, and stewards",
-      13: "stalled BI initiative lessons, draft 90-day backlog, and benefits tracking not yet approved",
-    },
-    domainActions: {
-      1: "Confirm portfolio reporting outcomes, value cases, and investment committee decision metrics before sequencing DMO initiatives.",
-      2: "Approve Data Council cadence, assign asset, lease, tenant, project, and investment data owners, and publish decision rights.",
-      3: "Document current-state architecture and target reporting layer for PMS, ERP, CRM, and project controls integration.",
-      4: "Create critical data element rules for asset, lease, tenant, valuation, capex, and project cost records.",
-      5: "Publish KPI glossary and source-to-report lineage for occupancy, NOI, IRR, yield, and capex metrics.",
-      6: "Certify one executive portfolio dashboard and retire competing Excel-based versions through controlled change.",
-      7: "Gate AI candidates by business value, data readiness, lineage, explainability, model risk, and human review.",
-      8: "Prioritise governed integration for the highest-volume PMS, ERP, CRM, and project-control handovers.",
-      9: "Activate business data owner and steward responsibilities through a practical DMO operating cadence.",
-      10: "Embed access, privacy, retention, and sensitive-data restrictions into reporting and AI use-case approval.",
-      11: "Complete the source inventory with owners, refresh cadence, integration pattern, known issues, and reconciliation status.",
-      12: "Create role-based enablement for portfolio analysts, asset managers, finance teams, and appointed data stewards.",
-      13: "Convert gaps into a funded 0-30, 31-60, and 61-90 day DMO roadmap with owners and benefits tracking.",
-    },
-  },
-  {
-    id: "hayat-health-network",
-    label: "Hayat Health Services Network",
-    sector: "private healthcare operations",
-    context: {
-      customerName: "Hayat Health Services Network",
-      businessDomain: "private healthcare operations and patient services",
-      operatingScope:
-        "Multi-site healthcare provider covering outpatient clinics, diagnostics, patient access, revenue cycle, pharmacy, workforce operations, finance, and IT.",
-      strategicPriorities:
-        "Improve patient access visibility, reduce revenue leakage, strengthen clinical and operational reporting, and pilot governed AI for demand forecasting, coding review, and patient-flow insight.",
-      currentPainPoints:
-        "Patient, appointment, claim, physician, and service-line data are split across HIS, CRM, billing, laboratory, pharmacy, and finance systems; definitions vary across sites; dashboard trust is inconsistent.",
-      targetAudience: "Board, CEO, COO, CFO, Chief Medical Officer, CIO, Revenue Cycle Director, Operations Directors, Data Council, and DMO Lead.",
-      reportPurpose:
-        "Create a diagnostic baseline for data governance, operational reporting, and AI readiness across patient access, clinical operations, finance, and revenue-cycle decisions.",
-    },
-    domainScores: {
-      1: 2,
-      2: 2,
-      3: 1,
-      4: 1,
-      5: 1,
-      6: 2,
-      7: 1,
-      8: 2,
-      9: 2,
-      10: 2,
-      11: 1,
-      12: 2,
-      13: 1,
-    },
-    domainEvidence: {
-      1: "patient access KPI map, revenue-cycle improvement objectives, and draft service-line analytics priorities",
-      2: "governance forum minutes, informal data ownership list, and unresolved cross-site KPI approval workflow",
-      3: "HIS, CRM, billing, lab, pharmacy, and finance system landscape with partial integration evidence",
-      4: "duplicate patient samples, appointment-status inconsistencies, and claim coding defect examples",
-      5: "draft glossary for no-show rate, denial rate, average wait time, patient episode, and service-line margin",
-      6: "operations dashboard extracts, manual reconciliation workbooks, and inconsistent site-level KPI definitions",
-      7: "AI candidate list for demand forecasting, coding review, no-show prediction, and patient-flow support",
-      8: "BI workspace, billing extracts, HIS reports, and early data-mart design notes",
-      9: "role matrix for data owners, analysts, revenue-cycle SMEs, and operations champions",
-      10: "privacy and access-control checklists for patient and claims datasets",
-      11: "partial source inventory covering HIS, billing, CRM, lab, pharmacy, workforce, and finance",
-      12: "training plan notes for analysts, operations managers, and data stewards",
-      13: "improvement backlog and unresolved dependencies across patient access, revenue cycle, and reporting",
-    },
-    domainActions: {
-      1: "Prioritise data initiatives around patient access, revenue-cycle leakage, clinical operations, and service-line profitability.",
-      2: "Confirm Data Council authority for patient, appointment, claim, physician, and service-line definitions.",
-      3: "Map source-to-report architecture across HIS, billing, CRM, lab, pharmacy, workforce, and finance.",
-      4: "Stand up quality rules for patient identity, appointment status, claim code, service line, and physician master data.",
-      5: "Publish KPI glossary and lineage for patient access, no-show, denial, wait-time, and margin indicators.",
-      6: "Certify operational dashboards with owners, refresh cadence, and reconciliation rules across sites.",
-      7: "Apply AI readiness gates before demand forecasting, coding review, no-show prediction, or patient-flow pilots.",
-      8: "Define the governed reporting layer and retire unsupported manual extracts in priority workflows.",
-      9: "Name accountable data owners and operational stewards for each high-value domain.",
-      10: "Apply privacy, access, retention, and human-review controls to patient and claim data products.",
-      11: "Complete the source inventory and refresh cadence for systems feeding board and operations dashboards.",
-      12: "Train analysts, stewards, and operations leaders on definitions, evidence, and dashboard certification.",
-      13: "Create a benefits-led 90-day roadmap tied to access, denial reduction, and reporting trust outcomes.",
-    },
-  },
-  {
-    id: "amana-utilities-group",
-    label: "Amana Utilities Operations Group",
-    sector: "utilities and municipal operations",
-    context: {
-      customerName: "Amana Utilities Operations Group",
-      businessDomain: "utilities, field operations, and municipal service delivery",
-      operatingScope:
-        "Regional utilities operator covering network assets, field maintenance, customer service, outage response, contractors, billing, finance, and operational control rooms.",
-      strategicPriorities:
-        "Improve asset reliability, outage response visibility, contractor performance, customer-service reporting, and governed AI for work-order prioritisation and demand forecasting.",
-      currentPainPoints:
-        "Asset, meter, work-order, outage, contractor, customer, and billing data are fragmented across EAM, GIS, SCADA, CRM, billing, and field-service platforms; lineage and ownership are weak.",
-      targetAudience: "Board, CEO, COO, CFO, CIO, Network Operations, Customer Service, Field Maintenance, Data Council, and DMO Lead.",
-      reportPurpose:
-        "Assess data and AI capability for operational reliability, customer service, asset reporting, and controlled analytics use-case activation.",
-    },
-    domainScores: {
-      1: 2,
-      2: 1,
-      3: 2,
-      4: 1,
-      5: 1,
-      6: 2,
-      7: 1,
-      8: 2,
-      9: 1,
-      10: 2,
-      11: 1,
-      12: 1,
-      13: 1,
-    },
-    domainEvidence: {
-      1: "asset reliability objectives, outage KPI targets, and draft operational analytics value cases",
-      2: "informal owner nominations for asset, outage, meter, work-order, and customer data",
-      3: "EAM, GIS, SCADA, CRM, billing, and field-service architecture sketches with partial interface mapping",
-      4: "asset hierarchy defects, meter-location mismatches, and work-order closure inconsistencies",
-      5: "draft glossary for outage duration, response SLA, asset class, contractor productivity, and billing exceptions",
-      6: "control-room reports, field-service dashboards, and Excel reconciliations for SLA and outage indicators",
-      7: "candidate analytics for work-order priority, outage prediction, demand forecasting, and contractor performance",
-      8: "BI workspace, operational data extracts, and integration backlog for EAM, GIS, SCADA, and CRM",
-      9: "draft operating model for data owners, dispatch analysts, field supervisors, and stewards",
-      10: "access matrix and operational data security review notes",
-      11: "partial inventory of EAM, GIS, SCADA, CRM, billing, and contractor data flows",
-      12: "training needs for field supervisors, analysts, and data stewards",
-      13: "roadmap backlog with unresolved dependency and benefits tracking gaps",
-    },
-    domainActions: {
-      1: "Prioritise data work around asset reliability, outage response, customer service, contractor productivity, and billing trust.",
-      2: "Approve ownership for asset, outage, meter, work-order, customer, contractor, and billing data.",
-      3: "Map target architecture across EAM, GIS, SCADA, CRM, billing, and field-service workflows.",
-      4: "Define quality rules for asset hierarchy, meter location, outage event, work-order closure, and SLA records.",
-      5: "Publish operational glossary and source lineage for reliability, SLA, contractor, and billing indicators.",
-      6: "Certify control-room and executive operations dashboards with refresh cadence and reconciliation rules.",
-      7: "Gate AI candidates for work-order priority, outage prediction, demand forecasting, and contractor risk.",
-      8: "Sequence integration fixes for EAM, GIS, SCADA, CRM, billing, and field-service data flows.",
-      9: "Activate steward roles across network operations, customer service, field maintenance, finance, and IT.",
-      10: "Embed security, access, audit, and human-review controls into operational analytics workflows.",
-      11: "Complete source inventory and lineage for priority outage, asset, customer, and billing reports.",
-      12: "Train operations analysts and stewards on definitions, evidence standards, and dashboard certification.",
-      13: "Convert reliability and customer-service gaps into a funded 90-day roadmap with measurable benefits.",
-    },
-  },
-] satisfies DiagnosticSeedProfile[];
-
 function initialState() {
   return Object.fromEntries(
     dataAiDiagnosticQuestions.map((question) => [
@@ -514,123 +267,6 @@ function initialState() {
         actionPlan: question.actionPlan,
       } satisfies QuestionState,
     ]),
-  ) as Record<string, QuestionState>;
-}
-
-function evidenceStrengthForScore(score: number): EvidenceStrength {
-  if (score >= 4) return "audited";
-  if (score >= 3) return "system";
-  if (score >= 2) return "documented";
-  if (score >= 1) return "interview";
-  return "none";
-}
-
-function evidenceRank(value: EvidenceStrength) {
-  return evidenceStrengthOptions.findIndex((option) => option.value === value);
-}
-
-function capEvidenceStrength(value: EvidenceStrength, cap: EvidenceStrength) {
-  return evidenceRank(value) > evidenceRank(cap) ? cap : value;
-}
-
-function seedScoreForQuestion(profile: DiagnosticSeedProfile, dataset: typeof seedDatasetOptions[number], question: DataAiDiagnosticQuestion) {
-  const base = profile.domainScores[question.domainId] ?? 1;
-  const variation = question.number % 7 === 0 ? -1 : question.number % 6 === 0 ? 1 : 0;
-  const score = base + dataset.scoreShift + variation;
-  return Math.max(0, Math.min(4, score));
-}
-
-function evidenceStrengthForSeed(score: number, dataset: typeof seedDatasetOptions[number]) {
-  return capEvidenceStrength(evidenceStrengthForScore(score), dataset.evidenceCap);
-}
-
-function seededEvidenceForQuestion(
-  profile: DiagnosticSeedProfile,
-  dataset: typeof seedDatasetOptions[number],
-  question: DataAiDiagnosticQuestion,
-  score: number,
-) {
-  const domainEvidence = profile.domainEvidence[question.domainId] ?? "workshop notes and open evidence requests";
-  if (dataset.id === "interview-light") {
-    return `Interview seed: ${domainEvidence}. Evidence is mostly workshop-confirmed and still needs approved artefacts for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
-  }
-  if (dataset.id === "board-ready") {
-    return `Board-ready seed: ${domainEvidence}, owner sign-off, dated evidence register entry, and steering-review trace. Score ${score}/4 reflects the available evidence for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
-  }
-  return `Evidence-enriched seed: ${domainEvidence}, draft owner confirmation, sample artefact, and remediation note for ${question.domainEn}. Required evidence: ${question.evidenceRequired}.`;
-}
-
-function seededActionByDomain(domainName: string) {
-  const name = domainName.toLowerCase();
-  if (name.includes("quality") || name.includes("master")) {
-    return "Assign a data-quality owner, define critical data elements, publish validation rules, and track defect remediation through monthly governance.";
-  }
-  if (name.includes("source") || name.includes("flow")) {
-    return "Create the critical-source inventory, confirm system owners, document refresh cadence, and map source-to-report lineage for priority decisions.";
-  }
-  if (name.includes("execution") || name.includes("roadmap") || name.includes("value measurement")) {
-    return "Convert the gap into a benefits-led roadmap with initiative owners, dependency log, funding route, milestones, and steering review cadence.";
-  }
-  if (name.includes("strategy") || name.includes("business value")) {
-    return "Confirm strategic data outcomes, value cases, prioritisation criteria, and the decision route for funding and sequencing initiatives.";
-  }
-  if (name.includes("people") || name.includes("capabil") || name.includes("training")) {
-    return "Define role-based capability paths for owners, stewards, analysts, and AI users, then link training evidence to operating responsibilities.";
-  }
-  if (name.includes("governance") || name.includes("operating model")) {
-    return "Approve data-council decision rights, RACI, policy ownership, issue escalation, and evidence approval workflow.";
-  }
-  if (name.includes("metadata") || name.includes("catalogue") || name.includes("lineage")) {
-    return "Create glossary entries, catalogue priority datasets, map lineage, and certify ownership for high-value reports and data products.";
-  }
-  if (name.includes("artificial intelligence") || name.includes("use cases")) {
-    return "Gate AI candidates by data quality, privacy, lineage, owner approval, model-risk controls, and human review requirements.";
-  }
-  if (name.includes("architecture") || name.includes("infrastructure") || name.includes("tools") || name.includes("platform")) {
-    return "Document current platforms, integration patterns, target architecture, control gaps, and enabling investments for governed analytics.";
-  }
-  if (name.includes("report") || name.includes("dashboard") || name.includes("analytics")) {
-    return "Rationalise dashboards around certified KPI definitions, report owners, release controls, and executive usage evidence.";
-  }
-  if (name.includes("privacy") || name.includes("security") || name.includes("compliance")) {
-    return "Embed privacy, access, retention, auditability, and AI-use restrictions into the data and AI delivery gate.";
-  }
-  return "Assign an accountable owner, confirm required evidence, define target state, and track closure through the governance cadence.";
-}
-
-function seededActionForQuestion(profile: DiagnosticSeedProfile, dataset: typeof seedDatasetOptions[number], question: DataAiDiagnosticQuestion, score: number) {
-  const gap = Math.max(question.target - score, 0);
-  const action = profile.domainActions[question.domainId] ?? seededActionByDomain(question.domainEn);
-  const datasetPrefix =
-    dataset.id === "interview-light"
-      ? "Confirm evidence and ownership first:"
-      : dataset.id === "board-ready"
-        ? "Move from diagnostic to governed execution:"
-        : "Prioritise the next remediation wave:";
-  if (gap >= 2) {
-    return `${datasetPrefix} ${action}`;
-  }
-  if (gap === 1) {
-    return `${datasetPrefix} strengthen evidence completeness for ${question.domainEn}, confirm accountable sign-off, and move the control from defined to managed maturity.`;
-  }
-  return `${datasetPrefix} maintain evidence, monitor benefits, and review ${question.domainEn} in the next assessment cycle.`;
-}
-
-function seededState(profile: DiagnosticSeedProfile, dataset: typeof seedDatasetOptions[number]) {
-  return Object.fromEntries(
-    dataAiDiagnosticQuestions.map((question) => {
-      const score = seedScoreForQuestion(profile, dataset, question);
-      return [
-        question.id,
-        {
-          score,
-          evidenceStrength: evidenceStrengthForSeed(score, dataset),
-          evidenceAvailable: seededEvidenceForQuestion(profile, dataset, question, score),
-          notes: `${dataset.label} for ${profile.label}. Replace with validated interview notes, artefact links, and owner approvals before production use.`,
-          actionPlan: seededActionForQuestion(profile, dataset, question, score),
-        } satisfies QuestionState,
-      ];
-    }),
   ) as Record<string, QuestionState>;
 }
 
@@ -674,7 +310,7 @@ function normaliseGeneratedReport(report: unknown): GeneratedConsultingReport {
     readinessThesis: asText(candidate.readinessThesis),
     boardMessage: asText(candidate.boardMessage),
     boardAsks: asStringList(candidate.boardAsks),
-    gartnerPillarAssessment: asStringList(candidate.gartnerPillarAssessment),
+    capabilityPillarAssessment: asStringList(candidate.capabilityPillarAssessment ?? candidate.gartnerPillarAssessment),
     materialFindings: asStringList(candidate.materialFindings),
     domainActionPlan: asStringList(candidate.domainActionPlan),
     priorityGapRegister: asStringList(candidate.priorityGapRegister),
@@ -695,9 +331,13 @@ function scoreWidth(value: number | null) {
   return `${Math.max(0, Math.min(100, (value / 4) * 100))}%`;
 }
 
-function buildDomainSummaries(stateByQuestion: Record<string, QuestionState>): DomainSummary[] {
-  return dataAiDiagnosticDomains.map((domain) => {
-    const questions = dataAiDiagnosticQuestions.filter((question) => question.domainId === domain.id);
+function buildDomainSummaries(
+  stateByQuestion: Record<string, QuestionState>,
+  questionSet: DataAiDiagnosticQuestion[] = dataAiDiagnosticQuestions,
+  domains = dataAiDiagnosticDomains,
+): DomainSummary[] {
+  return domains.map((domain) => {
+    const questions = questionSet.filter((question) => question.domainId === domain.id);
     const scored = questions.filter((question) => stateByQuestion[question.id]?.score !== null);
     const avgScore =
       scored.length > 0
@@ -718,9 +358,12 @@ function buildDomainSummaries(stateByQuestion: Record<string, QuestionState>): D
   });
 }
 
-function buildGartnerPillarSummaries(stateByQuestion: Record<string, QuestionState>): GartnerPillarSummary[] {
+function buildGartnerPillarSummaries(
+  stateByQuestion: Record<string, QuestionState>,
+  questionSet: DataAiDiagnosticQuestion[] = dataAiDiagnosticQuestions,
+): GartnerPillarSummary[] {
   return gartnerPillars.map((pillar) => {
-    const questions = dataAiDiagnosticQuestions.filter((question) => pillar.domainIds.includes(question.domainId));
+    const questions = questionSet.filter((question) => pillar.domainIds.includes(question.domainId));
     const scored = questions.filter((question) => stateByQuestion[question.id]?.score !== null);
     const avgScore =
       scored.length > 0
@@ -1077,9 +720,41 @@ function AiEnrichmentDebugPanel({
   );
 }
 
+const assessmentStorageKey = "module01:industry-assessment:v1";
+type ProfileHistoryEntry = {
+  changedAt: string;
+  industryId: IndustryProfileId;
+  version: string;
+  answers: Record<string, QuestionState>;
+};
+function downloadText(filename: string, content: string, type: string) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export function DataAiDiagnosticWorkspace() {
+  const [industryId, setIndustryId] = useState<IndustryProfileId | "">("");
+  const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
+  const [pendingIndustryId, setPendingIndustryId] = useState<IndustryProfileId | null>(null);
+  const [reviewIds, setReviewIds] = useState<string[]>([]);
+  const [profileHistory, setProfileHistory] = useState<ProfileHistoryEntry[]>([]);
+  const [contextReviewRequired, setContextReviewRequired] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
+  const [storageMessage, setStorageMessage] = useState("");
+  const generationSequence = useRef(0);
+  const reportAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => reportAbort.current?.abort(), []);
+  const [reportResponse, setReportResponse] = useState<DiagnosticReportApiResponse | null>(null);
+  const industryProfile = industryId ? getIndustryProfile(industryId) : null;
+  const dataAiDiagnosticQuestions = useMemo(() => resolveIndustryQuestions(industryId || "cross-industry", selectedFunctions), [industryId, selectedFunctions]);
+  const dataAiDiagnosticDomains = useMemo(() => resolveIndustryDomains(industryId || "cross-industry"), [industryId]);
   const [activeTab, setActiveTab] = useState<ActiveTab>("capture");
   const [selectedDomain, setSelectedDomain] = useState<number | "all">("all");
+  const [questionScope, setQuestionScope] = useState("all");
   const [search, setSearch] = useState("");
   const [stateByQuestion, setStateByQuestion] = useState(initialState);
   const [customerContext, setCustomerContext] = useState<CustomerContext>(emptyCustomerContext);
@@ -1101,7 +776,6 @@ export function DataAiDiagnosticWorkspace() {
     details: string[];
   } | null>(null);
   const [handoffMessage, setHandoffMessage] = useState("");
-  const [selectedSeedProfileId, setSelectedSeedProfileId] = useState<SeedProfileId>("nawah-real-estate");
   const [selectedSeedDatasetLevel, setSelectedSeedDatasetLevel] = useState<SeedDatasetLevel>("evidence-enriched");
 
   useEffect(() => {
@@ -1113,10 +787,62 @@ export function DataAiDiagnosticWorkspace() {
     );
   }, []);
 
-  const summaries = useMemo(() => buildDomainSummaries(stateByQuestion), [stateByQuestion]);
-  const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion), [stateByQuestion]);
+  useEffect(() => {
+    try {
+      const savedText = window.localStorage.getItem(assessmentStorageKey);
+      if (savedText) {
+        const saved = JSON.parse(savedText);
+        if (isIndustryProfileId(saved.industryId)) {
+          const retainedFunctions = industryFunctions(saved.industryId).filter((f) =>
+            Object.keys(saved.answers ?? {}).some((key) => key.startsWith(`fn_${saved.industryId}_${f.id}_`))).map((f) => f.id);
+          const answers = validateIndustryAnswers(saved.industryId, saved.answers, normaliseFunctions(saved.industryId, [...retainedFunctions, ...normaliseFunctions(saved.industryId, saved.selectedFunctions)]));
+          if (saved.version !== INDUSTRY_PROFILE_VERSION) {
+            setProfileHistory([{ changedAt: new Date().toISOString(), industryId: saved.industryId, version: String(saved.version ?? "unknown"), answers }]);
+            setStorageMessage("The saved questionnaire version has changed. Previous answers are archived; select an industry to reassess.");
+          } else {
+            setIndustryId(saved.industryId);
+            setSelectedFunctions(normaliseFunctions(saved.industryId, saved.selectedFunctions));
+            setStateByQuestion(answers);
+            const context = { ...emptyCustomerContext };
+            for (const key of Object.keys(context) as Array<keyof CustomerContext>) {
+              context[key] = typeof saved.customerContext?.[key] === "string" ? saved.customerContext[key] : "";
+            }
+            setCustomerContext(context);
+            setContextReviewRequired(saved.contextReviewRequired === true);
+            setReviewIds(Array.isArray(saved.reviewIds) ? saved.reviewIds.filter((id: unknown) => typeof id === "string" && id in answers) : []);
+            setProfileHistory(Array.isArray(saved.profileHistory) ? saved.profileHistory.filter((entry: ProfileHistoryEntry) => entry && isIndustryProfileId(entry.industryId)).map((entry: ProfileHistoryEntry) => ({
+              changedAt: String(entry.changedAt), industryId: entry.industryId, version: String(entry.version),
+              answers: validateIndustryAnswers(entry.industryId, entry.answers, industryFunctions(entry.industryId).map((f) => f.id)),
+            })) : []);
+          }
+        }
+      }
+    } catch {
+      setStorageMessage("Saved assessment could not be restored. Start a new assessment or recover your downloaded JSON.");
+    }
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady || !industryId) return;
+    try {
+      window.localStorage.setItem(assessmentStorageKey, JSON.stringify({
+        industryId, version: INDUSTRY_PROFILE_VERSION, answers: stateByQuestion, customerContext,
+        selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
+        reviewIds, contextReviewRequired, profileHistory,
+        questions: dataAiDiagnosticQuestions.map(({ id, variantKey, questionEn, questionAr, evidenceRequired, evidenceRequiredAr }) => ({
+          id, variantKey, questionEn, questionAr, evidenceRequired, evidenceRequiredAr,
+        })),
+      }));
+    } catch {
+      setStorageMessage("Browser storage is unavailable or full. Download assessment JSON to keep your work.");
+    }
+  }, [storageReady, industryId, stateByQuestion, customerContext, reviewIds, contextReviewRequired, profileHistory, dataAiDiagnosticQuestions]);
+
+  const summaries = useMemo(() => buildDomainSummaries(stateByQuestion, dataAiDiagnosticQuestions, dataAiDiagnosticDomains), [stateByQuestion, dataAiDiagnosticQuestions, dataAiDiagnosticDomains]);
+  const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion, dataAiDiagnosticQuestions), [stateByQuestion, dataAiDiagnosticQuestions]);
   const totalQuestions = dataAiDiagnosticQuestions.length;
-  const scoredQuestions = dataAiDiagnosticQuestions.filter((question) => stateByQuestion[question.id]?.score !== null).length;
+  const scoredQuestions = dataAiDiagnosticQuestions.filter((question) => typeof stateByQuestion[question.id]?.score === "number").length;
   const overallScore =
     scoredQuestions > 0
       ? dataAiDiagnosticQuestions.reduce((sum, question) => sum + (stateByQuestion[question.id]?.score ?? 0), 0) /
@@ -1131,6 +857,7 @@ export function DataAiDiagnosticWorkspace() {
     const priority = statusForQuestion(question, stateByQuestion[question.id]);
     return priority === "critical" || priority === "high";
   });
+  const selectedSeedDataset = seedDatasetOptions.find((dataset) => dataset.id === selectedSeedDatasetLevel) ?? seedDatasetOptions[1];
 
   const filteredQuestions = dataAiDiagnosticQuestions.filter((question) => {
     const matchesDomain = selectedDomain === "all" || question.domainId === selectedDomain;
@@ -1140,8 +867,10 @@ export function DataAiDiagnosticWorkspace() {
       question.questionEn.toLowerCase().includes(query) ||
       question.questionAr.toLowerCase().includes(query) ||
       question.evidenceRequired.toLowerCase().includes(query) ||
+      question.functionLabel?.toLowerCase().includes(query) ||
       question.domainEn.toLowerCase().includes(query);
-    return matchesDomain && matchesSearch;
+    const matchesFunction = questionScope === "all" || (questionScope === "core" ? !question.functionId : question.functionId === questionScope);
+    return matchesDomain && matchesSearch && matchesFunction;
   });
 
   const rankedGaps = [...dataAiDiagnosticQuestions]
@@ -1154,7 +883,56 @@ export function DataAiDiagnosticWorkspace() {
     .filter((item) => item.gap !== null)
     .sort((a, b) => (b.gap ?? 0) - (a.gap ?? 0) || a.question.number - b.question.number);
 
+  const invalidateReport = () => {
+    reportAbort.current?.abort();
+    generationSequence.current += 1;
+    setGeneratedReport(null);
+    setGeneratedMarkdownReport(null);
+    setGeneratedMarkdownReportSource(null);
+    setReportGenerationMetadata(null);
+    setReportResponse(null);
+    setReportStatus("idle");
+    setReportMessage("");
+    setReportFailureLog(null);
+    setHandoffMessage("");
+    clearLatestDiagnosticStrategyHandoff();
+  };
+
+  const applyIndustryChange = (next: IndustryProfileId) => {
+    if (industryId && industryId !== next) {
+      const migration = migrateIndustryAnswers(industryId, next, stateByQuestion);
+      setProfileHistory((current) => [...current, {
+        changedAt: new Date().toISOString(), industryId, version: INDUSTRY_PROFILE_VERSION,
+        answers: { ...stateByQuestion },
+      }]);
+      setStateByQuestion(migration.answers);
+      setReviewIds(migration.reviewIds);
+      setContextReviewRequired(Object.values(customerContext).some((value) => value.trim()));
+    } else if (!industryId) {
+      setStateByQuestion(emptyIndustryAnswers(next));
+    }
+    setSelectedFunctions([]);
+    setQuestionScope("all");
+    setIndustryId(next);
+    setPendingIndustryId(null);
+    setSelectedDomain("all");
+    setSearch("");
+    setActiveTab("capture");
+    invalidateReport();
+  };
+
+  const requestIndustryChange = (value: string) => {
+    if (!isIndustryProfileId(value) || value === industryId) return;
+    if (industryId && (Object.values(stateByQuestion).some((answer) => answer.score !== null || answer.notes || answer.evidenceAvailable || answer.actionPlan) || Object.values(customerContext).some(Boolean))) {
+      setPendingIndustryId(value);
+    } else {
+      applyIndustryChange(value);
+    }
+  };
+
   const updateQuestion = (questionId: string, patch: Partial<QuestionState>) => {
+    invalidateReport();
+    if (patch.score !== undefined && patch.score !== null) setReviewIds((current) => current.filter((id) => id !== questionId));
     setStateByQuestion((current) => ({
       ...current,
       [questionId]: {
@@ -1164,12 +942,28 @@ export function DataAiDiagnosticWorkspace() {
     }));
   };
 
-  const selectedSeedProfile = seedProfiles.find((profile) => profile.id === selectedSeedProfileId) ?? seedProfiles[0];
-  const selectedSeedDataset = seedDatasetOptions.find((dataset) => dataset.id === selectedSeedDatasetLevel) ?? seedDatasetOptions[1];
+  const toggleFunction = (id: string) => {
+    if (!industryId) return;
+    const next = normaliseFunctions(industryId, selectedFunctions.includes(id)
+      ? selectedFunctions.filter((value) => value !== id) : [...selectedFunctions, id]);
+    // Keep deselected answers for later re-selection, but exclude them from scoring and AI inputs.
+    setStateByQuestion((current) => ({ ...emptyIndustryAnswers(industryId, next), ...current }));
+    setSelectedFunctions(next);
+    setQuestionScope("all");
+    setSelectedDomain("all");
+    setSearch("");
+    invalidateReport();
+  };
 
   const seedDummyData = () => {
-    setStateByQuestion(seededState(selectedSeedProfile, selectedSeedDataset));
-    setCustomerContext(selectedSeedProfile.context);
+    if (!industryId) return;
+    if (scoredQuestions > 0 && !window.confirm("Replace the current answers and customer context with fictional demonstration data?")) return;
+    invalidateReport();
+    const seed = buildIndustrySeed(industryId, selectedSeedDatasetLevel, selectedFunctions);
+    setStateByQuestion(seed.answers);
+    setCustomerContext(seed.customerContext);
+    setReviewIds([]);
+    setContextReviewRequired(false);
     setGeneratedReport(null);
     setGeneratedMarkdownReport(null);
     setGeneratedMarkdownReportSource(null);
@@ -1177,11 +971,15 @@ export function DataAiDiagnosticWorkspace() {
     setReportStatus("idle");
     setReportMessage("");
     setReportFailureLog(null);
-    setHandoffMessage(`Seeded ${selectedSeedProfile.label} with ${selectedSeedDataset.label.toLowerCase()}.`);
+    setHandoffMessage(`Seeded fictional ${industryProfile?.labelEn} data with ${selectedSeedDataset.label.toLowerCase()}.`);
   };
 
   const resetCapture = () => {
-    setStateByQuestion(initialState());
+    if (!window.confirm("Clear this assessment's answers, customer context and saved report?")) return;
+    invalidateReport();
+    setReviewIds([]);
+    setContextReviewRequired(false);
+    setStateByQuestion(industryId ? emptyIndustryAnswers(industryId, selectedFunctions) : initialState());
     setCustomerContext(emptyCustomerContext);
     setGeneratedReport(null);
     setGeneratedMarkdownReport(null);
@@ -1196,6 +994,7 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   const updateCustomerContext = (field: keyof CustomerContext, value: string) => {
+    invalidateReport();
     setCustomerContext((current) => ({
       ...current,
       [field]: value,
@@ -1203,10 +1002,14 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   const downloadDummyDataFile = () => {
-    const seededStateByQuestion = seededState(selectedSeedProfile, selectedSeedDataset);
-    const contextRows = Object.entries(selectedSeedProfile.context).map(([field, value]) => ({
+    if (!industryId) return;
+    const seed = buildIndustrySeed(industryId, selectedSeedDatasetLevel, selectedFunctions);
+    const seededStateByQuestion = seed.answers;
+    const contextRows = Object.entries(seed.customerContext).map(([field, value]) => ({
       record_type: "customer_context",
-      profile: selectedSeedProfile.label,
+      profile: industryProfile?.labelEn,
+      industry_id: industryId,
+      profile_version: INDUSTRY_PROFILE_VERSION,
       dataset_level: selectedSeedDataset.label,
       field,
       value,
@@ -1215,7 +1018,9 @@ export function DataAiDiagnosticWorkspace() {
       const state = seededStateByQuestion[question.id];
       return {
         record_type: "assessment_question",
-        profile: selectedSeedProfile.label,
+        profile: industryProfile?.labelEn,
+      industry_id: industryId,
+      profile_version: INDUSTRY_PROFILE_VERSION,
         dataset_level: selectedSeedDataset.label,
         field: question.id,
         value: "",
@@ -1244,11 +1049,31 @@ export function DataAiDiagnosticWorkspace() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `data-ai-diagnostic-${selectedSeedProfile.id}-${selectedSeedDataset.id}.csv`;
+    link.download = `data-ai-diagnostic-${industryId}-${selectedSeedDataset.id}.csv`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadAssessment = () => {
+    if (!industryProfile) return;
+    downloadText(`module01-${industryId}-assessment.json`, JSON.stringify({
+      industryId, version: INDUSTRY_PROFILE_VERSION, industryProfile,
+      selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
+      customerContext, answers: stateByQuestion, questions: dataAiDiagnosticQuestions,
+      reviewIds, contextReviewRequired, profileHistory, report: reportResponse,
+    }, null, 2), "application/json");
+  };
+
+  const downloadReportHtml = () => {
+    const report = document.querySelector(".data-ai-report-pack")?.cloneNode(true) as HTMLElement | undefined;
+    if (!report) return;
+    report.querySelectorAll(".data-ai-report-toolbar,.data-ai-report-nav,.data-ai-generation-progress,.data-ai-report-status,.data-ai-handoff-status,.data-ai-failure-log,.no-print").forEach((node) => node.remove());
+    const styles = Array.from(document.styleSheets).map((sheet) => {
+      try { return Array.from(sheet.cssRules).map((rule) => rule.cssText).join("\n"); } catch { return ""; }
+    }).join("\n");
+    downloadText(`module01-${industryId}-report.html`, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Module 01 Assessment</title><style>${styles}</style></head><body><main class="page data-ai-diagnostic-page">${report.outerHTML}</main></body></html>`, "text/html");
   };
 
   const printReport = () => {
@@ -1268,6 +1093,20 @@ export function DataAiDiagnosticWorkspace() {
     const state = stateByQuestion[question.id];
     return state?.score !== null && state?.evidenceStrength !== "none" && state?.evidenceAvailable.trim();
   }).length;
+  const evidenceStrengthCounts = dataAiDiagnosticQuestions.reduce<Record<EvidenceStrength, number>>((counts, question) => {
+    const state = stateByQuestion[question.id];
+    const strength = state && state.score !== null && state.evidenceAvailable.trim() ? state.evidenceStrength : "none";
+    counts[strength] += 1;
+    return counts;
+  }, { none: 0, interview: 0, documented: 0, system: 0, audited: 0 });
+  const evidenceWeightedConfidencePct = totalQuestions
+    ? Math.round((
+      (evidenceStrengthCounts.system * 1)
+      + (evidenceStrengthCounts.audited * 1)
+      + (evidenceStrengthCounts.documented * 0.75)
+      + (evidenceStrengthCounts.interview * 0.45)
+    ) / totalQuestions * 100)
+    : 0;
   const maturityPct = overallScore === null ? 0 : Math.round((overallScore / 4) * 100);
   const evidenceCoveragePct = totalQuestions ? Math.round((evidenceBackedItems / totalQuestions) * 100) : 0;
   const assessedCoveragePct = totalQuestions ? Math.round((scoredQuestions / totalQuestions) * 100) : 0;
@@ -1283,7 +1122,7 @@ export function DataAiDiagnosticWorkspace() {
     ["summary", "Summary"],
     ["scorecard", "Scorecard"],
     ["heatmap", "Heatmap"],
-    ["gartner", "Gartner lens"],
+    ["gartner", "Capability lens"],
     ["actions", "Action plan"],
     ["gaps", "Gap register"],
     ["roadmap", "Roadmap"],
@@ -1307,6 +1146,11 @@ export function DataAiDiagnosticWorkspace() {
   ];
 
   const generateConsultingReport = async () => {
+    if (!industryProfile || contextReviewRequired || scoredQuestions === 0) return;
+    const generationId = ++generationSequence.current;
+    reportAbort.current?.abort();
+    const abortController = new AbortController();
+    reportAbort.current = abortController;
     setReportStatus("loading");
     setReportMessage("");
     setReportStageIndex(0);
@@ -1335,20 +1179,39 @@ export function DataAiDiagnosticWorkspace() {
     try {
       setReportStageIndex(1);
       generationTimer = setTimeout(() => {
-        setReportStageIndex(2);
+        if (generationId === generationSequence.current) setReportStageIndex(2);
       }, 1200);
       const response = await fetch("/api/data-ai-diagnostic/report", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-module01-stream": "1" },
+        signal: abortController.signal,
         body: JSON.stringify({
           customerContext,
+          industryProfile,
+          selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
+          responses: dataAiDiagnosticQuestions.map((question) => ({
+            questionId: question.id, question: question.questionEn, domain: question.domainEn,
+            variantKey: question.variantKey, score: stateByQuestion[question.id].score,
+            evidenceId: stateByQuestion[question.id].evidenceAvailable.trim() ? `E-${question.id}` : undefined,
+            evidenceStrength: stateByQuestion[question.id].evidenceStrength,
+            evidenceAvailable: stateByQuestion[question.id].evidenceAvailable,
+            notes: stateByQuestion[question.id].notes, actionPlan: stateByQuestion[question.id].actionPlan,
+          })),
           overallScore,
           overallGap,
           scoredQuestions,
           totalQuestions,
           evidenceBackedItems,
-          topGapDomains,
-          strongestDomains,
+          evidenceStrengthCounts,
+          evidenceWeightedConfidencePct,
+          topGapDomains: topGapDomains.map((domain) => ({
+            ...domain,
+            nameEn: domain.nameEn,
+          })),
+          strongestDomains: strongestDomains.map((domain) => ({
+            ...domain,
+            nameEn: domain.nameEn,
+          })),
           gartnerPillars: gartnerSummaries.map((pillar) => ({
             name: pillar.name,
             score: pillar.avgScore,
@@ -1358,8 +1221,11 @@ export function DataAiDiagnosticWorkspace() {
             total: pillar.total,
             evidenceCoveragePct: pillar.evidenceCoveragePct,
             mappedDomains: pillar.domainIds
-              .map((domainId) => dataAiDiagnosticDomains.find((domain) => domain.id === domainId)?.nameEn)
-              .filter(Boolean),
+              .map((domainId) => {
+                const domain = dataAiDiagnosticDomains.find((item) => item.id === domainId);
+                return domain ? domain.nameEn : undefined;
+              })
+              .filter((domainName): domainName is string => Boolean(domainName)),
             decisionQuestion: pillar.decisionQuestion,
             managementAction: pillar.managementAction,
           })),
@@ -1376,11 +1242,13 @@ export function DataAiDiagnosticWorkspace() {
       if (generationTimer) {
         clearTimeout(generationTimer);
       }
+      if (generationId !== generationSequence.current) return;
       setReportStageIndex(3);
       let result: DiagnosticReportApiResponse;
       try {
         result = (await response.json()) as DiagnosticReportApiResponse;
       } catch {
+        if (generationId !== generationSequence.current) return;
         setReportStatus("error");
         const message = `AI report generation returned a non-JSON response (${response.status}).`;
         setReportMessage(message);
@@ -1390,6 +1258,7 @@ export function DataAiDiagnosticWorkspace() {
         ], 3);
         return;
       }
+      if (generationId !== generationSequence.current) return;
       if (!response.ok || result.status !== "ready") {
         setReportStatus(result.status === "missing_key" ? "missing_key" : "error");
         const message = result.message ?? `AI report generation failed (${response.status}).`;
@@ -1406,6 +1275,8 @@ export function DataAiDiagnosticWorkspace() {
       setReportStageIndex(4);
       const normalisedReport = normaliseGeneratedReport(result.report);
       const handoff = buildDiagnosticStrategyHandoff({
+        industryProfile,
+        selectedFunctions, functionalFindings: result.report?.functionalFindings,
         customerContext,
         overallScore,
         overallGap,
@@ -1418,7 +1289,10 @@ export function DataAiDiagnosticWorkspace() {
         evidenceBackedResponses: evidenceBackedItems,
         totalResponses: totalQuestions,
         evidenceCoveragePct,
-        domainSummaries: summaries,
+        domainSummaries: summaries.map((summary) => ({
+          ...summary,
+          nameEn: summary.nameEn,
+        })),
         gartnerSummaries: gartnerSummaries.map((pillar) => ({
           pillarName: pillar.name,
           score: pillar.avgScore,
@@ -1427,7 +1301,10 @@ export function DataAiDiagnosticWorkspace() {
           decisionQuestion: pillar.decisionQuestion,
           managementAction: pillar.managementAction,
           mappedDomains: pillar.domainIds
-            .map((domainId) => dataAiDiagnosticDomains.find((domain) => domain.id === domainId)?.nameEn)
+            .map((domainId) => {
+              const domain = dataAiDiagnosticDomains.find((item) => item.id === domainId);
+              return domain ? domain.nameEn : undefined;
+            })
             .filter((domainName): domainName is string => Boolean(domainName)),
         })),
         priorityGaps: rankedGaps.slice(0, 10).map(({ question, state, gap, priority }) => ({
@@ -1442,6 +1319,7 @@ export function DataAiDiagnosticWorkspace() {
         generatedReport: normalisedReport,
       });
       saveLatestDiagnosticStrategyHandoff(handoff);
+      setReportResponse(result);
       setGeneratedReport(normalisedReport);
       setGeneratedMarkdownReport(typeof result.markdownReport === "string" && result.markdownReport.trim()
         ? result.markdownReport
@@ -1472,6 +1350,7 @@ export function DataAiDiagnosticWorkspace() {
       if (generationTimer) {
         clearTimeout(generationTimer);
       }
+      if (generationId !== generationSequence.current) return;
       setReportStatus("error");
       const message = error instanceof Error ? error.message : "Unable to reach the report generation API.";
       setReportMessage(message);
@@ -1508,19 +1387,66 @@ export function DataAiDiagnosticWorkspace() {
             programme.
           </p>
           <div className="data-ai-chip-row">
-            <span>84 workbook questions</span>
+            <span>{totalQuestions} workbook questions</span>
             <span>13 maturity domains</span>
             <span>AI report draft</span>
             <span>Capture first - connect APIs later</span>
           </div>
         </div>
         <div className="data-ai-hero-panel">
-          <span className="data-ai-mode-chip">Workbook seeded</span>
+          <span className="data-ai-mode-chip">{industryProfile?.labelEn ?? "Assessment setup"}</span>
           <strong>{formatScore(overallScore)} / 4</strong>
           <p>Current maturity score</p>
           <small>{scoredQuestions} of {totalQuestions} questions scored</small>
         </div>
       </section>
+
+      <section className="industry-profile-bar no-print" aria-label="Industry profile selection">
+        <label htmlFor="industry-profile">
+          <span>Industry profile <strong aria-hidden="true">*</strong></span>
+          <select id="industry-profile" required value={industryId} onChange={(event) => requestIndustryChange(event.target.value)} disabled={!storageReady || reportStatus === "loading"}>
+            <option value="" disabled>Select an industry</option>
+            {industryProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.labelEn} / {profile.labelAr}</option>)}
+          </select>
+        </label>
+        <div className="industry-profile-summary" aria-live="polite">
+          <strong>{industryProfile?.labelEn ?? "Industry required"}</strong>
+          <span>{industryProfile ? `${totalQuestions} questions | ${dataAiDiagnosticDomains.length} domains | Version ${industryProfile.version}` : "Select the industry for this assessment."}</span>
+          {industryProfile && <span lang="ar" dir="rtl">{industryProfile.labelAr}</span>}
+        </div>
+        <button type="button" disabled={!industryId} onClick={downloadAssessment}>Download assessment JSON</button>
+      </section>
+      {industryId && <fieldset className="industry-function-scope no-print" disabled={reportStatus === "loading"}>
+        <legend>Functional scope / النطاق الوظيفي</legend>
+        <div className="industry-function-options">
+          {industryFunctions(industryId).map((f) => <label key={f.id}>
+            <input type="checkbox" name="functional-scope" value={f.id} checked={selectedFunctions.includes(f.id)} onChange={() => toggleFunction(f.id)} />
+            <span><strong>{f.labelEn}</strong><span lang="ar" dir="rtl">{f.labelAr}</span></span>
+            <small>+{f.questionCount}</small>
+          </label>)}
+        </div>
+        <p aria-live="polite">97 core + {totalQuestions - 97} functional = {totalQuestions} questions</p>
+      </fieldset>}
+      {storageMessage && <p role="status" className="industry-profile-notice no-print">{storageMessage}</p>}
+      {reviewIds.length > 0 && <p role="status" className="industry-profile-notice no-print">{reviewIds.length} changed questions need reassessment. Compatible answers were retained; previous answers remain in the downloaded history.</p>}
+      {contextReviewRequired && <div role="status" className="industry-profile-notice no-print">
+        <span>Industry changed. Review the customer context and retained evidence before generating a new report.</span>
+        <button type="button" onClick={() => setContextReviewRequired(false)}>Confirm customer context</button>
+      </div>}
+      {pendingIndustryId && industryId && (() => {
+        const preview = migrateIndustryAnswers(industryId, pendingIndustryId, stateByQuestion);
+        return <div className="industry-profile-modal no-print">
+          <section role="dialog" aria-modal="true" aria-labelledby="industry-change-title">
+            <h2 id="industry-change-title">Change to {getIndustryProfile(pendingIndustryId).labelEn}?</h2>
+            <p>{preview.retainedIds.length} compatible answers retained. {preview.reviewIds.length} answered questions require reassessment.</p>
+            <p>Changed answers will be archived. The previous report will be cleared.</p>
+            <div>
+              <button type="button" autoFocus onClick={() => setPendingIndustryId(null)}>Cancel</button>
+              <button type="button" onClick={() => applyIndustryChange(pendingIndustryId)}>Apply industry change</button>
+            </div>
+          </section>
+        </div>;
+      })()}
 
       <nav className="data-ai-tabs" id="diagnostic-workbench" aria-label="Data and AI diagnostic sections">
         {tabs.map((tab) => (
@@ -1528,6 +1454,7 @@ export function DataAiDiagnosticWorkspace() {
             className={activeTab === tab.id ? "active" : ""}
             key={tab.id}
             type="button"
+            disabled={!industryId && tab.id !== "capture"}
             onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
@@ -1535,7 +1462,7 @@ export function DataAiDiagnosticWorkspace() {
         ))}
       </nav>
 
-      {activeTab === "capture" ? (
+      {activeTab === "capture" && industryId ? (
         <>
           <section className="panel data-ai-control-panel">
             <div>
@@ -1560,22 +1487,9 @@ export function DataAiDiagnosticWorkspace() {
             <div className="data-ai-demo-actions" aria-label="Demo data actions">
               <div>
                 <span className="data-ai-mode-chip">Seed catalogue</span>
-                <p>Select a fictitious customer profile and dataset depth, then populate deterministic context, scores, evidence notes, and action plans for a walkthrough.</p>
+                <p>Fictional demonstration data for {industryProfile?.labelEn}.</p>
               </div>
               <div className="data-ai-seed-controls">
-                <label>
-                  <span>Customer profile</span>
-                  <select
-                    value={selectedSeedProfileId}
-                    onChange={(event) => setSelectedSeedProfileId(event.target.value as SeedProfileId)}
-                  >
-                    {seedProfiles.map((profile) => (
-                      <option key={profile.id} value={profile.id}>
-                        {profile.label} - {profile.sector}
-                      </option>
-                    ))}
-                  </select>
-                </label>
                 <label>
                   <span>Dataset depth</span>
                   <select
@@ -1623,7 +1537,7 @@ export function DataAiDiagnosticWorkspace() {
                   <input
                     value={customerContext.customerName}
                     onChange={(event) => updateCustomerContext("customerName", event.target.value)}
-                    placeholder="Example: Nawah Real Estate Investment Company"
+                    placeholder="Organisation name"
                   />
                 </label>
                 <label>
@@ -1677,6 +1591,14 @@ export function DataAiDiagnosticWorkspace() {
               </div>
             </div>
             <div className="data-ai-filters">
+              {selectedFunctions.length > 0 && industryId && <label>
+                <span>Question scope</span>
+                <select id="question-scope" value={questionScope} onChange={(event) => setQuestionScope(event.target.value)}>
+                  <option value="all">Core and selected functions</option>
+                  <option value="core">Core assessment</option>
+                  {industryFunctions(industryId).filter((f) => selectedFunctions.includes(f.id)).map((f) => <option key={f.id} value={f.id}>{f.labelEn}</option>)}
+                </select>
+              </label>}
               <label>
                 <span>Domain</span>
                 <select value={selectedDomain} onChange={(event) => setSelectedDomain(event.target.value === "all" ? "all" : Number(event.target.value))}>
@@ -1732,7 +1654,9 @@ export function DataAiDiagnosticWorkspace() {
                       <span className="data-ai-domain-pill">{question.domainEn}</span>
                       <span className={`data-ai-priority ${priority}`}>{priorityLabels[priority]}</span>
                     </div>
+                    {question.functionLabel && <span className="industry-function-tag">{question.functionLabel}</span>}
                     <h3>{question.questionEn}</h3>
+                    {reviewIds.includes(question.id) && <span className="industry-review-tag">Reassessment required</span>}
                     <p className="arabic-copy">{question.questionAr}</p>
                     <dl className="data-ai-question-meta">
                       <div>
@@ -1741,7 +1665,7 @@ export function DataAiDiagnosticWorkspace() {
                       </div>
                       <div>
                         <dt>Evidence required</dt>
-                        <dd>{question.evidenceRequired}</dd>
+                        <dd>{question.evidenceRequired}<span className="industry-evidence-ar" lang="ar" dir="rtl">{question.evidenceRequiredAr}</span></dd>
                       </div>
                       <div>
                         <dt>Gap</dt>
@@ -1863,7 +1787,7 @@ export function DataAiDiagnosticWorkspace() {
           <section className="panel data-ai-section">
             <div className="data-ai-section-header">
               <div>
-                <p className="eyebrow">Gartner-Aligned Framework</p>
+                <p className="eyebrow">Capability Framework</p>
                 <h2>7-pillar executive maturity lens</h2>
                 <p>
                   This view complements the 13-domain workbook by grouping the captured evidence into seven executive
@@ -1929,7 +1853,7 @@ export function DataAiDiagnosticWorkspace() {
               <table className="table data-ai-table">
                 <thead>
                   <tr>
-                    <th>Gartner pillar</th>
+                    <th>Capability pillar</th>
                     <th>Mapped workbook domains</th>
                     <th>Score</th>
                     <th>Evidence</th>
@@ -2011,12 +1935,14 @@ export function DataAiDiagnosticWorkspace() {
               <p>Structured pages suitable for executive review, steering committee discussion, and browser print-to-PDF export.</p>
             </div>
             <div>
-              <button type="button" onClick={generateConsultingReport} disabled={reportStatus === "loading"}>
+              <button type="button" onClick={generateConsultingReport} disabled={reportStatus === "loading" || !industryId || contextReviewRequired || scoredQuestions === 0}>
                 {reportStatus === "loading" ? "Generating..." : "Generate with local AI"}
               </button>
-              <button type="button" onClick={printReport}>Print / Save PDF</button>
+              <button type="button" onClick={printReport} disabled={!industryId || contextReviewRequired}>Print / Save PDF</button>
+              <button type="button" onClick={downloadReportHtml} disabled={!generatedReport}>Download HTML</button>
+              <button type="button" onClick={() => generatedMarkdownReport && downloadText(`module01-${industryId}-report.md`, generatedMarkdownReport, "text/markdown")} disabled={!generatedMarkdownReport}>Download Markdown</button>
               <span className="data-ai-mode-chip">
-                {reportStatus === "ready" ? "AI narrative ready" : "Generated from captured scores"}
+                {reportStatus === "ready" ? "Report ready" : "Generated from captured scores"}
               </span>
             </div>
           </div>
@@ -2117,6 +2043,7 @@ export function DataAiDiagnosticWorkspace() {
               <h2>Data & AI Capability Diagnostic</h2>
               <p>{reportCustomerName}</p>
               <p>{reportBusinessDomain}</p>
+              <p className="industry-report-label">Industry: {industryProfile?.labelEn} | Profile {industryProfile?.version}</p>
               <p>{reportSubtitle}</p>
               <div className="data-ai-report-cover-pills">
                 <span>{scoredQuestions}/{totalQuestions} questions</span>
@@ -2137,6 +2064,7 @@ export function DataAiDiagnosticWorkspace() {
             </div>
             <dl className="data-ai-report-facts">
               <div><dt>Report date</dt><dd>{reportDate}</dd></div>
+              <div><dt>Industry profile</dt><dd>{industryProfile?.labelEn} ({industryProfile?.version})</dd></div>
               <div><dt>Assessment coverage</dt><dd>{scoredQuestions} / {totalQuestions} questions</dd></div>
               <div><dt>Domains assessed</dt><dd>{assessedDomains.length} / {summaries.length}</dd></div>
               <div><dt>Evidence-backed responses</dt><dd>{evidenceBackedItems} / {totalQuestions}</dd></div>
@@ -2154,7 +2082,7 @@ export function DataAiDiagnosticWorkspace() {
                 ["01", "Executive Summary", "Readiness position, decision asks, and management attention."],
                 ["02", "Board Scorecard", "Maturity, evidence coverage, priority gaps, and readiness thesis."],
                 ["03", "Maturity Heatmap", "Domain-level scores and gap concentration."],
-                ["04", "Gartner 7-Pillar Lens", "Executive framework roll-up mapped from the 13 workbook domains."],
+                ["04", "Capability Pillar Lens", "Executive framework roll-up mapped from the 13 workbook domains."],
                 ["05", "Domain Action Plan", "Recommended owner focus and remediation route by domain."],
                 ["06", "Priority Gap Register", "Highest-risk questions requiring evidence-backed action."],
                 ["07", "90-Day Roadmap", "Mobilise, remediate, and certify readiness."],
@@ -2343,13 +2271,13 @@ export function DataAiDiagnosticWorkspace() {
                 </section>
               </div>
               <section className="data-ai-report-callout">
-                <h3>Gartner 7-pillar assessment</h3>
-                {(generatedReport.gartnerPillarAssessment ?? []).length ? (
+                <h3>Capability pillar assessment</h3>
+                {(generatedReport.capabilityPillarAssessment ?? []).length ? (
                   <ul>
-                    {(generatedReport.gartnerPillarAssessment ?? []).map((item) => <li key={item}>{item}</li>)}
+                    {(generatedReport.capabilityPillarAssessment ?? []).map((item) => <li key={item}>{item}</li>)}
                   </ul>
                 ) : (
-                  <p>The Gartner pillar narrative will appear here after generation with the current report schema.</p>
+                  <p>The capability pillar narrative will appear here after report generation.</p>
                 )}
               </section>
               <div className="data-ai-report-two-col">
@@ -2426,7 +2354,7 @@ export function DataAiDiagnosticWorkspace() {
 
           <article className="data-ai-report-page" id="data-ai-report-gartner">
             <div className="data-ai-report-page-header">
-              <p className="eyebrow">04 - Gartner 7-Pillar Lens</p>
+              <p className="eyebrow">04 - Capability Pillar Lens</p>
               <h2>Executive maturity framework roll-up</h2>
             </div>
             <p>
@@ -2690,7 +2618,7 @@ export function DataAiDiagnosticWorkspace() {
               ["Sources", "Assessment workbook, interviews, policies, architecture diagrams, report inventory, data catalogue, model records."],
               ["Capture tables", "diagnostic.questions, diagnostic.responses, diagnostic.evidence, diagnostic.action_plan, diagnostic.review_session."],
               ["Analytics marts", "domain maturity summary, gap priority matrix, AI readiness score, roadmap backlog, evidence completeness."],
-              ["Gartner lens", "Seven executive pillars mapped from the 13-domain workbook: strategy, governance, data quality, architecture, analytics and AI, people, and execution."],
+              ["Capability lens", "Seven executive pillars mapped from the 13-domain workbook: strategy, governance, data quality, architecture, analytics and AI, people, and execution."],
               ["AI reporting", "Executive narrative, top gap ranking, 90-day actions, risk register, AI feasibility assessment."],
               ["Governance controls", "Human-reviewed scores, evidence required per question, source trace, owner assignment, approval status."],
               ["Backend status", "This page is a front-end capture shell. API persistence and model orchestration are pending wiring."],

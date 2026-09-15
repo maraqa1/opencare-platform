@@ -1,6 +1,7 @@
 import {
   buildDeterministicReport,
   buildStructuredReport,
+  maturityDescription,
   type DiagnosticReportRequest,
   type GeneratedConsultingReport,
 } from "@/lib/deterministicReportBuilders";
@@ -19,6 +20,8 @@ type ReportAssemblerConfig = {
   fieldTimeoutMs: number;
   maxFieldWords: number;
   concurrency: number;
+  reportTimeoutMs?: number;
+  signal?: AbortSignal;
   llmClient?: Module01LocalLlmClient;
 };
 
@@ -36,6 +39,7 @@ export type AssembledDiagnosticReport = {
   report: GeneratedConsultingReport;
   structuredReport: ReturnType<typeof buildStructuredReport>;
   generationMetadata: {
+    industryProfile?: DiagnosticReportRequest["industryProfile"];
     model: string;
     mode: "deterministic" | "narrative_enrichment";
     fields: Record<string, NarrativeFieldGeneration>;
@@ -106,13 +110,14 @@ function domainList(domains: Array<Record<string, unknown>>, fallback = "none su
   return cleaned.length > 0 ? cleaned.join("; ") : fallback;
 }
 
+function domainNames(domains: Array<Record<string, unknown>>) {
+  return joinList(domains.map((domain) => domain.domain ?? domain.nameEn ?? domain.name).filter(Boolean));
+}
+
 function maturityBandFromScore(value: unknown) {
+  if (value === null || value === undefined || value === "") return maturityDescription(null);
   const score = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(score)) return "baseline not classified";
-  if (score < 1.5) return "early-stage maturity";
-  if (score < 2.5) return "developing maturity";
-  if (score < 3.5) return "managed maturity";
-  return "advanced maturity";
+  return maturityDescription(Number.isFinite(score) ? score : null);
 }
 
 function safeSequencingPromptText(value: string) {
@@ -126,6 +131,8 @@ function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingRepor
     .map((item) => `${item.evidenceId}${item.domain ? ` ${item.domain}` : ""}${item.evidenceStrength ? ` ${item.evidenceStrength}` : ""}`);
   return safeSequencingPromptText([
     `Client - ${facts.roadmapFacts.clientName}`,
+    `Industry profile - ${JSON.stringify(facts.roadmapFacts.industryProfile ?? null)}`,
+    facts.roadmapFacts.factBoundary,
     `Sequence - ${joinList(report.roadmapPhases)}`,
     `Priority domains - ${domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
     `Critical gaps - ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
@@ -135,14 +142,27 @@ function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingRepor
   ].join("\n"));
 }
 
+function functionalNarrativeFacts(report: GeneratedConsultingReport): string[] {
+  if (!report.functionalFindings?.length) return [];
+  return [
+    "Functional scope is selected by the assessor. Questions and proposed use cases are assessment criteria, not proof of implementation. Ratings and evidence strength are self-reported, not independently certified. Address the material functional constraints in this narrative.",
+    ...report.functionalFindings.map((f) => `Function: ${f.name}; assessed ${f.scored}/${f.total}; score ${f.score?.toFixed(2) ?? "unscored"}/4; weighted evidence confidence ${f.weightedConfidence}%; gate: ${f.gate}. Capabilities requiring evidence validation or remediation: ${f.gaps.map((g) => g.capability).join(", ") || "none identified in supplied ratings"}.`),
+  ];
+}
+
 function roadmapFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsultingReport) {
   return [
+    ...functionalNarrativeFacts(report),
     `Client: ${facts.roadmapFacts.clientName}`,
-    `Priority domains: ${safeSequencingPromptText(domainList(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>))}`,
+    `Industry profile: ${JSON.stringify(facts.roadmapFacts.industryProfile ?? null)}`,
+    facts.roadmapFacts.factBoundary,
+    `Priority domains: ${domainNames(facts.roadmapFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
     `Critical gaps: management controls are weakest in the priority domains above.`,
     "Management order: confirm accountable owners and evidence first; remediate the largest gaps second; scale only through controls third.",
     "Owner types: Executive sponsor; Data Governance Lead; Data Quality Lead; Data Architecture Lead; Transformation PMO.",
     `Target outcomes: ${safeSequencingPromptText(joinList(report.ninetyDayPlan))}`,
+    `90-day phases: ${joinList(report.roadmapPhases)}`,
+    `Evidence to validate: ${joinList(evidenceSummary(facts.materialFindingsFacts.evidenceItems))}`,
   ];
 }
 
@@ -160,7 +180,7 @@ function roadmapFieldFallback(facts: Module01Facts) {
     return name || "priority data foundation";
   });
   const foundations = Array.from(new Set(foundationNames)).slice(0, 3).join(", ");
-  return `The 90-day roadmap should be sequenced around the three weakest foundations: ${foundations || "platform integration, roadmap execution and data architecture"}. Executive sponsors and domain owners should first validate evidence status and confirm Data Council decision rights, then remediate the priority domains through named owners and evidence sign-off. Analytics and AI scaling should remain behind a readiness gate until the control environment proves that source ownership, platform integration, delivery governance and data architecture are operating reliably.`;
+  return `The 90-day roadmap should be sequenced around the supplied priority domains: ${foundations || "priority domains to be confirmed after scoring"}. Executive sponsors and domain owners should first validate evidence status and confirm governance decision rights, then address verified gaps through named owners and evidence sign-off. Analytics and AI scaling should remain behind a readiness gate until the relevant controls are confirmed to operate reliably.`;
 }
 
 function boardFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsultingReport) {
@@ -169,17 +189,20 @@ function boardFieldNarrativeFacts(facts: Module01Facts, report: GeneratedConsult
     : facts.boardScorecardFacts.maturityBand;
   const weightedConfidence = facts.boardScorecardFacts.evidenceWeightedConfidencePct;
   return [
+    ...functionalNarrativeFacts(report),
     `Client: ${facts.boardScorecardFacts.clientName}`,
-    `Overall score: ${facts.boardScorecardFacts.overallMaturity}`,
+    `Industry profile: ${JSON.stringify(facts.boardScorecardFacts.industryProfile ?? null)}`,
+    facts.boardScorecardFacts.factBoundary,
+    `Overall score: ${typeof facts.boardScorecardFacts.overallMaturity === "number" ? facts.boardScorecardFacts.overallMaturity.toFixed(2) : "unscored"} out of 4`,
     `Board asks: ${joinList(report.boardAsks)}`,
     `Evidence coverage percent: ${facts.boardScorecardFacts.evidenceCoveragePct}`,
     `Weighted evidence confidence percent: ${weightedConfidence ?? "not calculated"}`,
-    `Critical domains: ${domainList(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
+    `Critical domains: ${domainNames(facts.boardScorecardFacts.topPriorityDomains as Array<Record<string, unknown>>)}`,
     `Overall gap: ${facts.boardScorecardFacts.overallGap}`,
     `Maturity band: ${maturityBand}`,
-    `Evidence coverage: ${facts.boardScorecardFacts.evidenceBacked}`,
-    `Strongest domains: ${domainList(facts.boardScorecardFacts.strongestDomains as Array<Record<string, unknown>>)}`,
-    `Weakest domains: ${domainList(facts.boardScorecardFacts.weakestDomains as Array<Record<string, unknown>>)}`,
+    `Evidence-backed question count (not a percentage): ${facts.boardScorecardFacts.evidenceBacked}`,
+    `Strongest domains: ${domainNames(facts.boardScorecardFacts.strongestDomains as Array<Record<string, unknown>>)}`,
+    `Weakest domains: ${domainNames(facts.boardScorecardFacts.weakestDomains as Array<Record<string, unknown>>)}`,
   ];
 }
 
@@ -188,8 +211,12 @@ function overallFactsText(
   validatedReport: GeneratedConsultingReport,
 ) {
   return [
+    ...functionalNarrativeFacts(validatedReport),
     `Client: ${facts.overallSynthesisFacts.clientName}`,
+    `Industry profile: ${JSON.stringify(facts.overallSynthesisFacts.industryProfile ?? null)}`,
+    facts.overallSynthesisFacts.factBoundary,
     `Business domain: ${facts.overallSynthesisFacts.businessDomain}`,
+    `Maturity band: ${maturityBandFromScore(facts.boardScorecardFacts.overallMaturity)}`,
     `Validated executive summary: ${textSnippet(validatedReport.executiveSummary, 260)}`,
     `Validated board scorecard narrative: ${textSnippet(validatedReport.boardScorecardNarrative, 260)}`,
     `Validated AI readiness narrative: ${textSnippet(validatedReport.aiReadinessGate, 240)}`,
@@ -287,6 +314,14 @@ async function generateNarrativeField(
   config: ReportAssemblerConfig,
 ): Promise<{ field: FieldConfig; generation: NarrativeFieldGeneration }> {
   const criticalFieldTimeoutMs = config.fieldTimeoutMs;
+  if (criticalFieldTimeoutMs <= 0 || config.signal?.aborted) {
+    return { field, generation: {
+      text: field.fallbackText, status: "fallback", model: config.model, durationMs: 0,
+      validationStatus: "gateway_failure", rejectionReason: config.signal?.aborted ? "request_cancelled" : "report_time_budget_exhausted",
+      retryAttempted: false, fallbackUsed: true, rawResponseLength: 0,
+      responseLength: field.fallbackText.length, generatedAt: new Date().toISOString(),
+    } };
+  }
   if (field.fieldNarrativeFacts?.length) {
     return {
       field,
@@ -301,6 +336,7 @@ async function generateNarrativeField(
           headers: config.headers,
           model: config.model,
           timeoutMs: criticalFieldTimeoutMs,
+          signal: config.signal,
         },
       }),
     };
@@ -329,6 +365,8 @@ export async function assembleDiagnosticReport(
   payload: DiagnosticReportRequest,
   config: ReportAssemblerConfig,
 ): Promise<AssembledDiagnosticReport> {
+  const deadline = Date.now() + (config.reportTimeoutMs ?? Math.min(config.fieldTimeoutMs * 2, 55000));
+  const budgetedConfig = () => ({ ...config, fieldTimeoutMs: Math.min(config.fieldTimeoutMs, Math.max(0, deadline - Date.now())) });
   const deterministicReport = buildDeterministicReport(payload);
   const module01Facts = buildModule01Facts(payload);
   let report = deterministicReport;
@@ -344,7 +382,7 @@ export async function assembleDiagnosticReport(
         if (right.fieldPath === "roadmap.roadmapNarrative") return 1;
         return 0;
       });
-    const generations = await runWithConcurrency(configs, config.concurrency, (field) => generateNarrativeField(field, config));
+    const generations = await runWithConcurrency(configs, config.concurrency, (field) => generateNarrativeField(field, budgetedConfig()));
 
     generations.forEach(({ field, generation }) => {
       fields[field.fieldPath] = generation;
@@ -353,7 +391,7 @@ export async function assembleDiagnosticReport(
 
     if (config.enableFieldEnrichment) {
       const overallField = overallAdvisoryFieldConfig(module01Facts, deterministicReport, report, config.maxFieldWords);
-      const { generation } = await generateNarrativeField(overallField, config);
+      const { generation } = await generateNarrativeField(overallField, budgetedConfig());
       fields[overallField.fieldPath] = generation;
       report = overallField.apply(report, generation.status === "fallback" ? overallField.fallbackText : generation.text);
     }
@@ -379,6 +417,7 @@ export async function assembleDiagnosticReport(
     report,
     structuredReport,
     generationMetadata: {
+      ...(payload.industryProfile ? { industryProfile: { ...payload.industryProfile } } : {}),
       model: config.model,
       mode,
       fields,

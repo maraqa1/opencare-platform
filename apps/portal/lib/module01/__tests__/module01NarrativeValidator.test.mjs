@@ -116,3 +116,13 @@ assert.equal(
 );
 
 console.log("module01 narrative validator tests passed");
+
+const naturalRoadmap = "CRTVTA should first confirm owners and validate evidence, then prioritise Data Quality & Master Data before scaling analytics through a readiness gate with operating controls and accountable review.";
+assert.equal(validateModule01Narrative(naturalRoadmap, {
+  fieldName: "roadmap.roadmapNarrative", maxWords: 100, allowedClientNames: ["CRTVTA"],
+  priorityDomains: ["Data Quality & Master Data"],
+}).valid, true);
+assert.equal(validateModule01Narrative(naturalRoadmap, {
+  fieldName: "roadmap.roadmapNarrative", maxWords: 100, allowedClientNames: ["CRTVTA"],
+  priorityDomains: ["Source ownership"],
+}).reason, "missing_priority_domains");

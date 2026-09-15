@@ -77,6 +77,18 @@ export function buildModule01Facts(input: unknown) {
   const domainRollup = asArray(root.domain_rollup ?? root.domainRollup ?? root.topGapDomains).map(normalizeDomain);
   const strongestDomains = asArray(root.strongestDomains ?? root.strongest_domains).map(normalizeDomain);
   const responses = asArray(root.responses);
+  const evidenceItems: Record<string, AnyRecord> = {
+    ...Object.fromEntries(Object.entries(asRecord(root.evidence)).map(([id, item]) => [id, asRecord(item)])),
+    ...buildEvidenceIndex(asArray(root.evidence)),
+    ...buildEvidenceIndex(responses),
+  };
+  const profile = asRecord(root.industryProfile);
+  const profileFacts = {
+    ...(typeof profile.id === "string" ? { industryProfile: {
+      id: profile.id, version: profile.version, labelEn: profile.labelEn, labelAr: profile.labelAr,
+    } } : {}),
+    factBoundary: "The selected industry scopes assessment wording only. Sector examples in questions are not customer systems or observed problems. Only supplied customer context and evidence may establish those facts.",
+  };
   const useCases = asArray(root.candidate_use_cases ?? root.candidateUseCases);
   const totalQuestions = numberOrNull(root.totalQuestions ?? summary.totalQuestions ?? summary.total_questions);
   const scoredQuestionsCount = numberOrNull(root.scoredQuestions ?? summary.scoredQuestionsCount ?? summary.scored_questions_count);
@@ -135,15 +147,16 @@ export function buildModule01Facts(input: unknown) {
     topPriorityDomains,
     strongestDomains: strongestDomains.slice(0, 3),
     useCases,
-    evidenceItems: buildEvidenceIndex(responses),
+    evidenceItems,
     technologyLandscape: firstText(enterprise.technologyLandscape, enterprise.technology_landscape),
-    painPoints: firstText(enterprise.painPoints, enterprise.pain_points),
-    executiveExpectations: firstText(enterprise.executiveExpectations, enterprise.executive_expectations),
+    painPoints: firstText(enterprise.painPoints, enterprise.pain_points, customer.currentPainPoints),
+    executiveExpectations: firstText(enterprise.executiveExpectations, enterprise.executive_expectations, customer.strategicPriorities),
     regulatoryContext: firstText(enterprise.regulatoryContext, enterprise.regulatory_context),
   };
 
   return {
     executiveSummaryFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       sector: common.sector,
       businessDomain: common.businessDomain,
@@ -155,6 +168,7 @@ export function buildModule01Facts(input: unknown) {
       evidenceWeightedConfidencePct: common.evidenceWeightedConfidencePct,
     },
     boardScorecardFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       audience: common.audience,
       overallMaturity: common.overallMaturity,
@@ -170,6 +184,7 @@ export function buildModule01Facts(input: unknown) {
       topPriorityDomains: common.topPriorityDomains.slice(0, 5),
     },
     overallSynthesisFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       businessDomain: common.businessDomain,
       criticalDomains: common.criticalDomains,
@@ -178,16 +193,19 @@ export function buildModule01Facts(input: unknown) {
       executiveExpectations: common.executiveExpectations,
     },
     materialFindingsFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       topPriorityDomains: common.topPriorityDomains.slice(0, 5),
       evidenceItems: common.evidenceItems,
     },
     domainActionPlanFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       topPriorityDomains: common.topPriorityDomains.slice(0, 5),
       topRootCauses: common.topRootCauses,
     },
     aiReadinessFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       overallMaturity: common.overallMaturity,
       evidenceCoveragePct: common.evidenceCoveragePct,
@@ -195,12 +213,14 @@ export function buildModule01Facts(input: unknown) {
       regulatoryContext: common.regulatoryContext,
     },
     roadmapFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       topPriorityDomains: common.topPriorityDomains.slice(0, 5),
       useCases: common.useCases,
       technologyLandscape: common.technologyLandscape,
     },
     boardDecisionsFacts: {
+      ...profileFacts,
       clientName: common.clientName,
       audience: common.audience,
       purpose: common.purpose,

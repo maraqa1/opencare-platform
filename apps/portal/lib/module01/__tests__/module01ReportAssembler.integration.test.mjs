@@ -19,12 +19,13 @@ function compileTs(sourcePath, outputName) {
       esModuleInterop: true,
       resolveJsonModule: true,
     },
-  }).outputText;
+  }).outputText.replace('require("@/lib/module01/module01FunctionalDomains")', 'require("./functional.cjs")');
   const outputPath = join(tempDir, outputName);
   writeFileSync(outputPath, transpiled);
   return require(outputPath);
 }
 
+compileTs(join(root, "module01", "module01FunctionalDomains.ts"), "functional.cjs");
 const deterministicModule = compileTs(join(root, "deterministicReportBuilders.ts"), "deterministic.cjs");
 const factsModule = compileTs(join(root, "module01", "module01FactsBuilder.ts"), "facts.cjs");
 const promptsModule = compileTs(join(root, "module01", "module01NarrativePrompts.ts"), "prompts.cjs");
@@ -234,7 +235,8 @@ const payload = crtvtaPayload();
     "boardScorecard.advisoryNarrative",
     "overallAdvisory.helicopterView",
   ]);
-  assert.ok(fieldNarrativeCalls[0].facts.every((fact) => !/\bDMO\b|roadmap/i.test(fact)));
+  const priorityFact = fieldNarrativeCalls[0].facts.find((fact) => fact.startsWith("Priority domains:"));
+  for (const domain of payload.topGapDomains.slice(0, 3)) assert.ok(priorityFact.includes(domain.nameEn));
   assert.ok(fieldNarrativeCalls.at(-1)?.facts.some((fact) => fact.includes("Validated executive summary:")));
   assert.ok(fieldNarrativeCalls.at(-1)?.facts.some((fact) => fact.includes("Validated board scorecard narrative:")));
   assert.ok(fieldNarrativeCalls.at(-1)?.facts.some((fact) => fact.includes(validTextForField("boardScorecard.advisoryNarrative"))));

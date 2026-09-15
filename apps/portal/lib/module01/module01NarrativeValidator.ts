@@ -78,7 +78,7 @@ function hasDuplicateDecisionText(text: string) {
 }
 
 function validateBoardScorecardNarrative(text: string): Module01NarrativeValidation {
-  if (!includesAny(text, ["score means", "score indicates", "readiness signal", "maturity baseline", "maturity score"])) {
+  if (!includesAny(text, ["score means", "score indicates", "readiness signal", "maturity baseline", "maturity score", "maturity level", "maturity band", "score reflects", "score suggests"]) && !/\bscore\s+(?:of\s+)?\d[^.!?]{0,100}\b(?:maturity|baseline|indicat|mean)/i.test(text)) {
     return { valid: false, reason: "missing_score_meaning" };
   }
   if (!includesAny(text, ["evidence posture", "evidence coverage", "weighted confidence", "evidence-backed", "evidence confidence"])) {
@@ -93,7 +93,7 @@ function validateBoardScorecardNarrative(text: string): Module01NarrativeValidat
   return { valid: true };
 }
 
-function validateRoadmapNarrative(text: string): Module01NarrativeValidation {
+function validateRoadmapNarrative(text: string, priorityDomains: string[] = []): Module01NarrativeValidation {
   if (containsRepeatedDomainList(text)) return { valid: false, reason: "repeated_domain_lists" };
   if (!includesAny(text, ["sequence", "sequenced", "sequencing", "first", "then", "before scaling"])) {
     return { valid: false, reason: "missing_sequencing_logic" };
@@ -102,7 +102,8 @@ function validateRoadmapNarrative(text: string): Module01NarrativeValidation {
   if (!includesAny(text, ["evidence", "certify", "certification", "certified", "sign-off", "approval", "approve evidence"])) {
     return { valid: false, reason: "missing_evidence_certification" };
   }
-  if (!includesAny(text, ["priority domain", "critical domain", "largest gap", "highest gap"])) {
+  const namedPriority = /prioriti[sz]|remediat|weakest/i.test(text) && priorityDomains.some((domain) => domain.trim().length > 4 && text.toLowerCase().includes(domain.trim().toLowerCase()));
+  if (!includesAny(text, ["priority domain", "critical domain", "largest gap", "highest gap"]) && !namedPriority) {
     return { valid: false, reason: "missing_priority_domains" };
   }
   if (!includesAny(text, ["control gate", "readiness gate", "controls", "gated"])) {
@@ -130,6 +131,7 @@ export function validateModule01Narrative(
     allowedEvidenceIds?: string[];
     allowedSystems?: string[];
     allowedUseCases?: string[];
+    priorityDomains?: string[];
     officialRegulatoryEvidenceUsed?: boolean;
     allowFallbackText?: boolean;
   },
@@ -156,7 +158,7 @@ export function validateModule01Narrative(
     return { valid: false, reason: "unsupported_compliance_claim" };
   }
 
-  const evidenceIds = text.match(/\bEVID(?:[-_ ][A-Z0-9-]+|[0-9][A-Z0-9-]*)\b/gi) ?? [];
+  const evidenceIds = text.match(/\b(?:EVID(?:[-_ ][A-Z0-9-]+|[0-9][A-Z0-9-]*)|E[-_]q\d+)\b/gi) ?? [];
   const allowedEvidence = new Set((context.allowedEvidenceIds ?? []).map((id) => id.toLowerCase()));
   if (evidenceIds.some((id) => !allowedEvidence.has(id.toLowerCase()))) return { valid: false, reason: "invented_evidence_id" };
 
@@ -185,7 +187,7 @@ export function validateModule01Narrative(
   }
 
   if (!context.allowFallbackText && context.fieldName === "roadmap.roadmapNarrative") {
-    const fieldValidation = validateRoadmapNarrative(text);
+    const fieldValidation = validateRoadmapNarrative(text, context.priorityDomains);
     if (!fieldValidation.valid) return fieldValidation;
   }
 

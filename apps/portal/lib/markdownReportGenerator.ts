@@ -1,5 +1,5 @@
 import type { DiagnosticReportRequest, GeneratedConsultingReport } from "@/lib/deterministicReportBuilders";
-import { contextLabel, evidenceCoveragePct, formatScore } from "@/lib/deterministicReportBuilders";
+import { contextLabel, evidenceCoveragePct, formatScore, maturityDescription } from "@/lib/deterministicReportBuilders";
 import { estimateTokens } from "@/lib/mistralNemoInteractionPolicy";
 
 const ai2DirectChatUrl = "https://ai2.opendatalake.com/api/chat";
@@ -25,10 +25,24 @@ export type MarkdownReportGeneration = {
   inputTokenEstimate: number;
 };
 
-function buildDeterministicMarkdown(payload: DiagnosticReportRequest, report: GeneratedConsultingReport) {
+function boardFacingDomainAction(action: string) {
+  return action
+    .replace(/^([^:]+):\s*score\s+\d+(?:\.\d+)?\s*\/\s*4,\s*gap\s+(?:\d+(?:\.\d+)?|not calculated)\.\s*/i, "$1: ")
+    .replace(/\bDecision:/i, "Management decision:")
+    .replace(/\bOwner:/i, "Accountable owner:")
+    .replace(/\bNext 30 days:/i, "First 30-day action:")
+    .replace(/\bEvidence required:/i, "Evidence to validate:")
+    .replace(/\bSuccess measure:/i, "Success measure:");
+}
+
+export function buildDeterministicMarkdown(payload: DiagnosticReportRequest, report: GeneratedConsultingReport) {
   return [
     "# Data & AI Capability Diagnostic",
     "",
+    ...(payload.industryProfile ? [
+      `Industry profile: ${payload.industryProfile.labelEn} / ${payload.industryProfile.labelAr} (${payload.industryProfile.id}); version: ${payload.industryProfile.version}`,
+      "",
+    ] : []),
     "## Executive summary",
     report.executiveSummary,
     "",
@@ -47,10 +61,27 @@ function buildDeterministicMarkdown(payload: DiagnosticReportRequest, report: Ge
     "## Material findings",
     ...report.materialFindings.map((finding) => `- ${finding}`),
     "",
+    ...(report.functionalFindings?.length ? [
+      "## Functional assessment",
+      "These function-level ratings use the selected scope and supplied evidence. Confidence reflects reported evidence strength, not independent assurance. Readiness is provisional; it does not authorise autonomous decisions or deployment.",
+      "",
+      ...report.functionalFindings.flatMap((f) => [
+        `### ${f.name}`,
+        `Assessed: ${f.scored}/${f.total}. Maturity: ${f.score?.toFixed(2) ?? "Not assessed"}/4. Evidence coverage: ${f.evidenceCount}/${f.total}. Weighted confidence: ${f.weightedConfidence}%. Readiness: ${f.gate}.`,
+        ...f.gaps.map((gap) => `- ${gap.question} Management action: ${gap.action || "Confirm an accountable owner and validate the requested evidence."} Evidence status: ${gap.evidence || "No evidence supplied."}`),
+        ...(f.gaps.length ? [] : ["Maintain owner sign-off, monitor controls and reassess before expanding analytics or AI use." ]),
+        "",
+      ]),
+    ] : []),
+    "## Domain action plan",
+    ...report.domainActionPlan.map((action) => `- ${boardFacingDomainAction(action)}`),
+    "",
     "## Priority gap register",
     ...report.priorityGapRegister.map((gap) => `- ${gap}`),
     "",
     "## 90-day roadmap",
+    report.roadmapPhases[0] ?? "",
+    "",
     ...report.ninetyDayPlan.map((step) => `- ${step}`),
     "",
     "## AI readiness gate",
@@ -104,9 +135,10 @@ function buildMarkdownPrompt(payload: DiagnosticReportRequest) {
     "Do not wrap the answer in a code fence.",
     "Do not include commentary before or after the report.",
     "Use only the supplied facts.",
+    "The selected industry scopes wording only: sector examples in assessment questions are not evidence of customer systems or problems.",
     "Do not invent client facts, acronyms, regulations, scores, dates, obligations, or source systems.",
     "Do not create an acronym for the customer unless one is explicitly supplied.",
-    "If the overall score is below 2.0, describe the maturity as ad hoc or early-stage, not moderate.",
+    "Use the supplied maturity description. An unscored baseline is not zero maturity; a high score must not be described as early-stage.",
     "Do not copy the workbook as a table or question list. Synthesize the implications.",
     "Every section must explain what the finding means for management decisions.",
     "Use a premium consulting tone: concise, board-ready, specific, and action-oriented.",
@@ -120,6 +152,8 @@ function buildMarkdownPrompt(payload: DiagnosticReportRequest) {
     "- Domain actions must be specific to the domain. Data quality actions should mention rules, defects, owners, and remediation; data-source actions should mention inventory, lineage, refresh cadence, and system-owner confirmation; roadmap actions should mention sequencing, benefits, dependencies, and governance cadence.",
     "- Make the AI readiness gate practical: what can proceed now, what needs controls, and what must be held.",
     "- Make the 90-day roadmap specific enough for a steering committee to approve.",
+    "- Use validate, certify, confirm sign-off, or approve evidence exceptions when discussing evidence. Do not say approve evidence or evidence is approved.",
+    "- In board-facing narrative sections, avoid raw action-plan interpolation such as score 0.8 / 4, gap 3.2.",
     "- The Overall advisory synthesis is the helicopter view. It must connect the section-level findings into one advisory conclusion, explain the management implication, and state the recommended posture.",
     "- The Board scorecard advisory must interpret the score for steering committee action. Keep numeric scores from the facts and explain what the board should approve, challenge, or hold.",
     "",
@@ -142,8 +176,10 @@ function buildMarkdownPrompt(payload: DiagnosticReportRequest) {
     "",
     "Facts:",
     JSON.stringify({
+      industryProfile: payload.industryProfile,
       customerContext: payload.customerContext ?? {},
       overallScore: payload.overallScore,
+      maturityDescription: maturityDescription(payload.overallScore),
       overallGap: payload.overallGap,
       scoredQuestions: `${payload.scoredQuestions}/${payload.totalQuestions}`,
       evidenceBackedItems: `${payload.evidenceBackedItems}/${payload.totalQuestions}`,
@@ -282,8 +318,37 @@ function sanitizeMarkdown(raw: string, payload: DiagnosticReportRequest) {
   if (hasIncompleteMarkdown(markdown)) {
     throw new Error("Markdown report appears truncated or has incomplete formatting.");
   }
+  rejectUnsafeBoardMarkdown(markdown);
 
-  return markdown;
+  return payload.industryProfile
+    ? markdown.replace(/^(#\s+[^\n]+)\n/, `$1\n\nIndustry profile: ${payload.industryProfile.labelEn} / ${payload.industryProfile.labelAr} (${payload.industryProfile.id}); version: ${payload.industryProfile.version}\n`)
+    : markdown;
+}
+
+function rejectUnsafeBoardMarkdown(markdown: string) {
+  if (/approve evidence(?! exceptions)|evidence is approved|supporting evidence is captured and approved|approve AI-ready use cases/i.test(markdown)) {
+    throw new Error("Markdown report used unsafe evidence approval language.");
+  }
+  if (/score\s+\d+(?:\.\d+)?\s*\/\s*4,\s*gap\s+\d+(?:\.\d+)?/i.test(boardNarrativeSections(markdown))) {
+    throw new Error("Markdown report used raw score-heavy action-plan phrasing in board narrative sections.");
+  }
+  if (hasDuplicateDecisionText(markdown)) {
+    throw new Error("Markdown report repeated the same decision text across domains.");
+  }
+}
+
+function boardNarrativeSections(markdown: string) {
+  return markdown
+    .split(/^##\s+/m)
+    .filter((section) => /^(Overall advisory synthesis|Board scorecard advisory|Readiness position and management attention|Domain action plan)\b/i.test(section))
+    .join("\n");
+}
+
+function hasDuplicateDecisionText(text: string) {
+  const decisions = [...text.matchAll(/\b(?:Decision|Management decision):\s*(.+?)(?=\s+(?:Owner|Accountable owner|Next 30 days|First 30-day action|Evidence required|Evidence to validate|Success measure|Decision|Management decision)|$)/gi)]
+    .map((match) => match[1].toLowerCase().replace(/\s+/g, " ").trim())
+    .filter((decision) => decision.length > 20);
+  return new Set(decisions).size < decisions.length;
 }
 
 function containsPlaceholderClient(markdown: string) {

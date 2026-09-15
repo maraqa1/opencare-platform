@@ -98,11 +98,11 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
   assert.equal(bodies[0].body.task_type, "module01_field_narrative");
   assert.equal(bodies[0].body.knowledge_pack_id, "module01-ai-assessment-reporting");
-  assert.equal(bodies[0].body.retrieval_mode, "hybrid");
+  assert.equal(bodies[0].body.retrieval_mode, "keyword");
   assert.equal(bodies[0].body.field, "roadmap.roadmapNarrative");
   assert.equal(bodies[0].body.client_name, "CRTVTA");
   assert.equal(bodies[0].body.output_contract.max_words, 90);
-  assert.equal(bodies[0].body.output_contract.max_sentences, 2);
+  assert.equal(bodies[0].body.output_contract.max_sentences, 4);
   assert.ok(!bodies[0].body.facts.some((fact) => /^Client:/i.test(fact)));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("priority domain")));
   assert.ok(!("messages" in bodies[0].body));
@@ -156,7 +156,8 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
   });
   assert.equal(bodies[0].body.field, "boardScorecard.advisoryNarrative");
   assert.ok(bodies[0].url.endsWith("/v1/grounded-generate"));
-  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("score indicates")));
+  assert.ok(bodies[0].body.facts.some((fact) => fact.includes("recorded maturity score is 1.68 out of 4")));
+  assert.ok(bodies[0].body.facts.every((fact) => !fact.includes("early-stage")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("evidence posture")));
   assert.ok(bodies[0].body.facts.some((fact) => fact.includes("leadership decisions")));
 }
@@ -361,3 +362,84 @@ const labelledValidText = `BoardScoreNarrative: ${validText}`;
 }
 
 console.log("module01 field narrative tests passed");
+
+{
+  const completeFacts = [...facts, "Evidence coverage: 73%", "Board asks: assign owners", "Tail fact: control gate requires owner sign-off"];
+  const requests = [];
+  await generateModule01FieldNarrative({ field: "roadmapNarrative", facts: completeFacts, maxWords: 100,
+    fallbackText: validText, modelConfig,
+    fetchFn: async (_url, init) => {
+      requests.push(JSON.parse(init.body));
+      return Response.json({ answer: requests.length === 1 ? "As an AI, I am here to help." : validText });
+    },
+  });
+  assert.equal(requests.length, 2);
+  for (const fact of completeFacts) assert.ok(requests[0].question_or_prompt.includes(fact));
+  assert.ok(requests[0].facts.some((fact) => fact.includes("owner sign-off")));
+  assert.ok(requests[1].question_or_prompt.includes("persona_leakage"));
+  assert.equal(requests[0].regulatory_mode, false);
+  assert.equal(requests[0].require_citations, false);
+}
+
+for (const [body, reason] of [
+  [{ answer: validText, field_validation: { status: "accepted", fallback_used: true } }, "upstream_deterministic_fallback"],
+  [{ narrative: validText, debug: { status: "deterministic", fallbackUsed: false } }, "upstream_deterministic_fallback"],
+  [{ answer: validText, field_validation: { status: "rejected", rejection_reason: "bad_field" } }, "bad_field"],
+  [{ answer: validText, field_validation: { ok: false } }, "upstream_rejected"],
+  [{ answer: validText + " Maturity reaches 65%." }, "unsupported_numeric_fact"],
+  [{ answer: validText + " Dr. Patel will lead." }, "invented_named_owner"],
+  [{ answer: validText + " Evidence E-q999 confirms readiness." }, "invented_evidence_id"],
+]) {
+  const result = await generateModule01FieldNarrative({ field: "roadmapNarrative", facts, maxWords: 100,
+    fallbackText: validText, modelConfig, fetchFn: async () => Response.json(body) });
+  assert.equal(result.status, "fallback");
+  assert.equal(result.rejectionReason, reason);
+}
+
+{
+  const result = await generateModule01FieldNarrative({ field: "roadmapNarrative", facts, maxWords: 100,
+    fallbackText: "Invalid fallback is.", modelConfig: { ...modelConfig, timeoutMs: 10 },
+    fetchFn: async (_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+    }),
+  });
+  assert.equal(result.status, "fallback");
+  assert.equal(result.rejectionReason, "field_timeout", "Transport error must not be overwritten by fallback validation");
+  assert.equal(result.retryAttempted, false);
+}
+
+{
+  let called = false;
+  const result = await generateModule01FieldNarrative({ field: "roadmapNarrative", facts: [], maxWords: 100,
+    fallbackText: "No assessment supplied.", modelConfig, fetchFn: async () => { called = true; return Response.json({}); } });
+  assert.equal(called, false);
+  assert.equal(result.validationStatus, "missing_facts");
+}
+
+// Optional explicit live diagnostic; normal test runs never access the network.
+if (process.env.MODULE01_AI2_LIVE === "true") {
+  const live = await generateModule01FieldNarrative({
+    field: "boardScorecard.advisoryNarrative", maxWords: 100,
+    facts: ["Client: Example Cedar Health (fictional)", "Overall score: 1.99", "Maturity band: ad hoc",
+      "Evidence coverage: 100%", "Weighted evidence confidence percent: 73",
+      "Critical domains: Data Strategy & Business Value; Tools & Platforms; Data Quality & Master Data",
+      "Board asks: assign accountable owners and validate evidence before approving AI pilots"],
+    fallbackText: "The maturity score indicates a provisional baseline. Management should validate evidence and assign owners before deciding whether AI pilots meet readiness controls.",
+    modelConfig: { ...modelConfig, gatewayBaseUrl: "https://ai2.opendatalake.com/v1", timeoutMs: 55000 },
+  });
+  const path = join(process.cwd(), "output", "module01-industry-tests", "ai2-call-diagnostic.json");
+  writeFileSync(path, JSON.stringify(live, null, 2));
+  console.log(JSON.stringify(live, null, 2));
+}
+
+console.log("module01 AI2 transport and grounding tests passed");
+
+{
+  const result = await generateModule01FieldNarrative({ field: "overallAdvisory.helicopterView",
+    facts: ["Client: CRTVTA", "Maturity band: ad hoc", "Overall score: 1.68"], maxWords: 100,
+    fallbackText: "Management should treat the baseline as provisional.", modelConfig,
+    fetchFn: async () => Response.json({ answer: "Overall, CRTVTA has a robust data capability baseline and management can confidently scale analytics across the enterprise with appropriate ownership and ongoing evidence review." }),
+  });
+  assert.equal(result.status, "fallback");
+  assert.equal(result.rejectionReason, "overstated_maturity");
+}

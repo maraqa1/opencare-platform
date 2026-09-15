@@ -1,0 +1,95 @@
+import type { IndustryProfileId } from "./module01IndustryProfiles";
+import type { DataAiDiagnosticQuestion } from "../data-ai-diagnostic";
+
+export const FUNCTION_CATALOGUE_VERSION = "1.0.0";
+type Pair = readonly [string, string];
+type FunctionSpec = { id: string; label: Pair; records: Pair; flow: Pair; measure: Pair; useCase: Pair };
+const spec = (id: string, label: Pair, records: Pair, flow: Pair, measure: Pair, useCase: Pair): FunctionSpec => ({ id, label, records, flow, measure, useCase });
+const catalogue: Record<IndustryProfileId, FunctionSpec[]> = {
+  healthcare: [
+    spec("patient-access", ["Patient Access", "وصول المرضى"], ["patient, referral and appointment identifiers", "معرفات المرضى والإحالات والمواعيد"], ["referral, scheduling, check-in and encounter events", "أحداث الإحالة والجدولة والوصول والزيارة"], ["waiting time, appointment utilisation and no-show rates", "وقت الانتظار واستغلال المواعيد ومعدلات عدم الحضور"], ["appointment demand and no-show prediction", "التنبؤ بالطلب على المواعيد وعدم الحضور"]),
+    spec("clinical-services", ["Clinical Services", "الخدمات السريرية"], ["patient, encounter, diagnosis and clinical-order records", "سجلات المرضى والزيارات والتشخيصات والأوامر السريرية"], ["clinical orders, laboratory results and discharge summaries", "الأوامر السريرية ونتائج المختبر وملخصات الخروج"], ["length of stay, readmissions and outcome measures with case-mix adjustment", "مدة الإقامة وإعادة الدخول ومقاييس النتائج مع مراعاة اختلاف الحالات"], ["deterioration-risk prediction with clinical oversight", "التنبؤ بخطر التدهور تحت إشراف سريري"]),
+    spec("pharmacy", ["Pharmacy", "الصيدلية"], ["medicine, dose, formulary and dispensing identifiers", "معرفات الأدوية والجرعات والقائمة الدوائية والصرف"], ["prescribing, dispensing, administration and stock movements", "الوصف والصرف وإعطاء الدواء وحركات المخزون"], ["stockouts, expiry losses and medication-reconciliation exceptions", "نفاد المخزون وخسائر انتهاء الصلاحية واستثناءات مطابقة الأدوية"], ["medicine demand forecasting with pharmacist review", "التنبؤ بالطلب الدوائي مع مراجعة الصيدلي"]),
+    spec("revenue-cycle", ["Revenue Cycle", "دورة الإيرادات"], ["payer, policy, encounter, charge and claim identifiers", "معرفات الجهات الدافعة والوثائق والزيارات والرسوم والمطالبات"], ["eligibility, authorisation, coding, claims and remittance events", "أحداث الأهلية والموافقات والترميز والمطالبات والتحويلات"], ["denials, clean-claim rate and receivable ageing", "الرفض ومعدل المطالبات السليمة وأعمار الذمم المدينة"], ["denial-risk prediction with billing-team review", "التنبؤ بخطر رفض المطالبات مع مراجعة فريق الفوترة"]),
+  ],
+  manufacturing: [
+    spec("production", ["Production", "الإنتاج"], ["product, work-order, batch and shift identifiers", "معرفات المنتجات وأوامر التشغيل والدفعات والورديات"], ["production schedules, machine events and completed quantities", "جداول الإنتاج وأحداث الآلات والكميات المنجزة"], ["throughput, yield and overall equipment effectiveness", "معدل الإنتاج والعائد والفعالية الكلية للمعدات"], ["production-delay prediction under operating constraints", "التنبؤ بتأخر الإنتاج ضمن القيود التشغيلية"]),
+    spec("quality", ["Quality", "الجودة"], ["inspection, specification, defect and batch identifiers", "معرفات الفحص والمواصفات والعيوب والدفعات"], ["incoming inspection, process checks, nonconformance and corrective actions", "فحص الوارد وفحوص العمليات وعدم المطابقة والإجراءات التصحيحية"], ["defect rates, first-pass yield and repeat nonconformance", "معدلات العيوب والعائد من المرة الأولى وتكرار عدم المطابقة"], ["defect detection with representative product validation", "اكتشاف العيوب مع تحقق ممثل للمنتجات"]),
+    spec("maintenance", ["Maintenance", "الصيانة"], ["asset, component, failure-mode and work-order identifiers", "معرفات الأصول والمكونات وأنماط الفشل وأوامر العمل"], ["sensor readings, breakdown events, inspections and repair histories", "قراءات المستشعرات وأحداث الأعطال والفحوص وسجلات الإصلاح"], ["unplanned downtime, repair time and failure recurrence", "التوقف غير المخطط ووقت الإصلاح وتكرار الفشل"], ["equipment-failure prediction with maintenance approval", "التنبؤ بفشل المعدات مع اعتماد الصيانة"]),
+    spec("supply-chain", ["Supply Chain", "سلسلة الإمداد"], ["supplier, material, purchase-order and inventory-lot identifiers", "معرفات الموردين والمواد وأوامر الشراء ودفعات المخزون"], ["purchase commitments, receipts, inventory transfers and shipments", "التزامات الشراء والاستلام وتحويلات المخزون والشحنات"], ["supplier delivery performance, inventory accuracy and shortages", "أداء تسليم الموردين ودقة المخزون والنقص"], ["material-demand forecasting with disruption scenarios", "التنبؤ بالطلب على المواد مع سيناريوهات التعطل"]),
+  ],
+  banking: [
+    spec("customer-operations", ["Customer Operations", "عمليات العملاء"], ["customer, account and relationship identifiers", "معرفات العملاء والحسابات والعلاقات"], ["onboarding, customer updates, servicing and closure events", "أحداث التسجيل وتحديث العميل والخدمة والإغلاق"], ["onboarding turnaround, service failures and customer-record completeness", "زمن التسجيل وإخفاقات الخدمة واكتمال سجلات العملاء"], ["service-demand forecasting without automated eligibility decisions", "التنبؤ بالطلب على الخدمة دون قرارات أهلية آلية"]),
+    spec("credit", ["Credit & Lending", "الائتمان والإقراض"], ["borrower, facility, collateral and repayment identifiers", "معرفات المقترضين والتسهيلات والضمانات والسداد"], ["applications, underwriting, disbursements and collections", "الطلبات والتقييم والصرف والتحصيل"], ["delinquency, exposure and vintage performance", "التعثر والتعرض وأداء دفعات المنح"], ["credit-risk modelling with independent validation and fairness review", "نمذجة مخاطر الائتمان مع تحقق مستقل ومراجعة الإنصاف"]),
+    spec("payments", ["Payments", "المدفوعات"], ["payment, counterparty, channel and settlement identifiers", "معرفات المدفوعات والأطراف والقنوات والتسوية"], ["payment initiation, authorisation, clearing and settlement", "بدء الدفع والموافقة والمقاصة والتسوية"], ["reconciliation breaks, processing delays and failed payments", "فروق المطابقة وتأخر المعالجة والمدفوعات الفاشلة"], ["payment-anomaly detection with human investigation", "اكتشاف شذوذ المدفوعات مع تحقيق بشري"]),
+    spec("risk-finance", ["Risk & Finance", "المخاطر والمالية"], ["legal-entity, ledger, position and risk-factor identifiers", "معرفات الكيانات القانونية ودفتر الأستاذ والمراكز وعوامل الخطر"], ["transaction ledgers, positions, valuations and risk aggregations", "دفاتر المعاملات والمراكز والتقييمات وتجميع المخاطر"], ["liquidity exposure, ledger reconciliation and risk-limit exceptions", "التعرض للسيولة ومطابقة دفتر الأستاذ واستثناءات حدود المخاطر"], ["stress-scenario analytics with model-risk controls", "تحليلات سيناريوهات الضغط بضوابط مخاطر النماذج"]),
+  ],
+  "real-estate": [
+    spec("investment", ["Investment", "الاستثمار"], ["asset, investment, valuation and legal-entity identifiers", "معرفات الأصول والاستثمارات والتقييمات والكيانات القانونية"], ["deal assumptions, valuations, approvals and portfolio positions", "افتراضات الصفقات والتقييمات والموافقات ومراكز المحفظة"], ["portfolio returns, valuation changes and concentration", "عوائد المحفظة وتغيرات التقييم والتركيز"], ["asset-risk scenarios with investment-committee review", "سيناريوهات مخاطر الأصول مع مراجعة لجنة الاستثمار"]),
+    spec("leasing", ["Leasing", "التأجير"], ["property, unit, tenant and lease identifiers", "معرفات العقارات والوحدات والمستأجرين والعقود"], ["leasing enquiries, contracts, renewals and rent collections", "استفسارات التأجير والعقود والتجديدات وتحصيل الإيجار"], ["occupancy, lease expiry and rent collection", "الإشغال وانتهاء العقود وتحصيل الإيجار"], ["vacancy forecasting with leasing-team review", "التنبؤ بالشغور مع مراجعة فريق التأجير"]),
+    spec("asset-management", ["Asset Management", "إدارة الأصول"], ["property, facility, supplier and service-order identifiers", "معرفات العقارات والمرافق والموردين وأوامر الخدمة"], ["maintenance requests, supplier delivery and operating expenditure", "طلبات الصيانة وتنفيذ الموردين والنفقات التشغيلية"], ["service response, operating costs and asset availability", "الاستجابة للخدمة والتكاليف التشغيلية وتوافر الأصول"], ["maintenance-demand forecasting with asset-owner review", "التنبؤ بالطلب على الصيانة مع مراجعة مالك الأصل"]),
+    spec("development", ["Development & Capex", "التطوير والنفقات الرأسمالية"], ["project, work-package, contract and cost-code identifiers", "معرفات المشاريع وحزم العمل والعقود ورموز التكلفة"], ["budgets, commitments, progress certificates and change orders", "الميزانيات والالتزامات ومستخلصات الإنجاز وأوامر التغيير"], ["cost-to-complete, schedule variance and committed capex", "تكلفة الإكمال وانحراف الجدول والنفقات الرأسمالية الملتزم بها"], ["project-overrun prediction with project-controls validation", "التنبؤ بتجاوزات المشاريع مع تحقق ضبط المشاريع"]),
+  ],
+  utilities: [
+    spec("network", ["Network Operations", "عمليات الشبكة"], ["network asset, location, topology and event identifiers", "معرفات أصول الشبكة والمواقع والترابط والأحداث"], ["network measurements, operating events and outage restoration", "قياسات الشبكة والأحداث التشغيلية واستعادة الخدمة"], ["service interruptions, restoration time and network losses", "انقطاعات الخدمة ووقت الاستعادة وفواقد الشبكة"], ["outage-risk forecasting with operator oversight", "التنبؤ بمخاطر الانقطاع تحت إشراف المشغل"]),
+    spec("metering", ["Metering & Billing", "القياس والفوترة"], ["meter, service-point, account and tariff identifiers", "معرفات العدادات ونقاط الخدمة والحسابات والتعرفة"], ["meter readings, estimates, tariff changes and billing adjustments", "قراءات العدادات والتقديرات وتغيرات التعرفة وتعديلات الفواتير"], ["reading completeness, billing exceptions and consumption reconciliation", "اكتمال القراءات واستثناءات الفوترة ومطابقة الاستهلاك"], ["consumption-anomaly detection with customer-impact review", "اكتشاف شذوذ الاستهلاك مع مراجعة أثره على العملاء"]),
+    spec("asset-maintenance", ["Asset Maintenance", "صيانة الأصول"], ["asset, inspection, fault and work-order identifiers", "معرفات الأصول والفحوص والأعطال وأوامر العمل"], ["condition inspections, faults, maintenance and replacement histories", "فحوص الحالة والأعطال والصيانة وسجلات الاستبدال"], ["asset availability, repeat faults and maintenance backlog", "توافر الأصول وتكرار الأعطال وتراكم الصيانة"], ["asset-failure prediction with engineering review", "التنبؤ بفشل الأصول مع مراجعة هندسية"]),
+    spec("customer-service", ["Customer Service", "خدمة العملاء"], ["customer, premise, request and complaint identifiers", "معرفات العملاء والمواقع والطلبات والشكاوى"], ["service requests, contact records, field visits and resolution", "طلبات الخدمة وسجلات التواصل والزيارات الميدانية والحل"], ["resolution time, repeat contacts and service-level breaches", "وقت الحل وتكرار التواصل وتجاوزات مستوى الخدمة"], ["contact-demand forecasting with service-team review", "التنبؤ بالطلب على التواصل مع مراجعة فريق الخدمة"]),
+  ],
+  "cross-industry": [
+    spec("finance", ["Finance", "المالية"], ["entity, ledger, cost-centre and invoice identifiers", "معرفات الكيانات ودفتر الأستاذ ومراكز التكلفة والفواتير"], ["transactions, reconciliations, close adjustments and management accounts", "المعاملات والمطابقات وتعديلات الإقفال والحسابات الإدارية"], ["close timeliness, reconciliation exceptions and cash visibility", "توقيت الإقفال واستثناءات المطابقة ووضوح النقد"], ["cash-flow forecasting with finance-owner review", "التنبؤ بالتدفق النقدي مع مراجعة المسؤول المالي"]),
+    spec("workforce", ["Workforce", "القوى العاملة"], ["employee, role, organisation-unit and position identifiers", "معرفات الموظفين والأدوار والوحدات التنظيمية والوظائف"], ["hiring, role changes, capacity plans and workforce exits", "التوظيف وتغيرات الأدوار وخطط الطاقة وخروج العاملين"], ["vacancies, capacity gaps and workforce data completeness", "الشواغر وفجوات الطاقة واكتمال بيانات العاملين"], ["workforce-demand forecasting with privacy and fairness review", "التنبؤ بالطلب على القوى العاملة مع مراجعة الخصوصية والإنصاف"]),
+    spec("procurement", ["Procurement", "المشتريات"], ["supplier, category, contract and purchase-order identifiers", "معرفات الموردين والفئات والعقود وأوامر الشراء"], ["requisitions, approvals, orders, receipts and invoice matching", "الطلبات والموافقات والأوامر والاستلام ومطابقة الفواتير"], ["spend visibility, supplier performance and contract exceptions", "وضوح الإنفاق وأداء الموردين واستثناءات العقود"], ["spend classification with procurement-owner validation", "تصنيف الإنفاق مع تحقق مسؤول المشتريات"]),
+    spec("service-delivery", ["Service Delivery", "تقديم الخدمات"], ["service, customer, request and case identifiers", "معرفات الخدمات والعملاء والطلبات والحالات"], ["request intake, work allocation, completion and feedback", "استقبال الطلبات وتوزيع العمل والإنجاز والتغذية الراجعة"], ["turnaround time, backlog and service outcomes", "زمن الإنجاز والتراكم ونتائج الخدمة"], ["service-demand forecasting with human resource-allocation decisions", "التنبؤ بالطلب على الخدمة مع قرارات بشرية لتوزيع الموارد"]),
+  ],
+};
+
+export function industryFunctions(industry: IndustryProfileId) {
+  return catalogue[industry].map(({ id, label }) => ({ id, labelEn: label[0], labelAr: label[1], questionCount: 4 }));
+}
+export function normaliseFunctions(industry: IndustryProfileId, ids: unknown): string[] {
+  const selected = new Set(Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : []);
+  return catalogue[industry].filter((item) => selected.has(item.id)).map((item) => item.id);
+}
+export type FunctionalQuestion = DataAiDiagnosticQuestion & { evidenceRequiredAr: string; variantKey: string; functionId?: string; functionLabel?: string; functionLabelAr?: string };
+
+export function functionalQuestions(industry: IndustryProfileId, ids: string[]): FunctionalQuestion[] {
+  const selected = normaliseFunctions(industry, ids);
+  return catalogue[industry].flatMap((f, index) => {
+    if (!selected.includes(f.id)) return [];
+    const rows: Array<[number, string, string, string, string]> = [
+      [4, `Who owns ${f.records[0]}, and how are duplicates, missing values and conflicting definitions resolved?`, `من يملك ${f.records[1]}، وكيف تعالج التكرارات والقيم المفقودة والتعريفات المتعارضة؟`, `Named owner, identifier crosswalk, quality rules and sampled exception closure for ${f.records[0]}.`, `مالك محدد وجدول ربط المعرفات وقواعد جودة وعينات إغلاق الاستثناءات الخاصة بـ${f.records[1]}.`],
+      [5, `Can ${f.flow[0]} be traced from source to decision, with timestamps, reconciliation and failed-transfer handling?`, `هل يمكن تتبع ${f.flow[1]} من المصدر إلى القرار مع الطوابع الزمنية والمطابقة ومعالجة فشل النقل؟`, `Source-to-decision map, interface controls and reconciled event samples covering ${f.flow[0]}.`, `خريطة من المصدر إلى القرار وضوابط الواجهات وعينات أحداث مطابقة تغطي ${f.flow[1]}.`],
+      [6, `Are ${f.measure[0]} consistently defined, reconciled and used in documented management decisions?`, `هل تعرف ${f.measure[1]} وتطابق باتساق وتستخدم في قرارات إدارية موثقة؟`, `Approved metric definitions, denominators, source reconciliation, refresh records and decision logs for ${f.measure[0]}.`, `تعريفات معتمدة للمؤشرات ومقاماتها ومطابقة المصادر وسجلات التحديث والقرارات الخاصة بـ${f.measure[1]}.`],
+      [7, `Before considering ${f.useCase[0]}, what evidence demonstrates representative history, valid targets, leakage testing, human oversight and a safe fallback?`, `قبل النظر في ${f.useCase[1]}، ما الأدلة التي تثبت تمثيل البيانات التاريخية وصحة الأهداف واختبار التسرب والإشراف البشري والبديل الآمن؟`, `Use-case applicability decision; historical coverage and label review; time-based holdout results; risk assessment; named reviewer; monitoring and fallback plan. This question does not establish deployment approval.`, `قرار انطباق حالة الاستخدام ومراجعة التغطية التاريخية والتسميات ونتائج التحقق الزمني وتقييم المخاطر ومراجع محدد وخطة مراقبة وبديل آمن. لا يثبت هذا السؤال الموافقة على النشر.`],
+    ];
+    return rows.map(([domainId, questionEn, questionAr, evidenceRequired, evidenceRequiredAr], i) => ({
+      id: `fn_${industry}_${f.id}_${i + 1}`, number: 98 + index * 4 + i, domainId, domainEn: "", domainAr: "",
+      questionEn, questionAr, evidenceRequired, evidenceRequiredAr, functionId: f.id, functionLabel: f.label[0], functionLabelAr: f.label[1],
+      variantKey: `functional:${FUNCTION_CATALOGUE_VERSION}:${industry}:${f.id}:${i + 1}`,
+      evidenceAvailable: "", isoReference: "", score: null, target: 4, gap: null, priority: "", notes: "", actionPlan: "",
+    }));
+  });
+}
+
+export type FunctionalFinding = { id: string; name: string; nameAr: string; scored: number; total: number; score: number | null; evidenceCount: number; weightedConfidence: number; gate: string; gaps: Array<{ questionId: string; question: string; capability: string; score: number | null; evidence: string; action: string }> };
+export function functionalFindings(industry: IndustryProfileId, ids: string[], responses: unknown[]): FunctionalFinding[] {
+  const answers = new Map(responses.filter((x): x is Record<string, unknown> => !!x && typeof x === "object").map((x) => [x.questionId, x]));
+  return industryFunctions(industry).filter((f) => normaliseFunctions(industry, ids).includes(f.id)).map((f) => {
+    const rows = functionalQuestions(industry, [f.id]).map((q, index) => {
+      const a = answers.get(q.id) ?? {};
+      const score = typeof a.score === "number" && Number.isFinite(a.score) && a.score >= 0 && a.score <= 4 ? a.score : null;
+      const evidence = typeof a.evidenceAvailable === "string" ? a.evidenceAvailable : "";
+      const weights: Record<string, number> = { system: 1, audited: 1, documented: .75, interview: .45 };
+      const weight = evidence.trim() ? (weights[String(a.evidenceStrength)] ?? 0) : 0;
+      const capability = ["Ownership and data quality", "Source-to-decision lineage", "Decision metrics", "AI readiness controls"][index];
+      return { questionId: q.id, question: q.questionEn, capability, score, evidence, weight, action: typeof a.actionPlan === "string" ? a.actionPlan : "Confirm an accountable owner and collect the requested evidence." };
+    });
+    const scored = rows.filter((r) => r.score !== null);
+    const score = scored.length ? scored.reduce((sum, r) => sum + r.score!, 0) / scored.length : null;
+    const weightedConfidence = Math.round(rows.reduce((sum, r) => sum + r.weight, 0) / rows.length * 100);
+    const gate = !scored.length ? "Not assessed" : scored.length < rows.length || score! < 2 || weightedConfidence < 50 || (rows[3].score ?? 0) < 2 || rows[3].weight < .75 ? "Hold" : rows.some((r) => r.score! < 3 || r.weight < .75) || weightedConfidence < 80 ? "Pilot with controls" : "Proceed with governed analytics";
+    return { id: f.id, name: f.labelEn, nameAr: f.labelAr, scored: scored.length, total: rows.length, score, evidenceCount: rows.filter((r) => r.weight > 0).length, weightedConfidence, gate,
+      gaps: rows.filter((r) => r.score === null || r.score < 3 || r.weight < .75).map(({ weight: _weight, ...r }) => r) };
+  });
+}

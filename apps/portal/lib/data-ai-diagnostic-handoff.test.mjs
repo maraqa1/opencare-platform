@@ -130,7 +130,14 @@ const diagnosticClientSource = readFileSync(
   "utf8",
 );
 assert(diagnosticClientSource.includes("saveLatestDiagnosticStrategyHandoff(handoff)"));
-assert(diagnosticClientSource.includes("Diagnostic completed — available to Data Strategy Builder"));
+assert(diagnosticClientSource.includes("available to Data Strategy Builder"));
+const profiledHandoff = handoffModule.buildDiagnosticStrategyHandoff({
+  industryProfile: { id: "banking", version: "1.0.0", labelEn: "Banking", labelAr: "الخدمات المصرفية" },
+});
+assert.equal(profiledHandoff.industryProfile.id, "banking");
+assert.equal(profiledHandoff.customerContext.sector, "Banking");
+handoffModule.saveLatestDiagnosticStrategyHandoff(profiledHandoff);
+assert.equal(handoffModule.loadLatestDiagnosticStrategyHandoff().industryProfile.version, "1.0.0");
 
 const strategyPageSource = readFileSync(
   join(here, "..", "app", "use-cases", "data-strategy-builder", "page.tsx"),

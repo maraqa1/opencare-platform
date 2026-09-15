@@ -3,10 +3,13 @@ import { NextResponse } from "next/server";
 import { assembleDiagnosticReport } from "@/lib/reportAssembler";
 import type { DiagnosticReportRequest } from "@/lib/deterministicReportBuilders";
 import { generateMarkdownReport } from "@/lib/markdownReportGenerator";
+import { getIndustryProfile, isIndustryProfileId } from "@/lib/module01/module01IndustryProfiles";
+import { streamModule01Json } from "@/lib/module01/module01JsonStream";
+import { normaliseFunctions, functionalQuestions, FUNCTION_CATALOGUE_VERSION } from "@/lib/module01/module01FunctionalDomains";
 
 const fallbackModel = "mistral-nemo:12b";
-const defaultGatewayTimeoutMs = 45000;
-const defaultFieldTimeoutMs = 8000;
+const defaultGatewayTimeoutMs = 55000;
+const defaultFieldTimeoutMs = 28000;
 const defaultMarkdownReportTimeoutMs = 10000;
 const defaultEnrichmentConcurrency = 2;
 const defaultMaxFieldWords = 120;
@@ -43,6 +46,7 @@ function finiteNumber(value: unknown, fallback = 0) {
 }
 
 function nullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === "" || typeof value === "boolean") return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
 }
@@ -57,8 +61,36 @@ function normaliseReportPayload(raw: unknown): DiagnosticReportRequest {
   const strongestDomains = Array.isArray(payload.strongestDomains) ? payload.strongestDomains : [];
   const gartnerPillars = Array.isArray(payload.gartnerPillars) ? payload.gartnerPillars : [];
   const priorityGaps = Array.isArray(payload.priorityGaps) ? payload.priorityGaps : [];
+  let industryProfile: DiagnosticReportRequest["industryProfile"];
+  if (payload.industryProfile !== undefined) {
+    const profile = payload.industryProfile as Record<string, unknown> | null;
+    if (!profile || !isIndustryProfileId(profile.id)) throw new Error("Invalid industry profile ID.");
+    const canonical = getIndustryProfile(profile.id);
+    if (profile.version !== canonical.version) throw new Error("Invalid industry profile version.");
+    industryProfile = { id: canonical.id, version: canonical.version, labelEn: canonical.labelEn, labelAr: canonical.labelAr };
+  }
 
+  let selectedFunctions: string[] = [];
+  if (payload.selectedFunctions !== undefined) {
+    if (!industryProfile || !Array.isArray(payload.selectedFunctions)) throw new Error("Functional scope requires a valid industry and an array of function IDs.");
+    selectedFunctions = normaliseFunctions(industryProfile.id, payload.selectedFunctions);
+    if (selectedFunctions.length !== payload.selectedFunctions.length) throw new Error("Invalid or duplicate functional scope for the selected industry.");
+    if (payload.functionCatalogueVersion !== FUNCTION_CATALOGUE_VERSION) throw new Error("Invalid functional catalogue version. Reload the assessment.");
+  }
+  const functionQuestionIds = new Set(industryProfile ? functionalQuestions(industryProfile.id, selectedFunctions).map((q) => q.id) : []);
+  const seenFunctionQuestions = new Set<string>();
+  for (const rawResponse of Array.isArray(payload.responses) ? payload.responses : []) {
+    const id = rawResponse && typeof rawResponse === "object" ? rawResponse.questionId : undefined;
+    if (typeof id !== "string" || !id.startsWith("fn_")) continue;
+    if (!functionQuestionIds.has(id)) throw new Error("Functional response is outside the selected assessment scope.");
+    if (seenFunctionQuestions.has(id)) throw new Error("Duplicate functional question response.");
+    seenFunctionQuestions.add(id);
+  }
   return {
+    ...(industryProfile ? { industryProfile } : {}),
+    selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
+    ...(Array.isArray(payload.responses) ? { responses: payload.responses } : {}),
+    ...(payload.evidence !== undefined ? { evidence: payload.evidence } : {}),
     customerContext: payload.customerContext as DiagnosticReportRequest["customerContext"],
     overallScore: nullableNumber(payload.overallScore),
     overallGap: nullableNumber(payload.overallGap),
@@ -71,8 +103,8 @@ function normaliseReportPayload(raw: unknown): DiagnosticReportRequest {
       const domain = (entry ?? {}) as Record<string, unknown>;
       return {
         nameEn: textValue(domain.nameEn, textValue(domain.domain, "Unnamed domain")),
-        avgScore: nullableNumber(domain.avgScore ?? domain.score),
-        avgGap: nullableNumber(domain.avgGap ?? domain.gap),
+        avgScore: domain.avgScore === null ? null : nullableNumber(domain.avgScore ?? domain.score),
+        avgGap: domain.avgGap === null ? null : nullableNumber(domain.avgGap ?? domain.gap),
         scored: finiteNumber(domain.scored),
         total: finiteNumber(domain.total),
       };
@@ -81,7 +113,7 @@ function normaliseReportPayload(raw: unknown): DiagnosticReportRequest {
       const domain = (entry ?? {}) as Record<string, unknown>;
       return {
         nameEn: textValue(domain.nameEn, textValue(domain.domain, "Unnamed domain")),
-        avgScore: nullableNumber(domain.avgScore ?? domain.score),
+        avgScore: domain.avgScore === null ? null : nullableNumber(domain.avgScore ?? domain.score),
         scored: finiteNumber(domain.scored),
         total: finiteNumber(domain.total),
       };
@@ -176,7 +208,9 @@ export async function POST(request: Request) {
     );
   }
 
-  try {
+  const streaming = request.headers.get("x-module01-stream") === "1";
+  const run = async (signal?: AbortSignal) => {
+   try {
     const trimmedPayload = trimPayload(payload);
     const assembled = await assembleDiagnosticReport(trimmedPayload, {
       gatewayBaseUrl,
@@ -184,9 +218,11 @@ export async function POST(request: Request) {
       model,
       reportMode,
       enableFieldEnrichment,
-      fieldTimeoutMs,
+      fieldTimeoutMs: streaming ? Math.min(numberEnv("LOCAL_LLM_STREAM_FIELD_TIMEOUT_MS", 100000), 110000) : fieldTimeoutMs,
       maxFieldWords,
-      concurrency,
+      concurrency: streaming ? 1 : concurrency,
+      reportTimeoutMs: streaming ? 300000 : Math.max(1, Math.min(gatewayTimeoutMs, 55000) - (enableLlmMarkdown ? markdownTimeoutMs : 0)),
+      signal,
     });
     const markdownReport = await generateMarkdownReport({
       payload: trimmedPayload,
@@ -196,7 +232,7 @@ export async function POST(request: Request) {
         headers,
         model,
         timeoutMs: markdownTimeoutMs,
-        enableLlmMarkdown,
+        enableLlmMarkdown: enableLlmMarkdown && !signal?.aborted,
       },
     });
     const generationMetadata = {
@@ -243,4 +279,6 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+  };
+  return streaming ? streamModule01Json(run, request.signal) : run(request.signal);
 }

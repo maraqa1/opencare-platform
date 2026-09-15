@@ -1,3 +1,5 @@
+import type { FunctionalFinding } from "./module01/module01FunctionalDomains";
+
 export const diagnosticStrategyHandoffStorageKey = "opencare:data-ai-diagnostic:latest";
 
 type HandoffPriority = "Critical" | "High" | "Medium" | "Watch" | "Unknown";
@@ -5,6 +7,9 @@ type HandoffSeverity = "Critical" | "High" | "Medium" | "Low" | "Unknown";
 
 export type DiagnosticStrategyHandoff = {
   handoffVersion: "1.0";
+  industryProfile?: { id: string; version: string; labelEn: string; labelAr: string };
+  selectedFunctions?: string[];
+  functionalFindings?: FunctionalFinding[];
   sourceModule: "data-ai-capability-diagnostic";
   generatedAt: string;
 
@@ -92,6 +97,7 @@ type GeneratedReportLike = {
   materialFindings?: unknown;
   domainActionPlan?: unknown;
   priorityGapRegister?: unknown;
+  capabilityPillarAssessment?: unknown;
   gartnerPillarAssessment?: unknown;
   ninetyDayPlan?: unknown;
   roadmapPhases?: unknown;
@@ -101,6 +107,9 @@ type GeneratedReportLike = {
 
 export type DiagnosticStrategyHandoffInput = {
   generatedAt?: string;
+  industryProfile?: DiagnosticStrategyHandoff["industryProfile"];
+  selectedFunctions?: string[];
+  functionalFindings?: FunctionalFinding[];
   customerContext?: {
     customerName?: string;
     organisationName?: string;
@@ -319,11 +328,14 @@ export function buildDiagnosticStrategyHandoff(input: DiagnosticStrategyHandoffI
 
   return {
     handoffVersion: "1.0",
+    ...(input.industryProfile ? { industryProfile: { ...input.industryProfile } } : {}),
+    ...(input.selectedFunctions ? { selectedFunctions: [...input.selectedFunctions] } : {}),
+    ...(input.functionalFindings ? { functionalFindings: structuredClone(input.functionalFindings) } : {}),
     sourceModule: "data-ai-capability-diagnostic",
     generatedAt: input.generatedAt ?? new Date().toISOString(),
     customerContext: {
       organisationName: optionalText(input.customerContext?.organisationName ?? input.customerContext?.customerName),
-      sector: optionalText(input.customerContext?.sector),
+      sector: optionalText(input.customerContext?.sector ?? input.industryProfile?.labelEn),
       domain: optionalText(input.customerContext?.domain ?? input.customerContext?.businessDomain),
       geography: optionalText(input.customerContext?.geography ?? input.customerContext?.operatingScope),
       reportPurpose: optionalText(input.customerContext?.reportPurpose),

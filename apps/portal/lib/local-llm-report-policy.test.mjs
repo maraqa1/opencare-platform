@@ -14,6 +14,7 @@ const routeSource = readFileSync(
 const assemblerSource = readFileSync(join(here, "reportAssembler.ts"), "utf8");
 const deterministicSource = readFileSync(join(here, "deterministicReportBuilders.ts"), "utf8");
 const markdownSource = readFileSync(join(here, "markdownReportGenerator.ts"), "utf8");
+const seedDataSource = readFileSync(join(here, "module01", "module01SeedData.ts"), "utf8");
 const workspaceSource = readFileSync(
   join(here, "..", "app", "use-cases", "data-ai-capability-diagnostic", "workspace-client.tsx"),
   "utf8",
@@ -83,7 +84,7 @@ assert(routeSource.includes("LOCAL_LLM_ENABLE_MARKDOWN_GENERATION"));
 assert(routeSource.includes("Full AI Markdown generation is disabled by LOCAL_LLM_ENABLE_MARKDOWN_GENERATION"));
 assert(deterministicSource.includes("domainRemediationFocus"));
 assert(deterministicSource.includes("Evidence required:"));
-assert(workspaceSource.includes("seededActionByDomain"));
+assert(seedDataSource.includes("seededActionByDomain"));
 assert(workspaceSource.includes("domainActionForSummary"));
 assert(!workspaceSource.includes("Demo action:"));
 assert(globalCssSource.includes(".data-ai-markdown-report"));

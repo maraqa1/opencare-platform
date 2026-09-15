@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { generateModule01FieldNarrative } from "@/lib/module01/module01FieldNarrative";
 
 const fallbackModel = "mistral-nemo:12b";
-const defaultTimeoutMs = 30000;
+const defaultTimeoutMs = 55000;
 const supportedFields = new Set([
   "boardScorecard.advisoryNarrative",
   "roadmap.roadmapNarrative",
@@ -25,7 +25,7 @@ function normaliseGatewayBaseUrl(value: string) {
 
 function textArray(value: unknown) {
   return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim()).slice(0, 8)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim())
     : [];
 }
 
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
   let payload: Record<string, unknown>;
   try {
     payload = await request.json() as Record<string, unknown>;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("Invalid object");
   } catch {
     return NextResponse.json({ status: "error", message: "Invalid field narrative payload." }, { status: 400 });
   }
@@ -54,6 +55,12 @@ export async function POST(request: Request) {
   const facts = textArray(payload.facts);
   if (!facts.length) {
     return NextResponse.json({ status: "error", message: "At least one fact is required." }, { status: 400 });
+  }
+  if (facts.length > 32 || facts.some((fact) => fact.length > 3000) || facts.join("\n").length > 24000) {
+    return NextResponse.json({ status: "error", message: "Field facts exceed the supported size." }, { status: 400 });
+  }
+  if (typeof payload.client_name === "string" && payload.client_name.trim() && !facts.some((fact) => /^Client:/i.test(fact))) {
+    facts.unshift(`Client: ${payload.client_name.trim().slice(0, 200)}`);
   }
 
   const model = process.env.LOCAL_LLM_MODEL ?? process.env.LOCAL_AI_MODEL ?? fallbackModel;
@@ -72,7 +79,8 @@ export async function POST(request: Request) {
       gatewayBaseUrl,
       headers,
       model,
-      timeoutMs: numberValue(payload.timeout_ms, defaultTimeoutMs),
+      timeoutMs: Math.min(numberValue(payload.timeout_ms, defaultTimeoutMs), 55000),
+      signal: request.signal,
     },
   });
 
