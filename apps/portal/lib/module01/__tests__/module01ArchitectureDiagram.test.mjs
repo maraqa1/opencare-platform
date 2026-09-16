@@ -56,6 +56,8 @@ for (const name of names.filter(name => name !== names[6])) {
   const model = read(name), validation = diagram.validateDiagram(model); assert.equal(validation.valid, true, `${name}: ${validation.errors.join(" ")}`);
   const layout = diagram.layoutDiagram(model), routes = diagram.routeDiagram(layout), rendered = diagram.renderArchitectureSvg(model), repeated = diagram.renderArchitectureSvg(model);
   assert.equal(rendered.svg, repeated.svg, `${name} is not deterministic`); assert.equal(rendered.complete, true, `${name} render incomplete`);
+  assert.ok(layout.width < 10000 && layout.height < 10000, `${name}: canvas dimensions must remain bounded`);
+  assert.ok(layout.boxes.every(box => [box.x, box.y, box.width, box.height].every(Number.isFinite)), `${name}: box geometry must be finite`);
   for (let i = 0; i < layout.boxes.length; i++) for (let j = i + 1; j < layout.boxes.length; j++) assert.equal(overlaps(layout.boxes[i], layout.boxes[j]), false, `${name}: boxes overlap ${layout.boxes[i].id}/${layout.boxes[j].id}`);
   for (const route of routes) assert.equal(route.warning, undefined, `${name}: ${route.warning}`);
   assert.ok(rendered.svg.includes('role="img"')); assert.ok(rendered.svg.includes("<title>")); assert.ok(rendered.svg.includes("<desc>"));

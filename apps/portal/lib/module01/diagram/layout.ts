@@ -81,7 +81,7 @@ export function layoutDiagram(model: ArchitectureDiagramModel, options: { expand
   const bottomY = GEOMETRY.padding + 36 + columnHeight + GEOMETRY.bottomGap;
   const bottom = byLane.get(config.bottom_row.key) ?? [], connectedMean = (item: DiagramComponent) => {
     const linked = view.connections.flatMap(edge => edge.from === item.id ? [edge.to] : edge.to === item.id ? [edge.from] : []), xs = linked.map(id => boxes.find(box => box.id === id)).filter(Boolean).map(box => box!.x + box!.width / 2);
-    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : Number.MAX_SAFE_INTEGER;
+    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : Number.POSITIVE_INFINITY;
   };
   bottom.sort((a, b) => connectedMean(a) - connectedMean(b) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
   let nextX = GEOMETRY.padding;
