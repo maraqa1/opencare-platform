@@ -16,5 +16,32 @@
 .discovery-components span { padding: 10px 16px; border: 1px solid #8d9aa7; background: #edf4f2; border-radius: 4px; overflow-wrap: anywhere; }
 .discovery-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 12px 0; overflow-wrap: anywhere; }
 .discovery-flow small { font-size: 12px; }
+.architecture-viewer { position: relative; margin-top: 18px; border-top: 1px solid #ccd2da; padding-top: 16px; }
+.architecture-viewer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.architecture-viewer-heading h3 { margin: 0; font-size: 17px; }
+.architecture-viewer-heading p { margin: 5px 0 0; color: #576574; }
+.architecture-svg-host { width: 100%; min-height: 180px; overflow: auto; }
+.architecture-svg-host svg { display: block; min-width: 620px; }
+.architecture-warning, .diagram-note { margin: 10px 0; padding: 9px 11px; border-left: 3px solid #c98520; background: #fff6e5; color: #6f4710; }
+.architecture-error { margin: 10px 0; padding: 12px; border-left: 3px solid #c9342f; background: #fff0ef; color: #7a211d; }
+.architecture-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 16px; font-size: 12px; }
+.architecture-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.architecture-legend i { display: inline-block; width: 28px; border-top: 2px solid #4d5964; }
+.architecture-legend .legend-manual { border-top-style: dashed; border-color: #ad7016; }
+.architecture-legend .legend-missing { width: 20px; height: 12px; border: 1px dashed #527582; }
+.legend-risk, .legend-issue { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #b42318; color: white; font-size: 10px; }
+.architecture-table-scroll { overflow-x: auto; }
+.architecture-risk-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.architecture-risk-table th, .architecture-risk-table td { padding: 7px; border: 1px solid #ccd2da; text-align: left; vertical-align: top; }
+.architecture-risk-table th { background: #edf4f2; }
+.diagram-confirmation { margin: 18px 0; padding: 14px 0; border-top: 1px solid #ccd2da; border-bottom: 1px solid #ccd2da; }
+.unknown-fields > div { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(120px, .6fr) auto; align-items: center; gap: 10px; border-bottom: 1px solid #e5e8ec; padding: 5px 0; }
+.architecture-side-panel { position: absolute; z-index: 4; top: 62px; right: 0; width: min(340px, calc(100% - 20px)); max-height: 520px; overflow: auto; padding: 16px; border: 1px solid #aeb8c5; background: white; box-shadow: 0 12px 30px rgba(23,34,51,.18); }
+.architecture-side-panel > button { float: right; width: 32px; height: 32px; padding: 0; font-size: 20px; }
+.architecture-side-panel p { margin: 8px 0; overflow-wrap: anywhere; }
+.architecture-side-form label { margin: 8px 0; }
+.architecture-side-form input, .architecture-side-form select, .architecture-side-form textarea { width: 100%; box-sizing: border-box; }
+.architecture-structured-editor > h3 { font-size: 16px; margin: 18px 0 8px; }
 @media(max-width: 700px) { .discovery-grid, .discovery-options { grid-template-columns: minmax(0, 1fr); } }
-@media print { .discovery-diagram { break-inside: auto; } .discovery-flow { break-inside: avoid; } }
+@media(max-width: 700px) { .architecture-viewer-heading { display: block; } .unknown-fields > div { grid-template-columns: 1fr; } }
+@media print { .discovery-diagram { break-inside: auto; } .discovery-flow { break-inside: avoid; } .architecture-side-panel, .architecture-viewer-heading button, .diagram-confirmation, .architecture-structured-editor { display: none !important; } .architecture-svg-host { overflow: visible; } .architecture-svg-host svg { min-width: 0; max-height: 155mm; } }

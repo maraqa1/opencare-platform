@@ -1,4 +1,5 @@
 import type { IndustryProfileId } from "./module01IndustryProfiles";
+import { calculateCompleteness, calculateRiskFlags, emptyArchitectureDiagram, migrateArchitectureDiagram, type ArchitectureDiagramModel } from "./diagram";
 
 export const essentialQuestions = [
   ["platforms", "What data platforms do you use, and what does each one do?"],
@@ -24,7 +25,7 @@ export type Discovery = {
   painPoints: PainPoint[];
   useCases: RegisteredUseCase[];
   futureUseCases: "not_answered" | "none" | "identified";
-  architecture: { description: string; unknowns: string; nodes: ArchitectureNode[]; edges: ArchitectureEdge[]; confirmed: boolean; origin: "manual" | "ai_draft"; model: string; generatedAt: string; image: string };
+  architecture: { description: string; unknowns: string; nodes: ArchitectureNode[]; edges: ArchitectureEdge[]; confirmed: boolean; origin: "manual" | "ai_draft"; model: string; generatedAt: string; image: string; diagram: ArchitectureDiagramModel };
 };
 const text = (v: unknown, limit = 1500) => typeof v === "string" ? v.trim().slice(0, limit) : "";
 const record = (v: unknown): Record<string, unknown> => v && typeof v === "object" && !Array.isArray(v) ? v as Record<string, unknown> : {};
@@ -37,7 +38,7 @@ function stableId(value: unknown, fallback: string, seen: Set<string>) {
   return id;
 }
 export function emptyDiscovery(): Discovery {
-  return { version: 1, essentials: Object.fromEntries(essentialQuestions.map(([id]) => [id, { status: "not_answered", details: "", evidence: "" }])) as Discovery["essentials"], painPoints: [], useCases: [], futureUseCases: "not_answered", architecture: { description: "", unknowns: "", nodes: [], edges: [], confirmed: false, origin: "manual", model: "", generatedAt: "", image: "" } };
+  return { version: 1, essentials: Object.fromEntries(essentialQuestions.map(([id]) => [id, { status: "not_answered", details: "", evidence: "" }])) as Discovery["essentials"], painPoints: [], useCases: [], futureUseCases: "not_answered", architecture: { description: "", unknowns: "", nodes: [], edges: [], confirmed: false, origin: "manual", model: "", generatedAt: "", image: "", diagram: emptyArchitectureDiagram() } };
 }
 export function normaliseDiscovery(value: unknown): Discovery {
   const raw = record(value), result = emptyDiscovery(), answers = record(raw.essentials);
@@ -59,7 +60,15 @@ export function normaliseDiscovery(value: unknown): Discovery {
   });
   const image = typeof a.image === "string" && a.image.length <= 600000 && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(a.image) ? a.image : "";
   const complete = (nodes.length > 0 || Boolean(image)) && nodes.every(n => n.label) && edges.every(e => e.label) && edges.length === items(a.edges, 40).length;
-  result.architecture = { description: text(a.description, 8000), unknowns: text(a.unknowns), nodes, edges, confirmed: a.confirmed === true && complete, origin: a.origin === "ai_draft" ? "ai_draft" : "manual", model: text(a.model, 100), generatedAt: text(a.generatedAt, 100), image };
+  const confirmed = a.confirmed === true && complete;
+  const diagram = migrateArchitectureDiagram(a, {
+    assessment_id: text(a.assessment_id) || "unknown",
+    scope: text(a.scope) || "unknown",
+    as_of: text(a.as_of) || "unknown",
+    status: confirmed ? "confirmed" : "draft",
+    source: a.origin === "ai_draft" ? "ai_draft" : "structured",
+  });
+  result.architecture = { description: text(a.description, 8000), unknowns: text(a.unknowns), nodes, edges, confirmed, origin: a.origin === "ai_draft" ? "ai_draft" : "manual", model: text(a.model, 100), generatedAt: text(a.generatedAt, 100), image, diagram };
   return result;
 }
 
@@ -75,7 +84,8 @@ export function discoveryMarkdown(value: unknown): string[] {
   lines.push("## Main pain points", ...(d.painPoints.length ? d.painPoints.map(p => `- ${safe(p.issue)}. Function: ${safe(p.function)}. Example: ${safe(p.example)}. Business impact: ${safe(p.impact)}. Priority: ${safe(p.priority)}. Evidence status: ${p.confirmed ? "Client marked evidence-confirmed" : "Client-reported; not independently validated"}. Reference: ${safe(p.evidence)}.`) : ["No pain points recorded; this does not demonstrate their absence."]), "", "## Current and future use-case register");
   lines.push(`Future use cases: ${d.futureUseCases === "none" ? "None identified by the client" : d.futureUseCases.replace(/_/g, " ")}. Registration does not constitute AI readiness approval.`);
   for (const u of d.useCases) lines.push(`### ${safe(u.name)} (${u.horizon})`, `Purpose: ${safe(u.purpose)}. Function: ${safe(u.function)}. Status: ${safe(u.status)}. Owner and users: ${safe(u.owner)}. Data and platforms: ${safe(u.data)}. Output: ${safe(u.output)}. Expected benefit: ${safe(u.benefit)}. Gaps and dependencies: ${safe(u.dependencies)}. Priority: ${safe(u.priority)}. Timing: ${safe(u.timing)}.`, "");
-  lines.push("## Current-state architecture", `Status: ${d.architecture.confirmed ? "Client-confirmed" : "Unconfirmed draft"}; origin: ${d.architecture.origin === "ai_draft" ? "AI-generated draft reviewed separately from report narratives" : "Client-entered"}.`, safe(d.architecture.description), `Unknowns: ${safe(d.architecture.unknowns)}.`, ...d.architecture.nodes.map(n => `- Component: ${safe(n.label)}.`), ...d.architecture.edges.map(e => `- Flow: ${safe(d.architecture.nodes.find(n => n.id === e.source)?.label ?? "")} -> ${safe(d.architecture.nodes.find(n => n.id === e.target)?.label ?? "")} (${safe(e.label)}).`), "");
+  const completeness = calculateCompleteness(d.architecture.diagram), risks = calculateRiskFlags(d.architecture.diagram);
+  lines.push("## Current-state architecture", `Status: ${d.architecture.confirmed ? "Client-confirmed" : "Unconfirmed draft"}; origin: ${d.architecture.origin === "ai_draft" ? "AI-generated draft reviewed separately from report narratives" : "Client-entered"}. Detail completeness: ${completeness.label} (${completeness.known} of ${completeness.total} required detail fields known).`, safe(d.architecture.description), `Unknowns: ${safe(d.architecture.unknowns)}.`, ...d.architecture.diagram.components.map(n => `- Component: ${safe(n.name)}. Type: ${safe(n.type.replace(/_/g, " "))}. Product: ${safe(n.product)}. Owner: ${safe(n.owner)}.`), ...d.architecture.diagram.connections.map(e => `- Flow: ${safe(d.architecture.diagram.components.find(n => n.id === e.from)?.name ?? "")} -> ${safe(d.architecture.diagram.components.find(n => n.id === e.to)?.name ?? "")} (${safe(e.label)}; ${safe(e.mode)}; ${safe(e.method.replace(/_/g, " "))}; ${safe(e.frequency.replace(/_/g, " "))}).`), ...(risks.length ? ["### Architecture risk flags", ...risks.map(risk => `- ${safe(risk.type.replace(/_/g, " "))}: ${safe(risk.summary)} Domains: ${safe(risk.domains.join("; "))}.`)] : []), "");
   return lines;
 }
 export function discoveryNarrativeFacts(value: unknown): string[] {
@@ -149,5 +159,9 @@ export function buildDiscoverySeed(industry: IndustryProfileId, depth: string): 
     ];
     d.useCases[0] = { ...d.useCases[0], name: "Outpatient activity reporting", purpose: "Report outpatient activity", function: "Outpatient activity reporting", owner: "Business Intelligence team owns the reporting tool; specific report consumers were not supplied", data: "Clinical system (electronic health record), Reporting database (SQL Server), Dashboard tool (Power BI)", output: "Dashboard with scheduled refresh at 06:00 every morning", benefit: "Not specified in the supplied scenario", dependencies: "Nightly CSV via SFTP at 02:00; appointment-count reconciliation and unflagged stale data remain known issues", priority: "Not specified", timing: "Current as of September 2026" };
   }
+  d.architecture.diagram = migrateArchitectureDiagram(d.architecture, {
+    scope: industry === "healthcare" ? "Outpatient activity reporting" : "unknown",
+    as_of: industry === "healthcare" ? "September 2026" : "unknown",
+  });
   return d;
 }

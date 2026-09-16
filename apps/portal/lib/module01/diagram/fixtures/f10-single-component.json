@@ -1,0 +1,1 @@
+{"id":"f10","assessment_id":"demo","diagram_type":"current_state_data_flow","title":"Single","scope":"demo","as_of":"unknown","status":"draft","source":"structured","accepted_unknowns":[],"components":[{"id":"a","name":"Only system","type":"source_system","product":"unknown","owner":"unknown"}],"connections":[]}

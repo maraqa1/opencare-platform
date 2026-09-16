@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import Module from "node:module";
 import ts from "typescript";
 
@@ -21,11 +21,14 @@ function compileTs(sourcePath, outputName) {
     },
   }).outputText.replace('require("@/lib/module01/module01FunctionalDomains")', 'require("./functional.cjs")').replace('require("@/lib/module01/module01Discovery")', 'require("./discovery.cjs")');
   const outputPath = join(tempDir, outputName);
+  mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, transpiled);
   return require(outputPath);
 }
 
 compileTs(join(root, "module01", "module01FunctionalDomains.ts"), "functional.cjs");
+for (const name of ["model", "lanes", "validate", "completeness", "risks", "migrate", "layout", "routing", "render-svg", "export-html", "index"]) compileTs(join(root, "module01", "diagram", `${name}.ts`), `diagram/${name}.js`);
+compileTs(join(root, "module01", "diagram.ts"), "diagram.js");
 compileTs(join(root, "module01", "module01Discovery.ts"), "discovery.cjs");
 const deterministicModule = compileTs(join(root, "deterministicReportBuilders.ts"), "deterministic.cjs");
 const factsModule = compileTs(join(root, "module01", "module01FactsBuilder.ts"), "facts.cjs");
