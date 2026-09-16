@@ -99,5 +99,55 @@ export function buildDiscoverySeed(industry: IndustryProfileId, depth: string): 
   d.useCases = [{ id: "case-1", name: current, horizon: "current", purpose: "Monitor service and operational performance", function: fn, status: "In use", owner: `${fn} manager and reporting analyst`, data: `${source}, reporting database and dashboard tool`, output: "Weekly dashboard", benefit: "Shared visibility of performance", dependencies: "Reconcile identifiers and certify metric definitions", priority: "High", timing: "Current" }, { id: "case-2", name: future, horizon: "future", purpose: "Support planning with human-reviewed predictions", function: fn, status: "Idea; not approved for deployment", owner: "Business sponsor to confirm", data: `${source}; historical suitability not confirmed`, output: "Human-reviewed planning insight", benefit: "Earlier identification of operational risks; benefit not quantified", dependencies: "Historical data validation, privacy review, named owner and readiness gate", priority: "Medium", timing: "After foundation controls are validated" }];
   d.futureUseCases = "identified";
   d.architecture = { ...d.architecture, description: `${source} sends a nightly file to the Reporting database. The Reporting database feeds the Dashboard tool. An analyst manually reconciles source extracts.`, unknowns: "Retention period, failure alerts and historical model remain to be confirmed.", nodes: [{ id: "node-1", label: source, sourceQuote: source }, { id: "node-2", label: "Reporting database", sourceQuote: "Reporting database" }, { id: "node-3", label: "Dashboard tool", sourceQuote: "Dashboard tool" }], edges: [{ source: "node-1", target: "node-2", label: "nightly file", sourceQuote: `${source} sends a nightly file to the Reporting database.` }, { source: "node-2", target: "node-3", label: "feeds", sourceQuote: "The Reporting database feeds the Dashboard tool." }] };
+  if (industry === "healthcare") {
+    const nightly = "The Clinical system sends a nightly CSV file via SFTP to the Reporting database at 02:00.";
+    const refresh = "The Reporting database feeds the Dashboard tool through a scheduled refresh every morning at 06:00.";
+    const manual = "The Performance analyst exports extracts weekly from both the Clinical system and the Reporting database, and reconciles them in the Reconciliation workbook because appointment counts do not match.";
+    const issue = "The nightly file fails about twice a month, and the dashboard then shows the previous day's data without warning.";
+    d.architecture = {
+      ...d.architecture,
+      description: [
+        "Scope: Outpatient activity reporting", "As of: September 2026", "", "Components", "",
+        "- Clinical system: source system. Product: electronic health record. Owner: Clinical Informatics.",
+        "- Reporting database: data store. Product: SQL Server. Owner: IT Data Services.",
+        "- Dashboard tool: reporting tool. Product: Power BI. Owner: Business Intelligence team.",
+        "- Performance analyst: person. Owner: Performance team.",
+        "- Reconciliation workbook: spreadsheet. Owner: Performance team.",
+        "", "Data flows", "", `- ${nightly}`, `- ${refresh}`,
+        "", "Manual steps", "", `- ${manual}`, "", "Known issues", "", `- ${issue}`,
+      ].join("\n"),
+      unknowns: "Retention policy, documented data model, historical modeling and shared metric definitions were not supplied.",
+      nodes: ["Clinical system", "Reporting database", "Dashboard tool", "Performance analyst", "Reconciliation workbook"].map((label, i) => ({ id: `node-${i + 1}`, label, sourceQuote: label })),
+      edges: [
+        { source: "node-1", target: "node-2", label: "nightly CSV file via SFTP", sourceQuote: nightly },
+        { source: "node-2", target: "node-3", label: "scheduled refresh every morning at 06:00", sourceQuote: refresh },
+        { source: "node-1", target: "node-4", label: "exports extracts weekly", sourceQuote: manual },
+        { source: "node-2", target: "node-4", label: "exports extracts weekly", sourceQuote: manual },
+        { source: "node-4", target: "node-5", label: "reconciles them", sourceQuote: manual },
+      ],
+    };
+    const healthcareDetails: Record<EssentialId, string> = {
+      platforms: "Clinical system: electronic health record. Reporting database: SQL Server. Dashboard tool: Power BI. Reconciliation workbook: spreadsheet.",
+      sources: "Clinical system supplies outpatient activity reporting data. The Performance analyst also extracts from the Reporting database for reconciliation.",
+      capture: `${nightly} ${refresh}`,
+      retention: "SQL Server is the reporting data store. Retention policy was not supplied.",
+      reports: "Outpatient activity reporting in Power BI, as of September 2026. Specific report consumers and decisions were not supplied.",
+      manual,
+      model: "A documented data model was not supplied.",
+      history: "Historical modeling and the ability to reproduce past results were not supplied.",
+      semantic: "Shared metric definitions and semantic-layer arrangements were not supplied. Appointment counts do not match between extracts.",
+      owners: "Clinical Informatics owns the Clinical system; IT Data Services owns the Reporting database; the Business Intelligence team owns the Dashboard tool. The Performance team owns the Performance analyst role and Reconciliation workbook.",
+    };
+    for (const [id] of essentialQuestions) d.essentials[id] = {
+      status: ["retention", "model", "history", "semantic"].includes(id) ? "not_sure" : "known",
+      details: healthcareDetails[id],
+      evidence: "User-supplied healthcare demo scenario, September 2026; not independently validated.",
+    };
+    d.painPoints = [
+      { id: "pain-1", issue: "Different reports show different numbers", function: "Outpatient activity reporting", example: manual, impact: "Appointment counts cannot be reconciled without weekly manual work.", priority: "Not specified", evidence: "User-supplied demo scenario; supporting evidence not supplied", confirmed: false },
+      { id: "pain-2", issue: "Dashboard shows outdated data without warning", function: "Outpatient activity reporting", example: issue, impact: "The dashboard shows the previous day's data after a nightly file failure, without warning users.", priority: "Not specified", evidence: "User-supplied demo scenario; failure logs not supplied", confirmed: false },
+    ];
+    d.useCases[0] = { ...d.useCases[0], name: "Outpatient activity reporting", purpose: "Report outpatient activity", function: "Outpatient activity reporting", owner: "Business Intelligence team owns the reporting tool; specific report consumers were not supplied", data: "Clinical system (electronic health record), Reporting database (SQL Server), Dashboard tool (Power BI)", output: "Dashboard with scheduled refresh at 06:00 every morning", benefit: "Not specified in the supplied scenario", dependencies: "Nightly CSV via SFTP at 02:00; appointment-count reconciliation and unflagged stale data remain known issues", priority: "Not specified", timing: "Current as of September 2026" };
+  }
   return d;
 }

@@ -24,13 +24,12 @@ export default async function RootLayout({
 }>) {
   const pathname = await getPathname();
   const navigation = await buildNavigation("admin");
+  const customerAssessment = pathname.startsWith("/assessment/");
 
   return (
     <html lang="en">
       <body>
-        <NavigationShell pathname={pathname} navigation={navigation}>
-          {children}
-        </NavigationShell>
+        {customerAssessment ? children : <NavigationShell pathname={pathname} navigation={navigation}>{children}</NavigationShell>}
       </body>
     </html>
   );

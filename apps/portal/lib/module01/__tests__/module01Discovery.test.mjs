@@ -46,6 +46,24 @@ for (const industry of ["healthcare", "manufacturing", "banking", "real-estate",
     for (const useCase of seed.discovery.useCases) assert.ok(markdown.includes(useCase.name));
     if (industry !== "healthcare") assert.ok(!markdown.includes("Clinical system"));
     validateArchitecture(seed.discovery.architecture, seed.discovery.architecture.description);
+    if (industry === "healthcare") {
+      assert.equal(seed.discovery.architecture.nodes.length, 5);
+      assert.equal(seed.discovery.architecture.edges.length, 5);
+      for (const detail of ["Scope: Outpatient activity reporting", "As of: September 2026", "electronic health record", "SQL Server", "Power BI", "Clinical Informatics", "IT Data Services", "Business Intelligence team", "Performance team", "02:00", "06:00", "SFTP", "Reconciliation workbook", "appointment counts do not match", "fails about twice a month", "previous day's data without warning"]) {
+        assert.ok(seed.discovery.architecture.description.includes(detail), detail);
+        assert.ok(report.discovery.architecture.description.includes(detail), detail);
+        assert.ok(markdown.includes(detail), detail);
+      }
+      assert.equal(seed.discovery.essentials.model.status, "not_sure");
+      assert.equal(seed.discovery.essentials.history.status, "not_sure");
+      assert.ok(seed.discovery.essentials.capture.details.includes("02:00"));
+      assert.ok(seed.discovery.painPoints.some(p => p.example.includes("twice a month")));
+      assert.ok(discovery.discoveryNarrativeFacts(seed.discovery).join("\n").includes("Outpatient activity reporting"));
+    } else {
+      assert.equal(seed.discovery.architecture.nodes.length, 3);
+      assert.equal(seed.discovery.architecture.edges.length, 2);
+      assert.ok(!JSON.stringify(seed.discovery).includes("Clinical Informatics"));
+    }
     results.push({ industry, level, questions: 97, essentials: 10, useCases: 2, passed: true });
     if (level === "evidence-enriched") {
       writeFileSync(resolve(output, `${industry}-seed.json`), JSON.stringify(seed, null, 2));

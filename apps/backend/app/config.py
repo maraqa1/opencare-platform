@@ -95,6 +95,8 @@ class Settings:
     use_case_materialization_enabled: bool = _get_bool(
         "USE_CASE_MATERIALIZATION_ENABLED", True
     )
+    module01_assessment_admin_token: str = os.getenv("MODULE01_ASSESSMENT_ADMIN_TOKEN", "")
+    module01_assessment_token_secret: str = os.getenv("MODULE01_ASSESSMENT_TOKEN_SECRET", "")
 
     def postgres_dsn(self) -> str:
         credentials = self.postgres_user
@@ -109,6 +111,8 @@ class Settings:
         payload = asdict(self)
         payload["postgres_dsn"] = self.postgres_dsn()
         payload["postgres_password"] = "***" if self.postgres_password else ""
+        payload["module01_assessment_admin_token"] = "***" if self.module01_assessment_admin_token else ""
+        payload["module01_assessment_token_secret"] = "***" if self.module01_assessment_token_secret else ""
         return payload
 
 

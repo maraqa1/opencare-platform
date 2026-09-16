@@ -13,6 +13,8 @@ resolved_minio_root_password="$MINIO_ROOT_PASSWORD"
 resolved_minio_access_key="$MINIO_ACCESS_KEY"
 resolved_minio_secret_key="$MINIO_SECRET_KEY"
 resolved_internal_api_token="$INTERNAL_API_TOKEN"
+resolved_module01_assessment_admin_token="${MODULE01_ASSESSMENT_ADMIN_TOKEN:-}"
+resolved_module01_assessment_token_secret="${MODULE01_ASSESSMENT_TOKEN_SECRET:-}"
 resolved_keycloak_admin_password="$KEYCLOAK_ADMIN_PASSWORD"
 resolved_demo_mysql_password="$DEMO_MYSQL_PASSWORD"
 resolved_demo_mysql_root_password="$DEMO_MYSQL_ROOT_PASSWORD"
@@ -41,12 +43,21 @@ if kubectl -n "$NAMESPACE" get secret opencare-secrets >/dev/null 2>&1; then
   resolved_minio_access_key="$(resolve_secret_value MINIO_ACCESS_KEY "$resolved_minio_access_key")"
   resolved_minio_secret_key="$(resolve_secret_value MINIO_SECRET_KEY "$resolved_minio_secret_key")"
   resolved_internal_api_token="$(resolve_secret_value INTERNAL_API_TOKEN "$resolved_internal_api_token")"
+  resolved_module01_assessment_admin_token="$(resolve_secret_value MODULE01_ASSESSMENT_ADMIN_TOKEN "$resolved_module01_assessment_admin_token")"
+  resolved_module01_assessment_token_secret="$(resolve_secret_value MODULE01_ASSESSMENT_TOKEN_SECRET "$resolved_module01_assessment_token_secret")"
   resolved_keycloak_admin_password="$(resolve_secret_value KEYCLOAK_ADMIN_PASSWORD "$resolved_keycloak_admin_password")"
   resolved_demo_mysql_password="$(resolve_secret_value DEMO_MYSQL_PASSWORD "$resolved_demo_mysql_password")"
   resolved_demo_mysql_root_password="$(resolve_secret_value DEMO_MYSQL_ROOT_PASSWORD "$resolved_demo_mysql_root_password")"
   resolved_superset_readonly_password="$(resolve_secret_value SUPERSET_READONLY_PASSWORD "$resolved_superset_readonly_password")"
   resolved_superset_admin_password="$(resolve_secret_value SUPERSET_ADMIN_PASSWORD "$resolved_superset_admin_password")"
   resolved_smtp_pass="$(resolve_secret_value SMTP_PASS "$resolved_smtp_pass")"
+fi
+
+if [[ -z "$resolved_module01_assessment_admin_token" ]]; then
+  resolved_module01_assessment_admin_token="$(openssl rand -base64 36 | tr -d '\n')"
+fi
+if [[ -z "$resolved_module01_assessment_token_secret" ]]; then
+  resolved_module01_assessment_token_secret="$(openssl rand -base64 48 | tr -d '\n')"
 fi
 
 if kubectl -n "$NAMESPACE" get configmap opencare-use-case-overrides >/dev/null 2>&1; then
@@ -245,6 +256,8 @@ stringData:
   MINIO_ACCESS_KEY: ${resolved_minio_access_key}
   MINIO_SECRET_KEY: ${resolved_minio_secret_key}
   INTERNAL_API_TOKEN: ${resolved_internal_api_token}
+  MODULE01_ASSESSMENT_ADMIN_TOKEN: ${resolved_module01_assessment_admin_token}
+  MODULE01_ASSESSMENT_TOKEN_SECRET: ${resolved_module01_assessment_token_secret}
   KEYCLOAK_ADMIN_PASSWORD: ${resolved_keycloak_admin_password}
   DEMO_MYSQL_PASSWORD: ${resolved_demo_mysql_password}
   DEMO_MYSQL_ROOT_PASSWORD: ${resolved_demo_mysql_root_password}

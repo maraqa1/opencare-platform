@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   dataAiDiagnosticDomains,
@@ -741,7 +741,7 @@ function downloadText(filename: string, content: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-export function DataAiDiagnosticWorkspace() {
+export function DataAiDiagnosticWorkspace({ assessmentId }: { assessmentId?: string } = {}) {
   const [industryId, setIndustryId] = useState<IndustryProfileId | "">("");
   const [selectedFunctions, setSelectedFunctions] = useState<string[]>([]);
   const [pendingIndustryId, setPendingIndustryId] = useState<IndustryProfileId | null>(null);
@@ -750,6 +750,17 @@ export function DataAiDiagnosticWorkspace() {
   const [contextReviewRequired, setContextReviewRequired] = useState(false);
   const [storageReady, setStorageReady] = useState(false);
   const [storageMessage, setStorageMessage] = useState("");
+  const [remoteRevision, setRemoteRevision] = useState<number | null>(null);
+  const remoteRevisionRef = useRef<number | null>(null);
+  const [remoteSaveStatus, setRemoteSaveStatus] = useState<"loading" | "pending" | "saving" | "saved" | "offline" | "conflict" | "submitted">(assessmentId ? "loading" : "saved");
+  const [remoteSavedAt, setRemoteSavedAt] = useState("");
+  const [remoteLoaded, setRemoteLoaded] = useState(!assessmentId);
+  const remoteBlockedRef = useRef(false);
+  const saveSequenceRef = useRef(0);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const skipInitialRemoteSaveRef = useRef(true);
+  const [retryTick, setRetryTick] = useState(0);
   const generationSequence = useRef(0);
   const reportAbort = useRef<AbortController | null>(null);
   useEffect(() => () => reportAbort.current?.abort(), []);
@@ -794,6 +805,37 @@ export function DataAiDiagnosticWorkspace() {
   }, []);
 
   useEffect(() => {
+    if (assessmentId) {
+      let active = true;
+      fetch(`/api/module01/assessments/${assessmentId}`, { cache: "no-store" })
+        .then(async response => ({ response, body: await response.json() }))
+        .then(({ response, body }) => {
+          if (!active) return;
+          if (!response.ok) throw new Error(body.detail || "Assessment could not be loaded.");
+          const saved = body.capture ?? {};
+          if (!isIndustryProfileId(saved.industryId)) throw new Error("The saved assessment has no valid industry profile.");
+          const functions = normaliseFunctions(saved.industryId, saved.selectedFunctions);
+          setIndustryId(saved.industryId);
+          setSelectedFunctions(functions);
+          setStateByQuestion(validateIndustryAnswers(saved.industryId, saved.answers, functions));
+          const context = { ...emptyCustomerContext };
+          for (const key of Object.keys(context) as Array<keyof CustomerContext>) context[key] = typeof saved.customerContext?.[key] === "string" ? saved.customerContext[key] : "";
+          setCustomerContext(context);
+          setDiscovery(normaliseDiscovery(saved.discovery));
+          setReviewIds(Array.isArray(saved.reviewIds) ? saved.reviewIds.filter((id: unknown) => typeof id === "string") : []);
+          setContextReviewRequired(saved.contextReviewRequired === true);
+          setProfileHistory(Array.isArray(saved.profileHistory) ? saved.profileHistory : []);
+          remoteRevisionRef.current = body.revision;
+          setRemoteRevision(body.revision);
+          setRemoteSavedAt(body.savedAt);
+          setRemoteSaveStatus(body.status === "submitted" ? "submitted" : "saved");
+          remoteBlockedRef.current = body.status === "submitted";
+          setStorageReady(true);
+          setRemoteLoaded(true);
+        })
+        .catch(error => { if (active) { setStorageMessage(error instanceof Error ? error.message : "Assessment could not be loaded."); setRemoteSaveStatus("offline"); } });
+      return () => { active = false; };
+    }
     try {
       const savedText = window.localStorage.getItem(assessmentStorageKey);
       if (savedText) {
@@ -829,12 +871,12 @@ export function DataAiDiagnosticWorkspace() {
       setStorageMessage("Saved assessment could not be restored. Start a new assessment or recover your downloaded JSON.");
     }
     setStorageReady(true);
-  }, []);
+  }, [assessmentId]);
 
   useEffect(() => {
     if (!storageReady || !industryId) return;
     try {
-      window.localStorage.setItem(assessmentStorageKey, JSON.stringify({
+      window.localStorage.setItem(assessmentId ? `${assessmentStorageKey}:${assessmentId}` : assessmentStorageKey, JSON.stringify({
         industryId, version: INDUSTRY_PROFILE_VERSION, answers: stateByQuestion, customerContext, discovery,
         selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
         reviewIds, contextReviewRequired, profileHistory,
@@ -845,7 +887,89 @@ export function DataAiDiagnosticWorkspace() {
     } catch {
       setStorageMessage("Browser storage is unavailable or full. Download assessment JSON to keep your work.");
     }
-  }, [storageReady, industryId, stateByQuestion, customerContext, discovery, reviewIds, contextReviewRequired, profileHistory, dataAiDiagnosticQuestions]);
+  }, [storageReady, assessmentId, industryId, stateByQuestion, customerContext, discovery, reviewIds, contextReviewRequired, profileHistory, dataAiDiagnosticQuestions]);
+
+  const currentCapture = useMemo(() => ({
+    industryId,
+    version: INDUSTRY_PROFILE_VERSION,
+    answers: stateByQuestion,
+    customerContext,
+    discovery,
+    selectedFunctions,
+    functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
+    reviewIds,
+    contextReviewRequired,
+    profileHistory,
+    questions: dataAiDiagnosticQuestions.map(({ id, variantKey, questionEn, questionAr, evidenceRequired, evidenceRequiredAr }) => ({ id, variantKey, questionEn, questionAr, evidenceRequired, evidenceRequiredAr })),
+  }), [industryId, stateByQuestion, customerContext, discovery, selectedFunctions, reviewIds, contextReviewRequired, profileHistory, dataAiDiagnosticQuestions]);
+
+  const queueRemoteSave = useCallback((capture: typeof currentCapture, sequence: number) => {
+    if (!assessmentId || remoteBlockedRef.current) return saveChainRef.current;
+    saveChainRef.current = saveChainRef.current.then(async () => {
+      const revision = remoteRevisionRef.current;
+      if (revision === null) return;
+      setRemoteSaveStatus("saving");
+      try {
+        const response = await fetch(`/api/module01/assessments/${assessmentId}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ expectedRevision: revision, operationId: crypto.randomUUID(), capture }) });
+        const body = await response.json();
+        if (response.status === 409) {
+          remoteBlockedRef.current = true;
+          setRemoteSaveStatus("conflict");
+          setStorageMessage(body.detail || "This assessment changed in another browser. Your local edits are preserved; reload only after reviewing the conflict.");
+          return;
+        }
+        if (!response.ok) throw new Error(body.detail || "Server save failed.");
+        remoteRevisionRef.current = body.revision;
+        setRemoteRevision(body.revision);
+        setRemoteSavedAt(body.savedAt);
+        if (saveSequenceRef.current === sequence) setRemoteSaveStatus("saved");
+      } catch (error) {
+        setRemoteSaveStatus("offline");
+        setStorageMessage(`${error instanceof Error ? error.message : "Server save failed."} Changes remain in this browser and will retry when the connection returns.`);
+      }
+    });
+    return saveChainRef.current;
+  }, [assessmentId]);
+
+  useEffect(() => {
+    if (!assessmentId || !remoteLoaded || !storageReady || !industryId || remoteBlockedRef.current) return;
+    if (skipInitialRemoteSaveRef.current) { skipInitialRemoteSaveRef.current = false; return; }
+    const sequence = ++saveSequenceRef.current;
+    setRemoteSaveStatus("pending");
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => { void queueRemoteSave(currentCapture, sequence); }, 1500);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [assessmentId, remoteLoaded, storageReady, industryId, currentCapture, queueRemoteSave, retryTick]);
+
+  useEffect(() => {
+    if (!assessmentId) return;
+    const retry = () => { if (remoteSaveStatus === "offline") setRetryTick(value => value + 1); };
+    const warn = (event: BeforeUnloadEvent) => { if (["pending", "saving", "offline"].includes(remoteSaveStatus)) { event.preventDefault(); event.returnValue = ""; } };
+    window.addEventListener("online", retry);
+    window.addEventListener("beforeunload", warn);
+    return () => { window.removeEventListener("online", retry); window.removeEventListener("beforeunload", warn); };
+  }, [assessmentId, remoteSaveStatus]);
+
+  const saveRemoteNow = async () => {
+    if (!assessmentId || remoteBlockedRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const sequence = ++saveSequenceRef.current;
+    setRemoteSaveStatus("pending");
+    await queueRemoteSave(currentCapture, sequence);
+  };
+
+  const submitRemoteAssessment = async () => {
+    if (!assessmentId || remoteBlockedRef.current) return;
+    await saveRemoteNow();
+    if (remoteBlockedRef.current || remoteRevisionRef.current === null) return;
+    setRemoteSaveStatus("saving");
+    const response = await fetch(`/api/module01/assessments/${assessmentId}/submit`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ expectedRevision: remoteRevisionRef.current }) });
+    const body = await response.json();
+    if (!response.ok) { setRemoteSaveStatus(response.status === 409 ? "conflict" : "offline"); setStorageMessage(body.detail || "Assessment could not be submitted."); return; }
+    remoteBlockedRef.current = true;
+    setRemoteSaveStatus("submitted");
+    setStorageMessage("Assessment submitted for review. Further editing is locked.");
+  };
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion, dataAiDiagnosticQuestions, dataAiDiagnosticDomains), [stateByQuestion, dataAiDiagnosticQuestions, dataAiDiagnosticDomains]);
   const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion, dataAiDiagnosticQuestions), [stateByQuestion, dataAiDiagnosticQuestions]);
@@ -907,6 +1031,7 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   const applyIndustryChange = (next: IndustryProfileId) => {
+    if (assessmentId && remoteBlockedRef.current) return;
     if (industryId && industryId !== next) {
       const migration = migrateIndustryAnswers(industryId, next, stateByQuestion);
       setProfileHistory((current) => [...current, {
@@ -941,6 +1066,7 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   const updateQuestion = (questionId: string, patch: Partial<QuestionState>) => {
+    if (assessmentId && remoteBlockedRef.current) return;
     invalidateReport();
     if (patch.score !== undefined && patch.score !== null) setReviewIds((current) => current.filter((id) => id !== questionId));
     setStateByQuestion((current) => ({
@@ -953,6 +1079,7 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   const toggleFunction = (id: string) => {
+    if (assessmentId && remoteBlockedRef.current) return;
     if (!industryId) return;
     const next = normaliseFunctions(industryId, selectedFunctions.includes(id)
       ? selectedFunctions.filter((value) => value !== id) : [...selectedFunctions, id]);
@@ -1006,6 +1133,7 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   const updateCustomerContext = (field: keyof CustomerContext, value: string) => {
+    if (assessmentId && remoteBlockedRef.current) return;
     invalidateReport();
     setCustomerContext((current) => ({
       ...current,
@@ -1376,7 +1504,7 @@ export function DataAiDiagnosticWorkspace() {
   };
 
   return (
-    <main className="page data-ai-diagnostic-page">
+    <main className={`page data-ai-diagnostic-page${assessmentId ? " customer-assessment-page" : ""}`}>
       <header className="data-ai-dmo-header">
         <Link className="data-ai-dmo-brand" href="/use-cases/data-management-office-establishment">
           <span aria-hidden="true">Y</span>
@@ -1393,18 +1521,16 @@ export function DataAiDiagnosticWorkspace() {
 
       <section className="data-ai-hero">
         <div>
-          <p className="eyebrow">Module 01 - DMO Establishment Pathway</p>
+          <p className="eyebrow">{assessmentId ? "Customer assessment" : "Module 01 - DMO Establishment Pathway"}</p>
           <h1>Data & AI Capability Diagnostic</h1>
           <p>
-            A bilingual assessment and AI reporting workspace for capturing maturity evidence, scoring capability gaps,
-            prioritising remediation, and producing executive-ready diagnostic outputs for the wider DMO establishment
-            programme.
+            {assessmentId ? "Complete the assigned data and AI capability assessment. Your progress is saved securely as you work." : "A bilingual assessment and AI reporting workspace for capturing maturity evidence, scoring capability gaps, prioritising remediation, and producing executive-ready diagnostic outputs for the wider DMO establishment programme."}
           </p>
           <div className="data-ai-chip-row">
             <span>{totalQuestions} workbook questions</span>
             <span>13 maturity domains</span>
-            <span>AI report draft</span>
-            <span>Capture first - connect APIs later</span>
+            {!assessmentId && <span>AI report draft</span>}
+            <span>{assessmentId ? "Server autosave" : "Capture first - connect APIs later"}</span>
           </div>
         </div>
         <div className="data-ai-hero-panel">
@@ -1418,7 +1544,7 @@ export function DataAiDiagnosticWorkspace() {
       <section className="industry-profile-bar no-print" aria-label="Industry profile selection">
         <label htmlFor="industry-profile">
           <span>Industry profile <strong aria-hidden="true">*</strong></span>
-          <select id="industry-profile" required value={industryId} onChange={(event) => requestIndustryChange(event.target.value)} disabled={!storageReady || reportStatus === "loading"}>
+          <select id="industry-profile" required value={industryId} onChange={(event) => requestIndustryChange(event.target.value)} disabled={!storageReady || reportStatus === "loading" || remoteSaveStatus === "submitted"}>
             <option value="" disabled>Select an industry</option>
             {industryProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.labelEn} / {profile.labelAr}</option>)}
           </select>
@@ -1430,7 +1556,7 @@ export function DataAiDiagnosticWorkspace() {
         </div>
         <button type="button" disabled={!industryId} onClick={downloadAssessment}>Download assessment JSON</button>
       </section>
-      {industryId && <fieldset className="industry-function-scope no-print" disabled={reportStatus === "loading"}>
+      {industryId && <fieldset className="industry-function-scope no-print" disabled={reportStatus === "loading" || remoteSaveStatus === "submitted"}>
         <legend>Functional scope / النطاق الوظيفي</legend>
         <div className="industry-function-options">
           {industryFunctions(industryId).map((f) => <label key={f.id}>
@@ -1442,6 +1568,10 @@ export function DataAiDiagnosticWorkspace() {
         <p aria-live="polite">97 core + {totalQuestions - 97} functional = {totalQuestions} questions</p>
       </fieldset>}
       {storageMessage && <p role="status" className="industry-profile-notice no-print">{storageMessage}</p>}
+      {assessmentId && <section className={`customer-save-status customer-save-${remoteSaveStatus} no-print`} aria-live="polite">
+        <div><strong>{remoteSaveStatus === "loading" ? "Loading assessment..." : remoteSaveStatus === "pending" ? "Changes pending" : remoteSaveStatus === "saving" ? "Saving..." : remoteSaveStatus === "saved" ? `Saved${remoteSavedAt ? ` at ${new Date(remoteSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}` : remoteSaveStatus === "offline" ? "Offline - changes pending" : remoteSaveStatus === "conflict" ? "Save conflict - review required" : "Submitted for review"}</strong><span>{remoteRevision ? `Revision ${remoteRevision}` : ""}</span></div>
+        {remoteSaveStatus !== "submitted" && <div><button type="button" disabled={["loading", "saving", "conflict"].includes(remoteSaveStatus)} onClick={saveRemoteNow}>Save now</button><button type="button" disabled={["loading", "pending", "saving", "offline", "conflict"].includes(remoteSaveStatus)} onClick={submitRemoteAssessment}>Submit for review</button></div>}
+      </section>}
       {reviewIds.length > 0 && <p role="status" className="industry-profile-notice no-print">{reviewIds.length} changed questions need reassessment. Compatible answers were retained; previous answers remain in the downloaded history.</p>}
       {contextReviewRequired && <div role="status" className="industry-profile-notice no-print">
         <span>Industry changed. Review the customer context and retained evidence before generating a new report.</span>
@@ -1463,7 +1593,7 @@ export function DataAiDiagnosticWorkspace() {
       })()}
 
       <nav className="data-ai-tabs" id="diagnostic-workbench" aria-label="Data and AI diagnostic sections">
-        {tabs.map((tab) => (
+        {tabs.filter(tab => !assessmentId || tab.id !== "report").map((tab) => (
           <button
             className={activeTab === tab.id ? "active" : ""}
             key={tab.id}
@@ -1498,7 +1628,7 @@ export function DataAiDiagnosticWorkspace() {
                 <strong>{criticalItems.length}</strong>
               </div>
             </div>
-            <div className="data-ai-demo-actions" aria-label="Demo data actions">
+            {!assessmentId && <div className="data-ai-demo-actions" aria-label="Demo data actions">
               <div>
                 <span className="data-ai-mode-chip">Seed catalogue</span>
                 <p>Fictional demonstration data for {industryProfile?.labelEn}.</p>
@@ -1530,7 +1660,7 @@ export function DataAiDiagnosticWorkspace() {
                   Reset capture
                 </button>
               </div>
-            </div>
+            </div>}
             <div className="data-ai-context-panel" aria-label="Customer and business domain context">
               <div className="data-ai-context-header">
                 <div>
@@ -1604,7 +1734,7 @@ export function DataAiDiagnosticWorkspace() {
                 </label>
               </div>
             </div>
-            <DiscoveryEditor value={discovery} onChange={(value) => { setDiscovery(value); invalidateReport(); }} />
+            <DiscoveryEditor value={discovery} onChange={(value) => { if (assessmentId && remoteBlockedRef.current) return; setDiscovery(value); invalidateReport(); }} />
             <div className="data-ai-filters">
               {selectedFunctions.length > 0 && industryId && <label>
                 <span>Question scope</span>
