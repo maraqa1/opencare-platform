@@ -159,9 +159,31 @@ export function buildDiscoverySeed(industry: IndustryProfileId, depth: string): 
     ];
     d.useCases[0] = { ...d.useCases[0], name: "Outpatient activity reporting", purpose: "Report outpatient activity", function: "Outpatient activity reporting", owner: "Business Intelligence team owns the reporting tool; specific report consumers were not supplied", data: "Clinical system (electronic health record), Reporting database (SQL Server), Dashboard tool (Power BI)", output: "Dashboard with scheduled refresh at 06:00 every morning", benefit: "Not specified in the supplied scenario", dependencies: "Nightly CSV via SFTP at 02:00; appointment-count reconciliation and unflagged stale data remain known issues", priority: "Not specified", timing: "Current as of September 2026" };
   }
-  d.architecture.diagram = migrateArchitectureDiagram(d.architecture, {
-    scope: industry === "healthcare" ? "Outpatient activity reporting" : "unknown",
-    as_of: industry === "healthcare" ? "September 2026" : "unknown",
-  });
+  d.architecture.diagram = industry === "healthcare" ? {
+    id: "architecture-current-state",
+    assessment_id: "demo-healthcare",
+    diagram_type: "current_state_data_flow",
+    title: "Current-state architecture",
+    scope: "Outpatient activity reporting",
+    as_of: "September 2026",
+    status: "draft",
+    source: "structured",
+    accepted_unknowns: [],
+    components: [
+      { id: "clinical-system", name: "Clinical system", type: "source_system", product: "Electronic health record", owner: "Clinical Informatics" },
+      { id: "reporting-database", name: "Reporting database", type: "data_store", product: "SQL Server", owner: "IT Data Services" },
+      { id: "dashboard-tool", name: "Dashboard tool", type: "consumption_tool", product: "Power BI", owner: "Business Intelligence team" },
+      { id: "performance-analyst", name: "Performance analyst", type: "person", product: "Not applicable", owner: "Performance team" },
+      { id: "reconciliation-workbook", name: "Reconciliation workbook", type: "manual_artifact", product: "Spreadsheet", owner: "Performance team" },
+    ],
+    connections: [
+      { id: "nightly-clinical-feed", from: "clinical-system", to: "reporting-database", label: "Nightly CSV via SFTP at 02:00", mode: "automated", method: "file_transfer", frequency: "daily", known_issue: "Fails about twice a month; downstream users are not warned that the dashboard is showing the previous day's data." },
+      { id: "morning-dashboard-refresh", from: "reporting-database", to: "dashboard-tool", label: "Scheduled refresh at 06:00", mode: "automated", method: "scheduled_refresh", frequency: "daily" },
+      { id: "weekly-clinical-extract", from: "clinical-system", to: "performance-analyst", label: "Weekly manual extract", mode: "manual", method: "manual_export", frequency: "weekly" },
+      { id: "weekly-database-extract", from: "reporting-database", to: "performance-analyst", label: "Weekly manual extract", mode: "manual", method: "manual_export", frequency: "weekly" },
+      { id: "weekly-reconciliation", from: "performance-analyst", to: "reconciliation-workbook", label: "Reconciles appointment counts", mode: "manual", method: "manual_export", frequency: "weekly", known_issue: "Appointment counts do not match between the Clinical system and Reporting database extracts." },
+    ],
+    assumptions: ["Retention policy, documented data model, historical modelling and shared metric definitions remain unconfirmed."],
+  } : migrateArchitectureDiagram(d.architecture);
   return d;
 }

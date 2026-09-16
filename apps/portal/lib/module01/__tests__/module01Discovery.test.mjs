@@ -49,6 +49,12 @@ for (const industry of ["healthcare", "manufacturing", "banking", "real-estate",
     if (industry === "healthcare") {
       assert.equal(seed.discovery.architecture.nodes.length, 5);
       assert.equal(seed.discovery.architecture.edges.length, 5);
+      assert.equal(seed.discovery.architecture.diagram.components.length, 5);
+      assert.equal(seed.discovery.architecture.diagram.connections.length, 5);
+      assert.equal(seed.discovery.architecture.diagram.components.find(item => item.id === "clinical-system").product, "Electronic health record");
+      assert.equal(seed.discovery.architecture.diagram.components.find(item => item.id === "reporting-database").owner, "IT Data Services");
+      assert.equal(seed.discovery.architecture.diagram.connections.find(item => item.id === "nightly-clinical-feed").method, "file_transfer");
+      assert.equal(seed.discovery.architecture.diagram.connections.find(item => item.id === "weekly-reconciliation").frequency, "weekly");
       for (const detail of ["Scope: Outpatient activity reporting", "As of: September 2026", "electronic health record", "SQL Server", "Power BI", "Clinical Informatics", "IT Data Services", "Business Intelligence team", "Performance team", "02:00", "06:00", "SFTP", "Reconciliation workbook", "appointment counts do not match", "fails about twice a month", "previous day's data without warning"]) {
         assert.ok(seed.discovery.architecture.description.includes(detail), detail);
         assert.ok(report.discovery.architecture.description.includes(detail), detail);
