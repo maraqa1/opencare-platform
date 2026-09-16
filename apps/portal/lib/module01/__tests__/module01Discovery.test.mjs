@@ -26,6 +26,9 @@ const { buildDeterministicMarkdown } = load(resolve(portal, "lib/markdownReportG
 const { validateArchitecture } = load(resolve(portal, "lib/module01/module01Architecture.ts"));
 const { POST } = load(resolve(portal, "app/api/reports/module01/architecture/route.ts"));
 const output = resolve(portal, "../../output/module01-discovery-tests"); mkdirSync(output, { recursive: true });
+const editorSource = readFileSync(resolve(portal, "app/use-cases/data-ai-capability-diagnostic/discovery-editor.tsx"), "utf8");
+assert.ok(editorSource.includes('<section className="architecture-capture"'), "Architecture capture must not require expanding a disclosure");
+assert.ok(editorSource.indexOf("<ArchitectureDiagram architecture={d.architecture} />") < editorSource.indexOf("Systems, data flows, storage, models and reports"), "Diagram preview must precede the architecture description editor");
 const results = [];
 for (const industry of ["healthcare", "manufacturing", "banking", "real-estate", "utilities", "cross-industry"]) {
   for (const level of ["interview-light", "evidence-enriched", "board-ready"]) {
