@@ -24,7 +24,7 @@ commit="$(git rev-parse --short HEAD)"
 image="${IMAGE_PREFIX}-${commit}"
 
 echo "Building backend image: $image"
-timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" docker build --no-cache -t "$image" apps/backend
+timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" docker build --no-cache -f apps/backend/Dockerfile -t "$image" .
 
 echo "Importing image into K3s: $image"
 timeout "$DEPLOY_STEP_TIMEOUT_SECONDS" bash -c 'docker save "$1" | sudo k3s ctr images import -' _ "$image"
