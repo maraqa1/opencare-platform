@@ -1,13 +1,32 @@
 import { NextResponse } from "next/server";
 import { validateArchitecture } from "@/lib/module01/module01Architecture";
-import { calculateCompleteness, calculateRiskFlags, migrateArchitectureDiagram, validateDiagram } from "@/lib/module01/diagram";
+import { calculateCompleteness, calculateRiskFlags, extractArchitectureDiagram, migrateArchitectureDiagram, validateDiagram, type ArchitectureDiagramModel } from "@/lib/module01/diagram";
 
 export const runtime = "nodejs";
+function diagramResponse(graph: ArchitectureDiagramModel, metadata: { mode: "deterministic" | "ai2"; model: string; retryAttempted?: boolean }) {
+  const nodes = graph.components.map(component => ({ id: component.id, label: component.name, sourceQuote: component.notes || component.name }));
+  const edges = graph.connections.map(connection => ({ source: connection.from, target: connection.to, label: connection.label, sourceQuote: connection.label }));
+  return NextResponse.json({ nodes, edges, diagram: graph, completeness: calculateCompleteness(graph), riskFlags: calculateRiskFlags(graph), origin: graph.source === "ai_draft" ? "ai_draft" : "manual", confirmed: false, retryAttempted: Boolean(metadata.retryAttempted), fallbackUsed: false, generationMode: metadata.mode, model: metadata.model, generatedAt: new Date().toISOString() });
+}
 export async function POST(request: Request) {
-  let description: unknown;
-  try { const body = await request.text(); if (body.length > 12000) return NextResponse.json({ error: "Description is too large." }, { status: 413 }); description = JSON.parse(body).description; }
+  let description: unknown, suppliedDiagram: unknown;
+  try { const body = await request.text(); if (body.length > 100000) return NextResponse.json({ error: "Architecture request is too large." }, { status: 413 }); const parsed = JSON.parse(body); description = parsed.description; suppliedDiagram = parsed.diagram; }
   catch { return NextResponse.json({ error: "Invalid JSON request." }, { status: 400 }); }
   if (typeof description !== "string" || description.trim().length < 20 || description.length > 8000) return NextResponse.json({ error: "Supply a description between 20 and 8,000 characters." }, { status: 400 });
+  const supplied = suppliedDiagram && typeof suppliedDiagram === "object"
+    ? migrateArchitectureDiagram(suppliedDiagram, { source: "structured" })
+    : null;
+  const suppliedValidation = supplied ? validateDiagram(supplied) : null;
+  const extracted = extractArchitectureDiagram(description);
+  const extractedValidation = validateDiagram(extracted);
+  const deterministic = supplied && suppliedValidation?.valid && supplied.components.length >= 2 && supplied.connections.length >= 1
+    ? supplied
+    : extractedValidation.valid && extracted.components.length >= 2 && extracted.connections.length >= 1
+      ? extracted
+      : null;
+  if (deterministic) {
+    return diagramResponse({ ...deterministic, status: "draft", source: "structured" }, { mode: "deterministic", model: "Deterministic architecture extractor" });
+  }
   try {
     const url = new URL("/v1/grounded-generate", process.env.AI_GATEWAY_BASE_URL || "https://ai2.opendatalake.com");
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(55000)]);
@@ -37,9 +56,7 @@ export async function POST(request: Request) {
           const legacy = validateArchitecture(raw, description);
           graph = migrateArchitectureDiagram({ ...legacy, origin: "ai_draft" }, { source: "ai_draft" });
         }
-        const nodes = graph.components.map(component => ({ id: component.id, label: component.name, sourceQuote: component.notes || component.name }));
-        const edges = graph.connections.map(connection => ({ source: connection.from, target: connection.to, label: connection.label, sourceQuote: connection.label }));
-        return NextResponse.json({ nodes, edges, diagram: graph, completeness: calculateCompleteness(graph), riskFlags: calculateRiskFlags(graph), origin: "ai_draft", confirmed: false, retryAttempted: attempt > 0, model: typeof body.model === "string" ? body.model : "AI2 (model not reported)", generatedAt: new Date().toISOString() });
+        return diagramResponse(graph, { mode: "ai2", retryAttempted: attempt > 0, model: typeof body.model === "string" ? body.model : "AI2 (model not reported)" });
       } catch (error) {
         rejection = error instanceof Error ? error.message : "Invalid JSON graph.";
         if (attempt === 1) throw error;

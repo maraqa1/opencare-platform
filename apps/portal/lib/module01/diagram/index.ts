@@ -8,4 +8,4 @@ export * from "./layout";
 export * from "./routing";
 export * from "./render-svg";
 export * from "./export-html";
-
+export * from "./extract";
