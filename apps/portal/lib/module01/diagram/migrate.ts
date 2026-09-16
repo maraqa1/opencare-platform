@@ -78,7 +78,11 @@ export function migrateArchitectureDiagram(value: unknown, context: Partial<Arch
     title: text(source.title, "Current-state architecture"),
     scope: text(source.scope ?? context.scope), as_of: text(source.as_of ?? context.as_of),
     status: source.status === "confirmed" || source.confirmed === true ? "confirmed" : "draft",
-    source: source.source === "ai_draft" || source.origin === "ai_draft" || context.source === "ai_draft" ? "ai_draft" : "structured",
+    source: source.source === "structured" || source.origin === "manual"
+      ? "structured"
+      : source.source === "ai_draft" || source.origin === "ai_draft" || context.source === "ai_draft"
+        ? "ai_draft"
+        : "structured",
     ...(text(source.confirmed_by, "") ? { confirmed_by: text(source.confirmed_by, "") } : {}),
     ...(text(source.confirmed_at, "") ? { confirmed_at: text(source.confirmed_at, "") } : {}),
     accepted_unknowns: Array.isArray(source.accepted_unknowns) ? [...new Set(source.accepted_unknowns.filter((v: unknown) => typeof v === "string"))].sort() : [],

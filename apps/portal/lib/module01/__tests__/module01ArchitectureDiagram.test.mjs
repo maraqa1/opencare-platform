@@ -50,6 +50,8 @@ const legacy = { confirmed: false, origin: "manual", nodes: [{ id: "db", label: 
 const migrated = diagram.migrateArchitectureDiagram(legacy), migratedAgain = diagram.migrateArchitectureDiagram(migrated);
 assert.deepEqual(migratedAgain, migrated); assert.equal(migrated.components.length, 3); assert.equal(migrated.connections.length, 1); assert.equal(migrated.components.find(c => c.id === "analyst").type, "person"); assert.equal(migrated.components.find(c => c.id === "sheet").type, "manual_artifact");
 assert.ok(migrated.components.some(c => c.type === "person")); assert.ok(migrated.components.some(c => c.type === "manual_artifact"));
+assert.equal(diagram.migrateArchitectureDiagram({ ...migrated, source: "structured" }, { source: "ai_draft" }).source, "structured");
+assert.equal(diagram.exportArchitectureHtml({ ...migrated, assessment_id: "unknown" }).filename, "assessment-architecture-undated.html");
 
 const overlaps = (a, b, inflate = 8) => a.x - inflate < b.x + b.width + inflate && a.x + a.width + inflate > b.x - inflate && a.y - inflate < b.y + b.height + inflate && a.y + a.height + inflate > b.y - inflate;
 for (const name of names.filter(name => name !== names[6])) {

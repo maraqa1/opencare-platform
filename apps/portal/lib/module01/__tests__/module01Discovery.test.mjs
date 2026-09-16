@@ -103,7 +103,8 @@ try {
   let response = await POST(new Request("http://localhost/api/reports/module01/architecture", { method: "POST", body: JSON.stringify({ description: graph.description, diagram: graph.diagram }) }));
   assert.equal(response.status, 200); let draft = await response.json(); assert.equal(draft.confirmed, false); assert.equal(draft.origin, "manual"); assert.equal(draft.generationMode, "deterministic"); assert.equal(called, false);
   response = await POST(new Request("http://localhost/api/reports/module01/architecture", { method: "POST", body: JSON.stringify({ description: graph.description }) }));
-  assert.equal(response.status, 200); draft = await response.json(); assert.equal(draft.generationMode, "deterministic"); assert.ok(draft.diagram.components.length >= 2); assert.ok(draft.diagram.connections.length >= 1);
+  assert.equal(response.status, 200); draft = await response.json(); assert.equal(draft.generationMode, "deterministic"); assert.equal(draft.diagram.source, "structured"); assert.ok(draft.diagram.components.length >= 2); assert.ok(draft.diagram.connections.length >= 1);
+  const analyst = draft.diagram.components.find(item => item.type === "person"); assert.ok(analyst); assert.equal(draft.diagram.connections.filter(edge => edge.to === analyst.id && edge.mode === "manual").length, 2);
   const aiDescription = "Alpha source transfers nightly to Beta destination. Alpha source transfers nightly to Beta destination.";
   const aiGraph = { components: [{ id: "alpha", name: "Alpha source", type: "source_system", product: "unknown", owner: "unknown", notes: "Alpha source transfers nightly to Beta destination." }, { id: "beta", name: "Beta destination", type: "data_store", product: "unknown", owner: "unknown", notes: "Alpha source transfers nightly to Beta destination." }], connections: [{ id: "flow", from: "alpha", to: "beta", label: "transfers nightly", mode: "automated", method: "unknown", frequency: "daily" }] };
   let requestSeen;

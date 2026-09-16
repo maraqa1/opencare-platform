@@ -54,6 +54,15 @@ export function extractArchitectureDiagram(description: string): ArchitectureDia
     if (/reconcil/i.test(statement) && analyst && workbook) addConnection(analyst.id, workbook.id, statement, "Manual reconciliation");
     if (/\bsends?\b|\bfeeds?\b|\brefresh/i.test(statement)) addConnection(found[0].id, found[1].id, statement, /refresh/i.test(statement) ? "Scheduled refresh" : /feeds?/i.test(statement) ? "Data feed" : "Data transfer");
   }
+  const analysts = components.filter(item => item.type === "person");
+  const unconnectedAnalysts = analysts.filter(item => !connections.some(edge => edge.from === item.id || edge.to === item.id));
+  for (const analyst of unconnectedAnalysts) {
+    const reconciliation = statements.find(statement => /reconcil/i.test(statement) && statement.toLowerCase().includes(analyst.name.toLowerCase()));
+    if (!reconciliation || !/extract|source/i.test(reconciliation)) continue;
+    const inputs = components.filter(item => item.type === "source_system" || item.type === "data_store");
+    if (inputs.length > 2) continue;
+    for (const input of inputs) addConnection(input.id, analyst.id, reconciliation, "Manual extract");
+  }
   const issue = statements.find(statement => /fail|without warning|do not match|does not match/i.test(statement));
   if (issue && connections.length) connections[0] = { ...connections[0], known_issue: issue };
   return emptyArchitectureDiagram({ scope, as_of: asOf, source: "structured", components, connections, assumptions: ["Generated literally from the supplied description; owner confirmation remains required."] });

@@ -36,7 +36,8 @@ export default function DiscoveryEditor({ value: d, onChange }: { value: Discove
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Diagram generation failed.");
       if (current.current !== snapshot) { setMessage("Capture changed during generation. Generate a fresh draft."); return; }
-      const diagram = migrateArchitectureDiagram(result.diagram ?? { nodes: result.nodes, edges: result.edges, origin: "ai_draft" }, { source: "ai_draft" });
+      const source = result.origin === "ai_draft" ? "ai_draft" : "structured";
+      const diagram = migrateArchitectureDiagram(result.diagram ?? { nodes: result.nodes, edges: result.edges, origin: source }, { source });
       onChange({ ...d, architecture: { ...d.architecture, nodes: result.nodes, edges: result.edges, diagram, confirmed: false, origin: result.origin === "ai_draft" ? "ai_draft" : "manual", model: result.model, generatedAt: result.generatedAt } });
       setMessage(result.generationMode === "deterministic" ? "Diagram updated immediately from structured assessment data; confirmation outstanding." : "AI2 diagram draft generated; confirmation outstanding.");
     } catch (e) { setMessage(e instanceof Error ? e.message : "Diagram generation failed."); }

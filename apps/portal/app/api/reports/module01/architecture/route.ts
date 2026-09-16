@@ -19,10 +19,10 @@ export async function POST(request: Request) {
   const suppliedValidation = supplied ? validateDiagram(supplied) : null;
   const extracted = extractArchitectureDiagram(description);
   const extractedValidation = validateDiagram(extracted);
-  const deterministic = supplied && suppliedValidation?.valid && supplied.components.length >= 2 && supplied.connections.length >= 1
-    ? supplied
-    : extractedValidation.valid && extracted.components.length >= 2 && extracted.connections.length >= 1
-      ? extracted
+  const deterministic = extractedValidation.valid && extracted.components.length >= 2 && extracted.connections.length >= 1
+    ? extracted
+    : supplied && suppliedValidation?.valid && supplied.components.length >= 2 && supplied.connections.length >= 1
+      ? supplied
       : null;
   if (deterministic) {
     return diagramResponse({ ...deterministic, status: "draft", source: "structured" }, { mode: "deterministic", model: "Deterministic architecture extractor" });
