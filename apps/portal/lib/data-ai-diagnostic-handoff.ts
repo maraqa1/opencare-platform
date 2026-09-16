@@ -1,4 +1,5 @@
 import type { FunctionalFinding } from "./module01/module01FunctionalDomains";
+import type { Discovery } from "./module01/module01Discovery";
 
 export const diagnosticStrategyHandoffStorageKey = "opencare:data-ai-diagnostic:latest";
 
@@ -6,6 +7,7 @@ type HandoffPriority = "Critical" | "High" | "Medium" | "Watch" | "Unknown";
 type HandoffSeverity = "Critical" | "High" | "Medium" | "Low" | "Unknown";
 
 export type DiagnosticStrategyHandoff = {
+  discovery?: Discovery;
   handoffVersion: "1.0";
   industryProfile?: { id: string; version: string; labelEn: string; labelAr: string };
   selectedFunctions?: string[];
@@ -106,6 +108,7 @@ type GeneratedReportLike = {
 };
 
 export type DiagnosticStrategyHandoffInput = {
+  discovery?: Discovery;
   generatedAt?: string;
   industryProfile?: DiagnosticStrategyHandoff["industryProfile"];
   selectedFunctions?: string[];
@@ -330,6 +333,7 @@ export function buildDiagnosticStrategyHandoff(input: DiagnosticStrategyHandoffI
     handoffVersion: "1.0",
     ...(input.industryProfile ? { industryProfile: { ...input.industryProfile } } : {}),
     ...(input.selectedFunctions ? { selectedFunctions: [...input.selectedFunctions] } : {}),
+    ...(input.discovery ? { discovery: structuredClone(input.discovery) } : {}),
     ...(input.functionalFindings ? { functionalFindings: structuredClone(input.functionalFindings) } : {}),
     sourceModule: "data-ai-capability-diagnostic",
     generatedAt: input.generatedAt ?? new Date().toISOString(),

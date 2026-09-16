@@ -31,11 +31,14 @@ import {
   buildIndustrySeed, emptyIndustryAnswers, migrateIndustryAnswers, validateIndustryAnswers,
 } from "@/lib/module01/module01IndustryAssessment";
 import "./industry-profile.css";
+import DiscoveryEditor, { ArchitectureDiagram } from "./discovery-editor";
+import { emptyDiscovery, normaliseDiscovery, type Discovery } from "@/lib/module01/module01Discovery";
 import { industryFunctions, normaliseFunctions, FUNCTION_CATALOGUE_VERSION, type FunctionalFinding } from "@/lib/module01/module01FunctionalDomains";
 
 type ActiveTab = "capture" | "dashboard" | "gartner" | "gaps" | "report" | "evidence";
 
 type GeneratedConsultingReport = {
+  discovery?: Discovery;
   functionalFindings?: FunctionalFinding[];
   executiveSummary?: string;
   overallAdvisoryNarrative?: string;
@@ -303,6 +306,7 @@ function normaliseGeneratedReport(report: unknown): GeneratedConsultingReport {
   }
   const candidate = report as Record<string, unknown>;
   return {
+    discovery: candidate.discovery ? normaliseDiscovery(candidate.discovery) : undefined,
     executiveSummary: asText(candidate.executiveSummary),
     overallAdvisoryNarrative: asText(candidate.overallAdvisoryNarrative),
     boardScorecardNarrative: asText(candidate.boardScorecardNarrative),
@@ -722,6 +726,7 @@ function AiEnrichmentDebugPanel({
 
 const assessmentStorageKey = "module01:industry-assessment:v1";
 type ProfileHistoryEntry = {
+  discovery?: Discovery;
   changedAt: string;
   industryId: IndustryProfileId;
   version: string;
@@ -758,6 +763,7 @@ export function DataAiDiagnosticWorkspace() {
   const [search, setSearch] = useState("");
   const [stateByQuestion, setStateByQuestion] = useState(initialState);
   const [customerContext, setCustomerContext] = useState<CustomerContext>(emptyCustomerContext);
+  const [discovery, setDiscovery] = useState<Discovery>(emptyDiscovery);
   const [generatedReport, setGeneratedReport] = useState<GeneratedConsultingReport | null>(null);
   const [generatedMarkdownReport, setGeneratedMarkdownReport] = useState<string | null>(null);
   const [generatedMarkdownReportSource, setGeneratedMarkdownReportSource] = useState<"llm" | "fallback" | null>(null);
@@ -808,10 +814,12 @@ export function DataAiDiagnosticWorkspace() {
               context[key] = typeof saved.customerContext?.[key] === "string" ? saved.customerContext[key] : "";
             }
             setCustomerContext(context);
+            setDiscovery(normaliseDiscovery(saved.discovery));
             setContextReviewRequired(saved.contextReviewRequired === true);
             setReviewIds(Array.isArray(saved.reviewIds) ? saved.reviewIds.filter((id: unknown) => typeof id === "string" && id in answers) : []);
             setProfileHistory(Array.isArray(saved.profileHistory) ? saved.profileHistory.filter((entry: ProfileHistoryEntry) => entry && isIndustryProfileId(entry.industryId)).map((entry: ProfileHistoryEntry) => ({
               changedAt: String(entry.changedAt), industryId: entry.industryId, version: String(entry.version),
+              discovery: normaliseDiscovery(entry.discovery),
               answers: validateIndustryAnswers(entry.industryId, entry.answers, industryFunctions(entry.industryId).map((f) => f.id)),
             })) : []);
           }
@@ -827,7 +835,7 @@ export function DataAiDiagnosticWorkspace() {
     if (!storageReady || !industryId) return;
     try {
       window.localStorage.setItem(assessmentStorageKey, JSON.stringify({
-        industryId, version: INDUSTRY_PROFILE_VERSION, answers: stateByQuestion, customerContext,
+        industryId, version: INDUSTRY_PROFILE_VERSION, answers: stateByQuestion, customerContext, discovery,
         selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
         reviewIds, contextReviewRequired, profileHistory,
         questions: dataAiDiagnosticQuestions.map(({ id, variantKey, questionEn, questionAr, evidenceRequired, evidenceRequiredAr }) => ({
@@ -837,7 +845,7 @@ export function DataAiDiagnosticWorkspace() {
     } catch {
       setStorageMessage("Browser storage is unavailable or full. Download assessment JSON to keep your work.");
     }
-  }, [storageReady, industryId, stateByQuestion, customerContext, reviewIds, contextReviewRequired, profileHistory, dataAiDiagnosticQuestions]);
+  }, [storageReady, industryId, stateByQuestion, customerContext, discovery, reviewIds, contextReviewRequired, profileHistory, dataAiDiagnosticQuestions]);
 
   const summaries = useMemo(() => buildDomainSummaries(stateByQuestion, dataAiDiagnosticQuestions, dataAiDiagnosticDomains), [stateByQuestion, dataAiDiagnosticQuestions, dataAiDiagnosticDomains]);
   const gartnerSummaries = useMemo(() => buildGartnerPillarSummaries(stateByQuestion, dataAiDiagnosticQuestions), [stateByQuestion, dataAiDiagnosticQuestions]);
@@ -904,6 +912,7 @@ export function DataAiDiagnosticWorkspace() {
       setProfileHistory((current) => [...current, {
         changedAt: new Date().toISOString(), industryId, version: INDUSTRY_PROFILE_VERSION,
         answers: { ...stateByQuestion },
+        discovery: structuredClone(discovery),
       }]);
       setStateByQuestion(migration.answers);
       setReviewIds(migration.reviewIds);
@@ -911,6 +920,7 @@ export function DataAiDiagnosticWorkspace() {
     } else if (!industryId) {
       setStateByQuestion(emptyIndustryAnswers(next));
     }
+    setDiscovery(emptyDiscovery());
     setSelectedFunctions([]);
     setQuestionScope("all");
     setIndustryId(next);
@@ -923,7 +933,7 @@ export function DataAiDiagnosticWorkspace() {
 
   const requestIndustryChange = (value: string) => {
     if (!isIndustryProfileId(value) || value === industryId) return;
-    if (industryId && (Object.values(stateByQuestion).some((answer) => answer.score !== null || answer.notes || answer.evidenceAvailable || answer.actionPlan) || Object.values(customerContext).some(Boolean))) {
+    if (industryId && (Object.values(stateByQuestion).some((answer) => answer.score !== null || answer.notes || answer.evidenceAvailable || answer.actionPlan) || Object.values(customerContext).some(Boolean) || JSON.stringify(discovery) !== JSON.stringify(emptyDiscovery()))) {
       setPendingIndustryId(value);
     } else {
       applyIndustryChange(value);
@@ -962,6 +972,7 @@ export function DataAiDiagnosticWorkspace() {
     const seed = buildIndustrySeed(industryId, selectedSeedDatasetLevel, selectedFunctions);
     setStateByQuestion(seed.answers);
     setCustomerContext(seed.customerContext);
+    setDiscovery(seed.discovery);
     setReviewIds([]);
     setContextReviewRequired(false);
     setGeneratedReport(null);
@@ -981,6 +992,7 @@ export function DataAiDiagnosticWorkspace() {
     setContextReviewRequired(false);
     setStateByQuestion(industryId ? emptyIndustryAnswers(industryId, selectedFunctions) : initialState());
     setCustomerContext(emptyCustomerContext);
+    setDiscovery(emptyDiscovery());
     setGeneratedReport(null);
     setGeneratedMarkdownReport(null);
     setGeneratedMarkdownReportSource(null);
@@ -1005,7 +1017,7 @@ export function DataAiDiagnosticWorkspace() {
     if (!industryId) return;
     const seed = buildIndustrySeed(industryId, selectedSeedDatasetLevel, selectedFunctions);
     const seededStateByQuestion = seed.answers;
-    const contextRows = Object.entries(seed.customerContext).map(([field, value]) => ({
+    const contextRows = Object.entries({ ...seed.customerContext, discovery: JSON.stringify(seed.discovery) }).map(([field, value]) => ({
       record_type: "customer_context",
       profile: industryProfile?.labelEn,
       industry_id: industryId,
@@ -1061,7 +1073,7 @@ export function DataAiDiagnosticWorkspace() {
     downloadText(`module01-${industryId}-assessment.json`, JSON.stringify({
       industryId, version: INDUSTRY_PROFILE_VERSION, industryProfile,
       selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
-      customerContext, answers: stateByQuestion, questions: dataAiDiagnosticQuestions,
+      customerContext, discovery, answers: stateByQuestion, questions: dataAiDiagnosticQuestions,
       reviewIds, contextReviewRequired, profileHistory, report: reportResponse,
     }, null, 2), "application/json");
   };
@@ -1187,6 +1199,7 @@ export function DataAiDiagnosticWorkspace() {
         signal: abortController.signal,
         body: JSON.stringify({
           customerContext,
+          discovery,
           industryProfile,
           selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
           responses: dataAiDiagnosticQuestions.map((question) => ({
@@ -1277,6 +1290,7 @@ export function DataAiDiagnosticWorkspace() {
       const handoff = buildDiagnosticStrategyHandoff({
         industryProfile,
         selectedFunctions, functionalFindings: result.report?.functionalFindings,
+        discovery: normalisedReport.discovery,
         customerContext,
         overallScore,
         overallGap,
@@ -1590,6 +1604,7 @@ export function DataAiDiagnosticWorkspace() {
                 </label>
               </div>
             </div>
+            <DiscoveryEditor value={discovery} onChange={(value) => { setDiscovery(value); invalidateReport(); }} />
             <div className="data-ai-filters">
               {selectedFunctions.length > 0 && industryId && <label>
                 <span>Question scope</span>
@@ -2190,6 +2205,12 @@ export function DataAiDiagnosticWorkspace() {
             </div>
           </article>
 
+          {generatedReport?.discovery && (generatedReport.discovery.architecture.nodes.length > 0 || generatedReport.discovery.architecture.image) && <article className="data-ai-report-page">
+            <div className="data-ai-report-page-header"><p className="eyebrow">Current-state assessment</p><h2>Systems and data movement</h2></div>
+            <p>{generatedReport.discovery.architecture.description}</p>
+            <ArchitectureDiagram architecture={generatedReport.discovery.architecture} />
+            <p><strong>Unknowns and assumptions:</strong> {generatedReport.discovery.architecture.unknowns || "Not supplied"}</p>
+          </article>}
           {generatedMarkdownReport ? (
             <MarkdownReport markdown={generatedMarkdownReport} source={generatedMarkdownReportSource} />
           ) : generatedReport ? (

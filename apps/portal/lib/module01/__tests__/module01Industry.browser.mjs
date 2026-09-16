@@ -55,10 +55,15 @@ try {
     await page.getByRole('button', { name: 'Seed selected data', exact: true }).click();
     await page.waitForFunction(() => JSON.parse(localStorage.getItem('module01:industry-assessment:v1')).answers.q001.score !== null);
     await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForFunction(expected => document.querySelector('#industry-profile')?.value === expected, id);
     assert.equal(await page.locator('#industry-profile').inputValue(), id);
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('module01:industry-assessment:v1')));
     assert.equal(Object.keys(saved.answers).length, expectedQuestions);
     assert.equal(saved.questions.length, expectedQuestions);
+    assert.equal(Object.keys(saved.discovery.essentials).length, 10);
+    assert.equal(saved.discovery.useCases.length, 2);
+    assert.equal(saved.discovery.painPoints.length, 2);
+    await page.locator('.discovery-capture').screenshot({ path: resolve(output, `${id}-discovery-desktop.png`) });
     if (includeFunctions) {
       assert.equal(saved.selectedFunctions.length, 4);
       await page.locator('#question-scope').selectOption(saved.selectedFunctions[0]);
@@ -67,6 +72,7 @@ try {
       await page.locator('input[name="functional-scope"]').first().uncheck();
       assert.equal(await page.locator('.data-ai-question-card').count(), 109);
       await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForFunction(() => document.querySelectorAll('.data-ai-question-card').length === 109);
       assert.equal(await page.locator('.data-ai-question-card').count(), 109);
       await page.locator('input[name="functional-scope"]').first().check();
       assert.equal(await page.locator('.data-ai-question-card').count(), 113);
@@ -80,6 +86,8 @@ try {
     await page.locator('.industry-function-scope').screenshot({ path: resolve(output, `${id}-functions-mobile.png`) });
     assert.deepEqual(await noOverflow(page, '.industry-function-scope, .industry-function-options label'), []);
     assert.deepEqual(await noOverflow(page, '.industry-profile-bar, .industry-profile-bar select, .data-ai-question-main'), []);
+    assert.deepEqual(await noOverflow(page, '.discovery-capture, .discovery-capture fieldset, .discovery-capture textarea'), []);
+    await page.locator('.discovery-capture').screenshot({ path: resolve(output, `${id}-discovery-mobile.png`) });
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole('button', { name: 'AI report', exact: true }).click();
     const requestPromise = page.waitForRequest((request) => request.url().endsWith('/api/data-ai-diagnostic/report') && request.method() === 'POST');
@@ -94,6 +102,9 @@ try {
     assert.equal(payload.industryProfile.id, id);
     assert.equal(data.report.industryProfile.id, id);
     assert.equal(data.structuredReport.reportHeader.industryProfile.id, id);
+    assert.deepEqual(data.report.discovery, payload.discovery);
+    assert.deepEqual(data.structuredReport.sections.discovery, payload.discovery);
+    for (const heading of ['Platform and data essentials', 'Main pain points', 'Current and future use-case register', 'Current-state architecture']) assert.ok(data.markdownReport.includes(heading));
     if (includeFunctions) {
       assert.equal(payload.selectedFunctions.length, 4);
       assert.equal(payload.responses.length, 113);
@@ -116,6 +127,7 @@ try {
     assert.equal(assessment.report.structuredReport.reportHeader.industryProfile.id, id);
     const handoff = await page.evaluate(() => JSON.parse(localStorage.getItem('opencare:data-ai-diagnostic:latest')));
     assert.equal(handoff.industryProfile.id, id);
+    assert.deepEqual(handoff.discovery, data.report.discovery);
     if (includeFunctions) {
       assert.deepEqual(handoff.selectedFunctions, payload.selectedFunctions);
       assert.deepEqual(handoff.functionalFindings, data.report.functionalFindings);
@@ -144,6 +156,8 @@ try {
       assert.equal(migrated.profileHistory[0].industryId, 'healthcare');
       assert.equal(migrated.contextReviewRequired, true);
       assert.deepEqual(migrated.selectedFunctions, []);
+      assert.equal(migrated.discovery.useCases.length, 0);
+      assert.deepEqual(migrated.profileHistory[0].discovery, saved.discovery);
       if (includeFunctions) assert.equal(Object.keys(migrated.profileHistory[0].answers).length, 113);
       await page.getByRole('button', { name: 'AI report', exact: true }).click();
       assert.equal(await page.getByRole('button', { name: 'Generate with local AI', exact: true }).isDisabled(), true);

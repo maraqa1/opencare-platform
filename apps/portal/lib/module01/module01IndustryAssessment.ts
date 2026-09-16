@@ -1,4 +1,5 @@
 import { industryProfiles, resolveIndustryQuestions, type IndustryProfileId } from "./module01IndustryProfiles";
+import { buildDiscoverySeed, type Discovery } from "./module01Discovery";
 import { seedDatasetOptions, type CustomerContext, type QuestionState, type SeedDatasetLevel } from "./module01SeedData";
 
 const fictionalOrganizations: Record<IndustryProfileId, { name: string; scope: string; priority: string }> = {
@@ -113,7 +114,7 @@ export function buildIndustrySeed(
   industryId: IndustryProfileId,
   level: SeedDatasetLevel,
   functions: string[] = [],
-): { customerContext: CustomerContext; answers: Record<string, QuestionState> } {
+): { customerContext: CustomerContext; answers: Record<string, QuestionState>; discovery: Discovery } {
   const dataset = seedDatasetOptions.find((option) => option.id === level);
   if (!dataset) throw new Error(`Unknown seed dataset level: ${level}`);
   const organization = fictionalOrganizations[industryId];
@@ -159,5 +160,5 @@ export function buildIndustrySeed(
       actionPlan: `Synthetic action plan: ${topic.action}; record the responsible owner and follow-up date.${scope}`,
     } satisfies QuestionState];
   }));
-  return { customerContext, answers };
+  return { customerContext, answers, discovery: buildDiscoverySeed(industryId, level) };
 }

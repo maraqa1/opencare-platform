@@ -1,6 +1,7 @@
 import type { DiagnosticReportRequest, GeneratedConsultingReport } from "@/lib/deterministicReportBuilders";
 import { contextLabel, evidenceCoveragePct, formatScore, maturityDescription } from "@/lib/deterministicReportBuilders";
 import { estimateTokens } from "@/lib/mistralNemoInteractionPolicy";
+import { discoveryMarkdown } from "@/lib/module01/module01Discovery";
 
 const ai2DirectChatUrl = "https://ai2.opendatalake.com/api/chat";
 
@@ -73,6 +74,7 @@ export function buildDeterministicMarkdown(payload: DiagnosticReportRequest, rep
         "",
       ]),
     ] : []),
+    ...(report.discovery ? discoveryMarkdown(report.discovery) : []),
     "## Domain action plan",
     ...report.domainActionPlan.map((action) => `- ${boardFacingDomainAction(action)}`),
     "",
@@ -517,7 +519,7 @@ export async function generateMarkdownReport(args: GenerateMarkdownReportArgs): 
   const startedAt = Date.now();
   const fallbackMarkdown = buildDeterministicMarkdown(args.payload, args.deterministicReport);
 
-  if (!args.modelConfig.enableLlmMarkdown) {
+  if (!args.modelConfig.enableLlmMarkdown || args.deterministicReport.discovery) {
     return {
       markdown: fallbackMarkdown,
       source: "fallback",

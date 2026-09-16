@@ -91,6 +91,7 @@ function normaliseReportPayload(raw: unknown): DiagnosticReportRequest {
     selectedFunctions, functionCatalogueVersion: FUNCTION_CATALOGUE_VERSION,
     ...(Array.isArray(payload.responses) ? { responses: payload.responses } : {}),
     ...(payload.evidence !== undefined ? { evidence: payload.evidence } : {}),
+    discovery: payload.discovery as DiagnosticReportRequest["discovery"],
     customerContext: payload.customerContext as DiagnosticReportRequest["customerContext"],
     overallScore: nullableNumber(payload.overallScore),
     overallGap: nullableNumber(payload.overallGap),

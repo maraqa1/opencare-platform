@@ -21,6 +21,13 @@ for pdf in sorted(folder.glob("*-report.pdf")):
     for name in ["executiveSummary", "overallAdvisoryNarrative", "boardScorecardNarrative", "headlineAssessment"]:
         assert normalize(report[name]) in combined, f"{industry}: PDF lost or changed {name}"
     assert normalize(report["roadmapPhases"][0]) in combined, f"{industry}: PDF omitted roadmap rationale"
+    if report.get("discovery"):
+        for heading in ["Platform and data essentials", "Main pain points", "Current and future use-case register", "Current-state architecture"]:
+            assert normalize(heading) in combined, f"{industry}: PDF omitted {heading}"
+        for use_case in report["discovery"]["useCases"]:
+            assert normalize(use_case["name"]) in combined, f"{industry}: PDF omitted registered use case"
+        for component in report["discovery"]["architecture"]["nodes"]:
+            assert normalize(component["label"]) in combined, f"{industry}: PDF omitted architecture component"
     for finding in report.get("functionalFindings", []):
         assert normalize(finding["name"]) in combined, f"{industry}: PDF omitted functional domain"
         assert normalize(f"Weighted confidence: {finding['weightedConfidence']}%") in combined, f"{industry}: PDF omitted functional confidence"

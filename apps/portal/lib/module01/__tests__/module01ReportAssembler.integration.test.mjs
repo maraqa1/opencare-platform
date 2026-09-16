@@ -19,13 +19,14 @@ function compileTs(sourcePath, outputName) {
       esModuleInterop: true,
       resolveJsonModule: true,
     },
-  }).outputText.replace('require("@/lib/module01/module01FunctionalDomains")', 'require("./functional.cjs")');
+  }).outputText.replace('require("@/lib/module01/module01FunctionalDomains")', 'require("./functional.cjs")').replace('require("@/lib/module01/module01Discovery")', 'require("./discovery.cjs")');
   const outputPath = join(tempDir, outputName);
   writeFileSync(outputPath, transpiled);
   return require(outputPath);
 }
 
 compileTs(join(root, "module01", "module01FunctionalDomains.ts"), "functional.cjs");
+compileTs(join(root, "module01", "module01Discovery.ts"), "discovery.cjs");
 const deterministicModule = compileTs(join(root, "deterministicReportBuilders.ts"), "deterministic.cjs");
 const factsModule = compileTs(join(root, "module01", "module01FactsBuilder.ts"), "facts.cjs");
 const promptsModule = compileTs(join(root, "module01", "module01NarrativePrompts.ts"), "prompts.cjs");

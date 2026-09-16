@@ -1,3 +1,4 @@
+import { discoveryNarrativeFacts } from "@/lib/module01/module01Discovery";
 import {
   buildDeterministicReport,
   buildStructuredReport,
@@ -143,9 +144,11 @@ function roadmapFactsText(facts: Module01Facts, report: GeneratedConsultingRepor
 }
 
 function functionalNarrativeFacts(report: GeneratedConsultingReport): string[] {
-  if (!report.functionalFindings?.length) return [];
+  const discovery = report.discovery ? discoveryNarrativeFacts(report.discovery) : [];
+  if (!report.functionalFindings?.length) return discovery;
   return [
     "Functional scope is selected by the assessor. Questions and proposed use cases are assessment criteria, not proof of implementation. Ratings and evidence strength are self-reported, not independently certified. Address the material functional constraints in this narrative.",
+    ...discovery,
     ...report.functionalFindings.map((f) => `Function: ${f.name}; assessed ${f.scored}/${f.total}; score ${f.score?.toFixed(2) ?? "unscored"}/4; weighted evidence confidence ${f.weightedConfidence}%; gate: ${f.gate}. Capabilities requiring evidence validation or remediation: ${f.gaps.map((g) => g.capability).join(", ") || "none identified in supplied ratings"}.`),
   ];
 }

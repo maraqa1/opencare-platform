@@ -49,6 +49,7 @@ function load(path) {
 }
 
 const builders = load(resolve(portal, "lib/deterministicReportBuilders.ts"));
+const discoveryTools = load(resolve(portal, "lib/module01/module01Discovery.ts"));
 const factsBuilder = load(resolve(portal, "lib/module01/module01FactsBuilder.ts"));
 const profiles = load(resolve(portal, "lib/module01/module01IndustryProfiles.ts"));
 const assembler = load(resolve(portal, "lib/reportAssembler.ts"));
@@ -63,7 +64,11 @@ const cases = [
 ];
 function payloadFor(id, customerName, wording) {
   const p = profiles.getIndustryProfile(id);
+  const discovery = discoveryTools.emptyDiscovery();
+  discovery.essentials.platforms = { status: "known", details: "Client confirmed Example Reporting Store", evidence: "Interview, not independently validated" };
+  discovery.useCases = [{ id: "case-1", name: "Service oversight", horizon: "current", purpose: "Review performance", function: "Management", status: "In use", owner: "Operations manager", data: "Example Reporting Store", output: "Weekly report", benefit: "Visibility", dependencies: "Definition validation", priority: "High", timing: "Current" }];
   return {
+    discovery,
     industryProfile: { id: p.id, version: p.version, labelEn: p.labelEn, labelAr: p.labelAr },
     customerContext: { customerName, businessDomain: wording, operatingScope: `Regional ${wording}.`, strategicPriorities: "Improve review turnaround", currentPainPoints: "Customer reports delayed review approvals." },
     overallScore: 3.8, overallGap: 0.2, scoredQuestions: 97, totalQuestions: 97, evidenceBackedItems: 80,
@@ -90,6 +95,10 @@ try {
     assert.equal(response.status, 200);
     const output = await response.json();
     assert.deepEqual(output.report.industryProfile, payload.industryProfile);
+    assert.deepEqual(output.report.discovery, payload.discovery);
+    assert.deepEqual(output.structuredReport.sections.discovery, payload.discovery);
+    assert.ok(output.markdownReport.includes("Example Reporting Store"));
+    assert.ok(output.markdownReport.includes("Service oversight"));
     assert.deepEqual(output.structuredReport.reportHeader.industryProfile, payload.industryProfile);
     assert.deepEqual(output.generationMetadata.industryProfile, payload.industryProfile);
     assert.deepEqual(routePayload.responses, payload.responses);
@@ -120,6 +129,8 @@ try {
     for (const call of aiCalls.splice(0)) {
       assert.ok(call.facts.some((fact) => fact.includes(id)));
       assert.ok(call.facts.some((fact) => fact.includes("Sector examples")));
+      assert.ok(call.facts.some((fact) => fact.includes("Example Reporting Store")));
+      assert.ok(call.facts.some((fact) => fact.includes("Service oversight")));
     }
     const questions = profiles.resolveIndustryQuestions(id);
     assert.equal(questions.length, 97);

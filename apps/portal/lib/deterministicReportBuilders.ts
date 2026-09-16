@@ -1,4 +1,5 @@
 import type { IndustryProfileId } from "@/lib/module01/module01IndustryProfiles";
+import { normaliseDiscovery, type Discovery } from "@/lib/module01/module01Discovery";
 import { functionalFindings, type FunctionalFinding } from "@/lib/module01/module01FunctionalDomains";
 
 export type DiagnosticIndustryProfile = {
@@ -9,6 +10,7 @@ export type DiagnosticIndustryProfile = {
 };
 
 export type DiagnosticReportRequest = {
+  discovery?: Discovery;
   selectedFunctions?: string[];
   functionCatalogueVersion?: string;
   industryProfile?: DiagnosticIndustryProfile;
@@ -66,6 +68,7 @@ export type DiagnosticReportRequest = {
 };
 
 export type GeneratedConsultingReport = {
+  discovery?: Discovery;
   functionalFindings?: FunctionalFinding[];
   industryProfile?: DiagnosticIndustryProfile;
   executiveSummary: string;
@@ -100,6 +103,7 @@ export type StructuredDiagnosticReport = {
   generationMode: "deterministic" | "narrative_enrichment";
   model: string;
   sections: {
+    discovery?: Discovery;
     functionalFindings?: FunctionalFinding[];
     executiveSummary: {
       summaryText: string;
@@ -383,6 +387,7 @@ export function buildDeterministicReport(payload: DiagnosticReportRequest): Gene
 
   return {
     ...(payload.industryProfile ? { industryProfile: { ...payload.industryProfile } } : {}),
+    discovery: payload.discovery ? normaliseDiscovery(payload.discovery) : undefined,
     functionalFindings: payload.industryProfile ? functionalFindings(payload.industryProfile.id, payload.selectedFunctions ?? [], payload.responses ?? []) : [],
     executiveSummary:
       `${client} is assessed at ${score} / 4 maturity across ${payload.scoredQuestions}/${payload.totalQuestions} scored questions for ${domain}. The evidence posture is ${evidencePosture}, with material gaps concentrated in ${weakest}. The immediate executive implication is to treat the baseline as decision-useful but provisional where evidence is incomplete, then move quickly from assessment to owned remediation.`,
@@ -476,6 +481,7 @@ export function buildStructuredReport(
     generationMode,
     model,
     sections: {
+      discovery: report.discovery,
       functionalFindings: report.functionalFindings ?? [],
       executiveSummary: {
         summaryText: report.executiveSummary,

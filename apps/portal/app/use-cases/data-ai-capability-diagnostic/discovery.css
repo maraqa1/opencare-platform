@@ -1,0 +1,20 @@
+.discovery-capture { grid-column: 1 / -1; min-width: 0; margin: 24px 0; border-top: 1px solid #ccd2da; padding-top: 16px; color: #172233; }
+.discovery-capture h2 { font-size: 20px; }
+.discovery-capture details { padding: 16px 0; border-bottom: 1px solid #ccd2da; }
+.discovery-capture summary { font-weight: 700; cursor: pointer; margin-bottom: 12px; }
+.discovery-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.discovery-capture fieldset { min-width: 0; margin: 12px 0; border: 1px solid #ccd2da; padding: 12px; border-radius: 4px; }
+.discovery-capture legend { font-size: 14px; font-weight: 600; max-width: 100%; }
+.discovery-capture label { display: block; font-size: 13px; margin: 10px 0; overflow-wrap: anywhere; }
+.discovery-capture input:not([type=checkbox]), .discovery-capture textarea, .discovery-capture select { display: block; box-sizing: border-box; width: 100%; min-width: 0; padding: 8px; border: 1px solid #aeb8c5; border-radius: 4px; background: white; color: #172233; font: inherit; }
+.discovery-capture textarea { min-height: 68px; resize: vertical; }
+.discovery-capture button { padding: 8px 12px; margin: 6px 8px 6px 0; border: 1px solid #aeb8c5; border-radius: 4px; background: white; cursor: pointer; }
+.discovery-capture button:disabled { opacity: .5; cursor: default; }
+.discovery-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.discovery-diagram { padding: 16px 0; break-inside: avoid; }
+.discovery-components { display: flex; flex-wrap: wrap; gap: 12px; }
+.discovery-components span { padding: 10px 16px; border: 1px solid #8d9aa7; background: #edf4f2; border-radius: 4px; overflow-wrap: anywhere; }
+.discovery-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 12px 0; overflow-wrap: anywhere; }
+.discovery-flow small { font-size: 12px; }
+@media(max-width: 700px) { .discovery-grid, .discovery-options { grid-template-columns: minmax(0, 1fr); } }
+@media print { .discovery-diagram { break-inside: auto; } .discovery-flow { break-inside: avoid; } }
